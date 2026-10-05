@@ -3,10 +3,11 @@
 <JUCERPROJECT id="hIifYP" name="Csound" projectType="audioplug" jucerFormatVersion="1"
               pluginFormats="buildStandalone,buildVST3" companyWebsite="www.apesoft.it"
               companyEmail="apps@apesoft.it" bundleIdentifier="it.apesoft.Csound"
-              pluginManufacturerCode="Apes" pluginCode="Csnd" pluginCharacteristicsValue="pluginIsSynth,pluginProducesMidiOut,pluginWantsMidiIn"
+              pluginManufacturerCode="Apes" pluginCode="Csnd" pluginCharacteristicsValue="pluginEditorRequiresKeys"
               pluginManufacturer="apeSoft" aaxIdentifier="it.apesoft.csound"
               pluginVST3Category="Instrument,Fx" pluginAUMainType="'aumu'"
-              microphonePermissionNeeded="1" microphonePermissionsText="Csound Studio needs the microphone for live audio input.">
+              microphonePermissionNeeded="1" microphonePermissionsText="Csound Studio needs the microphone for live audio input."
+              pluginEditorRequiresKeys="1">
   <MAINGROUP id="tNvtiW" name="Csound">
     <GROUP id="{B758FDEB-C949-26EA-A6AE-DAFC286B8E61}" name="Source">
       <FILE id="BgNYCB" name="PluginProcessor.cpp" compile="1" resource="0"
