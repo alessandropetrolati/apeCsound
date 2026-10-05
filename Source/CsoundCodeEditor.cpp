@@ -1,9 +1,16 @@
 #include "CsoundCodeEditor.h"
 
 CsoundCodeEditor::CsoundCodeEditor (juce::CodeDocument& doc, juce::CodeTokeniser* tok)
-    : juce::CodeEditorComponent (doc, tok)
+    : juce::CodeEditorComponent (doc, tok),
+      codeDocument (doc)
 {
     setTabSize (indentSpaces, true); // Tab = 4 spazi, mai caratteri tab reali.
+    codeDocument.addListener (this);
+}
+
+CsoundCodeEditor::~CsoundCodeEditor()
+{
+    codeDocument.removeListener (this);
 }
 
 //==============================================================================
@@ -109,31 +116,41 @@ void CsoundCodeEditor::handleReturnKey()
 
     const auto newIndent = juce::String::repeatedString (" ", indentSpaces * depth);
 
-    // Chiamata esplicita alla base class: e' il vero inserimento di testo,
-    // non deve ripassare dal nostro override (che gestisce l'auto-dedent).
     CodeEditorComponent::insertTextAtCaret ("\n" + newIndent);
 }
 
-void CsoundCodeEditor::insertTextAtCaret (const juce::String& textToInsert)
+//==============================================================================
+// Riallineamento "live" delle keyword di chiusura blocco. Agganciato al
+// CodeDocument (non a insertTextAtCaret) cosi' funziona indipendentemente
+// da come il testo arriva sul documento: digitazione normale, IME, undo/
+// redo, inserimento programmatico.
+void CsoundCodeEditor::codeDocumentTextInserted (const juce::String& newText, int insertIndex)
 {
-    CodeEditorComponent::insertTextAtCaret (textToInsert);
-
-    // Auto-dedent "live": se l'utente ha appena completato, a inizio riga,
-    // una keyword di chiusura blocco (endin/endif/od/endop/else/elseif),
-    // riallinea subito l'indentazione della riga - stesso comportamento
-    // di Xcode/VS Code quando si digita una parentesi di chiusura.
-    if (textToInsert.isEmpty() || textToInsert.containsChar ('\n'))
+    if (isReindenting)
         return;
 
-    const auto caret = getCaretPos();
-    const int line = caret.getLineNumber();
-    const auto trimmed = stripCommentAndTrim (getDocument().getLine (line));
+    // Un inserimento multi-riga (paste, replaceAllContent...) e' gestito
+    // riga per riga da chi lo genera: qui ci occupiamo solo del caso
+    // "l'utente ha appena completato una parola a inizio riga".
+    if (newText.containsChar ('\n'))
+        return;
+
+    const juce::CodeDocument::Position pos (codeDocument, insertIndex);
+    const int line = pos.getLineNumber();
+
+    const auto trimmed = stripCommentAndTrim (codeDocument.getLine (line));
     const auto lower = trimmed.toLowerCase();
 
     static const juce::StringArray dedentWholeLine { "endin", "endif", "od", "endop", "else" };
 
-    if (dedentWholeLine.contains (lower) || lower.startsWith ("elseif "))
+    if (dedentWholeLine.contains (lower) || lower.startsWith ("elseif"))
         reindentLine (line);
+}
+
+void CsoundCodeEditor::codeDocumentTextDeleted (int /*startIndex*/, int /*endIndex*/)
+{
+    // Non serve reagire alle cancellazioni: l'indentazione si ricalcola
+    // alla prossima riga toccata da un inserimento.
 }
 
 void CsoundCodeEditor::reindentLine (int lineIndex)
@@ -166,7 +183,9 @@ void CsoundCodeEditor::reindentLine (int lineIndex)
     const int contentStartOffset = contentStart.getPosition();
     const int caretOffsetFromContent = juce::jmax (0, getCaretPos().getPosition() - contentStartOffset);
 
+    isReindenting = true;
     doc.replaceSection (lineStartOffset, contentStartOffset, newIndent);
+    isReindenting = false;
 
     const juce::CodeDocument::Position newCaretPos (doc, lineStartOffset + newIndent.length() + caretOffsetFromContent);
     moveCaretTo (newCaretPos, false);

@@ -71,6 +71,13 @@ public:
     void addListener    (Listener* l) { listeners.add (l); }
     void removeListener (Listener* l) { listeners.remove (l); }
 
+    /** Ultimi messaggi della console Csound (buffer circolare): un messaggio
+        arriva anche se la UI del plugin e' chiusa (handleMessage lo salva
+        qui comunque), quindi quando l'editor viene creato puo' richiamare
+        questo metodo per recuperare la storia e non perdere nulla di quanto
+        successo mentre la finestra era chiusa. */
+    juce::StringArray getMessageHistory() const;
+
     // --- juce::AudioProcessor ---
     const juce::String getName() const override;
 
@@ -82,8 +89,10 @@ public:
     bool hasEditor() const override { return true; }
     juce::AudioProcessorEditor* createEditor() override;
 
-    bool acceptsMidi() const override  { return false; }
-    bool producesMidi() const override { return false; }
+    // Bus di Input (audio live, es. microfono) + bridge MIDI in/out verso
+    // Csound: vedi compileAndStart() per csoundSetHostImplementedAudioIO/MIDIIO.
+    bool acceptsMidi() const override  { return true; }
+    bool producesMidi() const override { return true; }
     double getTailLengthSeconds() const override { return 0.0; }
 
     int getNumPrograms() override                          { return 1; }
@@ -106,11 +115,35 @@ private:
     void handleMessage (const juce::String& msg);
     static juce::String defaultCsdText();
 
+    // --- Bridge MIDI host <-> Csound (csoundSetHostImplementedMIDIIO) ---
+    // In: alimentata in processBlock() con i messaggi del blocco corrente,
+    // letta da midiInReadCallback durante csoundPerformKsmps() - sempre sul
+    // thread audio, quindi nessun lock e' necessario.
+    // Out: outgoingMidiBuffer e' valido solo per la durata di processBlock();
+    // midiOutWriteCallback ci accoda dentro i messaggi generati da Csound
+    // (es. tramite l'opcode midiout).
+    static int midiInOpenCallback   (CSOUND* cs, void** userData, const char* devName);
+    static int midiInReadCallback   (CSOUND* cs, void* userData, unsigned char* buffer, int nBytes);
+    static int midiInCloseCallback  (CSOUND* cs, void* userData);
+    static int midiOutOpenCallback  (CSOUND* cs, void** userData, const char* devName);
+    static int midiOutWriteCallback (CSOUND* cs, void* userData, const unsigned char* buffer, int nBytes);
+    static int midiOutCloseCallback (CSOUND* cs, void* userData);
+
+    juce::Array<juce::MidiMessage> incomingMidiQueue;
+    juce::MidiBuffer* outgoingMidiBuffer = nullptr;
+
     std::atomic<CSOUND*> activeCsound { nullptr };
     std::atomic<bool> ready { false };
 
+    // true tra il momento in cui setStateInformation ripristina il testo del
+    // .csd e il momento in cui quel testo viene effettivamente compilato -
+    // serve perche' l'ordine con cui l'host chiama setStateInformation e
+    // prepareToPlay non e' garantito (vedi i due usi in PluginProcessor.cpp).
+    std::atomic<bool> pendingStateRestore { false };
+
     int csKsmps            = 0;
-    int csNumChannels      = 0;
+    int csNumChannels      = 0; // canali di output (nchnls) - dimensione di spout
+    int csInputChannels    = 0; // canali di input (nchnls_i) - dimensione di spin
     int spoutReadPos       = 0;
     int samplesLeftInBlock = 0;
 
@@ -119,6 +152,14 @@ private:
 
     juce::String csdText;
     mutable juce::CriticalSection csdTextLock;
+
+    // Buffer circolare dei messaggi della console: riempito in handleMessage
+    // a prescindere dal fatto che un editor sia aperto o no, cosi' quando la
+    // UI viene (ri)aperta puo' recuperare la storia recente invece di
+    // trovare la console vuota anche se Csound e' in esecuzione da tempo.
+    static constexpr int messageHistoryCapacity = 500;
+    juce::StringArray messageHistory;
+    mutable juce::CriticalSection messageHistoryLock;
 
     juce::ListenerList<Listener> listeners;
 

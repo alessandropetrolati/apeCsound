@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="hIifYP" name="Csound" projectType="audioplug" jucerFormatVersion="1"
-              pluginFormats="buildStandalone,enableIAA" companyWebsite="www.apesoft.it"
+              pluginFormats="buildStandalone,buildVST3,enableIAA" companyWebsite="www.apesoft.it"
               companyEmail="apps@apesoft.it" bundleIdentifier="it.apesoft.Csound"
-              pluginManufacturer="apeSoft" pluginManufacturerCode="Apes" pluginCode="Csnd">
+              pluginManufacturerCode="Apes" pluginCode="Csnd" pluginCharacteristicsValue="pluginIsSynth,pluginProducesMidiOut,pluginWantsMidiIn"
+              pluginManufacturer="apeSoft" aaxIdentifier="it.apesoft.csound"
+              pluginVST3Category="Instrument,Fx" pluginAUMainType="'aumu'"
+              microphonePermissionNeeded="1" microphonePermissionsText="Csound Studio needs the microphone for live audio input.">
   <MAINGROUP id="tNvtiW" name="Csound">
     <GROUP id="{B758FDEB-C949-26EA-A6AE-DAFC286B8E61}" name="Source">
       <FILE id="BgNYCB" name="PluginProcessor.cpp" compile="1" resource="0"
@@ -21,6 +24,10 @@
             file="Source/CsoundCodeEditor.cpp"/>
       <FILE id="cCEdB" name="CsoundCodeEditor.h" compile="0" resource="0"
             file="Source/CsoundCodeEditor.h"/>
+      <FILE id="cLafA" name="CsoundLookAndFeel.cpp" compile="1" resource="0"
+            file="Source/CsoundLookAndFeel.cpp"/>
+      <FILE id="cLafB" name="CsoundLookAndFeel.h" compile="0" resource="0"
+            file="Source/CsoundLookAndFeel.h"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
@@ -35,10 +42,12 @@
     <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_osc" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
   </MODULES>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>
   <EXPORTFORMATS>
@@ -46,9 +55,11 @@
                extraCustomFrameworks="/Library/Frameworks/CsoundLib64.framework">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="Csound" headerPath="/Library/Frameworks/CsoundLib64.framework/Headers"
-                       libraryPath="/Library/Frameworks/"/>
+                       libraryPath="/Library/Frameworks/" macOSDeploymentTarget="12"
+                       osxCompatibility="12 SDK"/>
         <CONFIGURATION isDebug="0" name="Release" targetName="Csound" headerPath="/Library/Frameworks/CsoundLib64.framework/Headers"
-                       libraryPath="/Library/Frameworks/"/>
+                       libraryPath="/Library/Frameworks/" macOSDeploymentTarget="12"
+                       osxCompatibility="12 SDK"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../JUCE/modules"/>
@@ -64,6 +75,8 @@
         <MODULEPATH id="juce_graphics" path="../JUCE/modules"/>
         <MODULEPATH id="juce_gui_basics" path="../JUCE/modules"/>
         <MODULEPATH id="juce_gui_extra" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_dsp" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_osc" path="../JUCE/modules"/>
       </MODULEPATHS>
     </XCODE_MAC>
   </EXPORTFORMATS>
