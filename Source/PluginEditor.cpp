@@ -56,6 +56,23 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // disegnata da noi.
     setResizable (true, false);
     setSize (960, 680);
+
+    // Tentiamo di dare il focus da tastiera all'editor di codice non appena
+    // la finestra del plugin e' pronta, cosi' digitare funziona subito
+    // senza bisogno di un primo click. Farlo qui nel costruttore in modo
+    // SINCRONO (grabKeyboardFocus() diretto) ha causato un crash in alcune
+    // DAW: a questo punto del costruttore il componente non ha ancora
+    // necessariamente un peer nativo valido. Rimandarlo con
+    // MessageManager::callAsync lo esegue al giro successivo del message
+    // loop, quando la finestra esiste di sicuro; il SafePointer evita un
+    // crash se nel frattempo l'editor fosse gia' stato distrutto (es. la
+    // DAW chiude la finestra del plugin prima che il callback scatti).
+    juce::Component::SafePointer<CsoundCodeEditor> safeEditor (&editor);
+    juce::MessageManager::callAsync ([safeEditor]
+    {
+        if (safeEditor != nullptr)
+            safeEditor->grabKeyboardFocus();
+    });
 }
 
 CsoundAudioProcessorEditor::~CsoundAudioProcessorEditor()
