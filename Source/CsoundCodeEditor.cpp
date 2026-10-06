@@ -1017,10 +1017,10 @@ void CsoundCodeEditor::SuggestionPopup::paint (juce::Graphics& g)
     // dell'editor sottostante, cosi' il popup si distingue a colpo
     // d'occhio senza bisogno di un'ombra.
     g.setColour (juce::Colour (0xfffdf6e3));
-    g.fillRoundedRectangle (bounds, 6.0f);
+    g.fillRect (bounds);
 
     g.setColour (juce::Colour (0xffd7c89a));
-    g.drawRoundedRectangle (bounds.reduced (0.5f), 6.0f, 1.0f);
+    g.drawRect (bounds.reduced (0.5f), 1.0f);
 
     auto area = getLocalBounds().reduced (8, 6);
 

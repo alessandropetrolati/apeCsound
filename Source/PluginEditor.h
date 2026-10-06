@@ -60,7 +60,8 @@
 */
 class CsoundAudioProcessorEditor final : public juce::AudioProcessorEditor,
                                           public juce::DragAndDropContainer,
-                                          private CsoundAudioProcessor::Listener
+                                          private CsoundAudioProcessor::Listener,
+                                          private juce::CodeDocument::Listener
 {
 public:
     explicit CsoundAudioProcessorEditor (CsoundAudioProcessor& p);
@@ -74,6 +75,26 @@ private:
     void csoundMessageReceived (const juce::String& message) override;
     void csoundEngineStarted() override;
     void csoundEngineStopped() override;
+
+    // juce::CodeDocument::Listener: CsoundCodeEditor (vedi "editor" sotto)
+    // ha GIA' un proprio listener privato sullo stesso document (per l'help
+    // inline) - juce::CodeDocument supporta piu' listener indipendenti sullo
+    // stesso documento, quindi questo secondo qui non interferisce, serve
+    // solo a scoprire ogni modifica del testo per updateApplyButtonDirtyState()
+    // sotto. Non ci interessa il dettaglio dell'inserimento/cancellazione,
+    // solo IL FATTO che qualcosa e' cambiato.
+    void codeDocumentTextInserted (const juce::String&, int) override { updateApplyButtonDirtyState(); }
+    void codeDocumentTextDeleted (int, int) override                  { updateApplyButtonDirtyState(); }
+
+    // Confronta il testo ATTUALE dell'editor con l'ultimo testo applicato/
+    // caricato nel processor (audioProcessor.getCsdText()): se sono diversi,
+    // il bottone Apply viene circondato da un bordo rosso (vedi
+    // CsoundLookAndFeel::drawButtonBackground, che legge la proprieta'
+    // dinamica "pendingChanges" sul bottone) per segnalare che il codice e'
+    // stato modificato e non coincide piu' con quello in esecuzione/salvato
+    // - chiamata ad ogni modifica del document (sopra) e dopo ogni Apply/
+    // Load Session, quando i due testi tornano a coincidere.
+    void updateApplyButtonDirtyState();
 
     void appendToLog (const juce::String& text);
 

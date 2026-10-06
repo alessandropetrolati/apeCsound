@@ -8,8 +8,9 @@
 
 /**
     LookAndFeel dedicata al pannello parametri (CsoundParameterMappingPanel):
-    tema scuro petrolio/teal con bordi arrotondati, "glow" accentato sui
-    campi in focus/hover e un menu a tendina coerente - sostituisce i soli
+    tema scuro petrolio/teal con angoli a 90 gradi ovunque (nessun bordo
+    arrotondato), "glow" accentato sui campi in focus/hover e un menu a
+    tendina coerente - sostituisce i soli
     setColour() per-componente della versione precedente con un vero
     ridisegno. Applicata con setLookAndFeel() SOLO sul pannello (si propaga
     ai figli finche' non trovano un'altra LookAndFeel esplicita): il resto
@@ -19,6 +20,14 @@ class CsoundParameterPanelLookAndFeel final : public juce::LookAndFeel_V4
 {
 public:
     CsoundParameterPanelLookAndFeel();
+
+    // Angoli a 90 gradi anche sulla tab bar segmentata (altrimenti
+    // LookAndFeel_V4 arrotonderebbe automaticamente i bordi "non connessi"
+    // del primo/ultimo bottone del gruppo - vedi setConnectedEdges in
+    // CsoundParameterMappingPanel) - coerente con lo stile squadrato
+    // richiesto per tutti i widget del plugin.
+    void drawButtonBackground (juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour,
+                                bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
 
     void fillTextEditorBackground (juce::Graphics& g, int width, int height, juce::TextEditor& editor) override;
     void drawTextEditorOutline (juce::Graphics& g, int width, int height, juce::TextEditor& editor) override;

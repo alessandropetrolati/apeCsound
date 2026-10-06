@@ -12,6 +12,15 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     document.replaceAllContent (audioProcessor.getCsdText());
     document.clearUndoHistory();
 
+    // Secondo listener indipendente sullo stesso document (vedi il
+    // commento in PluginEditor.h): aggiunto DOPO il replaceAllContent qui
+    // sopra apposta, altrimenti il caricamento iniziale del testo
+    // (identico a audioProcessor.getCsdText() per definizione) scatenerebbe
+    // una chiamata a updateApplyButtonDirtyState() inutile - a questo punto
+    // comunque risulterebbe "non modificato", quindi non cambia nulla nella
+    // pratica, ma e' piu' chiaro cosi'.
+    document.addListener (this);
+
     editor.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 15.0f, juce::Font::plain));
     addAndMakeVisible (editor);
 
@@ -56,6 +65,11 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     {
         appendToLog ("--- Applying edited .csd ---");
         audioProcessor.compileAndStart (document.getAllContent());
+
+        // Dopo compileAndStart il testo applicato (audioProcessor.getCsdText())
+        // coincide di nuovo con quello dell'editor: il bordo rosso del
+        // bottone scompare - vedi updateApplyButtonDirtyState().
+        updateApplyButtonDirtyState();
     };
     addAndMakeVisible (applyButton);
 
@@ -115,6 +129,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
 
 CsoundAudioProcessorEditor::~CsoundAudioProcessorEditor()
 {
+    document.removeListener (this);
     setLookAndFeel (nullptr);
     audioProcessor.removeListener (this);
 }
@@ -222,6 +237,25 @@ void CsoundAudioProcessorEditor::toggleParameterPanel()
 
     resized();
     repaint();
+}
+
+void CsoundAudioProcessorEditor::updateApplyButtonDirtyState()
+{
+    // "Modificato" = il testo ATTUALE dell'editor non coincide piu' con
+    // l'ultimo testo applicato (Apply) o caricato (setStateInformation/
+    // loadSessionFromFile) nel processor - cioe' quello che sta davvero
+    // suonando in questo momento. Un semplice confronto di stringhe: il
+    // document puo' essere anche lungo, ma questo scatta solo ad ogni
+    // tasto premuto nell'editor, non nel ciclo audio - costo irrilevante.
+    const bool dirty = document.getAllContent() != audioProcessor.getCsdText();
+
+    // Component::getProperties() e' un juce::NamedValueSet dinamico,
+    // qualunque Component lo ha gia' di serie: CsoundLookAndFeel::
+    // drawButtonBackground lo legge per decidere se disegnare un bordo
+    // rosso tutto intorno al bottone (vedi li') - nessuna nuova API,
+    // nessun nuovo stato da tenere sincronizzato altrove.
+    applyButton.getProperties().set ("pendingChanges", dirty);
+    applyButton.repaint();
 }
 
 void CsoundAudioProcessorEditor::promptSaveSession()

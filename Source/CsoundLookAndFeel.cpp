@@ -61,7 +61,7 @@ namespace
         const float heights[4] = { 10.0f, 18.0f, 7.0f, 14.0f };
 
         for (int i = 0; i < 4; ++i)
-            p.addRoundedRectangle (xs[i], bottom - heights[i], barWidth, heights[i], 1.0f);
+            p.addRectangle (xs[i], bottom - heights[i], barWidth, heights[i]);
 
         return p;
     }
@@ -78,7 +78,7 @@ namespace
         juce::Path p;
         p.addRectangle (10.5f, 3.0f, 3.0f, 10.0f);              // asta della freccia
         p.addTriangle (7.0f, 13.0f, 17.0f, 13.0f, 12.0f, 19.0f); // punta verso il basso
-        p.addRoundedRectangle (3.0f, 20.0f, 18.0f, 3.0f, 1.0f);  // vassoio in basso
+        p.addRectangle (3.0f, 20.0f, 18.0f, 3.0f);               // vassoio in basso
         return p;
     }
 
@@ -87,7 +87,7 @@ namespace
         juce::Path p;
         p.addRectangle (10.5f, 10.0f, 3.0f, 10.0f);             // asta della freccia
         p.addTriangle (7.0f, 10.0f, 17.0f, 10.0f, 12.0f, 4.0f); // punta verso l'alto
-        p.addRoundedRectangle (3.0f, 20.0f, 18.0f, 3.0f, 1.0f); // vassoio in basso
+        p.addRectangle (3.0f, 20.0f, 18.0f, 3.0f);               // vassoio in basso
         return p;
     }
 
@@ -146,8 +146,9 @@ CsoundLookAndFeel::CsoundLookAndFeel()
 void CsoundLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour,
                                               bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
 {
+    // Angoli a 90 gradi ovunque (nessun fillRoundedRectangle): stile
+    // squadrato richiesto per tutti i widget, non solo i bottoni.
     auto bounds = button.getLocalBounds().toFloat().reduced (0.5f);
-    const float cornerSize = bounds.getHeight() * 0.3f;
 
     auto colour = backgroundColour;
 
@@ -157,7 +158,20 @@ void CsoundLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& b
         colour = colour.brighter (0.12f);
 
     g.setColour (colour);
-    g.fillRoundedRectangle (bounds, cornerSize);
+    g.fillRect (bounds);
+
+    // Bordo rosso tutto intorno al bottone quando il chiamante lo segnala
+    // con una proprieta' dinamica (Component::getProperties(), un semplice
+    // NamedValueSet - non serve una nuova API di LookAndFeel solo per
+    // questo): usato da applyButton in PluginEditor per indicare che il
+    // codice nell'editor e' stato modificato e non coincide piu' con
+    // quello applicato/caricato - vedi CsoundAudioProcessorEditor::
+    // updateApplyButtonDirtyState().
+    if ((bool) button.getProperties().getWithDefault ("pendingChanges", false))
+    {
+        g.setColour (juce::Colours::red);
+        g.drawRect (bounds, 2.0f);
+    }
 }
 
 juce::Font CsoundLookAndFeel::getTextButtonFont (juce::TextButton&, int buttonHeight)
@@ -186,7 +200,8 @@ void CsoundLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& but
         bounds.removeFromLeft (7.0f); // spazio tra icona e testo
     }
 
-    g.setFont (getTextButtonFont (button, button.getHeight()));
+    auto font = getTextButtonFont (button, button.getHeight());
+    g.setFont (font);
     g.drawFittedText (button.getButtonText(), bounds.toNearestInt(), juce::Justification::centredLeft, 1);
 }
 

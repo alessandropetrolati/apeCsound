@@ -118,10 +118,25 @@ CsoundParameterPanelLookAndFeel::CsoundParameterPanelLookAndFeel()
     setColour (juce::TextButton::textColourOnId,   juce::Colours::white);
 }
 
+void CsoundParameterPanelLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour,
+                                                              bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
+{
+    auto bounds = button.getLocalBounds().toFloat().reduced (0.5f);
+
+    auto colour = backgroundColour;
+    if (shouldDrawButtonAsDown)
+        colour = colour.darker (0.25f);
+    else if (shouldDrawButtonAsHighlighted)
+        colour = colour.brighter (0.12f);
+
+    g.setColour (colour);
+    g.fillRect (bounds);
+}
+
 void CsoundParameterPanelLookAndFeel::fillTextEditorBackground (juce::Graphics& g, int width, int height, juce::TextEditor& editor)
 {
     g.setColour (editor.findColour (juce::TextEditor::backgroundColourId));
-    g.fillRoundedRectangle (0.0f, 0.0f, (float) width, (float) height, 5.0f);
+    g.fillRect (0, 0, width, height);
 }
 
 void CsoundParameterPanelLookAndFeel::drawTextEditorOutline (juce::Graphics& g, int width, int height, juce::TextEditor& editor)
@@ -137,14 +152,14 @@ void CsoundParameterPanelLookAndFeel::drawTextEditorOutline (juce::Graphics& g, 
         // invece di un bordo secco - da' un effetto di "luce" morbida
         // intorno al campo attivo.
         g.setColour (kAccent.withAlpha (0.25f));
-        g.drawRoundedRectangle (bounds.expanded (1.5f), 6.0f, 2.5f);
+        g.drawRect (bounds.expanded (1.5f), 2.5f);
         g.setColour (kAccent);
-        g.drawRoundedRectangle (bounds, 5.0f, 1.4f);
+        g.drawRect (bounds, 1.4f);
     }
     else
     {
         g.setColour (kFieldOutline);
-        g.drawRoundedRectangle (bounds, 5.0f, 1.0f);
+        g.drawRect (bounds, 1.0f);
     }
 }
 
@@ -161,10 +176,10 @@ void CsoundParameterPanelLookAndFeel::drawComboBox (juce::Graphics& g, int width
     const auto bg = box.findColour (juce::ComboBox::backgroundColourId);
 
     g.setColour (isButtonDown ? bg.brighter (0.1f) : bg);
-    g.fillRoundedRectangle (bounds, 5.0f);
+    g.fillRect (bounds);
 
     g.setColour (box.hasKeyboardFocus (true) ? kAccent : box.findColour (juce::ComboBox::outlineColourId));
-    g.drawRoundedRectangle (bounds, 5.0f, 1.2f);
+    g.drawRect (bounds, 1.2f);
 
     // Piccolo chevron centrato nel pulsante freccia (buttonX/Y/W/H, passati
     // da JUCE - non vanno ignorati: usarli e' quello che evita una freccia
@@ -225,14 +240,13 @@ void CsoundParameterPanelLookAndFeel::drawPopupMenuItem (juce::Graphics& g, cons
 
     auto itemArea = area.reduced (4, 1);
 
-    // Riquadro arrotondato pieno dietro la voce evidenziata (hover/
-    // selezione da tastiera), non il solito rettangolo vivo a spigoli
-    // vivi di LookAndFeel_V4 - stesso linguaggio visivo del resto del
-    // pannello (handle di drag, bordo dei campi, ecc.).
+    // Riquadro pieno a spigoli vivi dietro la voce evidenziata (hover/
+    // selezione da tastiera) - stesso linguaggio visivo squadrato del
+    // resto del pannello (handle di drag, bordo dei campi, ecc.).
     if (isHighlighted && isActive)
     {
         g.setColour (kAccent);
-        g.fillRoundedRectangle (itemArea.toFloat(), 4.0f);
+        g.fillRect (itemArea);
     }
 
     auto textArea = itemArea.reduced (10, 0);
@@ -281,16 +295,17 @@ void CsoundParameterPanelLookAndFeel::drawScrollbar (juce::Graphics& g, juce::Sc
     if (thumbSize <= 0)
         return;
 
-    // Niente binario/frecce disegnati: solo un thumb sottile, arrotondato,
-    // inset di 2px dai bordi, che si accende leggermente al passaggio/
-    // pressione del mouse - stile minimale coerente col resto del pannello.
+    // Niente binario/frecce disegnati: solo un thumb sottile a spigoli
+    // vivi, inset di 2px dai bordi, che si accende leggermente al
+    // passaggio/pressione del mouse - stile minimale coerente col resto
+    // del pannello.
     auto thumbBounds = isScrollbarVertical
                             ? juce::Rectangle<int> (x + 2, thumbStartPosition, juce::jmax (2, width - 4), thumbSize)
                             : juce::Rectangle<int> (thumbStartPosition, y + 2, thumbSize, juce::jmax (2, height - 4));
 
     const auto alpha = isMouseDown ? 0.85f : (isMouseOver ? 0.65f : 0.45f);
     g.setColour (kAccent.withAlpha (alpha));
-    g.fillRoundedRectangle (thumbBounds.toFloat(), 3.0f);
+    g.fillRect (thumbBounds);
 }
 
 void CsoundParameterPanelLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& button,
@@ -465,9 +480,9 @@ void CsoundParameterMappingPanel::ParamRow::paint (juce::Graphics& g)
     // e' un controllo trascinabile, non un'etichetta.
     auto box = handleBounds.toFloat().reduced (2.0f);
     g.setColour (kAccent.withAlpha (handleHovered ? 0.45f : 0.22f));
-    g.fillRoundedRectangle (box, 4.0f);
+    g.fillRect (box);
     g.setColour (kAccent.withAlpha (handleHovered ? 1.0f : 0.75f));
-    g.drawRoundedRectangle (box, 4.0f, 1.2f);
+    g.drawRect (box, 1.2f);
 
     // Griglia 2x3 di pallini grandi e ben contrastati - la classica icona
     // "grip"/maniglia di trascinamento, immediatamente riconoscibile.
@@ -727,9 +742,9 @@ void CsoundParameterMappingPanel::IntParamRow::paint (juce::Graphics& g)
 
     auto box = handleBounds.toFloat().reduced (2.0f);
     g.setColour (kAccent.withAlpha (handleHovered ? 0.45f : 0.22f));
-    g.fillRoundedRectangle (box, 4.0f);
+    g.fillRect (box);
     g.setColour (kAccent.withAlpha (handleHovered ? 1.0f : 0.75f));
-    g.drawRoundedRectangle (box, 4.0f, 1.2f);
+    g.drawRect (box, 1.2f);
 
     g.setColour (handleHovered ? juce::Colours::white : kText);
     const auto cx = box.getCentreX();
@@ -876,9 +891,9 @@ void CsoundParameterMappingPanel::BoolParamRow::paint (juce::Graphics& g)
 
     auto box = handleBounds.toFloat().reduced (2.0f);
     g.setColour (kAccent.withAlpha (handleHovered ? 0.45f : 0.22f));
-    g.fillRoundedRectangle (box, 4.0f);
+    g.fillRect (box);
     g.setColour (kAccent.withAlpha (handleHovered ? 1.0f : 0.75f));
-    g.drawRoundedRectangle (box, 4.0f, 1.2f);
+    g.drawRect (box, 1.2f);
 
     g.setColour (handleHovered ? juce::Colours::white : kText);
     const auto cx = box.getCentreX();
@@ -1046,9 +1061,9 @@ void CsoundParameterMappingPanel::ChoiceParamRow::paint (juce::Graphics& g)
 
     auto box = handleBounds.toFloat().reduced (2.0f);
     g.setColour (kAccent.withAlpha (handleHovered ? 0.45f : 0.22f));
-    g.fillRoundedRectangle (box, 4.0f);
+    g.fillRect (box);
     g.setColour (kAccent.withAlpha (handleHovered ? 1.0f : 0.75f));
-    g.drawRoundedRectangle (box, 4.0f, 1.2f);
+    g.drawRect (box, 1.2f);
 
     g.setColour (handleHovered ? juce::Colours::white : kText);
     const auto cx = box.getCentreX();
@@ -1612,13 +1627,11 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     // perche' in CsoundParameterEditor.h. onClick chiama semplicemente
     // showPage(i): nessuna euristica di layout/overflow di mezzo.
     //
-    // setConnectedEdges unisce visivamente i 5 bottoni in un unico "pillola"
-    // segmentato (stile macOS/iOS segmented control): il primo resta
-    // arrotondato solo a sinistra, l'ultimo solo a destra, i tre centrali
-    // del tutto squadrati - LookAndFeel_V4 (la nostra LookAndFeel eredita da
-    // essa, non sovrascriviamo drawButtonBackground) disegna automaticamente
-    // angoli arrotondati solo sui bordi NON "connessi". Molto piu' gradevole
-    // dei rettangoli piatti e staccati di prima.
+    // setConnectedEdges unisce visivamente i 5 bottoni in un'unica barra
+    // segmentata (stile macOS/iOS segmented control) - tutti gli angoli
+    // sono comunque a 90 gradi (vedi CsoundParameterPanelLookAndFeel::
+    // drawButtonBackground, che non arrotonda nulla), setConnectedEdges
+    // qui serve solo a non disegnare il bordo tra bottoni adiacenti.
     //
     // Ordine VISIVO richiesto: UI, Float, Int, Bool, Choice (UI per prima a
     // sinistra) - DIVERSO dall'ordine degli indici di pagina (float=0,
@@ -1732,33 +1745,30 @@ void CsoundParameterMappingPanel::refreshAllFromProcessor()
 
 void CsoundParameterMappingPanel::paint (juce::Graphics& g)
 {
-    // Pannello "a finestra": corpo scuro con bordo arrotondato e una sottile
-    // ombra verso l'esterno, cosi' si stacca visivamente dal resto
-    // dell'editor (codice/consolle, visibili sotto il velo semitrasparente
-    // disegnato da PluginEditor) invece di sembrare parte dello sfondo.
+    // Pannello "a finestra": corpo scuro a spigoli vivi (90 gradi, nessun
+    // bordo arrotondato) con una sottile ombra verso l'esterno, cosi' si
+    // stacca visivamente dal resto dell'editor (codice/consolle, visibili
+    // sotto il velo semitrasparente disegnato da PluginEditor) invece di
+    // sembrare parte dello sfondo.
     auto bounds = getLocalBounds().toFloat();
 
     juce::DropShadow shadow (juce::Colours::black.withAlpha (0.55f), 18, {});
-    juce::Path roundedOutline;
-    roundedOutline.addRoundedRectangle (bounds, 8.0f);
-    shadow.drawForPath (g, roundedOutline);
+    juce::Path outline;
+    outline.addRectangle (bounds);
+    shadow.drawForPath (g, outline);
 
     g.setColour (kPanelBg);
-    g.fillRoundedRectangle (bounds, 8.0f);
+    g.fillRect (bounds);
 
     auto titleBarBounds = bounds.removeFromTop ((float) titleBarHeight);
-    juce::Path titleBarPath;
-    titleBarPath.addRoundedRectangle (titleBarBounds.getX(), titleBarBounds.getY(),
-                                       titleBarBounds.getWidth(), titleBarBounds.getHeight() + 8.0f,
-                                       8.0f, 8.0f, true, true, false, false);
     g.setColour (kTitleBarBg);
-    g.fillPath (titleBarPath);
+    g.fillRect (titleBarBounds);
 
     g.setColour (kFieldOutline);
     g.drawLine (titleBarBounds.getX(), titleBarBounds.getBottom(), titleBarBounds.getRight(), titleBarBounds.getBottom(), 1.0f);
 
     g.setColour (kAccent.withAlpha (0.6f));
-    g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 8.0f, 1.2f);
+    g.drawRect (getLocalBounds().toFloat().reduced (0.5f), 1.2f);
 }
 
 void CsoundParameterMappingPanel::resized()
