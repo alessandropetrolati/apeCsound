@@ -284,6 +284,89 @@ void CsoundCodeEditor::focusLost (juce::Component::FocusChangeType cause)
     hideSuggestions();
 }
 
+//==============================================================================
+// Drag and drop di uno slot dal pannello parametri (CsoundParameterMappingPanel::
+// ParamRow, vedi PluginEditor::parameterPanel) - vedi il commento in testa
+// alla classe in CsoundCodeEditor.h. Il "description" del drag e' una
+// juce::var stringa nel formato "csoundChannel:<nome canale>", creata da
+// ParamRow::mouseDrag.
+namespace
+{
+    const juce::String channelDragPrefix = "csoundChannel:";
+}
+
+bool CsoundCodeEditor::isInterestedInDragSource (const SourceDetails& dragSourceDetails)
+{
+    return dragSourceDetails.description.toString().startsWith (channelDragPrefix);
+}
+
+void CsoundCodeEditor::itemDragEnter (const SourceDetails& dragSourceDetails)
+{
+    itemDragMove (dragSourceDetails);
+}
+
+void CsoundCodeEditor::itemDragMove (const SourceDetails& dragSourceDetails)
+{
+    const auto newLine = getPositionAt (dragSourceDetails.localPosition.x, dragSourceDetails.localPosition.y).getLineNumber();
+
+    if (newLine != dragHighlightLine)
+    {
+        dragHighlightLine = newLine;
+        repaint();
+    }
+}
+
+void CsoundCodeEditor::itemDragExit (const SourceDetails&)
+{
+    dragHighlightLine = -1;
+    repaint();
+}
+
+void CsoundCodeEditor::itemDropped (const SourceDetails& dragSourceDetails)
+{
+    dragHighlightLine = -1;
+    repaint();
+
+    const auto channelName = dragSourceDetails.description.toString().fromFirstOccurrenceOf (channelDragPrefix, false, false);
+
+    if (channelName.isEmpty())
+        return;
+
+    // Riga puntata dal mouse al rilascio - il chnget viene inserito come
+    // riga propria PRIMA di quella, non in mezzo al testo esistente a
+    // quella colonna (vedi commento in CsoundCodeEditor.h).
+    const auto dropPosition = getPositionAt (dragSourceDetails.localPosition.x, dragSourceDetails.localPosition.y);
+    const int dropLine = dropPosition.getLineNumber();
+    const juce::CodeDocument::Position lineStart (codeDocument, dropLine, 0);
+
+    // Nome variabile derivato dal nome canale: prefisso "k" (control-rate -
+    // il caso piu' comune per un parametro automatizzato) + nome canale
+    // senza spazi, cosi' "Nakisano Poms" diventa "kNakisanoPoms".
+    const auto varName = "k" + channelName.removeCharacters (" \t");
+
+    // Stessa indentazione che avrebbe una riga nuova inserita li' (vedi
+    // indentDepthBeforeLine, usata anche da handleReturnKey/reindentLine per
+    // lo stesso scopo): cosi' un chnget trascinato dentro un instr risulta
+    // gia' indentato correttamente, non sempre a colonna 0.
+    const auto indent = juce::String::repeatedString (" ", indentSpaces * indentDepthBeforeLine (dropLine));
+    const auto lineText = indent + varName + " chnget \"" + channelName + "\"\n";
+
+    moveCaretTo (lineStart, false);
+    insertTextAtCaret (lineText);
+    grabKeyboardFocus();
+}
+
+void CsoundCodeEditor::paintOverChildren (juce::Graphics& g)
+{
+    if (dragHighlightLine < 0)
+        return;
+
+    const auto y = (dragHighlightLine - getFirstLineOnScreen()) * getLineHeight();
+
+    g.setColour (juce::Colour (0xff17a2b8).withAlpha (0.25f));
+    g.fillRect (0, y, getWidth(), getLineHeight());
+}
+
 void CsoundCodeEditor::resized()
 {
     CodeEditorComponent::resized();

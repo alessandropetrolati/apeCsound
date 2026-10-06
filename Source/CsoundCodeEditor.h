@@ -51,8 +51,16 @@
       col mouse, si accetta con Invio, Tab, o un click (sempre sul
       suggerimento evidenziato); Esc, o la perdita del focus (es. un click
       fuori dall'editor), lo chiudono.
+
+    Accetta anche il drag and drop di uno slot dal pannello parametri
+    (CsoundParameterMappingPanel::ParamRow, vedi PluginEditor): rilasciando
+    uno slot con un canale assegnato sulla riga puntata dal mouse, viene
+    inserita una nuova riga "kNomeCanale chnget "Nome Canale"" (nome
+    variabile = "k" + nome canale senza spazi) PRIMA di quella riga - vedi
+    isInterestedInDragSource/itemDropped.
 */
 class CsoundCodeEditor final : public juce::CodeEditorComponent,
+                                public juce::DragAndDropTarget,
                                 private juce::CodeDocument::Listener
 {
 public:
@@ -66,6 +74,15 @@ public:
     void mouseUp (const juce::MouseEvent& event) override;
     void mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel) override;
     void focusLost (juce::Component::FocusChangeType cause) override;
+
+    // juce::DragAndDropTarget - vedi il commento in testa alla classe.
+    bool isInterestedInDragSource (const SourceDetails& dragSourceDetails) override;
+    void itemDragEnter (const SourceDetails& dragSourceDetails) override;
+    void itemDragMove (const SourceDetails& dragSourceDetails) override;
+    void itemDragExit (const SourceDetails& dragSourceDetails) override;
+    void itemDropped (const SourceDetails& dragSourceDetails) override;
+
+    void paintOverChildren (juce::Graphics& g) override;
 
     /** Da chiamare (sul message thread) ogni volta che il motore Csound
         (ri)parte, con l'elenco completo e aggiornato degli opcode
@@ -96,6 +113,11 @@ private:
     // Resto frazionario dell'ultimo scroll a rotellina/gesture, accumulato
     // tra un evento e il successivo - vedi mouseWheelMove().
     float wheelScrollRemainder = 0.0f;
+
+    // Riga evidenziata mentre si trascina uno slot sopra l'editor (-1 =
+    // nessun drag in corso) - solo feedback visivo, vedi itemDragMove/
+    // paintOverChildren.
+    int dragHighlightLine = -1;
 
     // Autocompletamento sugli opcode -------------------------------------
     // Componente minimale che non e' MAI focalizzabile (niente

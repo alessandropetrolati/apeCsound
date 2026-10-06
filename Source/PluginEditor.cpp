@@ -63,6 +63,15 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     clearConsoleButton.onClick = [this] { logConsole.clear(); };
     addAndMakeVisible (clearConsoleButton);
 
+    // Alterna, nella stessa finestra, tra l'editor/console e il pannello
+    // per rinominare i canali Csound dei 32 slot apvts e definirne range/
+    // curva - vedi CsoundParameterEditor.h/.cpp e toggleParameterPanel().
+    paramsButton.setName ("params");
+    paramsButton.onClick = [this] { toggleParameterPanel(); };
+    addAndMakeVisible (paramsButton);
+
+    addChildComponent (parameterPanel); // nascosto finche' non si preme paramsButton
+
     audioProcessor.addListener (this);
 
     // false = niente ResizableCornerComponent in basso a destra: il
@@ -127,21 +136,47 @@ void CsoundAudioProcessorEditor::resized()
                            + CsoundLookAndFeel::getIconAllowance (applyButton.getName());
     const auto clearWidth = clearConsoleButton.getBestWidthForHeight (toolbar.getHeight())
                            + CsoundLookAndFeel::getIconAllowance (clearConsoleButton.getName());
+    const auto paramsWidth = paramsButton.getBestWidthForHeight (toolbar.getHeight())
+                            + CsoundLookAndFeel::getIconAllowance (paramsButton.getName());
 
     applyButton.setBounds (toolbar.removeFromLeft (applyWidth));
     toolbar.removeFromLeft (8);
     clearConsoleButton.setBounds (toolbar.removeFromLeft (clearWidth));
+    toolbar.removeFromLeft (8);
+    paramsButton.setBounds (toolbar.removeFromLeft (paramsWidth));
 
     // Niente inset laterali e niente spazio tra editor e console: solo lo
     // spazio verticale tra toolbar ed editor resta.
     area.removeFromTop (8);
 
-    auto logArea = area.removeFromBottom (180);
+    // Il pannello parametri occupa ESATTAMENTE l'area della consolle
+    // (stessa zona, non una in piu'), sostituendola finche' e' mostrato -
+    // editor e helpBar restano sempre visibili sopra.
+    auto bottomArea = area.removeFromBottom (180);
     auto helpBarArea = area.removeFromBottom (opcodeHelpBarHeight);
 
     editor.setBounds (area);
     opcodeHelpBar.setBounds (helpBarArea);
-    logConsole.setBounds (logArea);
+
+    if (showingParameterPanel)
+        parameterPanel.setBounds (bottomArea);
+    else
+        logConsole.setBounds (bottomArea);
+}
+
+void CsoundAudioProcessorEditor::toggleParameterPanel()
+{
+    showingParameterPanel = ! showingParameterPanel;
+
+    // Il pannello sostituisce la consolle (stessa area, vedi resized()):
+    // solo uno dei due e' visibile per volta.
+    parameterPanel.setVisible (showingParameterPanel);
+    logConsole.setVisible (! showingParameterPanel);
+
+    paramsButton.setButtonText (showingParameterPanel ? "Hide parameters" : "Parameters...");
+
+    resized();
+    repaint();
 }
 
 void CsoundAudioProcessorEditor::OpcodeHelpBar::setHelpText (const juce::String& syntax, const juce::String& description)

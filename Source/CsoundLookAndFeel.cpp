@@ -36,6 +36,15 @@ namespace
             "8V17H11V8H9M13,8V17H15V8H13Z");
     }
 
+    // MDI "tune": tre slider orizzontali con manopola - apre la finestra di
+    // mapping dei parametri (rename canale + range/curva per slot).
+    juce::Path makeTuneIconPath()
+    {
+        return juce::Drawable::parseSVGPath (
+            "M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,"
+            "13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z");
+    }
+
     juce::Path getIconPathForButtonName (const juce::String& name)
     {
         if (name == "apply")
@@ -43,6 +52,9 @@ namespace
 
         if (name == "clear")
             return makeTrashIconPath();
+
+        if (name == "params")
+            return makeTuneIconPath();
 
         return {};
     }

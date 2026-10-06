@@ -5,8 +5,8 @@
               companyEmail="apps@apesoft.it" bundleIdentifier="it.apesoft.Csound"
               pluginManufacturerCode="Apes" pluginCode="Csnd" pluginCharacteristicsValue="pluginEditorRequiresKeys"
               pluginManufacturer="apeSoft" aaxIdentifier="it.apesoft.csound"
-              pluginVST3Category="Instrument,Fx" pluginAUMainType="'aumu'"
-              microphonePermissionNeeded="1" microphonePermissionsText="Csound Studio needs the microphone for live audio input."
+              pluginVST3Category="Fx" pluginAUMainType="'aufx'" microphonePermissionNeeded="1"
+              microphonePermissionsText="Csound Studio needs the microphone for live audio input."
               pluginEditorRequiresKeys="1">
   <MAINGROUP id="tNvtiW" name="Csound">
     <GROUP id="{9680A1AA-7764-28DB-226D-D2086CE2E1B8}" name="Resources">
@@ -17,6 +17,10 @@
             file="Source/PluginProcessor.cpp"/>
       <FILE id="SO78Jg" name="PluginProcessor.h" compile="0" resource="0"
             file="Source/PluginProcessor.h"/>
+      <FILE id="cDynA" name="CsoundDynamicLib.cpp" compile="1" resource="0"
+            file="Source/CsoundDynamicLib.cpp"/>
+      <FILE id="cDynB" name="CsoundDynamicLib.h" compile="0" resource="0"
+            file="Source/CsoundDynamicLib.h"/>
       <FILE id="hQ3NG8" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="ibWe9P" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
@@ -36,6 +40,10 @@
             file="Source/CsoundLookAndFeel.cpp"/>
       <FILE id="cLafB" name="CsoundLookAndFeel.h" compile="0" resource="0"
             file="Source/CsoundLookAndFeel.h"/>
+      <FILE id="cPrmA" name="CsoundParameterEditor.cpp" compile="1" resource="0"
+            file="Source/CsoundParameterEditor.cpp"/>
+      <FILE id="cPrmB" name="CsoundParameterEditor.h" compile="0" resource="0"
+            file="Source/CsoundParameterEditor.h"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
@@ -59,53 +67,12 @@
   </MODULES>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>
   <EXPORTFORMATS>
-    <!-- Csound e' un framework DINAMICO (CsoundLib64.framework, versione 7
-         beta, scaricato da github.com/csound/csound/releases), ma copiato
-         dentro il progetto (Csound/CsoundLib64.framework, accanto a questo
-         stesso .jucer - path relativi, niente /Library/Frameworks).
-
-         frameworkSearchPaths punta alla cartella che CONTIENE il
-         .framework, non al .framework stesso. A differenza di MODULEPATH
-         (che Projucer regola automaticamente rispetto alla cartella del
-         .jucer), frameworkSearchPaths/headerPath finiscono nelle build
-         setting di Xcode COSI' COME SONO: vanno quindi scritti relativi
-         alla cartella del progetto .xcodeproj generato (targetFolder=
-         Builds/MacOSX), non del .jucer - da qui i due "../.." per
-         risalire fino alla cartella di questo file e poi scendere in
-         Csound/.
-
-         extraCustomFrameworks serve SOLO a far linkare (-framework
-         CsoundLib64) il binario, non a embeddarlo/firmarlo: Projucer lo
-         scrive verbatim come "path" del riferimento al file nel progetto
-         Xcode (PBXFileReference, sourceTree="<group>"), risolto anch'esso
-         relativo a Builds/MacOSX - stesso "../../" necessario.
-
-         NON usiamo piu' l'attributo embeddedFrameworks: la fase "Embed
-         Frameworks" + "Sign CsoundLib64.framework" che Xcode/Projucer
-         genera da solo firma le cartelle Versions/* SENZA l'opzione deep, e falliva
-         sempre perche' libcsnd6.6.0.dylib dentro il framework arriva NON
-         firmato dalla release Csound scaricata da GitHub (ogni volta
-         richiedeva un codesign manuale in Terminale dopo ogni build, pieno
-         di avvisi "unsealed contents" per via di .DS_Store residui). Al suo
-         posto, postbuildCommand (sotto, per Debug e Release) lancia
-         scripts/embed_csound_framework.sh: COPIA il framework nel bundle,
-         rimuove eventuali .DS_Store e lo firma con un solo comando codesign
-         ricorsivo (force, deep, sign ad-hoc), che copre anche libcsnd6. Gira
-         in automatico ad ogni build: non serve piu' nessun comando a mano
-         dopo la compilazione. -->
     <XCODE_MAC targetFolder="Builds/MacOSX" iosDevelopmentTeamID="9L4T4JL6GX"
-               smallIcon="bPzwr1" bigIcon="bPzwr1"
-               frameworkSearchPaths="../../Csound"
-               extraCustomFrameworks="../../Csound/CsoundLib64.framework"
-               postbuildCommand="&quot;$SRCROOT/../../scripts/embed_csound_framework.sh&quot;">
+               smallIcon="bPzwr1" bigIcon="bPzwr1" postbuildCommand="&quot;$SRCROOT/../../scripts/embed_csound_framework.sh&quot;">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="Csound"
-                       headerPath="../../Csound/CsoundLib64.framework/Headers"
-                       customXcodeFlags="LD_RUNPATH_SEARCH_PATHS=@executable_path/../Frameworks"
+        <CONFIGURATION isDebug="1" name="Debug" targetName="Csound" headerPath="../../Csound/CsoundLib64.framework/Headers"
                        macOSDeploymentTarget="12" osxCompatibility="12 SDK"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="Csound"
-                       headerPath="../../Csound/CsoundLib64.framework/Headers"
-                       customXcodeFlags="LD_RUNPATH_SEARCH_PATHS=@executable_path/../Frameworks"
+        <CONFIGURATION isDebug="0" name="Release" targetName="Csound" headerPath="../../Csound/CsoundLib64.framework/Headers"
                        macOSDeploymentTarget="12" osxCompatibility="12 SDK"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
