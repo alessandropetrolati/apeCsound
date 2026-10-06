@@ -57,6 +57,18 @@ namespace
         label.setText (text, juce::dontSendNotification);
         label.setJustificationType (justification);
     }
+
+    // Stesso identico path SVG di CsoundLookAndFeel's makeTuneIconPath (il
+    // bottone "Parameters" nella toolbar) - duplicato qui invece di
+    // condiviso: e' una singola riga, non vale un header apposito solo per
+    // questo. Usata per la tab "UI" su richiesta esplicita ("usa la stessa
+    // che hai usato per Parameters"), invece di inventare un'icona nuova.
+    juce::Path makeTuneIconPath()
+    {
+        return juce::Drawable::parseSVGPath (
+            "M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,"
+            "13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z");
+    }
 }
 
 //==============================================================================
@@ -73,6 +85,37 @@ CsoundParameterPanelLookAndFeel::CsoundParameterPanelLookAndFeel()
     setColour (juce::PopupMenu::textColourId,                  kText);
     setColour (juce::PopupMenu::highlightedBackgroundColourId, kAccent);
     setColour (juce::PopupMenu::highlightedTextColourId,       juce::Colours::white);
+
+    // Colori comuni a QUALUNQUE componente "di serie" di JUCE che finisca
+    // dentro un pannello con questa LookAndFeel (non solo TextEditor/
+    // ComboBox dei field custom sopra, che hanno gia' i loro setColour()
+    // per-istanza): servono soprattutto a GenericEditorWindow (vedi
+    // PluginEditor.h), che usa Slider/ToggleButton/ComboBox "di serie" -
+    // senza questi colori qui, quei controlli ereditano il tema CHIARO di
+    // CsoundLookAndFeel (il resto dell'app) e diventano illeggibili/
+    // invisibili su questo sfondo scuro (es. il tick del ToggleButton che
+    // "non si vede" segnalato).
+    setColour (juce::Label::textColourId, kText);
+
+    setColour (juce::ToggleButton::textColourId,         kText);
+    setColour (juce::ToggleButton::tickColourId,         kAccent);
+    setColour (juce::ToggleButton::tickDisabledColourId, kFieldOutline);
+
+    setColour (juce::ComboBox::backgroundColourId, kFieldBg);
+    setColour (juce::ComboBox::textColourId,       kText);
+    setColour (juce::ComboBox::outlineColourId,    kFieldOutline);
+    setColour (juce::ComboBox::arrowColourId,      kTextMuted);
+
+    setColour (juce::Slider::backgroundColourId,        kFieldBg);
+    setColour (juce::Slider::trackColourId,             kAccent);
+    setColour (juce::Slider::thumbColourId,             kAccent);
+    setColour (juce::Slider::textBoxTextColourId,        kText);
+    setColour (juce::Slider::textBoxBackgroundColourId,  kFieldBg);
+    setColour (juce::Slider::textBoxOutlineColourId,     kFieldOutline);
+
+    setColour (juce::TextButton::buttonColourId,   kFieldBg);
+    setColour (juce::TextButton::textColourOffId,  kText);
+    setColour (juce::TextButton::textColourOnId,   juce::Colours::white);
 }
 
 void CsoundParameterPanelLookAndFeel::fillTextEditorBackground (juce::Graphics& g, int width, int height, juce::TextEditor& editor)
@@ -248,6 +291,35 @@ void CsoundParameterPanelLookAndFeel::drawScrollbar (juce::Graphics& g, juce::Sc
     const auto alpha = isMouseDown ? 0.85f : (isMouseOver ? 0.65f : 0.45f);
     g.setColour (kAccent.withAlpha (alpha));
     g.fillRoundedRectangle (thumbBounds.toFloat(), 3.0f);
+}
+
+void CsoundParameterPanelLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& button,
+                                                        bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
+{
+    // Solo la tab "UI" ha un'icona - le altre quattro (Float/Int/Bool/
+    // Choice) restano col rendering di testo standard di LookAndFeel_V4.
+    if (button.getName() != "genericEditorTab")
+    {
+        juce::LookAndFeel_V4::drawButtonText (g, button, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
+        return;
+    }
+
+    auto textColour = button.findColour (button.getToggleState() ? juce::TextButton::textColourOnId
+                                                                   : juce::TextButton::textColourOffId);
+    g.setColour (textColour);
+
+    auto bounds = button.getLocalBounds().toFloat().reduced (8.0f, 0.0f);
+    auto icon = makeTuneIconPath();
+
+    const float iconSize = juce::jmin (bounds.getHeight() * 0.55f, 15.0f);
+    auto iconArea = bounds.removeFromLeft (iconSize).withSizeKeepingCentre (iconSize, iconSize);
+    icon.scaleToFit (iconArea.getX(), iconArea.getY(), iconArea.getWidth(), iconArea.getHeight(), true);
+    g.fillPath (icon);
+
+    bounds.removeFromLeft (6.0f);
+
+    g.setFont (juce::Font (juce::FontOptions (juce::jmin (14.0f, (float) button.getHeight() * 0.5f), juce::Font::bold)));
+    g.drawFittedText (button.getButtonText(), bounds.toNearestInt(), juce::Justification::centredLeft, 1);
 }
 
 //==============================================================================
@@ -1123,6 +1195,12 @@ void CsoundParameterMappingPanel::FloatParamsPage::resized()
     headerCurveLabel.setBounds (curve);
 }
 
+void CsoundParameterMappingPanel::FloatParamsPage::refreshAllFromProcessor()
+{
+    for (auto& row : rows)
+        row->refreshFromProcessor();
+}
+
 //==============================================================================
 CsoundParameterMappingPanel::IntParamsPage::IntParamsPage (CsoundAudioProcessor& processorToEdit)
 {
@@ -1173,6 +1251,12 @@ void CsoundParameterMappingPanel::IntParamsPage::resized()
     headerDefaultLabel.setBounds (defaultVal);
 }
 
+void CsoundParameterMappingPanel::IntParamsPage::refreshAllFromProcessor()
+{
+    for (auto& row : rows)
+        row->refreshFromProcessor();
+}
+
 //==============================================================================
 CsoundParameterMappingPanel::BoolParamsPage::BoolParamsPage (CsoundAudioProcessor& processorToEdit)
 {
@@ -1217,6 +1301,12 @@ void CsoundParameterMappingPanel::BoolParamsPage::resized()
 
     headerNameLabel.setBounds (name);
     headerDefaultLabel.setBounds (defaultVal);
+}
+
+void CsoundParameterMappingPanel::BoolParamsPage::refreshAllFromProcessor()
+{
+    for (auto& row : rows)
+        row->refreshFromProcessor();
 }
 
 //==============================================================================
@@ -1267,8 +1357,215 @@ void CsoundParameterMappingPanel::ChoiceParamsPage::resized()
     headerDefaultLabel.setBounds (defaultIndex);
 }
 
+void CsoundParameterMappingPanel::ChoiceParamsPage::refreshAllFromProcessor()
+{
+    for (auto& row : rows)
+        row->refreshFromProcessor();
+}
+
+//==============================================================================
+// GenericParamRow - vedi il commento in testa alla dichiarazione in
+// CsoundParameterEditor.h. Colori impostati DIRETTAMENTE sui componenti
+// (stesso approccio di applyDarkFieldColours/applyDarkComboColours sopra),
+// non solo sulla LookAndFeel condivisa: uno Slider "congela" i colori della
+// sua casella di testo interna (valueBox) nell'istante esatto in cui viene
+// creata - un colore impostato qui, DIRETTAMENTE sull'istanza, vince
+// comunque su qualunque LookAndFeel a prescindere da quando/se la
+// propagazione di un eventuale cambio di LookAndFeel scatta.
+CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
+    const juce::String& channelName, juce::RangedAudioParameter& parameter,
+    Kind rowKind, const juce::StringArray& choiceLabels)
+    : kind (rowKind)
+{
+    nameLabel.setText (channelName, juce::dontSendNotification);
+    nameLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
+    nameLabel.setColour (juce::Label::textColourId, kText);
+    addAndMakeVisible (nameLabel);
+
+    switch (kind)
+    {
+        case Kind::slider:
+            slider.setScrollWheelEnabled (false);
+
+            // Casella di testo EDITABILE (TextBoxRight, vedi l'header): si
+            // puo' anche scrivere il valore a mano, non solo trascinare -
+            // richiesto esplicitamente. Colori impostati DIRETTAMENTE
+            // sull'istanza (non solo sulla LookAndFeel condivisa, che pure
+            // li imposta - vedi CsoundParameterPanelLookAndFeel): uno
+            // Slider "congela" i colori della sua casella di testo interna
+            // nell'istante esatto in cui viene creata, quindi un colore
+            // impostato qui, PRIMA che la casella sia creata (succede dentro
+            // il costruttore dell'attachment sotto, la prima volta che la
+            // LookAndFeel viene letta), e' la garanzia piu' solida che il
+            // testo non resti "congelato" con i colori sbagliati.
+            slider.setColour (juce::Slider::trackColourId,             kAccent);
+            slider.setColour (juce::Slider::thumbColourId,             kAccent);
+            slider.setColour (juce::Slider::backgroundColourId,        kFieldBg);
+            slider.setColour (juce::Slider::textBoxTextColourId,       juce::Colours::white);
+            slider.setColour (juce::Slider::textBoxBackgroundColourId, kFieldBg);
+            slider.setColour (juce::Slider::textBoxOutlineColourId,    kFieldOutline);
+            slider.setColour (juce::Slider::textBoxHighlightColourId,  kAccent.withAlpha (0.35f));
+            addAndMakeVisible (slider);
+
+            // sendInitialUpdate() (chiamata dentro il costruttore
+            // dell'attachment) imposta subito lo slider al valore corrente
+            // del parametro - niente valore "a zero" fino al primo cambio.
+            sliderAttachment = std::make_unique<juce::SliderParameterAttachment> (parameter, slider);
+
+            // Forza la casella di testo a rileggere ORA i colori appena
+            // impostati sopra: la casella viene creata/ricreata da
+            // LookAndFeel::createSliderTextBox ogni volta che
+            // sendLookAndFeelChange()/colourChanged() scattano - qui lo
+            // forziamo esplicitamente invece di sperare che sia gia'
+            // successo "per conto suo" nell'ordine giusto.
+            slider.sendLookAndFeelChange();
+            break;
+
+        case Kind::toggle:
+            toggle.setColour (juce::ToggleButton::textColourId,         kText);
+            toggle.setColour (juce::ToggleButton::tickColourId,         kAccent);
+            toggle.setColour (juce::ToggleButton::tickDisabledColourId, kFieldOutline);
+            addAndMakeVisible (toggle);
+            // ButtonParameterAttachment chiama gia' da solo sendInitialUpdate().
+            buttonAttachment = std::make_unique<juce::ButtonParameterAttachment> (parameter, toggle);
+            break;
+
+        case Kind::choice:
+            // Le etichette vanno aggiunte PRIMA di costruire l'attachment,
+            // nello STESSO ordine (0-based, indice+1 come ID) con cui
+            // ComboBoxParameterAttachment mappera' l'indice selezionato al
+            // valore del parametro - vedi GenericEditorPage::refreshRows().
+            for (int i = 0; i < choiceLabels.size(); ++i)
+                comboBox.addItem (choiceLabels[i], i + 1);
+            comboBox.setColour (juce::ComboBox::backgroundColourId, kFieldBg);
+            comboBox.setColour (juce::ComboBox::textColourId,       kText);
+            comboBox.setColour (juce::ComboBox::outlineColourId,    kFieldOutline);
+            comboBox.setColour (juce::PopupMenu::backgroundColourId,            kFieldBg);
+            comboBox.setColour (juce::PopupMenu::textColourId,                  kText);
+            comboBox.setColour (juce::PopupMenu::highlightedBackgroundColourId, kAccent);
+            comboBox.setColour (juce::PopupMenu::highlightedTextColourId,       juce::Colours::white);
+            addAndMakeVisible (comboBox);
+            comboAttachment = std::make_unique<juce::ComboBoxParameterAttachment> (parameter, comboBox);
+            break;
+    }
+}
+
+void CsoundParameterMappingPanel::GenericParamRow::resized()
+{
+    auto area = getLocalBounds().reduced (4, 2);
+    auto nameArea = area.removeFromLeft (nameLabelWidth);
+    area.removeFromLeft (8);
+    nameLabel.setBounds (nameArea);
+
+    switch (kind)
+    {
+        case Kind::slider:  slider.setBounds (area);   break;
+        case Kind::toggle:  toggle.setBounds (area.removeFromLeft (juce::jmin (area.getWidth(), 120))); break;
+        case Kind::choice:  comboBox.setBounds (area); break;
+    }
+}
+
+//==============================================================================
+CsoundParameterMappingPanel::GenericEditorPage::GenericEditorPage()
+{
+    viewport.setViewedComponent (&rowsContainer, false);
+    viewport.setScrollBarsShown (true, false);
+    addAndMakeVisible (viewport);
+
+    emptyStateLabel.setText (
+                             "No parameters configured.\n"
+                             "Assign a Csound channel to the parameters in the Float, Int, Bool, or Choice tabs to see them here.",
+        juce::dontSendNotification);
+    emptyStateLabel.setJustificationType (juce::Justification::centred);
+    emptyStateLabel.setFont (juce::Font (juce::FontOptions (14.0f)));
+    emptyStateLabel.setColour (juce::Label::textColourId, kTextMuted);
+    emptyStateLabel.setMinimumHorizontalScale (1.0f);
+    addChildComponent (emptyStateLabel);
+}
+
+void CsoundParameterMappingPanel::GenericEditorPage::refreshRows (CsoundAudioProcessor& processor)
+{
+    rows.clear();
+
+    for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
+    {
+        const auto slot = processor.getChannelParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+
+        if (auto* param = processor.apvts.getParameter (CsoundAudioProcessor::getChannelParamID (i)))
+            rows.push_back (std::make_unique<GenericParamRow> (slot.channelName, *param,
+                                                                  GenericParamRow::Kind::slider, juce::StringArray()));
+    }
+
+    for (int i = 0; i < CsoundAudioProcessor::numIntParams; ++i)
+    {
+        const auto slot = processor.getIntParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+
+        if (auto* param = processor.apvts.getParameter (CsoundAudioProcessor::getIntParamID (i)))
+            rows.push_back (std::make_unique<GenericParamRow> (slot.channelName, *param,
+                                                                  GenericParamRow::Kind::slider, juce::StringArray()));
+    }
+
+    for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
+    {
+        const auto slot = processor.getBoolParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+
+        if (auto* param = processor.apvts.getParameter (CsoundAudioProcessor::getBoolParamID (i)))
+            rows.push_back (std::make_unique<GenericParamRow> (slot.channelName, *param,
+                                                                  GenericParamRow::Kind::toggle, juce::StringArray()));
+    }
+
+    for (int i = 0; i < CsoundAudioProcessor::numChoiceParams; ++i)
+    {
+        const auto slot = processor.getChoiceParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+
+        if (auto* param = processor.apvts.getParameter (CsoundAudioProcessor::getChoiceParamID (i)))
+        {
+            juce::StringArray labels;
+            for (int opt = 0; opt < CsoundAudioProcessor::maxChoiceOptions; ++opt)
+                labels.add (CsoundAudioProcessor::getChoiceOptionLabel (slot, opt));
+
+            rows.push_back (std::make_unique<GenericParamRow> (slot.channelName, *param,
+                                                                  GenericParamRow::Kind::choice, labels));
+        }
+    }
+
+    for (auto& row : rows)
+        rowsContainer.addAndMakeVisible (*row);
+
+    const bool empty = rows.empty();
+    viewport.setVisible (! empty);
+    emptyStateLabel.setVisible (empty);
+
+    resized();
+}
+
+void CsoundParameterMappingPanel::GenericEditorPage::resized()
+{
+    auto area = getLocalBounds();
+
+    emptyStateLabel.setBounds (area.reduced (24));
+
+    area = area.reduced (8);
+    viewport.setBounds (area);
+
+    const int contentWidth = juce::jmax (100, viewport.getWidth() - scrollbarGutter);
+    rowsContainer.setSize (contentWidth, (int) rows.size() * genericRowHeight);
+
+    for (size_t i = 0; i < rows.size(); ++i)
+        rows[i]->setBounds (0, (int) i * genericRowHeight, contentWidth, genericRowHeight);
+}
+
 //==============================================================================
 CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& processorToEdit)
+    : processor (processorToEdit)
 {
     // Tema dedicato "cool" (vedi CsoundParameterPanelLookAndFeel) - si
     // applica a questo componente e, a cascata, a tutti i figli (barra del
@@ -1278,11 +1575,6 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     // Barra del titolo della "finestra" flottante (vedi il commento in testa
     // alla classe in CsoundParameterEditor.h): solo qui, non nelle pagine,
     // perche' resta identica a prescindere dalla tab selezionata.
-    // Marcatore di build TEMPORANEO ("build N") nel titolo: serve solo a
-    // verificare senza ambiguita' se REAPER/l'host sta davvero caricando
-    // l'ultimo binario ricompilato o uno vecchio in cache - il numero va
-    // alzato ad ogni modifica di questo file finche' il problema "tab non
-    // aggiornate" non e' confermato risolto, poi va tolto.
     titleLabel.setText ("Parameters", juce::dontSendNotification);
     titleLabel.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
     titleLabel.setColour (juce::Label::textColourId, kText);
@@ -1300,12 +1592,13 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     closeButton.onClick = [this] { if (onCloseButtonClicked) onCloseButtonClicked(); };
     addAndMakeVisible (closeButton);
 
-    floatPage  = std::make_unique<FloatParamsPage>  (processorToEdit);
-    intPage    = std::make_unique<IntParamsPage>    (processorToEdit);
-    boolPage   = std::make_unique<BoolParamsPage>   (processorToEdit);
-    choicePage = std::make_unique<ChoiceParamsPage> (processorToEdit);
+    floatPage         = std::make_unique<FloatParamsPage>  (processorToEdit);
+    intPage           = std::make_unique<IntParamsPage>    (processorToEdit);
+    boolPage          = std::make_unique<BoolParamsPage>   (processorToEdit);
+    choicePage        = std::make_unique<ChoiceParamsPage> (processorToEdit);
+    genericEditorPage = std::make_unique<GenericEditorPage>();
 
-    // Le 4 pagine sono figli diretti del pannello (non piu' ospitate da un
+    // Le 5 pagine sono figli diretti del pannello (non piu' ospitate da un
     // TabbedComponent): showPage() decide quale e' visibile, addChildComponent
     // (non addAndMakeVisible) le aggiunge gia' nascoste - showPage(0) in
     // fondo al costruttore le rende visibili/invisibili correttamente.
@@ -1313,34 +1606,63 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     addChildComponent (*intPage);
     addChildComponent (*boolPage);
     addChildComponent (*choicePage);
+    addChildComponent (*genericEditorPage);
 
-    // 4 bottoni "a mano" al posto di TabbedButtonBar - vedi il commento sul
+    // 5 bottoni "a mano" al posto di TabbedButtonBar - vedi il commento sul
     // perche' in CsoundParameterEditor.h. onClick chiama semplicemente
     // showPage(i): nessuna euristica di layout/overflow di mezzo.
     //
-    // setConnectedEdges unisce visivamente i 4 bottoni in un unico "pillola"
+    // setConnectedEdges unisce visivamente i 5 bottoni in un unico "pillola"
     // segmentato (stile macOS/iOS segmented control): il primo resta
-    // arrotondato solo a sinistra, l'ultimo solo a destra, i due centrali
+    // arrotondato solo a sinistra, l'ultimo solo a destra, i tre centrali
     // del tutto squadrati - LookAndFeel_V4 (la nostra LookAndFeel eredita da
     // essa, non sovrascriviamo drawButtonBackground) disegna automaticamente
     // angoli arrotondati solo sui bordi NON "connessi". Molto piu' gradevole
-    // dei 4 rettangoli piatti e staccati di prima.
-    floatTabButton.setConnectedEdges  (juce::Button::ConnectedOnRight);
-    intTabButton.setConnectedEdges    (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnRight);
-    boolTabButton.setConnectedEdges   (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnRight);
-    choiceTabButton.setConnectedEdges (juce::Button::ConnectedOnLeft);
+    // dei rettangoli piatti e staccati di prima.
+    //
+    // Ordine VISIVO richiesto: UI, Float, Int, Bool, Choice (UI per prima a
+    // sinistra) - DIVERSO dall'ordine degli indici di pagina (float=0,
+    // int=1, bool=2, choice=3, genericEditor=4, usati da showPage() e da
+    // tutte le pagine/array esistenti, invariati per non toccare altrove).
+    // getOrderedTabs() sotto e' l'UNICA fonte di verita' per l'ordine
+    // visivo, condivisa da questo ciclo, updateTabButtonStyles() e
+    // resized() - evita di dover tenere sincronizzati tre elenchi scritti
+    // a mano in punti diversi.
+    genericEditorTabButton.setConnectedEdges (juce::Button::ConnectedOnRight);
+    floatTabButton.setConnectedEdges         (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnRight);
+    intTabButton.setConnectedEdges           (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnRight);
+    boolTabButton.setConnectedEdges          (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnRight);
+    choiceTabButton.setConnectedEdges        (juce::Button::ConnectedOnLeft);
 
-    int tabIndex = 0;
-    for (auto* button : { &floatTabButton, &intTabButton, &boolTabButton, &choiceTabButton })
+    // Nome usato da CsoundParameterPanelLookAndFeel::drawButtonText per
+    // riconoscere questo bottone e disegnarci sopra l'icona "tune" - vedi
+    // makeTuneIconPath sopra.
+    genericEditorTabButton.setName ("genericEditorTab");
+
+    for (auto& tab : getOrderedTabs())
     {
-        const int capturedIndex = tabIndex++;
-        button->onClick = [this, capturedIndex] { showPage (capturedIndex); };
+        auto* button = tab.first;
+        const int pageIndex = tab.second;
+        button->onClick = [this, pageIndex] { showPage (pageIndex); };
         button->setColour (juce::TextButton::textColourOnId, juce::Colours::white);
         addAndMakeVisible (*button);
     }
 
     updateTabButtonStyles();
     showPage (0);
+}
+
+std::array<std::pair<juce::TextButton*, int>, 5> CsoundParameterMappingPanel::getOrderedTabs()
+{
+    // {bottone, indice di pagina} nell'ordine VISIVO sinistra->destra - vedi
+    // il commento nel costruttore sopra. L'indice di pagina e' quello usato
+    // da showPage()/floatPage/intPage/boolPage/choicePage/genericEditorPage,
+    // invariato: solo l'ORDINE in questo elenco decide la posizione a video.
+    return { { { &genericEditorTabButton, 4 },
+               { &floatTabButton,         0 },
+               { &intTabButton,           1 },
+               { &boolTabButton,          2 },
+               { &choiceTabButton,        3 } } };
 }
 
 CsoundParameterMappingPanel::~CsoundParameterMappingPanel()
@@ -1357,10 +1679,18 @@ void CsoundParameterMappingPanel::showPage (int pageIndex)
 {
     currentPageIndex = pageIndex;
 
-    floatPage->setVisible  (pageIndex == 0);
-    intPage->setVisible    (pageIndex == 1);
-    boolPage->setVisible   (pageIndex == 2);
-    choicePage->setVisible (pageIndex == 3);
+    floatPage->setVisible         (pageIndex == 0);
+    intPage->setVisible           (pageIndex == 1);
+    boolPage->setVisible          (pageIndex == 2);
+    choicePage->setVisible        (pageIndex == 3);
+    genericEditorPage->setVisible (pageIndex == 4);
+
+    // La tab "UI" mostra i VALORI correnti: va ricostruita ogni volta che
+    // diventa quella corrente (non solo alla prima apertura), cosi' un
+    // canale rinominato/assegnato nel frattempo in una delle altre 4 tab si
+    // riflette qui subito invece di restare congelato.
+    if (pageIndex == 4)
+        genericEditorPage->refreshRows (processor);
 
     updateTabButtonStyles();
 }
@@ -1371,18 +1701,33 @@ void CsoundParameterMappingPanel::updateTabButtonStyles()
     // pieno accento teal/testo bianco, non selezionata = grigio chiaro/testo
     // quasi nero - qui applicato con semplici setColour() su TextButton
     // normali, niente LookAndFeel custom per i bottoni.
-    juce::TextButton* buttons[] = { &floatTabButton, &intTabButton, &boolTabButton, &choiceTabButton };
-
-    for (int i = 0; i < 4; ++i)
+    for (auto& tab : getOrderedTabs())
     {
-        const bool selected = (i == currentPageIndex);
-        auto* button = buttons[(size_t) i];
+        auto* button = tab.first;
+        const bool selected = (tab.second == currentPageIndex);
 
         button->setColour (juce::TextButton::buttonColourId, selected ? kAccent : juce::Colour (0xff9aa7b0));
         button->setColour (juce::TextButton::buttonOnColourId, selected ? kAccent : juce::Colour (0xff9aa7b0));
         button->setColour (juce::TextButton::textColourOffId, selected ? juce::Colours::white : juce::Colour (0xff0e1318));
         button->setColour (juce::TextButton::textColourOnId, selected ? juce::Colours::white : juce::Colour (0xff0e1318));
     }
+}
+
+void CsoundParameterMappingPanel::refreshAllFromProcessor()
+{
+    floatPage->refreshAllFromProcessor();
+    intPage->refreshAllFromProcessor();
+    boolPage->refreshAllFromProcessor();
+    choicePage->refreshAllFromProcessor();
+
+    // La tab Generic Editor si ricostruisce comunque da sola ogni volta che
+    // diventa quella corrente (vedi showPage()), ma se e' GIA' quella
+    // visibile in questo momento (l'utente ha caricato una sessione mentre
+    // era su "UI") va aggiornata subito, altrimenti mostrerebbe ancora
+    // slider/toggle/combo della sessione precedente finche' non si cambia
+    // tab e si ritorna.
+    if (currentPageIndex == 4)
+        genericEditorPage->refreshRows (processor);
 }
 
 void CsoundParameterMappingPanel::paint (juce::Graphics& g)
@@ -1426,25 +1771,25 @@ void CsoundParameterMappingPanel::resized()
 
     area = area.reduced (4);
 
-    // Barra tab: 4 bottoni di larghezza ESATTAMENTE uguale che riempiono
+    // Barra tab: 5 bottoni di larghezza ESATTAMENTE uguale che riempiono
     // tutta la riga - layout banale, niente auto-layout/euristiche di
     // overflow di mezzo (vedi il commento in testa ai membri *TabButton in
     // CsoundParameterEditor.h sul perche' non usiamo piu' TabbedComponent).
     auto tabBarArea = area.removeFromTop (tabBarHeight);
-    const int eachTabWidth = tabBarArea.getWidth() / 4;
+    const int eachTabWidth = tabBarArea.getWidth() / 5;
 
-    juce::TextButton* buttons[] = { &floatTabButton, &intTabButton, &boolTabButton, &choiceTabButton };
+    const auto orderedTabs = getOrderedTabs();
 
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < 5; ++i)
     {
         const int x = i * eachTabWidth;
-        const int w = (i == 3) ? (tabBarArea.getWidth() - x) : eachTabWidth;
-        buttons[(size_t) i]->setBounds (tabBarArea.getX() + x, tabBarArea.getY(), w, tabBarArea.getHeight());
+        const int w = (i == 4) ? (tabBarArea.getWidth() - x) : eachTabWidth;
+        orderedTabs[(size_t) i].first->setBounds (tabBarArea.getX() + x, tabBarArea.getY(), w, tabBarArea.getHeight());
     }
 
     area.removeFromTop (4);
 
-    // Tutte e 4 le pagine occupano la stessa area sotto la barra tab -
+    // Tutte e 5 le pagine occupano la stessa area sotto la barra tab -
     // showPage() decide quale e' visibile, qui basta dare a tutte lo stesso
     // rettangolo (quella nascosta non viene disegnata, il costo e'
     // trascurabile).
@@ -1452,6 +1797,7 @@ void CsoundParameterMappingPanel::resized()
     intPage->setBounds (area);
     boolPage->setBounds (area);
     choicePage->setBounds (area);
+    genericEditorPage->setBounds (area);
 }
 
 void CsoundParameterMappingPanel::mouseDown (const juce::MouseEvent& event)

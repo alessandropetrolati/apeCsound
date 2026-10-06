@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <vector>
 #include "PluginProcessor.h"
 #include "CsoundTokeniser.h"
 #include "CsoundCodeEditor.h"
@@ -119,13 +120,34 @@ private:
     void toggleParameterPanel();
 
     // La toolbar e' una barra dedicata (sfondo + separatore disegnati in
-    // paint(), bounds calcolati in resized()) che contiene questi due
-    // bottoni, con icone disegnate da CsoundLookAndFeel in base al nome
+    // paint(), bounds calcolati in resized()) che contiene questi bottoni,
+    // con icone disegnate da CsoundLookAndFeel in base al nome
     // (Component::setName) assegnato nel costruttore.
     juce::Rectangle<int> toolbarBounds;
     juce::TextButton applyButton        { "Apply" };
     juce::TextButton clearConsoleButton { "Clear console" };
-    juce::TextButton paramsButton       { "Parameters..." };
+    juce::TextButton paramsButton       { "Parameters" };
+
+    // Save/Load Session: scrivono/leggono su disco (FileChooser, extension
+    // .csd - un .csd VERO, il mapping dei parametri va in appendice dentro
+    // un tag dedicato, vedi CsoundAudioProcessor::saveSessionToFile)
+    // l'intero stato - codice Csound + mapping dei 64 parametri -
+    // INDIPENDENTEMENTE dal progetto della DAW (che resta comunque salvato/
+    // ripristinato come sempre da getStateInformation/setStateInformation).
+    // Senza questo, rimuovere il plugin dalla traccia o perdere il progetto
+    // avrebbe fatto perdere anche il codice: vedi CsoundAudioProcessor::
+    // saveSessionToFile/loadSessionFromFile.
+    juce::TextButton saveSessionButton { "Save Session..." };
+    juce::TextButton loadSessionButton { "Load Session..." };
+
+    // juce::FileChooser e' asincrono (launchAsync): deve restare in vita
+    // finche' il suo callback non e' scattato, quindi va tenuto come
+    // membro (non una variabile locale che morirebbe subito) - un solo
+    // chooser alla volta basta, Save e Load non possono essere aperti
+    // contemporaneamente dalla stessa UI.
+    std::unique_ptr<juce::FileChooser> activeFileChooser;
+    void promptSaveSession();
+    void promptLoadSession();
 
     static constexpr int toolbarHeight = 44;
 

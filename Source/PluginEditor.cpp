@@ -75,6 +75,17 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     addChildComponent (parameterPanel);
     parameterPanel.onCloseButtonClicked = [this] { toggleParameterPanel(); };
 
+    // Save/Load Session su file (.csd), indipendenti dal progetto della
+    // DAW - vedi il commento su saveSessionButton/loadSessionButton in
+    // PluginEditor.h sul perche'.
+    saveSessionButton.setName ("saveSession");
+    saveSessionButton.onClick = [this] { promptSaveSession(); };
+    addAndMakeVisible (saveSessionButton);
+
+    loadSessionButton.setName ("loadSession");
+    loadSessionButton.onClick = [this] { promptLoadSession(); };
+    addAndMakeVisible (loadSessionButton);
+
     audioProcessor.addListener (this);
 
     // false = niente ResizableCornerComponent in basso a destra: il
@@ -141,12 +152,20 @@ void CsoundAudioProcessorEditor::resized()
                            + CsoundLookAndFeel::getIconAllowance (clearConsoleButton.getName());
     const auto paramsWidth = paramsButton.getBestWidthForHeight (toolbar.getHeight())
                             + CsoundLookAndFeel::getIconAllowance (paramsButton.getName());
+    const auto saveWidth = saveSessionButton.getBestWidthForHeight (toolbar.getHeight())
+                          + CsoundLookAndFeel::getIconAllowance (saveSessionButton.getName());
+    const auto loadWidth = loadSessionButton.getBestWidthForHeight (toolbar.getHeight())
+                          + CsoundLookAndFeel::getIconAllowance (loadSessionButton.getName());
 
     applyButton.setBounds (toolbar.removeFromLeft (applyWidth));
     toolbar.removeFromLeft (8);
     clearConsoleButton.setBounds (toolbar.removeFromLeft (clearWidth));
     toolbar.removeFromLeft (8);
     paramsButton.setBounds (toolbar.removeFromLeft (paramsWidth));
+    toolbar.removeFromLeft (8);
+    saveSessionButton.setBounds (toolbar.removeFromLeft (saveWidth));
+    toolbar.removeFromLeft (8);
+    loadSessionButton.setBounds (toolbar.removeFromLeft (loadWidth));
 
     // Niente inset laterali e niente spazio tra editor e console: solo lo
     // spazio verticale tra toolbar ed editor resta. Editor e consolle
@@ -199,10 +218,78 @@ void CsoundAudioProcessorEditor::toggleParameterPanel()
     if (showingParameterPanel)
         parameterPanel.toFront (true); // porta anche la tastiera sul pannello
 
-    paramsButton.setButtonText (showingParameterPanel ? "Hide parameters" : "Parameters...");
+    paramsButton.setButtonText (showingParameterPanel ? "Hide parameters" : "Parameters");
 
     resized();
     repaint();
+}
+
+void CsoundAudioProcessorEditor::promptSaveSession()
+{
+    // Un .csd VERO, non un formato proprietario: vedi il commento su
+    // CsoundAudioProcessor::saveSessionToFile in PluginProcessor.h - il
+    // codice resta testo Csound puro, il mapping dei parametri va in
+    // appendice dentro <CsoundStudioParams>.
+    const auto startingFile = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+                                   .getChildFile ("CsoundStudio Session.csd");
+
+    activeFileChooser = std::make_unique<juce::FileChooser> (
+        "Save CsoundStudio Session (.csd)...", startingFile, "*.csd");
+
+    activeFileChooser->launchAsync (
+        juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
+            | juce::FileBrowserComponent::warnAboutOverwriting,
+        [this] (const juce::FileChooser& chooser)
+        {
+            auto file = chooser.getResult();
+
+            if (file == juce::File{})
+                return; // annullato dall'utente
+
+            if (! file.hasFileExtension ("csd"))
+                file = file.withFileExtension ("csd");
+
+            const bool ok = audioProcessor.saveSessionToFile (file);
+            appendToLog (ok ? ("--- Session saved to " + file.getFullPathName() + " ---")
+                             : "--- Failed to save session (file not writable?) ---");
+        });
+}
+
+void CsoundAudioProcessorEditor::promptLoadSession()
+{
+    const auto startingDir = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
+
+    activeFileChooser = std::make_unique<juce::FileChooser> (
+        "Load CsoundStudio Session (.csd)...", startingDir, "*.csd");
+
+    activeFileChooser->launchAsync (
+        juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+        [this] (const juce::FileChooser& chooser)
+        {
+            auto file = chooser.getResult();
+
+            if (file == juce::File{})
+                return; // annullato dall'utente
+
+            if (audioProcessor.loadSessionFromFile (file))
+            {
+                // L'editor di codice e il pannello parametri hanno il
+                // proprio stato locale (document/righe), costruito a
+                // partire dal processor - vanno rilette esplicitamente
+                // ora che loadSessionFromFile ha sostituito quello stato,
+                // altrimenti continuerebbero a mostrare la sessione
+                // precedente finche' non si cambia tab/si riapre il pannello.
+                document.replaceAllContent (audioProcessor.getCsdText());
+                document.clearUndoHistory();
+                parameterPanel.refreshAllFromProcessor();
+
+                appendToLog ("--- Session loaded from " + file.getFullPathName() + " ---");
+            }
+            else
+            {
+                appendToLog ("--- Failed to load session (empty or unreadable file?) ---");
+            }
+        });
 }
 
 void CsoundAudioProcessorEditor::OpcodeHelpBar::setHelpText (const juce::String& syntax, const juce::String& description)

@@ -73,7 +73,17 @@ juce::String ChannelHostParameter::getText (float normalisedValue, int maximumSt
 {
     const auto slot = owner.getChannelParamSlot (index);
     const double real = CsoundAudioProcessor::denormalizeChannelParam (slot, normalisedValue);
-    return juce::String (real, 3).substring (0, maximumStringLength);
+    const juce::String text (real, 3);
+
+    // Convenzione JUCE (vedi AudioParameterFloat::getText): maximumStringLength
+    // <= 0 significa "nessun limite", NON "lunghezza zero" - troncare sempre
+    // e incondizionatamente con .substring(0, maximumStringLength) produceva
+    // una stringa VUOTA ogni volta che il chiamante passa 0, che e' esattamente
+    // cio' che juce::SliderParameterAttachment fa per il suo textFromValueFunction
+    // (vedi juce_ParameterAttachments.cpp: "param.getText (..., 0)") - la vera
+    // causa del valore "invisibile" nello slider della tab UI, niente a che
+    // fare con i colori rincorsi finora.
+    return maximumStringLength > 0 ? text.substring (0, maximumStringLength) : text;
 }
 
 float ChannelHostParameter::getValueForText (const juce::String& text) const
@@ -110,7 +120,11 @@ juce::String IntHostParameter::getText (float normalisedValue, int maximumString
 {
     const auto slot = owner.getIntParamSlot (index);
     const int real = CsoundAudioProcessor::denormalizeIntParam (slot, normalisedValue);
-    return juce::String (real).substring (0, maximumStringLength);
+    const juce::String text (real);
+
+    // Stessa convenzione di ChannelHostParameter::getText sopra: 0 = nessun
+    // limite, non lunghezza zero.
+    return maximumStringLength > 0 ? text.substring (0, maximumStringLength) : text;
 }
 
 float IntHostParameter::getValueForText (const juce::String& text) const
@@ -178,7 +192,11 @@ juce::String ChoiceHostParameter::getText (float normalisedValue, int maximumStr
     const int numChoices = choices.size();
     const int optionIndex = juce::jlimit (0, numChoices - 1,
                                            juce::roundToInt (normalisedValue * (float) (numChoices - 1)));
-    return CsoundAudioProcessor::getChoiceOptionLabel (slot, optionIndex).substring (0, maximumStringLength);
+    const auto label = CsoundAudioProcessor::getChoiceOptionLabel (slot, optionIndex);
+
+    // Stessa convenzione di ChannelHostParameter::getText sopra: 0 = nessun
+    // limite, non lunghezza zero.
+    return maximumStringLength > 0 ? label.substring (0, maximumStringLength) : label;
 }
 
 float ChoiceHostParameter::getDefaultValue() const
@@ -925,10 +943,20 @@ void CsoundAudioProcessor::setCsdText (const juce::String& text)
 }
 
 //==============================================================================
-void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+juce::ValueTree CsoundAudioProcessor::buildStateTree (bool includeCsdText)
 {
     juce::ValueTree state ("CSOUND_STUDIO_STATE");
-    state.setProperty ("csd", getCsdText(), nullptr);
+
+    // includeCsdText=false per saveSessionToFile: nel file il codice e'
+    // GIA' scritto per intero, in chiaro, PRIMA del tag d'appendice (vedi
+    // il commento in PluginProcessor.h) - ripeterlo anche qui dentro, come
+    // proprieta' XML con ogni ritorno a capo escappato in &#10;, sarebbe
+    // solo rumore ridondante e illeggibile, segnalato esplicitamente.
+    // getStateInformation invece lo tiene (includeCsdText=true, default):
+    // li' e' l'UNICO posto dove il codice vive, non c'e' nessun testo in
+    // chiaro altrove nel blob binario che l'host salva.
+    if (includeCsdText)
+        state.setProperty ("csd", getCsdText(), nullptr);
 
     // Stato nativo di apvts (i 64 valori normalizzati 0..1): in VST3/AU
     // l'host li salva/ripristina gia' da solo tramite il proprio
@@ -1033,7 +1061,12 @@ void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         state.appendChild (slotsTree, nullptr);
     }
 
-    if (auto xml = state.createXml())
+    return state;
+}
+
+void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+{
+    if (auto xml = buildStateTree().createXml())
         copyXmlToBinary (*xml, destData);
 }
 
@@ -1043,11 +1076,108 @@ void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInByte
     {
         auto state = juce::ValueTree::fromXml (*xml);
 
-        if (! state.isValid())
-            return;
+        if (state.isValid())
+            restoreStateFromTree (state, state.getProperty ("csd", getCsdText()).toString());
+    }
+}
 
-        const auto restoredCsd = state.getProperty ("csd", getCsdText()).toString();
-        setCsdText (restoredCsd);
+namespace
+{
+    // Tag d'appendice che racchiude il mapping dei 64 parametri dentro un
+    // .csd altrimenti normale - vedi il commento su saveSessionToFile in
+    // PluginProcessor.h sul perche' (Csound stesso ignora tag che non
+    // riconosce, quindi il file resta un .csd valido anche senza questo
+    // plugin). Scelto un tag "a frase" invece di XML attributes per essere
+    // immediato da individuare anche solo guardando il file con un editor
+    // di testo qualsiasi.
+    const juce::String kParamsTagOpen  = "<CsoundStudioParams>";
+    const juce::String kParamsTagClose = "</CsoundStudioParams>";
+}
+
+bool CsoundAudioProcessor::saveSessionToFile (const juce::File& file)
+{
+    // includeCsdText=false: il codice e' GIA' scritto per intero, in
+    // chiaro, qui sotto PRIMA del tag - non va ripetuto anche dentro l'XML
+    // (sarebbe un'intera copia del codice con ogni ritorno a capo
+    // escappato in &#10;, illeggibile e ridondante, segnalato esplicitamente).
+    auto xml = buildStateTree (false).createXml();
+
+    if (xml == nullptr)
+        return false;
+
+    // Il codice vero e proprio resta testo Csound PURO in testa al file -
+    // quello che Csound/un editor di testo si aspettano di trovare. Il
+    // mapping dei parametri (nome canale/range/curva/default per slot, piu'
+    // una copia dello stato apvts) va in appendice, dopo una riga vuota,
+    // dentro il tag dedicato - mai mescolato dentro il codice stesso.
+    juce::String fileContents;
+    fileContents << getCsdText() << "\n\n"
+                 << kParamsTagOpen << "\n"
+                 << xml->toString() << "\n"
+                 << kParamsTagClose << "\n";
+
+    return file.replaceWithText (fileContents);
+}
+
+bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
+{
+    const auto fullText = file.loadFileAsString();
+
+    if (fullText.isEmpty())
+        return false;
+
+    const auto tagStart = fullText.indexOf (kParamsTagOpen);
+
+    if (tagStart < 0)
+    {
+        // Nessun tag d'appendice: e' un .csd "normale", magari scritto a
+        // mano o esportato da un'altra sessione - carichiamo comunque il
+        // codice (molto meglio che fallire del tutto), lasciando INVARIATO
+        // il mapping dei parametri attuale, visto che qui non ce n'e' uno
+        // da ripristinare.
+        setCsdText (fullText);
+        return true;
+    }
+
+    // Il codice Csound e' tutto cio' che precede il tag: resta la fonte di
+    // verita' per cosa suona, anche se il tag dopo fosse incoerente o
+    // qualcuno avesse modificato il codice a mano senza toccarlo.
+    const auto codeText = fullText.substring (0, tagStart).trimEnd();
+
+    const auto innerStart = tagStart + kParamsTagOpen.length();
+    const auto tagEnd = fullText.indexOf (innerStart, kParamsTagClose);
+
+    if (tagEnd < 0)
+    {
+        // Tag apertura presente ma non la chiusura (file troncato/
+        // corrotto): carichiamo almeno il codice.
+        setCsdText (codeText);
+        return true;
+    }
+
+    const auto xmlText = fullText.substring (innerStart, tagEnd).trim();
+
+    if (auto xml = juce::XmlDocument::parse (xmlText))
+    {
+        auto state = juce::ValueTree::fromXml (*xml);
+
+        if (state.isValid())
+        {
+            restoreStateFromTree (state, codeText);
+            return true;
+        }
+    }
+
+    // XML d'appendice malformato: ancora meglio caricare il codice da solo
+    // che fallire l'intero caricamento.
+    setCsdText (codeText);
+    return true;
+}
+
+void CsoundAudioProcessor::restoreStateFromTree (const juce::ValueTree& state, const juce::String& csdTextToRestore)
+{
+    const auto restoredCsd = csdTextToRestore;
+    setCsdText (restoredCsd);
 
         if (auto apvtsState = state.getChildWithName ("PARAMETERS"); apvtsState.isValid())
             apvts.replaceState (apvtsState);
@@ -1169,7 +1299,6 @@ void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInByte
                 compileAndStart (restoredCsd);
             });
         }
-    }
 }
 
 //==============================================================================

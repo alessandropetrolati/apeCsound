@@ -1,6 +1,9 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <array>
+#include <utility>
+#include <vector>
 #include "PluginProcessor.h"
 
 /**
@@ -35,6 +38,15 @@ public:
     void drawScrollbar (juce::Graphics& g, juce::ScrollBar& scrollbar, int x, int y, int width, int height,
                          bool isScrollbarVertical, int thumbStartPosition, int thumbSize,
                          bool isMouseOver, bool isMouseDown) override;
+
+    // Disegna icona + testo SOLO per il bottone della tab "UI" (riconosciuto
+    // da Component::setName("genericEditorTab") - vedi CsoundParameterMappingPanel);
+    // per tutti gli altri bottoni (Float/Int/Bool/Choice, senza icona) delega
+    // al comportamento standard di LookAndFeel_V4. L'icona e' la STESSA
+    // "tune" del bottone Parameters nella toolbar (vedi makeTuneIconPath nel
+    // .cpp) - stesso path SVG, nessuna icona nuova da inventare.
+    void drawButtonText (juce::Graphics& g, juce::TextButton& button,
+                          bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
 };
 
 /**
@@ -83,6 +95,14 @@ public:
 
     void resized() override;
     void paint (juce::Graphics& g) override;
+
+    // Rilegge TUTTE le righe (tutte e 4 le tab di metadata, piu' la tab
+    // Generic Editor se e' quella corrente) dallo stato attuale del
+    // processor - chiamata da PluginEditor dopo un Load Session da file
+    // (vedi CsoundAudioProcessor::loadSessionFromFile), cosi' il pannello
+    // mostra subito il contenuto appena caricato invece dei vecchi valori
+    // della sessione precedente.
+    void refreshAllFromProcessor();
 
     // Finestra spostabile: trascinando la barra del titolo (non un overlay
     // fisso bloccato al centro) si sposta dentro i confini del genitore
@@ -186,13 +206,18 @@ private:
         void mouseMove (const juce::MouseEvent& event) override;
         void mouseExit (const juce::MouseEvent& event) override;
 
+        // Pubblico (a differenza di commitFromFields/updateHandleHover):
+        // chiamato anche da FloatParamsPage::refreshAllFromProcessor() dopo
+        // un Load Session da file, per rileggere lo slot appena ripristinato
+        // invece di restare con i vecchi valori mostrati prima del caricamento.
+        void refreshFromProcessor();
+
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
         void textEditorFocusLost (juce::TextEditor&) override;
         void textEditorTextChanged (juce::TextEditor&) override;
 
         void commitFromFields();
-        void refreshFromProcessor();
         void updateHandleHover (juce::Point<int> position);
 
         CsoundAudioProcessor& processor;
@@ -233,13 +258,14 @@ private:
         void mouseMove (const juce::MouseEvent& event) override;
         void mouseExit (const juce::MouseEvent& event) override;
 
+        void refreshFromProcessor();
+
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
         void textEditorFocusLost (juce::TextEditor&) override;
         void textEditorTextChanged (juce::TextEditor&) override;
 
         void commitFromFields();
-        void refreshFromProcessor();
         void updateHandleHover (juce::Point<int> position);
 
         CsoundAudioProcessor& processor;
@@ -272,13 +298,14 @@ private:
         void mouseMove (const juce::MouseEvent& event) override;
         void mouseExit (const juce::MouseEvent& event) override;
 
+        void refreshFromProcessor();
+
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
         void textEditorFocusLost (juce::TextEditor&) override;
         void textEditorTextChanged (juce::TextEditor&) override;
 
         void commitFromFields();
-        void refreshFromProcessor();
         void updateHandleHover (juce::Point<int> position);
 
         CsoundAudioProcessor& processor;
@@ -310,13 +337,14 @@ private:
         void mouseMove (const juce::MouseEvent& event) override;
         void mouseExit (const juce::MouseEvent& event) override;
 
+        void refreshFromProcessor();
+
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
         void textEditorFocusLost (juce::TextEditor&) override;
         void textEditorTextChanged (juce::TextEditor&) override;
 
         void commitFromFields();
-        void refreshFromProcessor();
         void updateHandleHover (juce::Point<int> position);
 
         CsoundAudioProcessor& processor;
@@ -343,6 +371,12 @@ private:
         explicit FloatParamsPage (CsoundAudioProcessor& processorToEdit);
         void resized() override;
 
+        // Richiamata da CsoundParameterMappingPanel::refreshAllFromProcessor()
+        // dopo un Load Session da file: rilegge ogni riga dallo stato appena
+        // ripristinato nel processor, invece di lasciare visibili i vecchi
+        // valori della sessione precedente.
+        void refreshAllFromProcessor();
+
     private:
         juce::Viewport viewport;
         juce::Component rowsContainer;
@@ -356,6 +390,7 @@ private:
     {
         explicit IntParamsPage (CsoundAudioProcessor& processorToEdit);
         void resized() override;
+        void refreshAllFromProcessor();
 
     private:
         juce::Viewport viewport;
@@ -370,6 +405,7 @@ private:
     {
         explicit BoolParamsPage (CsoundAudioProcessor& processorToEdit);
         void resized() override;
+        void refreshAllFromProcessor();
 
     private:
         juce::Viewport viewport;
@@ -384,6 +420,7 @@ private:
     {
         explicit ChoiceParamsPage (CsoundAudioProcessor& processorToEdit);
         void resized() override;
+        void refreshAllFromProcessor();
 
     private:
         juce::Viewport viewport;
@@ -393,6 +430,100 @@ private:
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChoiceParamsPage)
     };
+
+    // Quinta tab, "UI"/Generic Editor: a differenza delle quattro sopra (che
+    // editano i METADATA per slot) mostra/automatizza i VALORI correnti dei
+    // parametri host - uno slider orizzontale per ogni Float/Int, un toggle
+    // per ogni Bool, un combo per ogni Choice, "esattamente come l'editor
+    // generico di JUCE" (juce::GenericAudioProcessorEditor), ma con due
+    // differenze volute rispetto a usare quella classe direttamente:
+    //   1) mostra SOLO gli slot con un canale Csound assegnato (channelName
+    //      non vuoto) - gli altri non sono "parametri validi" da esporre
+    //      qui, mostrarli tutti e 64 confondeva solamente;
+    //   2) ogni controllo e' legato al parametro apvts reale tramite le
+    //      classi di attachment "ufficiali" di JUCE (vedi GenericParamRow
+    //      sotto), non la logica privata/interna di GenericAudioProcessorEditor.
+    // Era in precedenza una finestra flottante separata (GenericEditorWindow
+    // in PluginEditor.h/.cpp): spostata qui come QUINTA tab del pannello
+    // Parameters (dopo Choice) su richiesta esplicita - una view a se stante
+    // separata dalle altre quattro non aveva piu' senso, essendo comunque
+    // un'altra vista sugli stessi 64 slot.
+    struct GenericParamRow final : public juce::Component
+    {
+        enum class Kind { slider, toggle, choice };
+
+        GenericParamRow (const juce::String& channelName, juce::RangedAudioParameter& parameter,
+                          Kind kind, const juce::StringArray& choiceLabels);
+
+        void resized() override;
+
+    private:
+        // Larghezza FISSA e minima per il nome canale (quasi sempre corto):
+        // tutto il resto della riga va al controllo - vedi resized(), che
+        // massimizza lo spazio del controllo (in particolare dello slider)
+        // invece del nome.
+        static constexpr int nameLabelWidth = 130;
+
+        juce::Label nameLabel;
+
+        // TextBoxRight: casella di testo INTERNA di Slider, EDITABILE (di
+        // serie - Slider::isTextBoxEditable() e' true di default), cosi'
+        // il valore si puo' anche scrivere a mano, non solo trascinare -
+        // richiesto esplicitamente. I colori (testo bianco, sfondo scuro)
+        // sono impostati DIRETTAMENTE sull'istanza nel costruttore, che
+        // vincono comunque su qualunque LookAndFeel.
+        juce::Slider slider { juce::Slider::LinearHorizontal, juce::Slider::TextBoxRight };
+        juce::ToggleButton toggle;
+        juce::ComboBox comboBox;
+        const Kind kind;
+
+        // Dichiarati DOPO i widget che referenziano: distrutti PRIMA di
+        // essi (ordine inverso di dichiarazione) - un attachment vivo che
+        // referenzia un widget gia' distrutto sarebbe un puntatore pendente.
+        std::unique_ptr<juce::SliderParameterAttachment> sliderAttachment;
+        std::unique_ptr<juce::ButtonParameterAttachment> buttonAttachment;
+        std::unique_ptr<juce::ComboBoxParameterAttachment> comboAttachment;
+
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GenericParamRow)
+    };
+
+    struct GenericEditorPage final : public juce::Component
+    {
+        GenericEditorPage();
+
+        void resized() override;
+
+        // Ricostruisce da zero l'elenco delle righe leggendo lo stato
+        // ATTUALE degli slot (getChannelParamSlot/getIntParamSlot/
+        // getBoolParamSlot/getChoiceParamSlot) - chiamata da showPage() ogni
+        // volta che questa tab diventa quella corrente, cosi' un canale
+        // rinominato/assegnato nelle altre tab si riflette qui subito,
+        // invece di restare congelato alla prima apertura. Se nessuno slot
+        // ha un canale assegnato, nasconde il viewport e mostra invece
+        // emptyStateLabel al centro - vedi il commento in testa alla classe.
+        void refreshRows (CsoundAudioProcessor& processor);
+
+    private:
+        static constexpr int genericRowHeight = 34;
+
+        juce::Viewport viewport;
+        juce::Component rowsContainer;
+        std::vector<std::unique_ptr<GenericParamRow>> rows;
+
+        // Mostrata SOLO quando rows e' vuoto (nessun parametro ancora
+        // configurato nelle tab Float/Int/Bool/Choice) - testo centrato che
+        // invita a configurare prima i parametri, invece di un pannello
+        // vuoto senza spiegazione.
+        juce::Label emptyStateLabel;
+
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GenericEditorPage)
+    };
+
+    // Riferimento al processor, tenuto per poter richiamare
+    // GenericEditorPage::refreshRows() ogni volta che la tab "UI" diventa
+    // quella corrente (vedi showPage()) - una semplice reference, nessun
+    // problema di ordine di costruzione/distruzione.
+    CsoundAudioProcessor& processor;
 
     // Dichiarata PER PRIMA tra i membri sotto: i membri si distruggono
     // nell'ordine INVERSO a quello di dichiarazione, quindi essendo la
@@ -418,19 +549,31 @@ private:
     // Factor quasi a zero. Niente di tutto questo con 4 bottoni gestiti
     // interamente da noi: showPage()/updateTabButtonStyles() sono le uniche
     // funzioni che decidono cosa e' visibile, nessuna euristica nascosta.
+    // Quinta tab "UI" (Generic Editor, vedi GenericEditorPage sopra): nome
+    // impostato a "genericEditorTab" nel .cpp, cosi' CsoundParameterPanelLook
+    // AndFeel::drawButtonText sa di doverci disegnare sopra anche l'icona -
+    // la STESSA "tune" del bottone Parameters nella toolbar.
     juce::TextButton floatTabButton  { "Float" };
     juce::TextButton intTabButton    { "Int" };
     juce::TextButton boolTabButton   { "Bool" };
     juce::TextButton choiceTabButton { "Choice" };
+    juce::TextButton genericEditorTabButton { "UI" };
 
     int currentPageIndex = 0;
     void showPage (int pageIndex);
     void updateTabButtonStyles();
 
+    // {bottone, indice di pagina} nell'ordine VISIVO sinistra->destra -
+    // unica fonte di verita' per quell'ordine, usata dal costruttore,
+    // updateTabButtonStyles() e resized() invece di tre elenchi scritti a
+    // mano da tenere sincronizzati.
+    std::array<std::pair<juce::TextButton*, int>, 5> getOrderedTabs();
+
     std::unique_ptr<FloatParamsPage> floatPage;
     std::unique_ptr<IntParamsPage> intPage;
     std::unique_ptr<BoolParamsPage> boolPage;
     std::unique_ptr<ChoiceParamsPage> choicePage;
+    std::unique_ptr<GenericEditorPage> genericEditorPage;
 
     // Trascinamento della barra del titolo (vedi mouseDown/mouseDrag sopra).
     juce::ComponentDragger titleBarDragger;

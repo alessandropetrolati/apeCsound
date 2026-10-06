@@ -45,6 +45,52 @@ namespace
             "13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z");
     }
 
+    // Icona "equalizer" per il bottone Generic Editor: 4 barre verticali ad
+    // altezza diversa - deliberatamente MOLTO diversa dall'icona "tune"
+    // (linee orizzontali con pallini, usata da Parameters) per non
+    // confondere i due bottoni a colpo d'occhio. Costruita con geometria
+    // esplicita (rettangoli arrotondati), non un path SVG memorizzato a
+    // mano: piu' sicuro, nessun rischio di forma sbagliata. Viewbox 24x24,
+    // stessa convenzione delle altre icone sopra.
+    juce::Path makeEqualizerIconPath()
+    {
+        juce::Path p;
+        constexpr float barWidth = 4.0f;
+        constexpr float bottom   = 22.0f;
+        const float xs[4]      = { 2.0f, 8.0f, 14.0f, 20.0f };
+        const float heights[4] = { 10.0f, 18.0f, 7.0f, 14.0f };
+
+        for (int i = 0; i < 4; ++i)
+            p.addRoundedRectangle (xs[i], bottom - heights[i], barWidth, heights[i], 1.0f);
+
+        return p;
+    }
+
+    // Icone "freccia in/da un vassoio" per Save/Load Session (vedi
+    // CsoundAudioProcessor::saveSessionToFile/loadSessionFromFile) - stessa
+    // geometria esplicita delle altre sopra (nessun path SVG a memoria),
+    // deliberatamente diverse da tutte le altre icone della toolbar:
+    // freccia IN GIU' dentro un vassoio per Save (il codice "scende" su
+    // disco), freccia IN SU' da un vassoio per Load (il codice "risale" da
+    // disco nel plugin). Viewbox 24x24, stessa convenzione delle altre.
+    juce::Path makeSaveIconPath()
+    {
+        juce::Path p;
+        p.addRectangle (10.5f, 3.0f, 3.0f, 10.0f);              // asta della freccia
+        p.addTriangle (7.0f, 13.0f, 17.0f, 13.0f, 12.0f, 19.0f); // punta verso il basso
+        p.addRoundedRectangle (3.0f, 20.0f, 18.0f, 3.0f, 1.0f);  // vassoio in basso
+        return p;
+    }
+
+    juce::Path makeLoadIconPath()
+    {
+        juce::Path p;
+        p.addRectangle (10.5f, 10.0f, 3.0f, 10.0f);             // asta della freccia
+        p.addTriangle (7.0f, 10.0f, 17.0f, 10.0f, 12.0f, 4.0f); // punta verso l'alto
+        p.addRoundedRectangle (3.0f, 20.0f, 18.0f, 3.0f, 1.0f); // vassoio in basso
+        return p;
+    }
+
     juce::Path getIconPathForButtonName (const juce::String& name)
     {
         if (name == "apply")
@@ -55,6 +101,15 @@ namespace
 
         if (name == "params")
             return makeTuneIconPath();
+
+        if (name == "genericEditor")
+            return makeEqualizerIconPath();
+
+        if (name == "saveSession")
+            return makeSaveIconPath();
+
+        if (name == "loadSession")
+            return makeLoadIconPath();
 
         return {};
     }

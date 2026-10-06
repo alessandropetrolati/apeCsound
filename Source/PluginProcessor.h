@@ -450,7 +450,52 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    // Persistenza ESPLICITA su file, indipendente dal progetto della DAW
+    // (getStateInformation/setStateInformation sopra restano l'unico modo
+    // con cui l'host salva/ripristina lo stato automaticamente, ma quello
+    // stato vive solo DENTRO il progetto: rimuovendo il plugin dalla
+    // traccia, o il progetto stesso, codice e mapping dei parametri
+    // andrebbero persi senza nessuna copia indipendente).
+    //
+    // Il file scritto e' un .csd VERO E VALIDO - lo stesso testo che
+    // getCsdText() ritorna, apribile/eseguibile anche fuori da questo
+    // plugin (Csound stesso, un editor di testo, un altro host) - non un
+    // formato proprietario/binario. Il mapping dei 64 parametri (nome
+    // canale/range/curva/default per slot) viene scritto in APPENDICE, dopo
+    // il codice, dentro un tag <CsoundStudioParams>...</CsoundStudioParams>
+    // creato apposta: Csound analizza un .csd cercando i tag <CsOptions>/
+    // <CsInstruments>/<CsScore> per nome, quindi ignora senza problemi
+    // qualunque tag sconosciuto dopo </CsoundSynthesizer> - il file resta
+    // un .csd legittimo anche per chi non ha questo plugin, semplicemente
+    // senza il mapping dei parametri. Vedi saveSessionToFile/
+    // loadSessionFromFile in PluginProcessor.cpp per il formato esatto.
+    bool saveSessionToFile (const juce::File& file);
+    bool loadSessionFromFile (const juce::File& file);
+
 private:
+    /** Costruisce il juce::ValueTree (stato apvts + metadata dei 64 slot,
+        piu' il testo del .csd SOLO se includeCsdText) condiviso da
+        getStateInformation (includeCsdText=true: li' e' l'unico posto dove
+        il codice vive) e saveSessionToFile (includeCsdText=false: nel file
+        il codice e' GIA' scritto in chiaro prima del tag d'appendice,
+        ripeterlo anche nell'XML sarebbe solo rumore ridondante). */
+    // Non const: juce::AudioProcessorValueTreeState::copyState() (chiamato
+    // dentro) non e' const in JUCE (prende un lock interno), anche se
+    // logicamente questo metodo non modifica lo stato del processor.
+    juce::ValueTree buildStateTree (bool includeCsdText = true);
+
+    /** Applica un juce::ValueTree prodotto da buildStateTree allo stato
+        corrente (apvts, metadata dei 64 slot), condiviso da
+        setStateInformation e loadSessionFromFile. csdTextToRestore e' il
+        testo del .csd da usare - passato esplicitamente dal chiamante
+        (invece di leggerlo da state.getProperty("csd",...)) cosi'
+        loadSessionFromFile puo' usare il testo LETTERALE che precede il tag
+        <CsoundStudioParams> nel file, che resta la fonte di verita' per il
+        codice anche se qualcuno modifica il .csd a mano senza toccare il
+        tag. Ricompila subito se il motore e' gia' in esecuzione (stesso
+        schema di setStateInformation - vedi il commento li' sul perche'). */
+    void restoreStateFromTree (const juce::ValueTree& state, const juce::String& csdTextToRestore);
+
     // Costruisce il layout COMPLETO di apvts: i 16 parametri float (vedi
     // ChannelHostParameter), i 16 interi (IntHostParameter), i 16 booleani
     // (BoolHostParameter) e i 16 a scelta multipla (ChoiceHostParameter), in
