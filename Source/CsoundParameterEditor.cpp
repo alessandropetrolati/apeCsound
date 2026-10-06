@@ -377,12 +377,21 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     applyDarkFieldColours (defaultEditor);
     addAndMakeVisible (defaultEditor);
 
-    curveCombo.addItem ("Linear", 1);
-    curveCombo.addItem ("Exponential", 2);
-    curveCombo.addItem ("Logarithmic", 3);
-    curveCombo.onChange = [this] { commitFromFields(); };
-    applyDarkComboColours (curveCombo);
-    addAndMakeVisible (curveCombo);
+    // Skew (juce::Slider::setSkewFactor - 1.0 = lineare) e increment (passo
+    // di quantizzazione in unita' reali) al posto del vecchio menu a
+    // tendina Linear/Exponential/Logarithmic: due numeri, niente curve
+    // predefinite da scegliere da una lista.
+    skewEditor.setInputRestrictions (0, "0123456789.,-eE");
+    skewEditor.setJustification (juce::Justification::centredRight);
+    skewEditor.addListener (this);
+    applyDarkFieldColours (skewEditor);
+    addAndMakeVisible (skewEditor);
+
+    incrementEditor.setInputRestrictions (0, "0123456789.,-eE");
+    incrementEditor.setJustification (juce::Justification::centredRight);
+    incrementEditor.addListener (this);
+    applyDarkFieldColours (incrementEditor);
+    addAndMakeVisible (incrementEditor);
 
     refreshFromProcessor();
 }
@@ -395,13 +404,8 @@ void CsoundParameterMappingPanel::ParamRow::refreshFromProcessor()
     minEditor.setText (juce::String (slot.minValue), false);
     maxEditor.setText (juce::String (slot.maxValue), false);
     defaultEditor.setText (juce::String (slot.defaultValue), false);
-
-    int curveId = 1;
-    if (slot.curve == CsoundAudioProcessor::ChannelParamCurve::exponential)
-        curveId = 2;
-    else if (slot.curve == CsoundAudioProcessor::ChannelParamCurve::logarithmic)
-        curveId = 3;
-    curveCombo.setSelectedId (curveId, juce::dontSendNotification);
+    skewEditor.setText (juce::String (slot.skew), false);
+    incrementEditor.setText (juce::String (slot.increment), false);
 }
 
 void CsoundParameterMappingPanel::ParamRow::commitFromFields()
@@ -422,12 +426,13 @@ void CsoundParameterMappingPanel::ParamRow::commitFromFields()
     slot.maxValue = maxText.isNotEmpty() ? maxText.getFloatValue() : 1.0f;
     slot.defaultValue = defaultText.isNotEmpty() ? defaultText.getFloatValue() : slot.minValue;
 
-    switch (curveCombo.getSelectedId())
-    {
-        case 2:  slot.curve = CsoundAudioProcessor::ChannelParamCurve::exponential;  break;
-        case 3:  slot.curve = CsoundAudioProcessor::ChannelParamCurve::logarithmic;  break;
-        default: slot.curve = CsoundAudioProcessor::ChannelParamCurve::linear;       break;
-    }
+    // Stesso principio: un campo vuoto o illeggibile mantiene il default
+    // (skew=1.0 lineare, increment=0.001) invece di forzare silenziosamente
+    // 0 (che per skew non avrebbe nemmeno senso - vedi denormalizeChannelParam).
+    const auto skewText = skewEditor.getText().trim();
+    const auto incrementText = incrementEditor.getText().trim();
+    slot.skew = skewText.isNotEmpty() ? skewText.getFloatValue() : 1.0f;
+    slot.increment = incrementText.isNotEmpty() ? incrementText.getFloatValue() : 0.001f;
 
     processor.setChannelParamSlot (index, slot);
 
@@ -505,14 +510,20 @@ void CsoundParameterMappingPanel::ParamRow::paint (juce::Graphics& g)
 
 void CsoundParameterMappingPanel::ParamRow::resized()
 {
-    juce::Rectangle<int> name, min, max, defaultVal, curve;
-    CsoundParameterMappingPanel::layoutColumns (getLocalBounds().reduced (4, 2), handleBounds, name, min, max, defaultVal, curve);
+    juce::Rectangle<int> name, min, max, defaultVal, skewIncrement;
+    CsoundParameterMappingPanel::layoutColumns (getLocalBounds().reduced (4, 2), handleBounds, name, min, max, defaultVal, skewIncrement);
 
     channelNameEditor.setBounds (name);
     minEditor.setBounds (min);
     maxEditor.setBounds (max);
     defaultEditor.setBounds (defaultVal);
-    curveCombo.setBounds (curve);
+
+    // skewIncrement e' un'unica colonna condivisa dai due campi: divisa a
+    // meta' con un piccolo margine fra loro.
+    auto skewArea = skewIncrement.removeFromLeft (skewIncrement.getWidth() / 2 - 3);
+    skewIncrement.removeFromLeft (6);
+    skewEditor.setBounds (skewArea);
+    incrementEditor.setBounds (skewIncrement);
 }
 
 void CsoundParameterMappingPanel::ParamRow::mouseDown (const juce::MouseEvent& event)
@@ -574,12 +585,12 @@ void CsoundParameterMappingPanel::layoutColumns (juce::Rectangle<int> area,
                                                    juce::Rectangle<int>& min,
                                                    juce::Rectangle<int>& max,
                                                    juce::Rectangle<int>& defaultVal,
-                                                   juce::Rectangle<int>& curve)
+                                                   juce::Rectangle<int>& skewIncrement)
 {
     handle = area.removeFromLeft (handleWidth);
     area.removeFromLeft (4);
 
-    curve = area.removeFromRight (curveWidth);
+    skewIncrement = area.removeFromRight (curveWidth);
     area.removeFromRight (6);
 
     defaultVal = area.removeFromRight (defaultWidth);
@@ -1153,9 +1164,10 @@ CsoundParameterMappingPanel::FloatParamsPage::FloatParamsPage (CsoundAudioProces
     setupHeaderLabel (headerMinLabel, "Min", juce::Justification::centredLeft);
     setupHeaderLabel (headerMaxLabel, "Max", juce::Justification::centredLeft);
     setupHeaderLabel (headerDefaultLabel, "Default", juce::Justification::centredLeft);
-    setupHeaderLabel (headerCurveLabel, "Curve", juce::Justification::centredLeft);
+    setupHeaderLabel (headerSkewLabel, "Skew", juce::Justification::centredLeft);
+    setupHeaderLabel (headerIncrementLabel, "Incr", juce::Justification::centredLeft);
 
-    for (auto* label : { &headerNameLabel, &headerMinLabel, &headerMaxLabel, &headerDefaultLabel, &headerCurveLabel })
+    for (auto* label : { &headerNameLabel, &headerMinLabel, &headerMaxLabel, &headerDefaultLabel, &headerSkewLabel, &headerIncrementLabel })
         addAndMakeVisible (*label);
 
     for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
@@ -1196,18 +1208,24 @@ void CsoundParameterMappingPanel::FloatParamsPage::resized()
     // reduced(4,0): stesso inset orizzontale che ParamRow::resized() applica
     // alle righe (getLocalBounds().reduced(4,2)) - senza questo, le colonne
     // dell'intestazione partivano 4px piu' a sinistra dei campi veri sotto,
-    // un disallineamento sottile ma visibile su Min/Max/Default/Curve.
+    // un disallineamento sottile ma visibile su Min/Max/Default/Skew/Incr.
     headerArea = headerArea.reduced (4, 0);
 
-    juce::Rectangle<int> handle, name, min, max, defaultVal, curve;
-    CsoundParameterMappingPanel::layoutColumns (headerArea, handle, name, min, max, defaultVal, curve);
+    juce::Rectangle<int> handle, name, min, max, defaultVal, skewIncrement;
+    CsoundParameterMappingPanel::layoutColumns (headerArea, handle, name, min, max, defaultVal, skewIncrement);
     juce::ignoreUnused (handle);
 
     headerNameLabel.setBounds (name);
     headerMinLabel.setBounds (min);
     headerMaxLabel.setBounds (max);
     headerDefaultLabel.setBounds (defaultVal);
-    headerCurveLabel.setBounds (curve);
+
+    // Stessa divisione a meta' di ParamRow::resized(), cosi' le due
+    // etichette "Skew"/"Incr" restano allineate ai due campi sotto.
+    auto skewArea = skewIncrement.removeFromLeft (skewIncrement.getWidth() / 2 - 3);
+    skewIncrement.removeFromLeft (6);
+    headerSkewLabel.setBounds (skewArea);
+    headerIncrementLabel.setBounds (skewIncrement);
 }
 
 void CsoundParameterMappingPanel::FloatParamsPage::refreshAllFromProcessor()

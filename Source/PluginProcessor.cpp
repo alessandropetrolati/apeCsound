@@ -240,7 +240,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout CsoundAudioProcessor::create
         // che l'host automatizza/salva. Il nome mostrato e il testo del
         // valore (getName/getText, sopra in ChannelHostParameter) seguono
         // invece lo slot corrente, quindi SI aggiornano quando l'utente
-        // rinomina il canale o cambia range/curva nell'editor dei parametri
+        // rinomina il canale o cambia range/skew/increment nell'editor dei parametri
         // - senza bisogno di ricreare il parametro.
         params.push_back (std::make_unique<ChannelHostParameter> (
             *this, i,
@@ -435,46 +435,45 @@ double CsoundAudioProcessor::denormalizeChannelParam (const ChannelParamSlot& sl
 {
     normalized = juce::jlimit (0.0f, 1.0f, normalized);
 
-    // Esponenziale ha senso solo se min e max sono entrambi positivi
-    // (es. una frequenza 20-2000 Hz): altrimenti ripieghiamo su lineare,
-    // non c'e' un logaritmo di un numero <= 0 che abbia senso qui.
-    if (slot.curve == ChannelParamCurve::exponential && slot.minValue > 0.0f && slot.maxValue > 0.0f)
-        return (double) slot.minValue * std::pow ((double) (slot.maxValue / slot.minValue), (double) normalized);
+    // Skew: stesso significato di juce::Slider::setSkewFactor - reshape di
+    // x (0..1) PRIMA dell'interpolazione lineare tra min e max, con
+    // x' = pow(x, skew). skew<=0 non ha senso (pow indefinito/instabile),
+    // ripieghiamo su 1 (lineare) in quel caso.
+    const double skew = slot.skew > 0.0f ? (double) slot.skew : 1.0;
+    const double shaped = ! juce::approximatelyEqual (skew, 1.0) ? std::pow ((double) normalized, skew)
+                                                                   : (double) normalized;
+    double real = juce::jmap (shaped, 0.0, 1.0, (double) slot.minValue, (double) slot.maxValue);
 
-    // Logaritmica: reshape di x PRIMA dell'interpolazione lineare (vedi il
-    // commento su ChannelParamCurve in PluginProcessor.h) - funziona con
-    // QUALSIASI min/max, nessun vincolo di segno.
-    if (slot.curve == ChannelParamCurve::logarithmic)
+    // Increment: quantizza al multiplo piu' vicino a partire da minValue -
+    // <= 0 disabilita lo snap (valore continuo, comportamento di prima).
+    if (slot.increment > 0.0f)
     {
-        const double shaped = std::log10 (1.0 + 9.0 * (double) normalized);
-        return juce::jmap (shaped, 0.0, 1.0, (double) slot.minValue, (double) slot.maxValue);
+        const double steps = std::round ((real - (double) slot.minValue) / (double) slot.increment);
+        real = (double) slot.minValue + steps * (double) slot.increment;
+        real = juce::jlimit ((double) juce::jmin (slot.minValue, slot.maxValue),
+                              (double) juce::jmax (slot.minValue, slot.maxValue), real);
     }
 
-    return juce::jmap ((double) normalized, 0.0, 1.0, (double) slot.minValue, (double) slot.maxValue);
+    return real;
 }
 
 float CsoundAudioProcessor::normalizeChannelParam (const ChannelParamSlot& slot, double real)
 {
-    if (slot.curve == ChannelParamCurve::exponential && slot.minValue > 0.0f && slot.maxValue > 0.0f && real > 0.0)
-    {
-        const double ratio = (double) slot.maxValue / (double) slot.minValue;
-        if (ratio > 0.0 && ! juce::approximatelyEqual (ratio, 1.0))
-            return (float) juce::jlimit (0.0, 1.0, std::log (real / (double) slot.minValue) / std::log (ratio));
-    }
-
     if (juce::approximatelyEqual ((double) slot.maxValue, (double) slot.minValue))
         return 0.0f;
 
-    if (slot.curve == ChannelParamCurve::logarithmic)
-    {
-        // Inversa di denormalizeChannelParam: dal valore reale alla forma
-        // "shaped" (0..1, interpolazione lineare tra min/max), poi inversa
-        // di shaped = log10(1+9x) => x = (10^shaped - 1) / 9.
-        const double shaped = juce::jlimit (0.0, 1.0, juce::jmap (real, (double) slot.minValue, (double) slot.maxValue, 0.0, 1.0));
-        return (float) juce::jlimit (0.0, 1.0, (std::pow (10.0, shaped) - 1.0) / 9.0);
-    }
+    // Inversa di denormalizeChannelParam: dal valore reale alla forma
+    // "shaped" (0..1, interpolazione lineare tra min/max), poi inversa di
+    // shaped = pow(x, skew) => x = pow(shaped, 1/skew). Lo snap
+    // dell'increment non ha un'inversa esatta (e' una perdita di
+    // informazione voluta): qui si normalizza il valore reale cosi' com'e'.
+    const double shaped = juce::jlimit (0.0, 1.0, juce::jmap (real, (double) slot.minValue, (double) slot.maxValue, 0.0, 1.0));
+    const double skew = slot.skew > 0.0f ? (double) slot.skew : 1.0;
 
-    return (float) juce::jlimit (0.0, 1.0, juce::jmap (real, (double) slot.minValue, (double) slot.maxValue, 0.0, 1.0));
+    if (! juce::approximatelyEqual (skew, 1.0))
+        return (float) juce::jlimit (0.0, 1.0, std::pow (shaped, 1.0 / skew));
+
+    return (float) shaped;
 }
 
 void CsoundAudioProcessor::pushChannelParametersToCsound (CSOUND* cs)
@@ -965,9 +964,9 @@ juce::ValueTree CsoundAudioProcessor::buildStateTree (bool includeCsdText)
     // questo getStateInformation/setStateInformation.
     state.appendChild (apvts.copyState(), nullptr);
 
-    // Metadata per-slot (nome canale/range/curva) che apvts non conosce -
-    // vedi il commento su ChannelParamSlot in PluginProcessor.h sul perche'
-    // non vivono nel parametro apvts stesso.
+    // Metadata per-slot (nome canale/range/skew/increment) che apvts non
+    // conosce - vedi il commento su ChannelParamSlot in PluginProcessor.h
+    // sul perche' non vivono nel parametro apvts stesso.
     {
         const juce::ScopedLock sl (channelParamSlotsLock);
         juce::ValueTree slotsTree ("CHANNEL_PARAM_SLOTS");
@@ -985,7 +984,8 @@ juce::ValueTree CsoundAudioProcessor::buildStateTree (bool includeCsdText)
             slotTree.setProperty ("min", (double) slot.minValue, nullptr);
             slotTree.setProperty ("max", (double) slot.maxValue, nullptr);
             slotTree.setProperty ("default", (double) slot.defaultValue, nullptr);
-            slotTree.setProperty ("curve", (int) slot.curve, nullptr);
+            slotTree.setProperty ("skew", (double) slot.skew, nullptr);
+            slotTree.setProperty ("increment", (double) slot.increment, nullptr);
             slotsTree.appendChild (slotTree, nullptr);
         }
 
@@ -1107,7 +1107,7 @@ bool CsoundAudioProcessor::saveSessionToFile (const juce::File& file)
 
     // Il codice vero e proprio resta testo Csound PURO in testa al file -
     // quello che Csound/un editor di testo si aspettano di trovare. Il
-    // mapping dei parametri (nome canale/range/curva/default per slot, piu'
+    // mapping dei parametri (nome canale/range/skew/increment/default per slot, piu'
     // una copia dello stato apvts) va in appendice, dopo una riga vuota,
     // dentro il tag dedicato - mai mescolato dentro il codice stesso.
     juce::String fileContents;
@@ -1204,7 +1204,11 @@ void CsoundAudioProcessor::restoreStateFromTree (const juce::ValueTree& state, c
                         slot.minValue    = (float) (double) slotTree.getProperty ("min", 0.0);
                         slot.maxValue    = (float) (double) slotTree.getProperty ("max", 1.0);
                         slot.defaultValue = (float) (double) slotTree.getProperty ("default", 0.0);
-                        slot.curve       = (ChannelParamCurve) (int) slotTree.getProperty ("curve", 0);
+                        // default 1.0/0.001 anche per sessioni salvate dalla
+                        // vecchia versione a tendina curve (nessuna property
+                        // skew/increment presente in quel caso).
+                        slot.skew        = (float) (double) slotTree.getProperty ("skew", 1.0);
+                        slot.increment   = (float) (double) slotTree.getProperty ("increment", 0.001);
                     }
                 }
             }

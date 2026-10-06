@@ -67,7 +67,7 @@ public:
     (BoolParamSlot) e dei 16 a scelta multipla (ChoiceParamSlot), il canale
     Csound a cui sono assegnati ("rename" - il parametro apvts resta sempre
     "Float N"/"Int N"/"Bool N"/"Choice N" per l'host) e i relativi metadata
-    (range/default/curva per i float, range/default per gli interi, default
+    (range/default/skew/increment per i float, range/default per gli interi, default
     on/off per i bool, etichette/indice di default per i choice).
 
     I quattro tipi sono isolati in QUATTRO TAB separate, nell'ordine Float,
@@ -127,7 +127,7 @@ public:
     // solo: lascia all'editor la responsabilita' di gestire overlay/velo.
     std::function<void()> onCloseButtonClicked;
 
-    // Larghezze fisse delle colonne handle/min/max/default/curva (vedi
+    // Larghezze fisse delle colonne handle/min/max/default/skew/increment (vedi
     // layoutColumns()); nameWidth e' solo la larghezza MINIMA del campo
     // nome, usata per calcolare preferredWidth - il campo stesso si allarga
     // con la finestra. preferredWidth/preferredHeight sono il riferimento
@@ -137,7 +137,9 @@ public:
     static constexpr int nameWidth = 108;
     static constexpr int minMaxWidth = 80;
     static constexpr int defaultWidth = 80;
-    static constexpr int curveWidth = 130;
+    // Colonna condivisa da skew e increment (vedi layoutColumns()): divisa a
+    // meta' da ParamRow/FloatParamsPage in due campi affiancati.
+    static constexpr int curveWidth = 160;
     static constexpr int preferredWidth = handleWidth + nameWidth + minMaxWidth * 2 + defaultWidth + curveWidth + 10 + 16 + 16 + 10;
 
     // Abbastanza alto da mostrare tutte le 16 righe di qualunque tab (Float/
@@ -152,24 +154,25 @@ public:
 
 private:
     // Divide "area" nelle stesse 6 colonne (handle/nome/min/max/default/
-    // curva) sia per l'intestazione sia per ogni ParamRow, cosi' le
-    // etichette nell'intestazione restano SEMPRE allineate ai campi sotto -
-    // un'unica fonte di verita' per il layout, invece di ricalcolarlo due
-    // volte con margini separati che potrebbero disallinearsi. handle/min/
-    // max/default/curva hanno larghezza FISSA; il nome prende tutto lo
-    // spazio che resta (fino al campo min), quindi l'intera riga scala con
-    // la larghezza di "area".
+    // skew+increment) sia per l'intestazione sia per ogni ParamRow, cosi'
+    // le etichette nell'intestazione restano SEMPRE allineate ai campi
+    // sotto - un'unica fonte di verita' per il layout, invece di
+    // ricalcolarlo due volte con margini separati che potrebbero
+    // disallinearsi. handle/min/max/default/skewIncrement hanno larghezza
+    // FISSA (l'ultima e' condivisa da due campi affiancati - vedi
+    // ParamRow::resized()); il nome prende tutto lo spazio che resta (fino
+    // al campo min), quindi l'intera riga scala con la larghezza di "area".
     static void layoutColumns (juce::Rectangle<int> area,
                                 juce::Rectangle<int>& handle,
                                 juce::Rectangle<int>& name,
                                 juce::Rectangle<int>& min,
                                 juce::Rectangle<int>& max,
                                 juce::Rectangle<int>& defaultVal,
-                                juce::Rectangle<int>& curve);
+                                juce::Rectangle<int>& skewIncrement);
 
     // Stesso schema di layoutColumns() ma per le righe Int: handle + nome
-    // (elastico) + min/max/default (fissi), senza colonna curva (sempre
-    // lineare per gli interi). Usata sia per IntParamRow sia per
+    // (elastico) + min/max/default (fissi), senza colonna skew/increment
+    // (sempre lineare, passo 1, per gli interi). Usata sia per IntParamRow sia per
     // l'intestazione della tab Int.
     static void layoutIntColumns (juce::Rectangle<int> area,
                                    juce::Rectangle<int>& handle,
@@ -198,11 +201,10 @@ private:
 
     // Una riga per slot: maniglia di trascinamento "#N", nome canale
     // (TextEditor, larghezza elastica - vedi layoutColumns()), min/max/
-    // default (TextEditor) e curva (ComboBox). Ogni modifica (Return, focus
-    // perso, o selezione nel combo) rilegge subito lo slot corrente dal
-    // processor, applica il singolo campo cambiato e lo riscrive - cosi'
-    // una modifica a un campo non perde quelle fatte agli altri nel
-    // frattempo.
+    // default/skew/increment (tutti TextEditor). Ogni modifica (Return o
+    // focus perso) rilegge subito lo slot corrente dal processor, applica
+    // il singolo campo cambiato e lo riscrive - cosi' una modifica a un
+    // campo non perde quelle fatte agli altri nel frattempo.
     struct ParamRow final : public juce::Component,
                              private juce::TextEditor::Listener
     {
@@ -246,14 +248,15 @@ private:
         juce::TextEditor minEditor;
         juce::TextEditor maxEditor;
         juce::TextEditor defaultEditor;
-        juce::ComboBox curveCombo;
+        juce::TextEditor skewEditor;
+        juce::TextEditor incrementEditor;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ParamRow)
     };
 
     // Una riga per slot intero: maniglia di trascinamento "#N", nome canale
     // (elastico), min/max/default (TextEditor, interi) - stesso schema di
-    // ParamRow ma senza combo curva (gli interi usano sempre una mappatura
+    // ParamRow ma senza skew/increment (gli interi usano sempre una mappatura
     // lineare, vedi CsoundAudioProcessor::denormalizeIntParam).
     struct IntParamRow final : public juce::Component,
                                 private juce::TextEditor::Listener
@@ -294,7 +297,7 @@ private:
 
     // Una riga per slot booleano: maniglia di trascinamento "#N", nome
     // canale (elastico) e un toggle per il default on/off - stesso schema
-    // di ParamRow ma senza min/max/curva (non ha senso per un on/off).
+    // di ParamRow ma senza min/max/skew/increment (non ha senso per un on/off).
     struct BoolParamRow final : public juce::Component,
                                  private juce::TextEditor::Listener
     {
@@ -389,7 +392,7 @@ private:
     private:
         juce::Viewport viewport;
         juce::Component rowsContainer;
-        juce::Label headerNameLabel, headerMinLabel, headerMaxLabel, headerDefaultLabel, headerCurveLabel;
+        juce::Label headerNameLabel, headerMinLabel, headerMaxLabel, headerDefaultLabel, headerSkewLabel, headerIncrementLabel;
         std::array<std::unique_ptr<ParamRow>, (size_t) CsoundAudioProcessor::numChannelParams> rows;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FloatParamsPage)

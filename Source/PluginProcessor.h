@@ -45,7 +45,7 @@ class CsoundAudioProcessor; // vedi ChannelHostParameter sotto
       - getName(): il nome del canale Csound assegnato ("rename"), se non
         vuoto, altrimenti il nome di default "Param N";
       - getText()/getValueForText(): il valore denormalizzato (vero min/max/
-        curva), non il numero 0..1 grezzo, cosi' l'host (automazione,
+        skew/increment), non il numero 0..1 grezzo, cosi' l'host (automazione,
         tooltip) mostra qualcosa di leggibile invece di "0.42";
       - getDefaultValue(): il defaultValue dello slot (denormalizzato come
         sopra), cosi' il "reset to default" dell'host usa il valore scelto
@@ -199,9 +199,9 @@ public:
     // Ogni parametro apvts resta SEMPRE un float normalizzato 0..1, MAI
     // modificato dopo la costruzione (nome, range incluso): e' quello che
     // l'host vede, automatizza e salva, quindi deve restare stabile. Nome
-    // "vero" (es. "freq"), range reale (es. 20-2000) e curva (lineare/
-    // esponenziale) che l'utente definisce nel futuro editor dei parametri
-    // vivono SOLO qui, in ChannelParamSlot: sono usati per denormalizzare
+    // "vero" (es. "freq"), range reale (es. 20-2000), skew e increment che
+    // l'utente definisce nel futuro editor dei parametri vivono SOLO qui,
+    // in ChannelParamSlot: sono usati per denormalizzare
     // il valore 0..1 dell'host nel valore reale da scrivere nel canale
     // Csound (vedi denormalizeChannelParam) e per etichettare la UI
     // nostra (slider nell'editor dei parametri, popup cliccando
@@ -210,23 +210,17 @@ public:
     // runtime.
     static constexpr int numChannelParams = 16;
 
-    // exponential: valore = min*(max/min)^x - adatta a range tutto positivo
-    // (es. frequenza 20-2000 Hz), risoluzione fine in basso, grossolana in
-    // alto - la classica "taper" da synth per i controlli di frequenza.
-    // logarithmic: reshape del normalizzato x PRIMA di interpolare
-    // linearmente tra min e max (x' = log10(1+9x), min+(max-min)*x') -
-    // andamento OPPOSTO all'esponenziale (risoluzione fine in ALTO, veloce
-    // in basso - utile per es. per un parametro di feedback/resonance dove
-    // interessa il dettaglio vicino al massimo) e funziona con QUALSIASI
-    // min/max (anche negativi o min>0 non richiesto), a differenza
-    // dell'esponenziale.
-    enum class ChannelParamCurve
-    {
-        linear = 0,
-        exponential = 1,
-        logarithmic = 2
-    };
-
+    // skew: stesso significato di juce::Slider::setSkewFactor - reshape del
+    // normalizzato x (0..1) PRIMA di interpolare linearmente tra min e max,
+    // con x' = pow(x, skew). skew=1 e' lineare; skew<1 da' piu' risoluzione
+    // vicino a max (sale rapido all'inizio, poi si appiattisce - utile per
+    // es. per una frequenza, dove interessa il dettaglio in alto); skew>1
+    // da' piu' risoluzione vicino a min. Funziona con QUALSIASI min/max
+    // (anche negativi), a differenza di un esponenziale classico.
+    // increment: passo di quantizzazione in unita' REALI (come minValue/
+    // maxValue) - il valore denormalizzato viene arrotondato al multiplo
+    // di increment piu' vicino a partire da minValue. <= 0 disabilita lo
+    // snap (valore continuo).
     struct ChannelParamSlot
     {
         // Vuoto = slot non assegnato a nessun canale Csound (non viene
@@ -235,7 +229,8 @@ public:
         float minValue = 0.0f;
         float maxValue = 1.0f;
         float defaultValue = 0.0f; // in unita' REALI (come minValue/maxValue, non normalizzato 0..1)
-        ChannelParamCurve curve = ChannelParamCurve::linear;
+        float skew = 1.0f;
+        float increment = 0.001f;
     };
 
     /** ID stabile (mai da cambiare, anche in futuro: e' quello con cui host
@@ -247,8 +242,8 @@ public:
     void setChannelParamSlot (int index, const ChannelParamSlot& slot);
 
     /** Converte il valore normalizzato 0..1 del parametro apvts nel valore
-        reale (secondo min/max/curva di quello slot) da scrivere nel canale
-        Csound. Funzione pura, nessun lock. */
+        reale (secondo min/max/skew/increment di quello slot) da scrivere
+        nel canale Csound. Funzione pura, nessun lock. */
     static double denormalizeChannelParam (const ChannelParamSlot& slot, float normalized);
 
     /** Inversa di denormalizeChannelParam: dal valore reale al normalizzato
@@ -258,7 +253,7 @@ public:
     static float normalizeChannelParam (const ChannelParamSlot& slot, double real);
 
     // --- 16 "macro" parametri host INTERI, stesso disegno dei 16 float qui
-    //     sopra ma senza curva (sempre lineare) - vedi IntHostParameter e
+    //     sopra ma senza skew/increment (sempre lineare, passo 1) - vedi IntHostParameter e
     //     IntParamSlot. Range nativo apvts fisso 0..intHostRangeMax (molti
     //     passi per una risoluzione di automazione decente), min/max/default
     //     REALI (interi) solo nello slot. Il valore spinto al canale Csound
@@ -445,7 +440,7 @@ public:
     // valori normalizzati 0..1 - gia' gestito in automatico dall'host in
     // VST3/AU, ma lo salviamo comunque anche qui perche' la Standalone si
     // appoggia solo a getStateInformation/setStateInformation) e i
-    // metadata per-slot (nome canale/range/curva) che apvts non conosce.
+    // metadata per-slot (nome canale/range/skew/increment) che apvts non conosce.
     // In Fase 3 qui andra' aggiunto anche il layout della GUI (widget).
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
@@ -461,7 +456,7 @@ public:
     // getCsdText() ritorna, apribile/eseguibile anche fuori da questo
     // plugin (Csound stesso, un editor di testo, un altro host) - non un
     // formato proprietario/binario. Il mapping dei 64 parametri (nome
-    // canale/range/curva/default per slot) viene scritto in APPENDICE, dopo
+    // canale/range/skew/increment/default per slot) viene scritto in APPENDICE, dopo
     // il codice, dentro un tag <CsoundStudioParams>...</CsoundStudioParams>
     // creato apposta: Csound analizza un .csd cercando i tag <CsOptions>/
     // <CsInstruments>/<CsScore> per nome, quindi ignora senza problemi

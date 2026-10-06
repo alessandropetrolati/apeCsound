@@ -46,8 +46,8 @@
     aperto. Non sostituisce piu' l'area della consolle come in una versione
     precedente: consolle ed editor restano sempre al loro posto. Qui si
     definisce il "rename" (nome canale Csound) e i metadata (range/default/
-    curva per i parametri float, default per i bool, etichette/indice per i
-    choice) dei 64 slot apvts, isolati in tab separate dentro il pannello
+    skew/increment per i parametri float, default per i bool, etichette/
+    indice per i choice) dei 64 slot apvts, isolati in tab separate dentro il pannello
     (vedi CsoundParameterMappingPanel). I VALORI restano affidati
     all'automazione host o a una UI dedicata futura, qui si editano solo i
     metadata per slot.

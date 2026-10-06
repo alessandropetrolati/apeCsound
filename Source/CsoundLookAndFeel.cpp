@@ -37,7 +37,7 @@ namespace
     }
 
     // MDI "tune": tre slider orizzontali con manopola - apre la finestra di
-    // mapping dei parametri (rename canale + range/curva per slot).
+    // mapping dei parametri (rename canale + range/skew/increment per slot).
     juce::Path makeTuneIconPath()
     {
         return juce::Drawable::parseSVGPath (

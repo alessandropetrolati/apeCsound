@@ -63,6 +63,11 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     applyButton.setName ("apply");
     applyButton.onClick = [this]
     {
+        // Pulisce la consolle ad ogni Apply: i messaggi/errori della
+        // compilazione precedente non hanno piu' senso una volta applicato
+        // il nuovo codice, e mischiati ai nuovi renderebbero il log
+        // confuso da leggere.
+        logConsole.clear();
         appendToLog ("--- Applying edited .csd ---");
         audioProcessor.compileAndStart (document.getAllContent());
 
@@ -78,7 +83,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     addAndMakeVisible (clearConsoleButton);
 
     // Mostra/nasconde il pannello flottante per rinominare i canali Csound
-    // dei 64 slot apvts (float/int/bool/choice) e definirne range/curva -
+    // dei 64 slot apvts (float/int/bool/choice) e definirne range/skew/increment -
     // vedi CsoundParameterEditor.h/.cpp e toggleParameterPanel().
     paramsButton.setName ("params");
     paramsButton.onClick = [this] { toggleParameterPanel(); };
