@@ -48,6 +48,19 @@ private:
 
     void appendToLog (const juce::String& text);
 
+    // Barra fissa (non un popup) tra l'editor e la consolle: mostra
+    // sintassi + descrizione dell'opcode su cui si trova il caret
+    // (digitato, cliccato, o raggiunto con le freccie), alimentata da
+    // CsoundCodeEditor::onOpcodeHelpChanged.
+    struct OpcodeHelpBar final : public juce::Component
+    {
+        void paint (juce::Graphics& g) override;
+        void setHelpText (const juce::String& syntax, const juce::String& description);
+
+    private:
+        juce::String syntaxText, descriptionText;
+    };
+
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     CsoundAudioProcessor& audioProcessor;
@@ -55,6 +68,9 @@ private:
     juce::CodeDocument document;
     CsoundTokeniser tokeniser;
     CsoundCodeEditor editor { document, &tokeniser };
+
+    OpcodeHelpBar opcodeHelpBar;
+    static constexpr int opcodeHelpBarHeight = 26;
 
     juce::TextEditor logConsole;
 

@@ -1,0 +1,65 @@
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Resources
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/Current
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Info.plist
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/CsoundLib64
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csdebug.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/sysdep.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/float-version.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/version.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/plugin.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_circular_buffer.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_rtaudio.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/text.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_server.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_threads.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_misc.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/pvfileio.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/interlocks.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/pstream.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound.hpp
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_types.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/modload.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/cs_par_structs.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_files.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csPerfThread.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/ugen.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csoundCore.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/soundio.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/arrays.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_compiler.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_rtmidi.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_type_system.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_data_structures.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/coreDefs.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/msg_attr.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/cfgvar.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csdl.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_graph_display.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/cwindow.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/soundfile.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound_structs.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csPerfThread.hpp
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound.h
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/CsoundLib64
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Headers
+/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64/lib/libCsoundLib64.a
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libdeprecated.dylib
+/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64/bin/csound
+/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64/bin/csdebugger
+/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64/share/csound/CsoundTargets.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64/share/csound/CsoundTargets-release.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64/share/csound/CsoundStaticTargets.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64/share/csound/CsoundStaticTargets-release.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64/share/csound/CsoundConfig.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64/share/csound/CsoundConfigVersion.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64/share/csound/FindCsound.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64/share/csound/FindWasmtime.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64/lib/pkgconfig/csound.pc
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/samples/hrtf-44100-left.dat
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/samples/hrtf-44100-right.dat
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/samples/hrtf-96000-right.dat
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/samples/hrtf-96000-left.dat
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/samples/README
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/samples/hrtf-48000-right.dat
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/samples/sf_GMbank.sf2
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/samples/hrtf-48000-left.dat

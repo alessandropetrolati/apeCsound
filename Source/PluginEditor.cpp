@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <cmath>
 
 //==============================================================================
 CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
@@ -30,6 +31,20 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // cosi' la console non appare vuota alla (ri)apertura.
     for (const auto& msg : audioProcessor.getMessageHistory())
         appendToLog (msg);
+
+    // Se il motore e' gia' in esecuzione (prepareToPlay puo' essere stato
+    // chiamato prima che questo editor esistesse), alimentiamo subito
+    // l'autocompletamento/help inline con l'elenco reale degli opcode;
+    // altrimenti arrivera' tramite csoundEngineStarted() non appena parte.
+    editor.setOpcodeSignatures (audioProcessor.getOpcodeSignatures());
+
+    // La barra di help sotto l'editor viene riempita (o svuotata)
+    // direttamente da CsoundCodeEditor, in base a dove si trova il caret.
+    editor.onOpcodeHelpChanged = [this] (const juce::String& syntax, const juce::String& description)
+    {
+        opcodeHelpBar.setHelpText (syntax, description);
+    };
+    addAndMakeVisible (opcodeHelpBar);
 
     // Il nome del Component e' come CsoundLookAndFeel sceglie quale icona
     // disegnare (vedi getIconPathForButtonName) - non ha altro effetto.
@@ -122,9 +137,61 @@ void CsoundAudioProcessorEditor::resized()
     area.removeFromTop (8);
 
     auto logArea = area.removeFromBottom (180);
+    auto helpBarArea = area.removeFromBottom (opcodeHelpBarHeight);
 
     editor.setBounds (area);
+    opcodeHelpBar.setBounds (helpBarArea);
     logConsole.setBounds (logArea);
+}
+
+void CsoundAudioProcessorEditor::OpcodeHelpBar::setHelpText (const juce::String& syntax, const juce::String& description)
+{
+    syntaxText = syntax;
+    descriptionText = description;
+    repaint();
+}
+
+void CsoundAudioProcessorEditor::OpcodeHelpBar::paint (juce::Graphics& g)
+{
+    auto bounds = getLocalBounds();
+
+    // Stesso tono "post-it" del popup di autocompletamento, cosi' le due
+    // forme di help inline (barra fissa + popup flottante) si riconoscono
+    // come parte della stessa funzionalita'.
+    g.setColour (juce::Colour (0xfffdf6e3));
+    g.fillRect (bounds);
+    g.setColour (juce::Colour (0xffd7c89a));
+    g.drawLine (0.0f, (float) bounds.getHeight() - 0.5f, (float) bounds.getWidth(), (float) bounds.getHeight() - 0.5f, 1.0f);
+
+    auto area = bounds.reduced (10, 0);
+
+    if (syntaxText.isEmpty() && descriptionText.isEmpty())
+    {
+        g.setColour (juce::Colour (0xff8a7a55));
+        g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::italic)));
+        g.drawText ("Click an opcode, or type one, for inline help.", area, juce::Justification::centredLeft, true);
+        return;
+    }
+
+    const auto monoFont = juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::bold));
+
+    // Font::getStringWidth/-Float non sono disponibili in questa versione
+    // di JUCE: la via raccomandata per misurare il testo e' GlyphArrangement.
+    juce::GlyphArrangement glyphs;
+    glyphs.addLineOfText (monoFont, syntaxText, 0.0f, 0.0f);
+    const auto syntaxWidth = juce::jmin ((int) std::ceil (glyphs.getBoundingBox (0, -1, true).getWidth()),
+                                          area.getWidth() / 2);
+
+    auto syntaxArea = area.removeFromLeft (syntaxWidth);
+    g.setFont (monoFont);
+    g.setColour (juce::Colour (0xff5b4636));
+    g.drawFittedText (syntaxText, syntaxArea, juce::Justification::centredLeft, 1);
+
+    area.removeFromLeft (10);
+
+    g.setFont (juce::Font (juce::FontOptions (13.0f)));
+    g.setColour (juce::Colour (0xff3a3a3a));
+    g.drawFittedText (descriptionText, area, juce::Justification::centredLeft, 1);
 }
 
 void CsoundAudioProcessorEditor::csoundMessageReceived (const juce::String& message)
@@ -134,6 +201,10 @@ void CsoundAudioProcessorEditor::csoundMessageReceived (const juce::String& mess
 
 void CsoundAudioProcessorEditor::csoundEngineStarted()
 {
+    // Il motore viene (ri)compilato con un'istanza CSOUND* nuova ogni
+    // volta (vedi compileAndStart): l'elenco opcode va quindi ripreso da
+    // capo ogni volta che riparte, non solo alla creazione dell'editor.
+    editor.setOpcodeSignatures (audioProcessor.getOpcodeSignatures());
 }
 
 void CsoundAudioProcessorEditor::csoundEngineStopped()

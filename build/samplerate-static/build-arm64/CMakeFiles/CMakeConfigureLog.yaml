@@ -1,0 +1,1862 @@
+
+---
+events:
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineSystem.cmake:12 (find_program)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_UNAME"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "uname"
+    candidate_directories:
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    searched_directories:
+      - "/opt/homebrew/bin/uname"
+      - "/opt/homebrew/sbin/uname"
+      - "/usr/local/bin/uname"
+      - "/System/Cryptexes/App/usr/bin/uname"
+    found: "/usr/bin/uname"
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineSystem.cmake:212 (message)"
+      - "CMakeLists.txt:3 (project)"
+    message: |
+      The system is: Darwin - 25.6.0 - arm64
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeUnixFindMake.cmake:5 (find_program)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_MAKE_PROGRAM"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "gmake"
+      - "make"
+      - "smake"
+    candidate_directories:
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    searched_directories:
+      - "/opt/homebrew/bin/gmake"
+      - "/opt/homebrew/sbin/gmake"
+      - "/usr/local/bin/gmake"
+      - "/System/Cryptexes/App/usr/bin/gmake"
+      - "/usr/bin/gmake"
+      - "/bin/gmake"
+      - "/usr/sbin/gmake"
+      - "/sbin/gmake"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/gmake"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/gmake"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/gmake"
+      - "/pkg/env/global/bin/gmake"
+      - "/opt/X11/bin/gmake"
+      - "/Library/Apple/usr/bin/gmake"
+      - "/Applications/Wireshark.app/Contents/MacOS/gmake"
+      - "/Applications/VMware Fusion.app/Contents/Public/gmake"
+      - "/usr/local/share/dotnet/gmake"
+      - "/Users/alessandropetrolati/.dotnet/tools/gmake"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/gmake"
+      - "/opt/homebrew/bin/make"
+      - "/opt/homebrew/sbin/make"
+      - "/usr/local/bin/make"
+      - "/System/Cryptexes/App/usr/bin/make"
+    found: "/usr/bin/make"
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompiler.cmake:73 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:64 (_cmake_find_compiler)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_C_COMPILER"
+    description: "C compiler"
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "cc"
+      - "gcc"
+      - "cl"
+      - "bcc"
+      - "xlc"
+      - "icx"
+      - "clang"
+    candidate_directories:
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    searched_directories:
+      - "/opt/homebrew/bin/cc"
+      - "/opt/homebrew/sbin/cc"
+      - "/usr/local/bin/cc"
+      - "/System/Cryptexes/App/usr/bin/cc"
+    found: "/usr/bin/cc"
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompilerId.cmake:462 (find_file)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompilerId.cmake:500 (CMAKE_DETERMINE_COMPILER_ID_WRITE)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompilerId.cmake:8 (CMAKE_DETERMINE_COMPILER_ID_BUILD)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:122 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "file"
+    variable: "src_in"
+    description: "Path to a file."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "CMakeCCompilerId.c.in"
+    candidate_directories:
+      - "/opt/homebrew/share/cmake/Modules/"
+    found: "/opt/homebrew/share/cmake/Modules/CMakeCCompilerId.c.in"
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:122 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:3 (project)"
+    message: |
+      Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+      Compiler: /usr/bin/cc 
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      
+      
+      Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
+      
+      The C compiler identification is AppleClang, found in:
+        /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/4.1.0/CompilerIdC/a.out
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompilerId.cmake:290 (message)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:122 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:3 (project)"
+    message: |
+      Detecting C compiler apple sysroot: "/usr/bin/cc" "-E" "apple-sdk.c"
+        # 1 "apple-sdk.c"
+        # 1 "<built-in>" 1
+        # 1 "<built-in>" 3
+        # 484 "<built-in>" 3
+        # 1 "<command line>" 1
+        # 1 "<built-in>" 2
+        # 1 "apple-sdk.c" 2
+        # 1 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityMacros.h" 1 3 4
+        # 89 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityMacros.h" 3 4
+        # 1 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityVersions.h" 1 3 4
+        # 90 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityMacros.h" 2 3 4
+        # 1 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/TargetConditionals.h" 1 3 4
+        # 91 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityMacros.h" 2 3 4
+        # 207 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityMacros.h" 3 4
+        # 1 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/Availability.h" 1 3 4
+        # 196 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/Availability.h" 3 4
+        # 1 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityVersions.h" 1 3 4
+        # 197 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/Availability.h" 2 3 4
+        # 1 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityInternal.h" 1 3 4
+        # 33 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityInternal.h" 3 4
+        # 1 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityVersions.h" 1 3 4
+        # 34 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityInternal.h" 2 3 4
+        # 198 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/Availability.h" 2 3 4
+        # 1 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityInternalLegacy.h" 1 3 4
+        # 34 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityInternalLegacy.h" 3 4
+        # 1 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityInternal.h" 1 3 4
+        # 35 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityInternalLegacy.h" 2 3 4
+        # 199 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/Availability.h" 2 3 4
+        # 208 "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityMacros.h" 2 3 4
+        # 2 "apple-sdk.c" 2
+        
+        
+      Found apple sysroot: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeFindBinUtils.cmake:238 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:200 (include)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_AR"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "ar"
+    candidate_directories:
+      - "/usr/bin/"
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    found: "/usr/bin/ar"
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeFindBinUtils.cmake:238 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:200 (include)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_RANLIB"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "ranlib"
+    candidate_directories:
+      - "/usr/bin/"
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    found: "/usr/bin/ranlib"
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeFindBinUtils.cmake:238 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:200 (include)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_STRIP"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "strip"
+    candidate_directories:
+      - "/usr/bin/"
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    found: "/usr/bin/strip"
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeFindBinUtils.cmake:238 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:200 (include)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_LINKER"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "ld"
+    candidate_directories:
+      - "/usr/bin/"
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    found: "/usr/bin/ld"
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeFindBinUtils.cmake:238 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:200 (include)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_NM"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "nm"
+    candidate_directories:
+      - "/usr/bin/"
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    found: "/usr/bin/nm"
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeFindBinUtils.cmake:238 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:200 (include)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_OBJDUMP"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "objdump"
+    candidate_directories:
+      - "/usr/bin/"
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    found: "/usr/bin/objdump"
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeFindBinUtils.cmake:238 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:200 (include)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_OBJCOPY"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "objcopy"
+    candidate_directories:
+      - "/usr/bin/"
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    searched_directories:
+      - "/usr/bin/objcopy"
+      - "/opt/homebrew/bin/objcopy"
+      - "/opt/homebrew/sbin/objcopy"
+      - "/usr/local/bin/objcopy"
+      - "/System/Cryptexes/App/usr/bin/objcopy"
+      - "/bin/objcopy"
+      - "/usr/sbin/objcopy"
+      - "/sbin/objcopy"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/objcopy"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/objcopy"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/objcopy"
+      - "/pkg/env/global/bin/objcopy"
+      - "/opt/X11/bin/objcopy"
+      - "/Library/Apple/usr/bin/objcopy"
+      - "/Applications/Wireshark.app/Contents/MacOS/objcopy"
+      - "/Applications/VMware Fusion.app/Contents/Public/objcopy"
+      - "/usr/local/share/dotnet/objcopy"
+      - "/Users/alessandropetrolati/.dotnet/tools/objcopy"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/objcopy"
+    found: false
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeFindBinUtils.cmake:238 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:200 (include)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_READELF"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "readelf"
+    candidate_directories:
+      - "/usr/bin/"
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    searched_directories:
+      - "/usr/bin/readelf"
+      - "/opt/homebrew/bin/readelf"
+      - "/opt/homebrew/sbin/readelf"
+      - "/usr/local/bin/readelf"
+      - "/System/Cryptexes/App/usr/bin/readelf"
+      - "/bin/readelf"
+      - "/usr/sbin/readelf"
+      - "/sbin/readelf"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/readelf"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/readelf"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/readelf"
+      - "/pkg/env/global/bin/readelf"
+      - "/opt/X11/bin/readelf"
+      - "/Library/Apple/usr/bin/readelf"
+      - "/Applications/Wireshark.app/Contents/MacOS/readelf"
+      - "/Applications/VMware Fusion.app/Contents/Public/readelf"
+      - "/usr/local/share/dotnet/readelf"
+      - "/Users/alessandropetrolati/.dotnet/tools/readelf"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/readelf"
+    found: false
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeFindBinUtils.cmake:238 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:200 (include)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_DLLTOOL"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "dlltool"
+    candidate_directories:
+      - "/usr/bin/"
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    searched_directories:
+      - "/usr/bin/dlltool"
+      - "/opt/homebrew/bin/dlltool"
+      - "/opt/homebrew/sbin/dlltool"
+      - "/usr/local/bin/dlltool"
+      - "/System/Cryptexes/App/usr/bin/dlltool"
+      - "/bin/dlltool"
+      - "/usr/sbin/dlltool"
+      - "/sbin/dlltool"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/dlltool"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/dlltool"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/dlltool"
+      - "/pkg/env/global/bin/dlltool"
+      - "/opt/X11/bin/dlltool"
+      - "/Library/Apple/usr/bin/dlltool"
+      - "/Applications/Wireshark.app/Contents/MacOS/dlltool"
+      - "/Applications/VMware Fusion.app/Contents/Public/dlltool"
+      - "/usr/local/share/dotnet/dlltool"
+      - "/Users/alessandropetrolati/.dotnet/tools/dlltool"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/dlltool"
+    found: false
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeFindBinUtils.cmake:238 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:200 (include)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_ADDR2LINE"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "addr2line"
+    candidate_directories:
+      - "/usr/bin/"
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    searched_directories:
+      - "/usr/bin/addr2line"
+      - "/opt/homebrew/bin/addr2line"
+      - "/opt/homebrew/sbin/addr2line"
+      - "/usr/local/bin/addr2line"
+      - "/System/Cryptexes/App/usr/bin/addr2line"
+      - "/bin/addr2line"
+      - "/usr/sbin/addr2line"
+      - "/sbin/addr2line"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/addr2line"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/addr2line"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/addr2line"
+      - "/pkg/env/global/bin/addr2line"
+      - "/opt/X11/bin/addr2line"
+      - "/Library/Apple/usr/bin/addr2line"
+      - "/Applications/Wireshark.app/Contents/MacOS/addr2line"
+      - "/Applications/VMware Fusion.app/Contents/Public/addr2line"
+      - "/usr/local/share/dotnet/addr2line"
+      - "/Users/alessandropetrolati/.dotnet/tools/addr2line"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/addr2line"
+    found: false
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeFindBinUtils.cmake:238 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCCompiler.cmake:200 (include)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_TAPI"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "tapi"
+    candidate_directories:
+      - "/usr/bin/"
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    searched_directories:
+      - "/usr/bin/tapi"
+      - "/opt/homebrew/bin/tapi"
+      - "/opt/homebrew/sbin/tapi"
+      - "/usr/local/bin/tapi"
+      - "/System/Cryptexes/App/usr/bin/tapi"
+      - "/bin/tapi"
+      - "/usr/sbin/tapi"
+      - "/sbin/tapi"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/tapi"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/tapi"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/tapi"
+      - "/pkg/env/global/bin/tapi"
+      - "/opt/X11/bin/tapi"
+      - "/Library/Apple/usr/bin/tapi"
+      - "/Applications/Wireshark.app/Contents/MacOS/tapi"
+      - "/Applications/VMware Fusion.app/Contents/Public/tapi"
+      - "/usr/local/share/dotnet/tapi"
+      - "/Users/alessandropetrolati/.dotnet/tools/tapi"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/tapi"
+    found: false
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/Platform/Darwin.cmake:76 (find_program)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeSystemSpecificInformation.cmake:32 (include)"
+      - "CMakeLists.txt:3 (project)"
+    mode: "program"
+    variable: "CMAKE_INSTALL_NAME_TOOL"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "install_name_tool"
+    candidate_directories:
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+    searched_directories:
+      - "/opt/homebrew/bin/install_name_tool"
+      - "/opt/homebrew/sbin/install_name_tool"
+      - "/usr/local/bin/install_name_tool"
+      - "/System/Cryptexes/App/usr/bin/install_name_tool"
+    found: "/usr/bin/install_name_tool"
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:83 (try_compile)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:3 (project)"
+    checks:
+      - "Detecting C compiler ABI info"
+    directories:
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_OSX_ARCHITECTURES: "arm64"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
+      CMAKE_OSX_SYSROOT: ""
+    buildResult:
+      variable: "CMAKE_C_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7'
+        
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_b1499/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_b1499.dir/build.make CMakeFiles/cmTC_b1499.dir/build
+        Building C object CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o
+        /usr/bin/cc   -arch arm64 -mmacosx-version-min=10.14   -v -Wl,-v -MD -MT CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -c /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c
+        Apple clang version 21.0.0 (clang-2100.3.34.2)
+        Target: arm64-apple-darwin25.6.0
+        Thread model: posix
+        InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+        clang: warning: -Wl,-v: 'linker' input unused [-Wunused-command-line-argument]
+         "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang" -cc1 -triple arm64-apple-macosx10.14.0 -Wundef-prefix=TARGET_OS_ -Wdeprecated-objc-isa-usage -Werror=deprecated-objc-isa-usage -Werror=implicit-function-declaration -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCCompilerABI.c -mrelocation-model pic -pic-level 2 -mframe-pointer=non-leaf -fno-strict-return -ffp-contract=on -fno-rounding-math -funwind-tables=1 -fobjc-msgsend-selector-stubs -fno-sized-deallocation -target-sdk-version=27.0 -fdepfile-entry=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json -fvisibility-inlines-hidden-static-local-var -fno-modulemap-allow-subdirectory-search -fdefine-target-os-macros -fno-assume-unique-vtables -fno-modulemap-allow-subdirectory-search -enable-tlsdesc -target-cpu apple-m1 -target-feature +v8.5a -target-feature +aes -target-feature +altnzcv -target-feature +ccdp -target-feature +ccpp -target-feature +complxnum -target-feature +crc -target-feature +dotprod -target-feature +flagm -target-feature +fp-armv8 -target-feature +fp16fml -target-feature +fptoint -target-feature +fullfp16 -target-feature +jsconv -target-feature +lse -target-feature +neon -target-feature +pauth -target-feature +perfmon -target-feature +predres -target-feature +ras -target-feature +rcpc -target-feature +rdm -target-feature +sb -target-feature +sha2 -target-feature +sha3 -target-feature +specrestrict -target-feature +ssbs -target-abi darwinpcs -debugger-tuning=lldb "-fdebug-compilation-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7" -target-linker-version 1166.2 -v "-fcoverage-compilation-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7" -resource-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o.d -skip-unused-modulemap-deps -MT CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -sys-header-deps -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -I/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/SubFrameworks -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/Library/Frameworks -Wno-elaborated-enum-base -ferror-limit 19 -stack-protector 1 -fstack-check -mdarwin-stkchk-strong-link -fblocks -fencode-extended-block-signature -fregister-global-dtors-with-atexit -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fmax-type-align=16 -fcommon -clang-vendor-feature=+disableNonDependentMemberExprInCurrentInstantiation -fno-odr-hash-protocols -clang-vendor-feature=+enableAggressiveVLAFolding -clang-vendor-feature=+revert09abecef7bbf -clang-vendor-feature=+thisNoAlignAttr -clang-vendor-feature=+thisNoNullAttr -clang-vendor-feature=+disableAtImportPrivateFrameworkInImplementationError -Wno-error=allocator-wrappers -fdwarf2-cfi-asm -o CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -x c /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c
+        clang -cc1 version 21.0.0 (clang-2100.3.34.2) default target arm64-apple-darwin25.6.0
+        ignoring nonexistent directory "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/local/include"
+        ignoring nonexistent directory "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/Library/Frameworks"
+        #include "..." search starts here:
+        #include <...> search starts here:
+         /usr/local/include
+         /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include
+         /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include
+         /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include
+         /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks (framework directory)
+         /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/SubFrameworks (framework directory)
+        End of search list.
+        Linking C executable cmTC_b1499
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b1499.dir/link.txt --verbose=1
+        Apple clang version 21.0.0 (clang-2100.3.34.2)
+        Target: arm64-apple-darwin25.6.0
+        Thread model: posix
+        InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+         "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld" -demangle -lto_library /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libLTO.dylib -dynamic -arch arm64 -platform_version macos 11.0.0 27.0 -syslibroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -mllvm -enable-linkonceodr-outlining -o cmTC_b1499 -L/usr/local/lib -search_paths_first -headerpad_max_install_names -v CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -lSystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/lib/darwin/libclang_rt.osx.a
+        @(#)PROGRAM:ld PROJECT:ld-27037.1
+        BUILD 21:17:51 Aug 25 2026
+        configured to support archs: armv6 armv7 armv7s arm64 arm64e arm64_32 i386 x86_64 x86_64h armv6m armv7k armv7m armv7em armv8m.main armv8.1m.main
+        LTO support using: LLVM version 21.0.0 (static support for 30, runtime is 30)
+        TAPI support using: Apple TAPI version 21.0.0 (tapi-2100.3.8.1)
+        Library search paths:
+        	/usr/local/lib
+        	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib
+        	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/swift
+        Framework search paths:
+        	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks
+        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names  -v -Wl,-v CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -o cmTC_b1499
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:122 (message)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:3 (project)"
+    message: |
+      Effective list of requested architectures (possibly empty)  : "arm64"
+      Effective list of architectures found in the ABI info binary: "arm64"
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:217 (message)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:3 (project)"
+    message: |
+      Parsed C implicit include dir info: rv=done
+        found start of include info
+        found start of implicit include info
+          add: [/usr/local/include]
+          add: [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include]
+          add: [/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include]
+          add: [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include]
+        end of search list found
+        collapse include dir [/usr/local/include] ==> [/usr/local/include]
+        collapse include dir [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include] ==> [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include]
+        collapse include dir [/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include] ==> [/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include]
+        collapse include dir [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include] ==> [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include]
+        implicit include dirs: [/usr/local/include;/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include;/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include]
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:253 (message)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:3 (project)"
+    message: |
+      Parsed C implicit link information:
+        link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        linker tool regex: [^[ 	]*(->|")?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)))("|,| |$)]
+        ignore line: [Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7']
+        ignore line: []
+        ignore line: [Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_b1499/fast]
+        ignore line: [/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_b1499.dir/build.make CMakeFiles/cmTC_b1499.dir/build]
+        ignore line: [Building C object CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o]
+        ignore line: [/usr/bin/cc   -arch arm64 -mmacosx-version-min=10.14   -v -Wl -v -MD -MT CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -c /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c]
+        ignore line: [Apple clang version 21.0.0 (clang-2100.3.34.2)]
+        ignore line: [Target: arm64-apple-darwin25.6.0]
+        ignore line: [Thread model: posix]
+        ignore line: [InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin]
+        ignore line: [clang: warning: -Wl -v: 'linker' input unused [-Wunused-command-line-argument]]
+        ignore line: [ "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang" -cc1 -triple arm64-apple-macosx10.14.0 -Wundef-prefix=TARGET_OS_ -Wdeprecated-objc-isa-usage -Werror=deprecated-objc-isa-usage -Werror=implicit-function-declaration -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCCompilerABI.c -mrelocation-model pic -pic-level 2 -mframe-pointer=non-leaf -fno-strict-return -ffp-contract=on -fno-rounding-math -funwind-tables=1 -fobjc-msgsend-selector-stubs -fno-sized-deallocation -target-sdk-version=27.0 -fdepfile-entry=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json -fvisibility-inlines-hidden-static-local-var -fno-modulemap-allow-subdirectory-search -fdefine-target-os-macros -fno-assume-unique-vtables -fno-modulemap-allow-subdirectory-search -enable-tlsdesc -target-cpu apple-m1 -target-feature +v8.5a -target-feature +aes -target-feature +altnzcv -target-feature +ccdp -target-feature +ccpp -target-feature +complxnum -target-feature +crc -target-feature +dotprod -target-feature +flagm -target-feature +fp-armv8 -target-feature +fp16fml -target-feature +fptoint -target-feature +fullfp16 -target-feature +jsconv -target-feature +lse -target-feature +neon -target-feature +pauth -target-feature +perfmon -target-feature +predres -target-feature +ras -target-feature +rcpc -target-feature +rdm -target-feature +sb -target-feature +sha2 -target-feature +sha3 -target-feature +specrestrict -target-feature +ssbs -target-abi darwinpcs -debugger-tuning=lldb "-fdebug-compilation-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7" -target-linker-version 1166.2 -v "-fcoverage-compilation-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7" -resource-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o.d -skip-unused-modulemap-deps -MT CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -sys-header-deps -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -I/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/SubFrameworks -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/Library/Frameworks -Wno-elaborated-enum-base -ferror-limit 19 -stack-protector 1 -fstack-check -mdarwin-stkchk-strong-link -fblocks -fencode-extended-block-signature -fregister-global-dtors-with-atexit -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fmax-type-align=16 -fcommon -clang-vendor-feature=+disableNonDependentMemberExprInCurrentInstantiation -fno-odr-hash-protocols -clang-vendor-feature=+enableAggressiveVLAFolding -clang-vendor-feature=+revert09abecef7bbf -clang-vendor-feature=+thisNoAlignAttr -clang-vendor-feature=+thisNoNullAttr -clang-vendor-feature=+disableAtImportPrivateFrameworkInImplementationError -Wno-error=allocator-wrappers -fdwarf2-cfi-asm -o CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -x c /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c]
+        ignore line: [clang -cc1 version 21.0.0 (clang-2100.3.34.2) default target arm64-apple-darwin25.6.0]
+        ignore line: [ignoring nonexistent directory "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/local/include"]
+        ignore line: [ignoring nonexistent directory "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/Library/Frameworks"]
+        ignore line: [#include "..." search starts here:]
+        ignore line: [#include <...> search starts here:]
+        ignore line: [ /usr/local/include]
+        ignore line: [ /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include]
+        ignore line: [ /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include]
+        ignore line: [ /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include]
+        ignore line: [ /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks (framework directory)]
+        ignore line: [ /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/SubFrameworks (framework directory)]
+        ignore line: [End of search list.]
+        ignore line: [Linking C executable cmTC_b1499]
+        ignore line: [/opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b1499.dir/link.txt --verbose=1]
+        ignore line: [Apple clang version 21.0.0 (clang-2100.3.34.2)]
+        ignore line: [Target: arm64-apple-darwin25.6.0]
+        ignore line: [Thread model: posix]
+        ignore line: [InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin]
+        link line: [ "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld" -demangle -lto_library /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libLTO.dylib -dynamic -arch arm64 -platform_version macos 11.0.0 27.0 -syslibroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -mllvm -enable-linkonceodr-outlining -o cmTC_b1499 -L/usr/local/lib -search_paths_first -headerpad_max_install_names -v CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -lSystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/lib/darwin/libclang_rt.osx.a]
+          arg [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld] ==> ignore
+          arg [-demangle] ==> ignore
+          arg [-lto_library] ==> ignore, skip following value
+          arg [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libLTO.dylib] ==> skip value of -lto_library
+          arg [-dynamic] ==> ignore
+          arg [-arch] ==> ignore
+          arg [arm64] ==> ignore
+          arg [-platform_version] ==> ignore
+          arg [macos] ==> ignore
+          arg [11.0.0] ==> ignore
+          arg [27.0] ==> ignore
+          arg [-syslibroot] ==> ignore
+          arg [/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk] ==> ignore
+          arg [-mllvm] ==> ignore
+          arg [-enable-linkonceodr-outlining] ==> ignore
+          arg [-o] ==> ignore
+          arg [cmTC_b1499] ==> ignore
+          arg [-L/usr/local/lib] ==> dir [/usr/local/lib]
+          arg [-search_paths_first] ==> ignore
+          arg [-headerpad_max_install_names] ==> ignore
+          arg [-v] ==> ignore
+          arg [CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o] ==> ignore
+          arg [-lSystem] ==> lib [System]
+          arg [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/lib/darwin/libclang_rt.osx.a] ==> lib [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/lib/darwin/libclang_rt.osx.a]
+        linker tool for 'C': /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld
+        Library search paths: [;/usr/local/lib;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/swift]
+        Framework search paths: [;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks]
+        remove lib [System]
+        remove lib [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/lib/darwin/libclang_rt.osx.a]
+        collapse library dir [/usr/local/lib] ==> [/usr/local/lib]
+        collapse library dir [/usr/local/lib] ==> [/usr/local/lib]
+        collapse library dir [/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib] ==> [/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib]
+        collapse library dir [/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/swift] ==> [/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/swift]
+        collapse framework dir [/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks] ==> [/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks]
+        implicit libs: []
+        implicit objs: []
+        implicit dirs: [/usr/local/lib;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib;/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/swift]
+        implicit fwks: [/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks]
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/Internal/CMakeDetermineLinkerId.cmake:36 (message)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:299 (cmake_determine_linker_id)"
+      - "/opt/homebrew/share/cmake/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:3 (project)"
+    message: |
+      Running the C compiler's linker: "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld" "-v"
+      @(#)PROGRAM:ld PROJECT:ld-27037.1
+      BUILD 21:17:51 Aug 25 2026
+      configured to support archs: armv6 armv7 armv7s arm64 arm64e arm64_32 i386 x86_64 x86_64h armv6m armv7k armv7m armv7em armv8m.main armv8.1m.main
+      LTO support using: LLVM version 21.0.0 (static support for 30, runtime is 30)
+      TAPI support using: Apple TAPI version 21.0.0 (tapi-2100.3.8.1)
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CheckIncludeFile.cmake:165 (try_compile)"
+      - "CMakeLists.txt:76 (check_include_file)"
+    checks:
+      - "Looking for stdbool.h"
+    directories:
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-AlB8uZ"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-AlB8uZ"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/cmake"
+      CMAKE_OSX_ARCHITECTURES: "arm64"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
+      CMAKE_OSX_SYSROOT: ""
+    buildResult:
+      variable: "HAVE_STDBOOL_H"
+      cached: true
+      stdout: |
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-AlB8uZ'
+        
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_5b854/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_5b854.dir/build.make CMakeFiles/cmTC_5b854.dir/build
+        Building C object CMakeFiles/cmTC_5b854.dir/CheckIncludeFile.c.o
+        /usr/bin/cc   -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_5b854.dir/CheckIncludeFile.c.o -MF CMakeFiles/cmTC_5b854.dir/CheckIncludeFile.c.o.d -o CMakeFiles/cmTC_5b854.dir/CheckIncludeFile.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-AlB8uZ/CheckIncludeFile.c"
+        Linking C executable cmTC_5b854
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_5b854.dir/link.txt --verbose=1
+        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_5b854.dir/CheckIncludeFile.c.o -o cmTC_5b854
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CheckIncludeFile.cmake:165 (try_compile)"
+      - "CMakeLists.txt:77 (check_include_file)"
+    checks:
+      - "Looking for unistd.h"
+    directories:
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-MigUya"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-MigUya"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/cmake"
+      CMAKE_OSX_ARCHITECTURES: "arm64"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
+      CMAKE_OSX_SYSROOT: ""
+    buildResult:
+      variable: "HAVE_UNISTD_H"
+      cached: true
+      stdout: |
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-MigUya'
+        
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_cd123/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_cd123.dir/build.make CMakeFiles/cmTC_cd123.dir/build
+        Building C object CMakeFiles/cmTC_cd123.dir/CheckIncludeFile.c.o
+        /usr/bin/cc   -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_cd123.dir/CheckIncludeFile.c.o -MF CMakeFiles/cmTC_cd123.dir/CheckIncludeFile.c.o.d -o CMakeFiles/cmTC_cd123.dir/CheckIncludeFile.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-MigUya/CheckIncludeFile.c"
+        Linking C executable cmTC_cd123
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_cd123.dir/link.txt --verbose=1
+        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_cd123.dir/CheckIncludeFile.c.o -o cmTC_cd123
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/CheckIncludeFile.cmake:165 (try_compile)"
+      - "CMakeLists.txt:78 (check_include_file)"
+    checks:
+      - "Looking for immintrin.h"
+    directories:
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/cmake"
+      CMAKE_OSX_ARCHITECTURES: "arm64"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
+      CMAKE_OSX_SYSROOT: ""
+    buildResult:
+      variable: "HAVE_IMMINTRIN_H"
+      cached: true
+      stdout: |
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va'
+        
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_3d9a6/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_3d9a6.dir/build.make CMakeFiles/cmTC_3d9a6.dir/build
+        Building C object CMakeFiles/cmTC_3d9a6.dir/CheckIncludeFile.c.o
+        /usr/bin/cc   -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_3d9a6.dir/CheckIncludeFile.c.o -MF CMakeFiles/cmTC_3d9a6.dir/CheckIncludeFile.c.o.d -o CMakeFiles/cmTC_3d9a6.dir/CheckIncludeFile.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va/CheckIncludeFile.c"
+        In file included from /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va/CheckIncludeFile.c:1:
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/immintrin.h:14:2: error: "This header is only meant to be used on x86 and x64 architecture"
+           14 | #error "This header is only meant to be used on x86 and x64 architecture"
+              |  ^
+        In file included from /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va/CheckIncludeFile.c:1:
+        In file included from /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/immintrin.h:17:
+        In file included from /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/x86gprintrin.h:13:
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/hresetintrin.h:42:27: error: invalid input constraint 'a' in asm
+           42 |   __asm__ ("hreset $0" :: "a"(__eax));
+              |                           ^
+        In file included from /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va/CheckIncludeFile.c:1:
+        In file included from /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/immintrin.h:19:
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:14:2: error: "This header is only meant to be used on x86 and x64 architecture"
+           14 | #error "This header is only meant to be used on x86 and x64 architecture"
+              |  ^
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:165:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          165 |     return __trunc64(__builtin_ia32_packsswb128(
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          166 |         (__v8hi)__builtin_shufflevector(__m1, __m2, 0, 1), (__v8hi){}));
+              |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:191:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          191 |     return __trunc64(__builtin_ia32_packssdw128(
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          192 |         (__v4si)__builtin_shufflevector(__m1, __m2, 0, 1), (__v4si){}));
+              |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:217:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          217 |     return __trunc64(__builtin_ia32_packuswb128(
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          218 |         (__v8hi)__builtin_shufflevector(__m1, __m2, 0, 1), (__v8hi){}));
+              |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:707:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          707 |     return __trunc64(__builtin_ia32_pmaddwd128((__v8hi)__anyext128(__m1),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          708 |                                                (__v8hi)__anyext128(__m2)));
+              |                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:729:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          729 |     return __trunc64(__builtin_ia32_pmulhw128((__v8hi)__anyext128(__m1),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          730 |                                               (__v8hi)__anyext128(__m2)));
+              |                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:774:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          774 |     return __trunc64(__builtin_ia32_psllw128((__v8hi)__anyext128(__m),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          775 |                                              (__v8hi)__anyext128(__count)));
+              |                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:797:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          797 |     return __trunc64(__builtin_ia32_psllwi128((__v8hi)__anyext128(__m),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          798 |                                               __count));
+              |                                               ~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:821:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          821 |     return __trunc64(__builtin_ia32_pslld128((__v4si)__anyext128(__m),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          822 |                                              (__v4si)__anyext128(__count)));
+              |                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:844:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          844 |     return __trunc64(__builtin_ia32_pslldi128((__v4si)__anyext128(__m),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          845 |                                               __count));
+              |                                               ~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:865:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          865 |     return __trunc64(__builtin_ia32_psllq128((__v2di)__anyext128(__m),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          866 |                                              (__v2di)__anyext128(__count)));
+              |                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:886:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          886 |     return __trunc64(__builtin_ia32_psllqi128((__v2di)__anyext128(__m),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          887 |                                               __count));
+              |                                               ~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:911:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          911 |     return __trunc64(__builtin_ia32_psraw128((__v8hi)__anyext128(__m),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          912 |                                              (__v8hi)__anyext128(__count)));
+              |                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:935:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          935 |     return __trunc64(__builtin_ia32_psrawi128((__v8hi)__anyext128(__m),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          936 |                                               __count));
+              |                                               ~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:960:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          960 |     return __trunc64(__builtin_ia32_psrad128((__v4si)__anyext128(__m),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          961 |                                              (__v4si)__anyext128(__count)));
+              |                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:984:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+          984 |     return __trunc64(__builtin_ia32_psradi128((__v4si)__anyext128(__m),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          985 |                                               __count));
+              |                                               ~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:1008:12: error: invalid conversion between vector type '__v2di' (vector of 2 'long long' values) and integer type 'int' of different size
+         1008 |     return __trunc64(__builtin_ia32_psrlw128((__v8hi)__anyext128(__m),
+              |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         1009 |                                              (__v8hi)__anyext128(__count)));
+              |                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:59:35: note: expanded from macro '__trunc64'
+           59 |   (__m64) __builtin_shufflevector((__v2di)(x), __extension__(__v2di){}, 0)
+              |                                   ^~~~~~~~~~~
+        fatal error: too many errors emitted, stopping now [-ferror-limit=]
+        20 errors generated.
+        make[1]: *** [CMakeFiles/cmTC_3d9a6.dir/CheckIncludeFile.c.o] Error 1
+        make: *** [cmTC_3d9a6/fast] Error 2
+        
+      exitCode: 2
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/FindPkgConfig.cmake:69 (find_program)"
+      - "CMakeLists.txt:82 (find_package)"
+    mode: "program"
+    variable: "PKG_CONFIG_EXECUTABLE"
+    description: "pkg-config executable"
+    settings:
+      SearchFramework: "FIRST"
+      SearchAppBundle: "FIRST"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "pkg-config"
+      - "pkgconf"
+    candidate_directories:
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/usr/local/bin/"
+      - "/System/Cryptexes/App/usr/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+      - "/usr/sbin/"
+      - "/sbin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin/"
+      - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin/"
+      - "/pkg/env/global/bin/"
+      - "/opt/X11/bin/"
+      - "/Library/Apple/usr/bin/"
+      - "/Applications/Wireshark.app/Contents/MacOS/"
+      - "/Applications/VMware Fusion.app/Contents/Public/"
+      - "/usr/local/share/dotnet/"
+      - "/Users/alessandropetrolati/.dotnet/tools/"
+      - "/Library/Frameworks/Mono.framework/Versions/Current/Commands/"
+      - "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/bin/"
+      - "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/sbin/"
+      - "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/"
+      - "/opt/homebrew/bin/"
+      - "/opt/homebrew/sbin/"
+      - "/opt/homebrew/"
+      - "/usr/local/bin/"
+      - "/usr/local/sbin/"
+      - "/usr/local/"
+      - "/usr/bin/"
+      - "/usr/sbin/"
+      - "/usr/"
+      - "/bin/"
+      - "/sbin/"
+      - "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate/bin/"
+      - "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate/sbin/"
+      - "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate/"
+      - "/usr/X11R6/bin/"
+      - "/usr/X11R6/sbin/"
+      - "/usr/X11R6/"
+      - "/usr/pkg/bin/"
+      - "/usr/pkg/sbin/"
+      - "/usr/pkg/"
+      - "/opt/bin/"
+      - "/opt/sbin/"
+      - "/opt/"
+      - "/sw/bin/"
+      - "/sw/sbin/"
+      - "/sw/"
+      - "/opt/local/bin/"
+      - "/opt/local/sbin/"
+      - "/opt/local/"
+      - "/Users/alessandropetrolati/Applications/"
+      - "/Applications/"
+      - "/Applications/Xcode.app/Contents/Applications/"
+    found: "/opt/homebrew/bin/pkg-config"
+    search_context:
+      ENV{PATH}:
+        - "/opt/homebrew/bin"
+        - "/opt/homebrew/sbin"
+        - "/usr/local/bin"
+        - "/System/Cryptexes/App/usr/bin"
+        - "/usr/bin"
+        - "/bin"
+        - "/usr/sbin"
+        - "/sbin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin"
+        - "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin"
+        - "/pkg/env/global/bin"
+        - "/opt/X11/bin"
+        - "/Library/Apple/usr/bin"
+        - "/Applications/Wireshark.app/Contents/MacOS"
+        - "/Applications/VMware Fusion.app/Contents/Public"
+        - "/usr/local/share/dotnet"
+        - "~/.dotnet/tools"
+        - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr"
+        - "/opt/homebrew"
+        - "/usr/local"
+        - "/usr"
+        - "/"
+        - "/opt/homebrew"
+        - "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+        - "/usr/X11R6"
+        - "/usr/pkg"
+        - "/opt"
+        - "/sw"
+        - "/opt/local"
+      CMAKE_SYSTEM_APPBUNDLE_PATH:
+        - "/Users/alessandropetrolati/Applications"
+        - "/Applications"
+        - "/Applications/Xcode.app/Contents/Applications"
+  -
+    kind: "try_run-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/Internal/CheckSourceRuns.cmake:95 (try_run)"
+      - "/opt/homebrew/share/cmake/Modules/CheckCSourceRuns.cmake:88 (cmake_check_source_runs)"
+      - "cmake/ClipMode.cmake:23 (check_c_source_runs)"
+      - "src/CMakeLists.txt:19 (clip_mode)"
+    checks:
+      - "Performing Test CPU_CLIPS_POSITIVE"
+    directories:
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-NERu2W"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-NERu2W"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/cmake"
+      CMAKE_OSX_ARCHITECTURES: "arm64"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
+      CMAKE_OSX_SYSROOT: ""
+    buildResult:
+      variable: "CPU_CLIPS_POSITIVE_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-NERu2W'
+        
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_c550d/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_c550d.dir/build.make CMakeFiles/cmTC_c550d.dir/build
+        Building C object CMakeFiles/cmTC_c550d.dir/src.c.o
+        /usr/bin/cc -DCPU_CLIPS_POSITIVE  -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_c550d.dir/src.c.o -MF CMakeFiles/cmTC_c550d.dir/src.c.o.d -o CMakeFiles/cmTC_c550d.dir/src.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-NERu2W/src.c"
+        Linking C executable cmTC_c550d
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c550d.dir/link.txt --verbose=1
+        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_c550d.dir/src.c.o -o cmTC_c550d
+        
+      exitCode: 0
+    runResult:
+      variable: "CPU_CLIPS_POSITIVE_EXITCODE"
+      cached: true
+      stdout: |
+      stderr: |
+      exitCode: 1
+  -
+    kind: "try_run-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/Internal/CheckSourceRuns.cmake:95 (try_run)"
+      - "/opt/homebrew/share/cmake/Modules/CheckCSourceRuns.cmake:88 (cmake_check_source_runs)"
+      - "cmake/ClipMode.cmake:44 (check_c_source_runs)"
+      - "src/CMakeLists.txt:19 (clip_mode)"
+    checks:
+      - "Performing Test CPU_CLIPS_NEGATIVE"
+    directories:
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-EEy7tZ"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-EEy7tZ"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/cmake"
+      CMAKE_OSX_ARCHITECTURES: "arm64"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
+      CMAKE_OSX_SYSROOT: ""
+    buildResult:
+      variable: "CPU_CLIPS_NEGATIVE_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-EEy7tZ'
+        
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_bef19/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_bef19.dir/build.make CMakeFiles/cmTC_bef19.dir/build
+        Building C object CMakeFiles/cmTC_bef19.dir/src.c.o
+        /usr/bin/cc -DCPU_CLIPS_NEGATIVE  -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_bef19.dir/src.c.o -MF CMakeFiles/cmTC_bef19.dir/src.c.o.d -o CMakeFiles/cmTC_bef19.dir/src.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-EEy7tZ/src.c"
+        Linking C executable cmTC_bef19
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_bef19.dir/link.txt --verbose=1
+        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_bef19.dir/src.c.o -o cmTC_bef19
+        
+      exitCode: 0
+    runResult:
+      variable: "CPU_CLIPS_NEGATIVE_EXITCODE"
+      cached: true
+      stdout: |
+      stderr: |
+      exitCode: 1
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/opt/homebrew/share/cmake/Modules/Internal/CheckSourceCompiles.cmake:104 (try_compile)"
+      - "/opt/homebrew/share/cmake/Modules/CheckCSourceCompiles.cmake:103 (cmake_check_source_compiles)"
+      - "src/CMakeLists.txt:24 (check_c_source_compiles)"
+    checks:
+      - "Performing Test HAVE_VISIBILITY"
+    directories:
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-RizahD"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-RizahD"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/cmake"
+      CMAKE_OSX_ARCHITECTURES: "arm64"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
+      CMAKE_OSX_SYSROOT: ""
+    buildResult:
+      variable: "HAVE_VISIBILITY"
+      cached: true
+      stdout: |
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-RizahD'
+        
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_83630/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_83630.dir/build.make CMakeFiles/cmTC_83630.dir/build
+        Building C object CMakeFiles/cmTC_83630.dir/src.c.o
+        /usr/bin/cc -DHAVE_VISIBILITY  -fvisibility=hidden -Werror -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_83630.dir/src.c.o -MF CMakeFiles/cmTC_83630.dir/src.c.o.d -o CMakeFiles/cmTC_83630.dir/src.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-RizahD/src.c"
+        Linking C executable cmTC_83630
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_83630.dir/link.txt --verbose=1
+        /usr/bin/cc  -fvisibility=hidden -Werror -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_83630.dir/src.c.o -o cmTC_83630
+        
+      exitCode: 0
+...

@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-x86_64/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-x86_64/src/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-x86_64/docs/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

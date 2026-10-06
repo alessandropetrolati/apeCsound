@@ -1,0 +1,13 @@
+prefix=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64-deps/sndfile
+exec_prefix=${prefix}
+libdir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64-deps/sndfile/lib
+includedir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64-deps/sndfile/include
+
+Name: sndfile
+Description: A library for reading and writing audio files
+Requires:
+Requires.private:  
+Version: 1.2.2
+Libs: -L${libdir} -lsndfile
+Libs.private: 
+Cflags: -I${includedir}

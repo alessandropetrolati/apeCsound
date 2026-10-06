@@ -1,0 +1,1 @@
+/usr/bin/cc -DHAVE_CLOCK_GETTIME  -DUSE_SRC -ffast-math -fomit-frame-pointer   -mcpu=apple-m1 -fvisibility=hidden -DHAVE_VECLIB -DHAVE_ATOMIC_BUILTIN -DHAVE_PTHREAD -O3 -arch arm64 -mmacosx-version-min=11 -dynamiclib -Wl,-headerpad_max_install_names -o ../libdeprecated.dylib -install_name @rpath/libdeprecated.dylib CMakeFiles/deprecated.dir/deprecated.c.o

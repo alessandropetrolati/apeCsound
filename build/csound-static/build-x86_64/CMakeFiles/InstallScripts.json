@@ -1,0 +1,22 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/include/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Opcodes/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/InOut/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Frontends/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/languages/python/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/platform/bela/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/util/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/util/SDIF/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/util1/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/po/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/tests/c/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/tests/commandline/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/tests/regression/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/tests/soak/cmake_install.cmake",
+		"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/tests/python/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

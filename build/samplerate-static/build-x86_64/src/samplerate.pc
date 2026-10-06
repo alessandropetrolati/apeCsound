@@ -1,0 +1,12 @@
+prefix=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64-deps/samplerate
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: samplerate
+Description: An audio Sample Rate Conversion library
+Requires: 
+Version: 0.2.2
+Libs: -L${libdir} -lsamplerate
+Libs.private: 
+Cflags: -I${includedir} 

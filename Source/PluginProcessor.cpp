@@ -1,5 +1,40 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <cstdlib>
+
+namespace
+{
+    // Csound carica gli opcode "plugin" aggiuntivi (osc, pvsops, midi, ecc.
+    // - i file in CsoundLib64.framework/Resources/Opcodes64, separati dal
+    // core) da una cartella di default compilata staticamente dentro il
+    // framework come path ASSOLUTO (/Applications/Csound/CsoundLib64.
+    // framework/Resources/Opcodes64 - verificato con 'strings' sul binario
+    // reale). Siccome il framework e' solo EMBEDDATO nel bundle del plugin,
+    // non installato su /Applications sulla macchina di chi lo riceve,
+    // senza questo passo Csound cercherebbe quegli opcode in una cartella
+    // inesistente. In Csound 7 non serve piu' un trucco con variabili
+    // d'ambiente (OPCODE6DIR64, usato per errore in una versione precedente
+    // di questo file quando il framework copiato era ancora Csound 6.18):
+    // csoundCreate() accetta direttamente un path di override come secondo
+    // argomento (vedi doc in csound.h) - questa funzione calcola quel path,
+    // puntando alla copia di Opcodes64 che viaggia dentro il bundle stesso
+    // (.../Contents/Frameworks/CsoundLib64.framework/Resources/Opcodes64).
+   #if JUCE_MAC
+    juce::String getEmbeddedOpcodeDir()
+    {
+        const auto exe = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
+
+        // exe e' .../<Bundle>.{app,vst3,component}/Contents/MacOS/<Nome>:
+        // risaliamo a Contents e scendiamo in Frameworks/...
+        const auto contents = exe.getParentDirectory().getParentDirectory();
+        const auto opcodeDir = contents.getChildFile ("Frameworks/CsoundLib64.framework/Resources/Opcodes64");
+
+        return opcodeDir.isDirectory() ? opcodeDir.getFullPathName() : juce::String();
+    }
+   #else
+    juce::String getEmbeddedOpcodeDir() { return {}; }
+   #endif
+}
 
 CsoundAudioProcessor::CsoundAudioProcessor()
     : juce::AudioProcessor (BusesProperties()
@@ -82,8 +117,6 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     if (auto* old = activeCsound.exchange (nullptr))
     {
         ready = false;
-        csoundStop (old);
-        csoundCleanup (old);
         csoundReset (old);
         csoundDestroy (old);
     }
@@ -94,7 +127,12 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     // creiamo una nuova istanza (mirror del pattern usato in csGrain).
     csoundInitialize (CSOUNDINIT_NO_ATEXIT);
 
-    auto* cs = csoundCreate (nullptr);
+    // Il secondo argomento di csoundCreate() (opcodedir) sovrascrive la
+    // cartella di default - assoluta e quindi inutilizzabile in un bundle
+    // distribuito - da cui Csound carica gli opcode plugin extra. Vedi
+    // getEmbeddedOpcodeDir() piu' sopra.
+    const auto opcodeDir = getEmbeddedOpcodeDir();
+    auto* cs = csoundCreate (nullptr, opcodeDir.isNotEmpty() ? opcodeDir.toRawUTF8() : nullptr);
 
     if (cs == nullptr)
     {
@@ -108,12 +146,13 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
 
     // Dice a Csound che l'I/O audio e' gestito dall'host (noi, tramite
     // processBlock/spin/spout), non da un device che Csound apre da solo.
-    csoundSetHostImplementedAudioIO (cs, 1, 0);
+    // In Csound 7 questa funzione non prende piu' argomenti extra.
+    csoundSetHostAudioIO (cs);
 
     // Idem per il MIDI: i 6 callback sotto collegano i messaggi che arrivano/
     // partono da processBlock() (host o wrapper Standalone) al motore Csound,
     // che li legge/scrive con gli opcode midiin/midiout standard.
-    csoundSetHostImplementedMIDIIO (cs, 1);
+    csoundSetHostMIDIIO (cs);
     csoundSetExternalMidiInOpenCallback   (cs, midiInOpenCallback);
     csoundSetExternalMidiReadCallback     (cs, midiInReadCallback);
     csoundSetExternalMidiInCloseCallback  (cs, midiInCloseCallback);
@@ -146,8 +185,14 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     // diversi in <CsInstruments>: qui li sovrascriviamo deliberatamente.
     csoundSetOption (cs, ("--sample-rate=" + juce::String (hostSampleRate, 0)).toRawUTF8());
     csoundSetOption (cs, ("--ksmps=" + juce::String (hostBlockSize)).toRawUTF8());
-
-    const int compileResult = csoundCompileCsdText (cs, newCsdText.toRawUTF8());
+    csoundSetOption (cs, ("--nchnls=" + juce::String (2)).toRawUTF8());
+    
+    // csoundCompileCsdText non esiste piu' in Csound 7: csoundCompileCSD
+    // con mode=1 fa lo stesso lavoro (il secondo argomento e' codice CSD
+    // testuale, non un path di file), async=0 perche' qui csoundStart viene
+    // chiamata DOPO (vedi la doc di csoundCompileCSD in csound.h: in questo
+    // ordine <CsOptions>/<CsScore> vengono preprocessati normalmente).
+    const int compileResult = csoundCompileCSD (cs, newCsdText.toRawUTF8(), 1, 0);
 
     if (compileResult != CSOUND_SUCCESS)
     {
@@ -165,9 +210,11 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
         return;
     }
 
+    // csoundGetNchnls/csoundGetNchnlsInput non esistono piu': un'unica
+    // csoundGetChannels(cs, isInput) le sostituisce entrambe.
     csKsmps            = csoundGetKsmps (cs);
-    csNumChannels      = csoundGetNchnls (cs);
-    csInputChannels    = (int) csoundGetNchnlsInput (cs);
+    csNumChannels      = (int) csoundGetChannels (cs, 0);
+    csInputChannels    = (int) csoundGetChannels (cs, 1);
     spoutReadPos       = 0;
     samplesLeftInBlock = 0;
 
@@ -194,8 +241,6 @@ void CsoundAudioProcessor::stopEngine()
     if (auto* old = activeCsound.exchange (nullptr))
     {
         ready = false;
-        csoundStop (old);
-        csoundCleanup (old);
         csoundReset (old);
         csoundDestroy (old);
 
@@ -248,7 +293,7 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         if (samplesLeftInBlock == 0)
         {
             const int framesForThisTick = juce::jmin (csKsmps, numSamples - written);
-            MYFLT* spin = csoundGetSpin (cs);
+            cs_float* spin = csoundGetSpin (cs);
 
             // Audio in ingresso (es. microfono, se il bus Input e' attivo)
             // scritto nello spin buffer per il prossimo tick da csKsmps
@@ -259,7 +304,7 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
                 const float* src = srcChannel >= 0 ? buffer.getReadPointer (srcChannel) : nullptr;
 
                 for (int i = 0; i < framesForThisTick; ++i)
-                    spin[(size_t) i * (size_t) csInputChannels + (size_t) ch] = src != nullptr ? (MYFLT) src[written + i] : 0;
+                    spin[(size_t) i * (size_t) csInputChannels + (size_t) ch] = src != nullptr ? (cs_float) src[written + i] : 0;
 
                 for (int i = framesForThisTick; i < csKsmps; ++i)
                     spin[(size_t) i * (size_t) csInputChannels + (size_t) ch] = 0; // padding se numSamples non e' multiplo di ksmps
@@ -293,7 +338,7 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         }
 
         const int framesToCopy = juce::jmin (samplesLeftInBlock, numSamples - written);
-        const MYFLT* spout = csoundGetSpout (cs);
+        const cs_float* spout = csoundGetSpout (cs);
 
         for (int ch = 0; ch < numOut; ++ch)
         {
@@ -323,7 +368,7 @@ juce::AudioProcessorEditor* CsoundAudioProcessor::createEditor()
 void CsoundAudioProcessor::setControlChannel (const juce::String& channelName, double value)
 {
     if (auto* cs = activeCsound.load())
-        csoundSetControlChannel (cs, channelName.toRawUTF8(), (MYFLT) value);
+        csoundSetControlChannel (cs, channelName.toRawUTF8(), (cs_float) value);
 }
 
 double CsoundAudioProcessor::getControlChannel (const juce::String& channelName) const
@@ -331,7 +376,7 @@ double CsoundAudioProcessor::getControlChannel (const juce::String& channelName)
     if (auto* cs = activeCsound.load())
     {
         int err = 0;
-        const MYFLT value = csoundGetControlChannel (cs, channelName.toRawUTF8(), &err);
+        const cs_float value = csoundGetControlChannel (cs, channelName.toRawUTF8(), &err);
 
         if (err == CSOUND_SUCCESS)
             return (double) value;
@@ -446,9 +491,48 @@ juce::StringArray CsoundAudioProcessor::getMessageHistory() const
     return messageHistory;
 }
 
+juce::Array<CsoundLiveOpcodeInfo> CsoundAudioProcessor::getOpcodeSignatures() const
+{
+    juce::Array<CsoundLiveOpcodeInfo> result;
+
+    CSOUND* cs = activeCsound.load();
+    if (cs == nullptr)
+        return result;
+
+    // csoundNewOpcodeList/opcodeListEntry/csoundDisposeOpcodeList: presenti
+    // anche nella vera Csound 7.0.0 (dichiarate in csound_misc.h, non piu'
+    // in csound.h, ma stessi campi opname/outypes/intypes - verificato con
+    // grep sull'header del framework reale appena copiato) - stessa fonte
+    // usata con Csound 6 per coprire TUTTI gli opcode effettivamente
+    // disponibili (vedi CsoundOpcodeHelp.h).
+    opcodeListEntry* list = nullptr;
+    const int count = csoundNewOpcodeList (cs, &list);
+
+    if (count > 0 && list != nullptr)
+    {
+        result.ensureStorageAllocated (count);
+
+        for (int i = 0; i < count; ++i)
+        {
+            CsoundLiveOpcodeInfo info;
+            info.name     = list[i].opname  != nullptr ? juce::String (list[i].opname)  : juce::String();
+            info.outTypes = list[i].outypes != nullptr ? juce::String (list[i].outypes) : juce::String();
+            info.inTypes  = list[i].intypes != nullptr ? juce::String (list[i].intypes) : juce::String();
+
+            if (info.name.isNotEmpty())
+                result.add (info);
+        }
+    }
+
+    if (list != nullptr)
+        csoundDisposeOpcodeList (cs, list);
+
+    return result;
+}
+
 //==============================================================================
 // Bridge MIDI: i 6 callback sotto sono registrati in compileAndStart() dopo
-// csoundSetHostImplementedMIDIIO(cs, 1). Girano tutti sul thread audio,
+// csoundSetHostMIDIIO(cs). Girano tutti sul thread audio,
 // dentro la chiamata a csoundPerformKsmps() in processBlock().
 int CsoundAudioProcessor::midiInOpenCallback (CSOUND* cs, void** userData, const char* /*devName*/)
 {
@@ -524,25 +608,15 @@ juce::String CsoundAudioProcessor::defaultCsdText()
 -m0
 </CsOptions>
 <CsInstruments>
-nchnls   = 2
 0dbfs    = 1
 
-; instr 1 is intentionally empty: it's just the "blank" code you see the
-; first time you open the plugin, before writing/pasting your own
-; instrument. It must stay silent, because for a handful of blocks it can
-; actually run for real (see CsoundAudioProcessor::prepareToPlay /
-; setStateInformation: if the host calls prepareToPlay before restoring the
-; saved state, this is the code that starts first, until the saved .csd
-; replaces it).
+; instr 1 is intentionally empty
 instr 1
 endin
 
 </CsInstruments>
 <CsScore>
-; "f 0 3600" keeps the performance alive for an hour without triggering
-; instr 1 from the score (it must stay silent: see above) - so only MIDI
-; events are left to make anything sound.
-f 0 3600
+f 0 z
 e
 </CsScore>
 </CsoundSynthesizer>

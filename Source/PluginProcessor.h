@@ -4,15 +4,40 @@
 #include <atomic>
 #include <cstdarg>
 
-// Il framework installato in /Library/Frameworks/CsoundLib64.framework su
-// questa macchina e' Csound 6 (non 7: csoundCreate ha un solo argomento,
-// niente csoundCompileCSD/csoundSetMessageStringCallback ecc.). Le firme
-// usate in questo file sono state verificate contro
-// csGrain/Source/PluginProcessor.cpp, un plugin che compila e funziona
-// gia' contro lo stesso identico framework. Include tra virgolette come
-// nel progetto csGrain (funziona grazie a headerPath/libraryPath/
-// extraCustomFrameworks nell'exporter XCODE_MAC del .jucer).
+// Csound e' incorporato nel bundle del plugin come framework DINAMICO
+// (CsoundLib64.framework, VERA release 7.0.0 - installata da
+// /Applications/Csound/CsoundLib64.framework dal pkg "csound7Environment",
+// NON il vecchio /Library/Frameworks/CsoundLib64.framework che e' rimasto
+// Csound 6.18 - copiata in Csound/CsoundLib64.framework accanto a questo
+// progetto, vedi extraCustomFrameworks + postbuildCommand/
+// embed_csound_framework.sh nell'exporter XCODE_MAC di Csound.jucer).
+// A differenza della build "7.0.0-beta.18" esaminata in precedenza (che si
+// era rivelata essere ancora Csound 6.18 internamente: version.h/Info.plist
+// dicevano "6.18.1", cartella "Versions/6.0" - framework sbagliato copiato
+// per errore), questa e' davvero Csound 7.0.0 (version.h: VERSION "7.0",
+// cartella "Versions/7.0") e usa una API C nuova, NON compatibile con
+// Csound 6:
+//   - csoundCreate(hostData, opcodedir) - ora 2 argomenti, il secondo
+//     permette di indicare direttamente la cartella degli opcode plugin
+//     esterni (Resources/Opcodes64 dentro il framework), senza bisogno di
+//     variabili d'ambiente.
+//   - csoundStop/csoundCleanup non esistono piu': solo csoundReset +
+//     csoundDestroy.
+//   - csoundCompileCsdText non esiste piu': csoundCompileCSD(cs, csd, mode,
+//     async) - mode=1 per codice testuale (non un path di file), async=0.
+//   - csoundSetHostImplementedAudioIO/MIDIIO (con argomenti extra)
+//     diventano csoundSetHostAudioIO(cs)/csoundSetHostMIDIIO(cs), senza
+//     argomenti oltre a CSOUND*.
+//   - csoundGetNchnls/csoundGetNchnlsInput diventano un'unica
+//     csoundGetChannels(cs, isInput).
+//   - csoundNewOpcodeList/opcodeListEntry/csoundDisposeOpcodeList esistono
+//     ancora, stessi campi (opname/outypes/intypes), ma sono dichiarate in
+//     csound_misc.h invece che in csound.h.
+// (tutto verificato con grep diretto sull'header del framework reale appena
+// copiato, non per deduzione).
 #include "csound.h"
+#include "csound_misc.h"
+#include "CsoundOpcodeHelp.h"
 
 /**
     CsoundAudioProcessor e' il juce::AudioProcessor del plugin: stesso
@@ -78,6 +103,15 @@ public:
         successo mentre la finestra era chiusa. */
     juce::StringArray getMessageHistory() const;
 
+    /** Elenco completo degli opcode realmente registrati nell'istanza
+        Csound in esecuzione (csoundNewOpcodeList - la stessa fonte che usa
+        Csound stesso, quindi sempre completa e in sincrono con la versione
+        collegata e con eventuali plugin caricati), usato da
+        CsoundCodeEditor per help inline + autocompletamento. Ritorna un
+        array vuoto se il motore non e' in esecuzione. Va chiamata dal
+        thread dei messaggi. */
+    juce::Array<CsoundLiveOpcodeInfo> getOpcodeSignatures() const;
+
     // --- juce::AudioProcessor ---
     const juce::String getName() const override;
 
@@ -90,7 +124,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
 
     // Bus di Input (audio live, es. microfono) + bridge MIDI in/out verso
-    // Csound: vedi compileAndStart() per csoundSetHostImplementedAudioIO/MIDIIO.
+    // Csound: vedi compileAndStart() per csoundSetHostAudioIO/csoundSetHostMIDIIO.
     bool acceptsMidi() const override  { return true; }
     bool producesMidi() const override { return true; }
     double getTailLengthSeconds() const override { return 0.0; }
@@ -108,14 +142,16 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
-    // Csound 6: il callback messaggi e' in stile printf/va_list (in Csound 7
-    // sarebbe stato csoundSetMessageStringCallback, con un const char* gia'
-    // formattato: qui dobbiamo formattarlo noi con vsnprintf).
+    // csoundSetMessageCallback (stile printf/va_list) esiste ancora,
+    // invariata, in questo branch di Csound 7 (verificato in csound.h):
+    // qui dobbiamo formattarlo noi con vsnprintf. csoundSetMessageStringCallback
+    // esiste anche in piu' (con un const char* gia' formattato) ma non e'
+    // necessaria.
     static void messageCallback (CSOUND* cs, int attr, const char* fmt, va_list args);
     void handleMessage (const juce::String& msg);
     static juce::String defaultCsdText();
 
-    // --- Bridge MIDI host <-> Csound (csoundSetHostImplementedMIDIIO) ---
+    // --- Bridge MIDI host <-> Csound (csoundSetHostMIDIIO) ---
     // In: alimentata in processBlock() con i messaggi del blocco corrente,
     // letta da midiInReadCallback durante csoundPerformKsmps() - sempre sul
     // thread audio, quindi nessun lock e' necessario.

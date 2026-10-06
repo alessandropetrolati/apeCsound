@@ -1,0 +1,11 @@
+prefix=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64
+exec_prefix=${prefix}
+libdir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/lib
+includedir=${prefix}/include/csound
+
+Name: Csound
+Description: A sound and music computing system
+Version: 7.0.0
+Libs: -F/Users/alessandropetrolati/Library/Frameworks -framework CsoundLib64
+Libs.private:  -lsndfile  -lm -ldl /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework -lsamplerate
+Cflags: -I${includedir}

@@ -1,0 +1,15 @@
+# Hashes of file build rules.
+a58fd5d86474e333e5ee4d475ab1817b CMakeFiles/etags
+7253e05779583843e9e46ff11d9286cc CMakeFiles/format
+51863032cfe9182813643a34647b5cf4 CMakeFiles/tags
+e84eed2f2e53d07a419dcc1ef74c5eba CMakeFiles/uninstall
+4b96b6989858668493421bfb0f6c0eb9 csound_orclex.c
+359ecfde8d5fcb26cc97e2f086681351 csound_orcparse.c
+2ef463171011d7a0e106014c9ab49078 csound_prelex.c
+5809d05c1e31d65f1222e91d6c8ca980 csound_prslex.c
+3a72b9fa563e9ecd0449010c09360f47 tests/commandline/CMakeFiles/csdtest-harness-tests
+6770584aa57d070f1c94193dc2a2e5d4 tests/commandline/CMakeFiles/csdtests
+1ab36abc2addf87387a778b1faed3030 tests/commandline/CMakeFiles/csdtests-verbose
+acd0befdc9597f7d7580342a2bff58b4 tests/python/CMakeFiles/pytests
+d3a359c1a6a043f928d798ee6422a141 tests/regression/CMakeFiles/regression
+0b36172ee942c7cbc17182b7fe4a2c61 tests/soak/CMakeFiles/soak
