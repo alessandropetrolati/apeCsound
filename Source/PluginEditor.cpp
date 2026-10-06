@@ -63,14 +63,17 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     clearConsoleButton.onClick = [this] { logConsole.clear(); };
     addAndMakeVisible (clearConsoleButton);
 
-    // Alterna, nella stessa finestra, tra l'editor/console e il pannello
-    // per rinominare i canali Csound dei 32 slot apvts e definirne range/
-    // curva - vedi CsoundParameterEditor.h/.cpp e toggleParameterPanel().
+    // Mostra/nasconde il pannello flottante per rinominare i canali Csound
+    // dei 64 slot apvts (float/int/bool/choice) e definirne range/curva -
+    // vedi CsoundParameterEditor.h/.cpp e toggleParameterPanel().
     paramsButton.setName ("params");
     paramsButton.onClick = [this] { toggleParameterPanel(); };
     addAndMakeVisible (paramsButton);
 
-    addChildComponent (parameterPanel); // nascosto finche' non si preme paramsButton
+    // Pannello nascosto finche' non si preme paramsButton - nessun velo
+    // dietro di esso: editor/consolle restano sempre interagibili.
+    addChildComponent (parameterPanel);
+    parameterPanel.onCloseButtonClicked = [this] { toggleParameterPanel(); };
 
     audioProcessor.addListener (this);
 
@@ -146,32 +149,55 @@ void CsoundAudioProcessorEditor::resized()
     paramsButton.setBounds (toolbar.removeFromLeft (paramsWidth));
 
     // Niente inset laterali e niente spazio tra editor e console: solo lo
-    // spazio verticale tra toolbar ed editor resta.
+    // spazio verticale tra toolbar ed editor resta. Editor e consolle
+    // occupano SEMPRE questa stessa area, a prescindere dal pannello
+    // parametri (vedi sotto): non vengono piu' sostituiti da esso.
     area.removeFromTop (8);
 
-    // Il pannello parametri occupa ESATTAMENTE l'area della consolle
-    // (stessa zona, non una in piu'), sostituendola finche' e' mostrato -
-    // editor e helpBar restano sempre visibili sopra.
     auto bottomArea = area.removeFromBottom (180);
     auto helpBarArea = area.removeFromBottom (opcodeHelpBarHeight);
 
     editor.setBounds (area);
     opcodeHelpBar.setBounds (helpBarArea);
+    logConsole.setBounds (bottomArea);
 
-    if (showingParameterPanel)
-        parameterPanel.setBounds (bottomArea);
+    // Il pannello e' una "finestra" spostabile (vedi CsoundParameterMappingPanel::
+    // mouseDown/mouseDrag): la posizioniamo centrata SOLO la prima volta che
+    // viene mostrata, non ad ogni resized() - altrimenti ogni ridimensionamento
+    // della finestra del plugin (o anche solo il resized() scatenato da
+    // toggleParameterPanel() stesso) la rimetterebbe al centro, annullando
+    // un trascinamento manuale dell'utente. Dopo il primo posizionamento ci
+    // limitiamo a tenerla dentro i bordi se la finestra si e' ristretta.
+    const int panelWidth  = juce::jmin (CsoundParameterMappingPanel::preferredWidth,  getWidth()  - 48);
+    const int panelHeight = juce::jmin (CsoundParameterMappingPanel::preferredHeight, getHeight() - 48);
+
+    if (! parameterPanelPositioned)
+    {
+        parameterPanel.setBounds (getLocalBounds().withSizeKeepingCentre (panelWidth, panelHeight));
+
+        if (parameterPanel.isVisible())
+            parameterPanelPositioned = true;
+    }
     else
-        logConsole.setBounds (bottomArea);
+    {
+        auto bounds = parameterPanel.getBounds().withSize (panelWidth, panelHeight);
+        bounds.setPosition (juce::jlimit (0, juce::jmax (0, getWidth()  - bounds.getWidth()),  bounds.getX()),
+                             juce::jlimit (0, juce::jmax (0, getHeight() - bounds.getHeight()), bounds.getY()));
+        parameterPanel.setBounds (bounds);
+    }
 }
 
 void CsoundAudioProcessorEditor::toggleParameterPanel()
 {
     showingParameterPanel = ! showingParameterPanel;
 
-    // Il pannello sostituisce la consolle (stessa area, vedi resized()):
-    // solo uno dei due e' visibile per volta.
+    // "Finestra" spostabile, non overlay: editor/consolle restano sempre al
+    // loro posto e sempre interagibili, il pannello compare/scompare sopra
+    // di essi senza nulla che li scurisca o blocchi i click.
     parameterPanel.setVisible (showingParameterPanel);
-    logConsole.setVisible (! showingParameterPanel);
+
+    if (showingParameterPanel)
+        parameterPanel.toFront (true); // porta anche la tastiera sul pannello
 
     paramsButton.setButtonText (showingParameterPanel ? "Hide parameters" : "Parameters...");
 

@@ -37,7 +37,7 @@
 class CsoundAudioProcessor; // vedi ChannelHostParameter sotto
 
 /**
-    Parametro apvts di uno dei 32 slot "macro" (vedi CsoundAudioProcessor::
+    Parametro apvts di uno dei 16 slot "macro" (vedi CsoundAudioProcessor::
     ChannelParamSlot): resta un juce::AudioParameterFloat normale (stesso
     range 0..1 fisso, stesso ID fisso - l'host continua a vederlo cosi' per
     l'automazione) ma legge SEMPRE lo slot corrente (owner.getChannelParamSlot)
@@ -66,6 +66,85 @@ public:
     juce::String getName (int maximumStringLength) const override;
     juce::String getText (float normalisedValue, int maximumStringLength) const override;
     float getValueForText (const juce::String& text) const override;
+    float getDefaultValue() const override;
+
+private:
+    CsoundAudioProcessor& owner;
+    const int index;
+    const juce::String fallbackName;
+};
+
+/**
+    Stesso disegno di ChannelHostParameter ma per i 16 "macro" parametri
+    INTERI (vedi CsoundAudioProcessor::IntParamSlot): un juce::
+    AudioParameterInt con range NATIVO fisso 0..intHostRangeMax (mai
+    cambiato - e' quello che l'host automatizza/salva), che pero' legge
+    sempre lo slot corrente per nome, min/max/default REALI (interi,
+    qualsiasi range l'utente scelga nell'editor) e il testo mostrato.
+    A differenza di ChannelHostParameter (float, range nativo gia' 0..1)
+    qui il range nativo e' 0..intHostRangeMax: denormalizeIntParam/
+    normalizeIntParam fanno da ponte tra normalizzato 0..1 (il "linguaggio"
+    comune di tutti i RangedAudioParameter - getText/getValueForText/
+    getDefaultValue ricevono/restituiscono SEMPRE 0..1, mai il valore
+    nativo intero) e il valore intero reale dello slot.
+*/
+class IntHostParameter final : public juce::AudioParameterInt
+{
+public:
+    IntHostParameter (CsoundAudioProcessor& ownerProcessor, int slotIndex,
+                       const juce::ParameterID& paramID, juce::String defaultName);
+
+    juce::String getName (int maximumStringLength) const override;
+    juce::String getText (float normalisedValue, int maximumStringLength) const override;
+    float getValueForText (const juce::String& text) const override;
+    float getDefaultValue() const override;
+
+private:
+    CsoundAudioProcessor& owner;
+    const int index;
+    const juce::String fallbackName;
+};
+
+/**
+    Stesso disegno di ChannelHostParameter ma per i 16 "macro" parametri
+    booleani (vedi CsoundAudioProcessor::BoolParamSlot): un juce::
+    AudioParameterBool stabile per l'host (ID/range mai cambiati), che pero'
+    legge sempre lo slot corrente per nome visualizzato e default value.
+*/
+class BoolHostParameter final : public juce::AudioParameterBool
+{
+public:
+    BoolHostParameter (CsoundAudioProcessor& ownerProcessor, int slotIndex,
+                        const juce::ParameterID& paramID, juce::String defaultName);
+
+    juce::String getName (int maximumStringLength) const override;
+    float getDefaultValue() const override;
+
+private:
+    CsoundAudioProcessor& owner;
+    const int index;
+    const juce::String fallbackName;
+};
+
+/**
+    Stesso disegno di ChannelHostParameter ma per i 16 "macro" parametri a
+    scelta multipla (vedi CsoundAudioProcessor::ChoiceParamSlot): un juce::
+    AudioParameterChoice con un numero FISSO di opzioni (CsoundAudioProcessor::
+    maxChoiceOptions - stabile per l'host, come numChannelParams/numBoolParams),
+    costruito con etichette segnaposto ("1".."N") mai mostrate davvero:
+    getName()/getText() leggono sempre lo slot corrente per il nome del
+    parametro e le etichette VERE delle opzioni (con fallback "Option N" per
+    quelle non rinominate - vedi CsoundAudioProcessor::getChoiceOptionLabel).
+*/
+class ChoiceHostParameter final : public juce::AudioParameterChoice
+{
+public:
+    ChoiceHostParameter (CsoundAudioProcessor& ownerProcessor, int slotIndex,
+                          const juce::ParameterID& paramID, juce::String defaultName,
+                          const juce::StringArray& placeholderChoices, int defaultChoiceIndex);
+
+    juce::String getName (int maximumStringLength) const override;
+    juce::String getText (float normalisedValue, int maximumStringLength) const override;
     float getDefaultValue() const override;
 
 private:
@@ -107,7 +186,7 @@ public:
         virtual void csoundEngineStopped() {}
     };
 
-    // --- 32 "macro" parametri host (VST3/AU/Standalone) mappabili a canali
+    // --- 16 "macro" parametri host (VST3/AU/Standalone) mappabili a canali
     //     Csound (chnget) -------------------------------------------------
     //
     // VST3/AU (e la maggior parte degli host) si aspettano un numero di
@@ -129,7 +208,7 @@ public:
     // sull'opcode nel codice) - MAI per rinominare o cambiare range al
     // parametro apvts stesso, che da' problemi su molti host se fatto a
     // runtime.
-    static constexpr int numChannelParams = 32;
+    static constexpr int numChannelParams = 16;
 
     // exponential: valore = min*(max/min)^x - adatta a range tutto positivo
     // (es. frequenza 20-2000 Hz), risoluzione fine in basso, grossolana in
@@ -178,12 +257,94 @@ public:
         Funzione pura, nessun lock. */
     static float normalizeChannelParam (const ChannelParamSlot& slot, double real);
 
+    // --- 16 "macro" parametri host INTERI, stesso disegno dei 16 float qui
+    //     sopra ma senza curva (sempre lineare) - vedi IntHostParameter e
+    //     IntParamSlot. Range nativo apvts fisso 0..intHostRangeMax (molti
+    //     passi per una risoluzione di automazione decente), min/max/default
+    //     REALI (interi) solo nello slot. Il valore spinto al canale Csound
+    //     e' l'intero reale (denormalizeIntParam), non il valore nativo
+    //     0..intHostRangeMax.
+    static constexpr int numIntParams = 16;
+    static constexpr int intHostRangeMax = 1000;
+
+    struct IntParamSlot
+    {
+        juce::String channelName; // vuoto = non assegnato
+        int minValue = 0;
+        int maxValue = 127;
+        int defaultValue = 0;
+    };
+
+    static juce::String getIntParamID (int index);
+
+    IntParamSlot getIntParamSlot (int index) const;
+    void setIntParamSlot (int index, const IntParamSlot& slot);
+
+    /** Converte il normalizzato 0..1 (il "linguaggio" comune di getText/
+        getValueForText/getDefaultValue per qualsiasi RangedAudioParameter)
+        nel valore intero reale (min/max dello slot) da scrivere nel canale
+        Csound. Funzione pura, nessun lock. */
+    static int denormalizeIntParam (const IntParamSlot& slot, float normalized);
+
+    /** Inversa di denormalizeIntParam. Funzione pura, nessun lock. */
+    static float normalizeIntParam (const IntParamSlot& slot, double real);
+
+    // --- 16 "macro" parametri host booleani, stesso disegno dei parametri
+    //     qui sopra (pool fisso, parametro apvts stabile, metadata reali
+    //     solo nello slot) - vedi BoolHostParameter e BoolParamSlot. Il
+    //     valore (0.0/1.0) viene spinto al canale Csound assegnato con
+    //     csoundSetControlChannel, esattamente come i parametri float.
+    static constexpr int numBoolParams = 16;
+
+    struct BoolParamSlot
+    {
+        juce::String channelName; // vuoto = non assegnato
+        bool defaultValue = false;
+    };
+
+    static juce::String getBoolParamID (int index);
+
+    BoolParamSlot getBoolParamSlot (int index) const;
+    void setBoolParamSlot (int index, const BoolParamSlot& slot);
+
+    // --- 16 "macro" parametri host a scelta multipla, stesso disegno dei
+    //     float/bool qui sopra - vedi ChoiceHostParameter e ChoiceParamSlot.
+    //     maxChoiceOptions e' il numero FISSO di opzioni che l'host vede per
+    //     ciascuno di questi 16 parametri (deciso una volta per tutte, come
+    //     numChannelParams/numBoolParams: un AudioParameterChoice non puo'
+    //     cambiare il proprio numero di opzioni a runtime in modo affidabile
+    //     su molti host) - le etichette VERE (fino a maxChoiceOptions,
+    //     eventualmente meno se l'utente ne lascia alcune vuote, che
+    //     ricadono su "Option N") vivono nello slot, non nel parametro
+    //     apvts. L'indice selezionato (0..maxChoiceOptions-1) viene spinto
+    //     al canale Csound assegnato con csoundSetControlChannel, come
+    //     valore float.
+    static constexpr int numChoiceParams = 16;
+    static constexpr int maxChoiceOptions = 8;
+
+    struct ChoiceParamSlot
+    {
+        juce::String channelName; // vuoto = non assegnato
+        juce::StringArray optionLabels; // fino a maxChoiceOptions etichette; vuote = fallback "Option N" (vedi getChoiceOptionLabel)
+        int defaultIndex = 0;
+    };
+
+    static juce::String getChoiceParamID (int index);
+
+    /** Etichetta VERA dell'opzione "optionIndex" (0-based) dello slot, o
+        "Option N" (1-based, per l'utente) se lasciata vuota/non impostata.
+        Funzione pura, nessun lock. */
+    static juce::String getChoiceOptionLabel (const ChoiceParamSlot& slot, int optionIndex);
+
+    ChoiceParamSlot getChoiceParamSlot (int index) const;
+    void setChoiceParamSlot (int index, const ChoiceParamSlot& slot);
+
 private:
     // DEVE essere dichiarato (quindi costruito) PRIMA di apvts qui sotto:
     // l'ordine di inizializzazione dei membri segue l'ordine di
     // DICHIARAZIONE nella classe, non quello nella member-init-list del
     // costruttore (e non dipende da quale blocco public:/private: li
-    // contiene). apvts costruisce i 32 ChannelHostParameter (vedi
+    // contiene). apvts costruisce i 16 ChannelHostParameter (vedi
     // createChannelParamLayout), e questi leggono channelParamSlots
     // tramite owner.getChannelParamSlot() non appena l'host/JUCE
     // interroga un parametro (es. per seminare il valore iniziale della
@@ -195,6 +356,21 @@ private:
     // juce::String copiata da memoria non ancora costruita).
     std::array<ChannelParamSlot, (size_t) numChannelParams> channelParamSlots;
     mutable juce::CriticalSection channelParamSlotsLock;
+
+    // Stesso identico ragionamento del commento sopra (ordine di
+    // dichiarazione = ordine di costruzione): anche IntHostParameter/
+    // BoolHostParameter/ChoiceHostParameter leggono il loro slot tramite
+    // owner.getXxxParamSlot() non appena l'host li interroga durante la
+    // costruzione di apvts, quindi anche questi array devono essere
+    // dichiarati (= costruiti) prima.
+    std::array<IntParamSlot, (size_t) numIntParams> intParamSlots;
+    mutable juce::CriticalSection intParamSlotsLock;
+
+    std::array<BoolParamSlot, (size_t) numBoolParams> boolParamSlots;
+    mutable juce::CriticalSection boolParamSlotsLock;
+
+    std::array<ChoiceParamSlot, (size_t) numChoiceParams> choiceParamSlots;
+    mutable juce::CriticalSection choiceParamSlotsLock;
 
 public:
     // Parametri host (VST3/AU/Standalone): pubblico perche' l'editor dei
@@ -265,7 +441,7 @@ public:
     const juce::String getProgramName (int) override       { return {}; }
     void changeProgramName (int, const juce::String&) override {}
 
-    // Persistenza dello stato: testo del .csd, stato nativo di apvts (i 32
+    // Persistenza dello stato: testo del .csd, stato nativo di apvts (i 64
     // valori normalizzati 0..1 - gia' gestito in automatico dall'host in
     // VST3/AU, ma lo salviamo comunque anche qui perche' la Standalone si
     // appoggia solo a getStateInformation/setStateInformation) e i
@@ -275,9 +451,13 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
-    // Non puo' essere static: ogni ChannelHostParameter tiene un riferimento
-    // all'owner (per leggere lo slot corrente in getName/getText - vedi
-    // sopra), quindi serve *this.
+    // Costruisce il layout COMPLETO di apvts: i 16 parametri float (vedi
+    // ChannelHostParameter), i 16 interi (IntHostParameter), i 16 booleani
+    // (BoolHostParameter) e i 16 a scelta multipla (ChoiceHostParameter), in
+    // quest'ordine (Float, Int, Bool, Choice - lo stesso ordine delle tab
+    // nell'editor dei parametri). Non puo' essere static: ognuno di questi
+    // tiene un riferimento all'owner (per leggere lo slot corrente in
+    // getName/getText - vedi sopra), quindi serve *this.
     juce::AudioProcessorValueTreeState::ParameterLayout createChannelParamLayout();
 
     // Spinge verso Csound (csoundSetControlChannel) il valore denormalizzato

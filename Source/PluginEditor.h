@@ -34,12 +34,22 @@
     Il bottone "Parametri..." non apre una finestra separata (una
     juce::DocumentWindow a parte finiva in background dietro l'host in
     diverse DAW/wrapper, essendo un top-level separato dalla finestra del
-    plugin): mostra invece, al POSTO della consolle (stessa area, non di
-    fianco al codice), CsoundParameterMappingPanel, dove si definisce il
-    "rename" (nome canale Csound) e il range/curva dei 32 slot apvts - il
-    codice resta visibile sopra. I VALORI restano affidati all'automazione
-    host o a una UI dedicata futura, qui si editano solo i metadata per
-    slot.
+    plugin): mostra invece CsoundParameterMappingPanel come una "finestra"
+    DENTRO i confini di questo editor (un normale juce::Component, non un
+    vero top-level) che pero' si comporta come tale - SPOSTABILE
+    trascinandone la barra del titolo (vedi CsoundParameterMappingPanel::
+    mouseDown/mouseDrag), non un overlay modale fisso: niente velo che
+    scurisce o blocca il resto dell'editor, codice/consolle restano sempre
+    interagibili sotto/intorno ad essa, cosi' si puo' trascinare la maniglia
+    "#N" di una riga direttamente sull'editor di codice anche col pannello
+    aperto. Non sostituisce piu' l'area della consolle come in una versione
+    precedente: consolle ed editor restano sempre al loro posto. Qui si
+    definisce il "rename" (nome canale Csound) e i metadata (range/default/
+    curva per i parametri float, default per i bool, etichette/indice per i
+    choice) dei 64 slot apvts, isolati in tab separate dentro il pannello
+    (vedi CsoundParameterMappingPanel). I VALORI restano affidati
+    all'automazione host o a una UI dedicata futura, qui si editano solo i
+    metadata per slot.
 
     Trascinando la maniglia "#N" di una riga del pannello sull'editor di
     codice si inserisce automaticamente un chnget per quel canale (vedi
@@ -92,13 +102,20 @@ private:
 
     juce::TextEditor logConsole;
 
-    // Pannello del mapping parametri (rename canale + range/curva per
-    // slot): nascosto di default, sostituisce logConsole (stessa identica
-    // area, vedi resized()) quando si preme paramsButton - vedi
+    // Pannello del mapping parametri (rename canale + metadata per slot):
+    // nascosto di default, mostrato come "finestra" spostabile (vedi il
+    // commento in testa alla classe) quando si preme paramsButton - vedi
     // showingParameterPanel e toggleParameterPanel() in PluginEditor.cpp.
-    // Solo uno dei due (pannello o consolle) e' visibile per volta.
+    // editor/logConsole restano SEMPRE al loro posto e sempre interagibili:
+    // nessun velo li copre, parameterPanel si limita a comparire sopra di
+    // essi nello z-order. La posizione iniziale (centrata) viene impostata
+    // solo la prima volta che il pannello viene mostrato - vedi
+    // parameterPanelPositioned - cosi' un trascinamento dell'utente non
+    // viene annullato dai resized() successivi (es. ridimensionando la
+    // finestra del plugin).
     CsoundParameterMappingPanel parameterPanel { audioProcessor };
     bool showingParameterPanel = false;
+    bool parameterPanelPositioned = false;
     void toggleParameterPanel();
 
     // La toolbar e' una barra dedicata (sfondo + separatore disegnati in

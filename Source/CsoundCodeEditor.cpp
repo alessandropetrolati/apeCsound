@@ -286,10 +286,11 @@ void CsoundCodeEditor::focusLost (juce::Component::FocusChangeType cause)
 
 //==============================================================================
 // Drag and drop di uno slot dal pannello parametri (CsoundParameterMappingPanel::
-// ParamRow, vedi PluginEditor::parameterPanel) - vedi il commento in testa
-// alla classe in CsoundCodeEditor.h. Il "description" del drag e' una
-// juce::var stringa nel formato "csoundChannel:<nome canale>", creata da
-// ParamRow::mouseDrag.
+// ParamRow/BoolParamRow/ChoiceParamRow, vedi PluginEditor::parameterPanel) -
+// vedi il commento in testa alla classe in CsoundCodeEditor.h. Il
+// "description" del drag e' una juce::var stringa nel formato
+// "csoundChannel:<nome canale>", creata da ParamRow/BoolParamRow/
+// ChoiceParamRow::mouseDrag.
 namespace
 {
     const juce::String channelDragPrefix = "csoundChannel:";

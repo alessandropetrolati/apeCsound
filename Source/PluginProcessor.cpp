@@ -88,7 +88,112 @@ float ChannelHostParameter::getDefaultValue() const
     return CsoundAudioProcessor::normalizeChannelParam (slot, (double) slot.defaultValue);
 }
 
-// --- 32 "macro" parametri host <-> canali Csound --------------------------
+//==============================================================================
+// --- IntHostParameter (vedi il commento in PluginProcessor.h) ------------
+IntHostParameter::IntHostParameter (CsoundAudioProcessor& ownerProcessor, int slotIndex,
+                                     const juce::ParameterID& paramID, juce::String defaultName)
+    : juce::AudioParameterInt (paramID, defaultName, 0, CsoundAudioProcessor::intHostRangeMax, 0),
+      owner (ownerProcessor),
+      index (slotIndex),
+      fallbackName (std::move (defaultName))
+{
+}
+
+juce::String IntHostParameter::getName (int maximumStringLength) const
+{
+    const auto slot = owner.getIntParamSlot (index);
+    const auto& displayName = slot.channelName.isNotEmpty() ? slot.channelName : fallbackName;
+    return displayName.substring (0, maximumStringLength);
+}
+
+juce::String IntHostParameter::getText (float normalisedValue, int maximumStringLength) const
+{
+    const auto slot = owner.getIntParamSlot (index);
+    const int real = CsoundAudioProcessor::denormalizeIntParam (slot, normalisedValue);
+    return juce::String (real).substring (0, maximumStringLength);
+}
+
+float IntHostParameter::getValueForText (const juce::String& text) const
+{
+    const auto slot = owner.getIntParamSlot (index);
+    return CsoundAudioProcessor::normalizeIntParam (slot, text.getDoubleValue());
+}
+
+float IntHostParameter::getDefaultValue() const
+{
+    const auto slot = owner.getIntParamSlot (index);
+    return CsoundAudioProcessor::normalizeIntParam (slot, (double) slot.defaultValue);
+}
+
+//==============================================================================
+// --- BoolHostParameter (vedi il commento in PluginProcessor.h) -----------
+BoolHostParameter::BoolHostParameter (CsoundAudioProcessor& ownerProcessor, int slotIndex,
+                                       const juce::ParameterID& paramID, juce::String defaultName)
+    : juce::AudioParameterBool (paramID, defaultName, false),
+      owner (ownerProcessor),
+      index (slotIndex),
+      fallbackName (std::move (defaultName))
+{
+}
+
+juce::String BoolHostParameter::getName (int maximumStringLength) const
+{
+    const auto slot = owner.getBoolParamSlot (index);
+    const auto& displayName = slot.channelName.isNotEmpty() ? slot.channelName : fallbackName;
+    return displayName.substring (0, maximumStringLength);
+}
+
+float BoolHostParameter::getDefaultValue() const
+{
+    const auto slot = owner.getBoolParamSlot (index);
+    return slot.defaultValue ? 1.0f : 0.0f;
+}
+
+//==============================================================================
+// --- ChoiceHostParameter (vedi il commento in PluginProcessor.h) ---------
+ChoiceHostParameter::ChoiceHostParameter (CsoundAudioProcessor& ownerProcessor, int slotIndex,
+                                           const juce::ParameterID& paramID, juce::String defaultName,
+                                           const juce::StringArray& placeholderChoices, int defaultChoiceIndex)
+    : juce::AudioParameterChoice (paramID, defaultName, placeholderChoices, defaultChoiceIndex),
+      owner (ownerProcessor),
+      index (slotIndex),
+      fallbackName (std::move (defaultName))
+{
+}
+
+juce::String ChoiceHostParameter::getName (int maximumStringLength) const
+{
+    const auto slot = owner.getChoiceParamSlot (index);
+    const auto& displayName = slot.channelName.isNotEmpty() ? slot.channelName : fallbackName;
+    return displayName.substring (0, maximumStringLength);
+}
+
+juce::String ChoiceHostParameter::getText (float normalisedValue, int maximumStringLength) const
+{
+    // Stessa logica con cui AudioParameterChoice::getText ricava l'indice da
+    // un valore normalizzato (round (x * (numChoices - 1))), ma l'etichetta
+    // mostrata e' quella VERA dello slot corrente (con fallback "Option N"),
+    // non la stringa segnalibro passata al costruttore.
+    const auto slot = owner.getChoiceParamSlot (index);
+    const int numChoices = choices.size();
+    const int optionIndex = juce::jlimit (0, numChoices - 1,
+                                           juce::roundToInt (normalisedValue * (float) (numChoices - 1)));
+    return CsoundAudioProcessor::getChoiceOptionLabel (slot, optionIndex).substring (0, maximumStringLength);
+}
+
+float ChoiceHostParameter::getDefaultValue() const
+{
+    const auto slot = owner.getChoiceParamSlot (index);
+    const int numChoices = choices.size();
+
+    if (numChoices <= 1)
+        return 0.0f;
+
+    const int clampedIndex = juce::jlimit (0, numChoices - 1, slot.defaultIndex);
+    return (float) clampedIndex / (float) (numChoices - 1);
+}
+
+// --- 16 "macro" parametri host <-> canali Csound --------------------------
 // (vedi il commento su ChannelParamSlot in PluginProcessor.h per il perche'
 // di questo disegno: parametro apvts sempre 0..1 fisso, metadata reali solo
 // qui).
@@ -122,7 +227,46 @@ juce::AudioProcessorValueTreeState::ParameterLayout CsoundAudioProcessor::create
         params.push_back (std::make_unique<ChannelHostParameter> (
             *this, i,
             juce::ParameterID (getChannelParamID (i), 1),
-            "Param " + juce::String (i + 1)));
+            "Float " + juce::String (i + 1)));
+    }
+
+    // --- 16 parametri interi, stesso schema dei float ma senza curva (vedi
+    //     IntParamSlot in PluginProcessor.h) ----------------------------------
+    for (int i = 0; i < numIntParams; ++i)
+    {
+        params.push_back (std::make_unique<IntHostParameter> (
+            *this, i,
+            juce::ParameterID (getIntParamID (i), 1),
+            "Int " + juce::String (i + 1)));
+    }
+
+    // --- 16 parametri booleani, stesso schema (vedi BoolParamSlot in
+    //     PluginProcessor.h) ------------------------------------------------
+    for (int i = 0; i < numBoolParams; ++i)
+    {
+        params.push_back (std::make_unique<BoolHostParameter> (
+            *this, i,
+            juce::ParameterID (getBoolParamID (i), 1),
+            "Bool " + juce::String (i + 1)));
+    }
+
+    // --- 16 parametri a scelta multipla, stesso schema (vedi ChoiceParamSlot
+    //     in PluginProcessor.h) ---------------------------------------------
+    // Scelte segnalibro ("1".."maxChoiceOptions"): MAI mostrate all'host,
+    // servono solo a dare ad AudioParameterChoice un numero di opzioni
+    // valido e fisso - ChoiceHostParameter::getText sovrascrive sempre con
+    // l'etichetta vera dello slot (vedi sopra).
+    juce::StringArray placeholderChoices;
+    for (int c = 0; c < maxChoiceOptions; ++c)
+        placeholderChoices.add (juce::String (c + 1));
+
+    for (int i = 0; i < numChoiceParams; ++i)
+    {
+        params.push_back (std::make_unique<ChoiceHostParameter> (
+            *this, i,
+            juce::ParameterID (getChoiceParamID (i), 1),
+            "Choice " + juce::String (i + 1),
+            placeholderChoices, 0));
     }
 
     return { params.begin(), params.end() };
@@ -151,6 +295,121 @@ void CsoundAudioProcessor::setChannelParamSlot (int index, const ChannelParamSlo
     // da aggiornare su di loro), ma l'host spesso mette in cache nome/testo
     // mostrati: questo e' il modo standard JUCE per dirgli di rileggerli
     // subito (il supporto effettivo varia da host a host).
+    updateHostDisplay (juce::AudioProcessor::ChangeDetails().withParameterInfoChanged (true));
+}
+
+// --- 16 "macro" parametri host interi (vedi il commento su IntParamSlot in
+// PluginProcessor.h) ---------------------------------------------------------
+juce::String CsoundAudioProcessor::getIntParamID (int index)
+{
+    return "intParam" + juce::String (index + 1).paddedLeft ('0', 2);
+}
+
+CsoundAudioProcessor::IntParamSlot CsoundAudioProcessor::getIntParamSlot (int index) const
+{
+    jassert (index >= 0 && index < numIntParams);
+    const juce::ScopedLock sl (intParamSlotsLock);
+    return intParamSlots[(size_t) juce::jlimit (0, numIntParams - 1, index)];
+}
+
+void CsoundAudioProcessor::setIntParamSlot (int index, const IntParamSlot& slot)
+{
+    jassert (index >= 0 && index < numIntParams);
+
+    if (index < 0 || index >= numIntParams)
+        return;
+
+    {
+        const juce::ScopedLock sl (intParamSlotsLock);
+        intParamSlots[(size_t) index] = slot;
+    }
+
+    updateHostDisplay (juce::AudioProcessor::ChangeDetails().withParameterInfoChanged (true));
+}
+
+int CsoundAudioProcessor::denormalizeIntParam (const IntParamSlot& slot, float normalized)
+{
+    normalized = juce::jlimit (0.0f, 1.0f, normalized);
+    const int real = juce::roundToInt (juce::jmap ((double) normalized, 0.0, 1.0,
+                                                     (double) slot.minValue, (double) slot.maxValue));
+    return juce::jlimit (juce::jmin (slot.minValue, slot.maxValue), juce::jmax (slot.minValue, slot.maxValue), real);
+}
+
+float CsoundAudioProcessor::normalizeIntParam (const IntParamSlot& slot, double real)
+{
+    if (slot.maxValue == slot.minValue)
+        return 0.0f;
+
+    return (float) juce::jlimit (0.0, 1.0, juce::jmap (real, (double) slot.minValue, (double) slot.maxValue, 0.0, 1.0));
+}
+
+// --- 16 "macro" parametri host booleani (vedi il commento su BoolParamSlot
+// in PluginProcessor.h) -----------------------------------------------------
+juce::String CsoundAudioProcessor::getBoolParamID (int index)
+{
+    return "boolParam" + juce::String (index + 1).paddedLeft ('0', 2);
+}
+
+CsoundAudioProcessor::BoolParamSlot CsoundAudioProcessor::getBoolParamSlot (int index) const
+{
+    jassert (index >= 0 && index < numBoolParams);
+    const juce::ScopedLock sl (boolParamSlotsLock);
+    return boolParamSlots[(size_t) juce::jlimit (0, numBoolParams - 1, index)];
+}
+
+void CsoundAudioProcessor::setBoolParamSlot (int index, const BoolParamSlot& slot)
+{
+    jassert (index >= 0 && index < numBoolParams);
+
+    if (index < 0 || index >= numBoolParams)
+        return;
+
+    {
+        const juce::ScopedLock sl (boolParamSlotsLock);
+        boolParamSlots[(size_t) index] = slot;
+    }
+
+    updateHostDisplay (juce::AudioProcessor::ChangeDetails().withParameterInfoChanged (true));
+}
+
+// --- 16 "macro" parametri host a scelta multipla (vedi il commento su
+// ChoiceParamSlot in PluginProcessor.h) --------------------------------------
+juce::String CsoundAudioProcessor::getChoiceParamID (int index)
+{
+    return "choiceParam" + juce::String (index + 1).paddedLeft ('0', 2);
+}
+
+juce::String CsoundAudioProcessor::getChoiceOptionLabel (const ChoiceParamSlot& slot, int optionIndex)
+{
+    if (optionIndex >= 0 && optionIndex < slot.optionLabels.size())
+    {
+        const auto& label = slot.optionLabels[optionIndex];
+        if (label.isNotEmpty())
+            return label;
+    }
+
+    return "Option " + juce::String (optionIndex + 1);
+}
+
+CsoundAudioProcessor::ChoiceParamSlot CsoundAudioProcessor::getChoiceParamSlot (int index) const
+{
+    jassert (index >= 0 && index < numChoiceParams);
+    const juce::ScopedLock sl (choiceParamSlotsLock);
+    return choiceParamSlots[(size_t) juce::jlimit (0, numChoiceParams - 1, index)];
+}
+
+void CsoundAudioProcessor::setChoiceParamSlot (int index, const ChoiceParamSlot& slot)
+{
+    jassert (index >= 0 && index < numChoiceParams);
+
+    if (index < 0 || index >= numChoiceParams)
+        return;
+
+    {
+        const juce::ScopedLock sl (choiceParamSlotsLock);
+        choiceParamSlots[(size_t) index] = slot;
+    }
+
     updateHostDisplay (juce::AudioProcessor::ChangeDetails().withParameterInfoChanged (true));
 }
 
@@ -202,19 +461,91 @@ float CsoundAudioProcessor::normalizeChannelParam (const ChannelParamSlot& slot,
 
 void CsoundAudioProcessor::pushChannelParametersToCsound (CSOUND* cs)
 {
-    const juce::ScopedLock sl (channelParamSlotsLock);
-
-    for (int i = 0; i < numChannelParams; ++i)
     {
-        const auto& slot = channelParamSlots[(size_t) i];
+        const juce::ScopedLock sl (channelParamSlotsLock);
 
-        if (slot.channelName.isEmpty())
-            continue;
-
-        if (auto* rawValue = apvts.getRawParameterValue (getChannelParamID (i)))
+        for (int i = 0; i < numChannelParams; ++i)
         {
-            const double value = denormalizeChannelParam (slot, rawValue->load());
-            CsoundAPI::csoundSetControlChannel (cs, slot.channelName.toRawUTF8(), (cs_float) value);
+            const auto& slot = channelParamSlots[(size_t) i];
+
+            if (slot.channelName.isEmpty())
+                continue;
+
+            if (auto* rawValue = apvts.getRawParameterValue (getChannelParamID (i)))
+            {
+                const double value = denormalizeChannelParam (slot, rawValue->load());
+                CsoundAPI::csoundSetControlChannel (cs, slot.channelName.toRawUTF8(), (cs_float) value);
+            }
+        }
+    }
+
+    // Interi: apvts.getRawParameterValue() per un AudioParameterInt torna il
+    // valore NATIVO gia' denormalizzato nel range nativo 0..intHostRangeMax
+    // (non 0..1) - va prima rinormalizzato a 0..1 (nativeMin e' sempre 0, la
+    // divisione basta) e poi smontato nel range reale dello slot, con la
+    // stessa formula di IntHostParameter::getText.
+    {
+        const juce::ScopedLock sl (intParamSlotsLock);
+
+        for (int i = 0; i < numIntParams; ++i)
+        {
+            const auto& slot = intParamSlots[(size_t) i];
+
+            if (slot.channelName.isEmpty())
+                continue;
+
+            if (auto* rawValue = apvts.getRawParameterValue (getIntParamID (i)))
+            {
+                const float normalized = rawValue->load() / (float) intHostRangeMax;
+                const int value = denormalizeIntParam (slot, normalized);
+                CsoundAPI::csoundSetControlChannel (cs, slot.channelName.toRawUTF8(), (cs_float) value);
+            }
+        }
+    }
+
+    // Booleani: 0.0/1.0 diretto, nessuna denormalizzazione (apvts gia' li
+    // tiene come 0.0f/1.0f per un AudioParameterBool).
+    {
+        const juce::ScopedLock sl (boolParamSlotsLock);
+
+        for (int i = 0; i < numBoolParams; ++i)
+        {
+            const auto& slot = boolParamSlots[(size_t) i];
+
+            if (slot.channelName.isEmpty())
+                continue;
+
+            if (auto* rawValue = apvts.getRawParameterValue (getBoolParamID (i)))
+                CsoundAPI::csoundSetControlChannel (cs, slot.channelName.toRawUTF8(), (cs_float) rawValue->load());
+        }
+    }
+
+    // Scelta multipla: il canale riceve l'INDICE selezionato (0..maxChoiceOptions-1).
+    // apvts.getRawParameterValue() per un juce::AudioParameterChoice NON e' il
+    // valore normalizzato 0..1 (a differenza di Channel/Bool, il cui range
+    // nativo e' gia' 0..1): AudioParameterChoice ha un NormalisableRange
+    // nativo (0, numChoices-1, 1), quindi getRawParameterValue() restituisce
+    // GIA' l'indice intero scelto. Moltiplicarlo di nuovo per
+    // (maxChoiceOptions - 1), come faceva la versione precedente, produceva
+    // 0,7,14,21,28,35,42,49 invece di 0..7 (indice gia' corretto moltiplicato
+    // per 7 una seconda volta). getText() faceva la conversione giusta solo
+    // perche' riceve un vero valore normalizzato 0..1 come parametro, non da
+    // getRawParameterValue().
+    {
+        const juce::ScopedLock sl (choiceParamSlotsLock);
+
+        for (int i = 0; i < numChoiceParams; ++i)
+        {
+            const auto& slot = choiceParamSlots[(size_t) i];
+
+            if (slot.channelName.isEmpty())
+                continue;
+
+            if (auto* rawValue = apvts.getRawParameterValue (getChoiceParamID (i)))
+            {
+                const int optionIndex = juce::jlimit (0, maxChoiceOptions - 1, juce::roundToInt (rawValue->load()));
+                CsoundAPI::csoundSetControlChannel (cs, slot.channelName.toRawUTF8(), (cs_float) optionIndex);
+            }
         }
     }
 }
@@ -463,7 +794,8 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
 
     // Una volta per blocco (non per ogni tick a ksmps: la UI/automazione
     // host non cambia cosi' in fretta da servire piu' di cosi') spinge i
-    // 32 "macro" parametri verso i canali Csound a cui sono assegnati.
+    // 64 "macro" parametri (float/int/bool/choice) verso i canali Csound a
+    // cui sono assegnati.
     pushChannelParametersToCsound (cs);
 
     // Messaggi MIDI in ingresso di questo blocco: midiInReadCallback li
@@ -598,7 +930,7 @@ void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     juce::ValueTree state ("CSOUND_STUDIO_STATE");
     state.setProperty ("csd", getCsdText(), nullptr);
 
-    // Stato nativo di apvts (i 32 valori normalizzati 0..1): in VST3/AU
+    // Stato nativo di apvts (i 64 valori normalizzati 0..1): in VST3/AU
     // l'host li salva/ripristina gia' da solo tramite il proprio
     // meccanismo nativo, ma lo salviamo comunque anche qui perche' la
     // Standalone non ha un host che lo faccia per noi - si appoggia solo a
@@ -626,6 +958,75 @@ void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
             slotTree.setProperty ("max", (double) slot.maxValue, nullptr);
             slotTree.setProperty ("default", (double) slot.defaultValue, nullptr);
             slotTree.setProperty ("curve", (int) slot.curve, nullptr);
+            slotsTree.appendChild (slotTree, nullptr);
+        }
+
+        state.appendChild (slotsTree, nullptr);
+    }
+
+    // Idem per i 16 slot interi.
+    {
+        const juce::ScopedLock sl (intParamSlotsLock);
+        juce::ValueTree slotsTree ("INT_PARAM_SLOTS");
+
+        for (int i = 0; i < numIntParams; ++i)
+        {
+            const auto& slot = intParamSlots[(size_t) i];
+
+            if (slot.channelName.isEmpty())
+                continue;
+
+            juce::ValueTree slotTree ("SLOT");
+            slotTree.setProperty ("index", i, nullptr);
+            slotTree.setProperty ("channel", slot.channelName, nullptr);
+            slotTree.setProperty ("min", slot.minValue, nullptr);
+            slotTree.setProperty ("max", slot.maxValue, nullptr);
+            slotTree.setProperty ("default", slot.defaultValue, nullptr);
+            slotsTree.appendChild (slotTree, nullptr);
+        }
+
+        state.appendChild (slotsTree, nullptr);
+    }
+
+    // Idem per i 16 slot booleani.
+    {
+        const juce::ScopedLock sl (boolParamSlotsLock);
+        juce::ValueTree slotsTree ("BOOL_PARAM_SLOTS");
+
+        for (int i = 0; i < numBoolParams; ++i)
+        {
+            const auto& slot = boolParamSlots[(size_t) i];
+
+            if (slot.channelName.isEmpty())
+                continue;
+
+            juce::ValueTree slotTree ("SLOT");
+            slotTree.setProperty ("index", i, nullptr);
+            slotTree.setProperty ("channel", slot.channelName, nullptr);
+            slotTree.setProperty ("default", slot.defaultValue, nullptr);
+            slotsTree.appendChild (slotTree, nullptr);
+        }
+
+        state.appendChild (slotsTree, nullptr);
+    }
+
+    // Idem per i 16 slot a scelta multipla (etichette comprese).
+    {
+        const juce::ScopedLock sl (choiceParamSlotsLock);
+        juce::ValueTree slotsTree ("CHOICE_PARAM_SLOTS");
+
+        for (int i = 0; i < numChoiceParams; ++i)
+        {
+            const auto& slot = choiceParamSlots[(size_t) i];
+
+            if (slot.channelName.isEmpty())
+                continue;
+
+            juce::ValueTree slotTree ("SLOT");
+            slotTree.setProperty ("index", i, nullptr);
+            slotTree.setProperty ("channel", slot.channelName, nullptr);
+            slotTree.setProperty ("defaultIndex", slot.defaultIndex, nullptr);
+            slotTree.setProperty ("options", slot.optionLabels.joinIntoString ("\n"), nullptr);
             slotsTree.appendChild (slotTree, nullptr);
         }
 
@@ -674,6 +1075,69 @@ void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInByte
                         slot.maxValue    = (float) (double) slotTree.getProperty ("max", 1.0);
                         slot.defaultValue = (float) (double) slotTree.getProperty ("default", 0.0);
                         slot.curve       = (ChannelParamCurve) (int) slotTree.getProperty ("curve", 0);
+                    }
+                }
+            }
+        }
+
+        {
+            const juce::ScopedLock sl (intParamSlotsLock);
+            intParamSlots.fill (IntParamSlot{});
+
+            if (auto slotsTree = state.getChildWithName ("INT_PARAM_SLOTS"); slotsTree.isValid())
+            {
+                for (auto slotTree : slotsTree)
+                {
+                    const int index = slotTree.getProperty ("index", -1);
+
+                    if (index >= 0 && index < numIntParams)
+                    {
+                        auto& slot = intParamSlots[(size_t) index];
+                        slot.channelName = slotTree.getProperty ("channel", "").toString();
+                        slot.minValue    = slotTree.getProperty ("min", 0);
+                        slot.maxValue    = slotTree.getProperty ("max", 127);
+                        slot.defaultValue = slotTree.getProperty ("default", 0);
+                    }
+                }
+            }
+        }
+
+        {
+            const juce::ScopedLock sl (boolParamSlotsLock);
+            boolParamSlots.fill (BoolParamSlot{});
+
+            if (auto slotsTree = state.getChildWithName ("BOOL_PARAM_SLOTS"); slotsTree.isValid())
+            {
+                for (auto slotTree : slotsTree)
+                {
+                    const int index = slotTree.getProperty ("index", -1);
+
+                    if (index >= 0 && index < numBoolParams)
+                    {
+                        auto& slot = boolParamSlots[(size_t) index];
+                        slot.channelName  = slotTree.getProperty ("channel", "").toString();
+                        slot.defaultValue = (bool) slotTree.getProperty ("default", false);
+                    }
+                }
+            }
+        }
+
+        {
+            const juce::ScopedLock sl (choiceParamSlotsLock);
+            choiceParamSlots.fill (ChoiceParamSlot{});
+
+            if (auto slotsTree = state.getChildWithName ("CHOICE_PARAM_SLOTS"); slotsTree.isValid())
+            {
+                for (auto slotTree : slotsTree)
+                {
+                    const int index = slotTree.getProperty ("index", -1);
+
+                    if (index >= 0 && index < numChoiceParams)
+                    {
+                        auto& slot = choiceParamSlots[(size_t) index];
+                        slot.channelName  = slotTree.getProperty ("channel", "").toString();
+                        slot.defaultIndex = slotTree.getProperty ("defaultIndex", 0);
+                        slot.optionLabels = juce::StringArray::fromLines (slotTree.getProperty ("options", "").toString());
                     }
                 }
             }
