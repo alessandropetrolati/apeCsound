@@ -266,7 +266,14 @@ private:
     // chooser alla volta basta, Save e Load non possono essere aperti
     // contemporaneamente dalla stessa UI.
     std::unique_ptr<juce::FileChooser> activeFileChooser;
-    void promptSaveSession();
+
+    // onSaved, se presente, scatta SOLO se il salvataggio va davvero a buon
+    // fine (file scritto) - usato da confirmDiscardCurrentStateThenLoad()
+    // sotto per incatenare "salva, poi procedi col Load" quando l'utente
+    // sceglie "Save" nel dialogo di conferma. Il bottone "Save CSD" nella
+    // toolbar chiama semplicemente promptSaveSession() senza argomenti (il
+    // default nullptr), nessun comportamento diverso per lui.
+    void promptSaveSession (std::function<void()> onSaved = nullptr);
     void promptLoadSession();
 
     // juce::FileDragAndDropTarget: drag and drop di un .csd dal Finder/
@@ -297,21 +304,60 @@ private:
     // Feedback visivo mentre il file e' trascinato SOPRA l'editor (prima
     // del rilascio): fileDragEnter/fileDragExit sono virtuali OPZIONALI di
     // FileDragAndDropTarget (non serve fileDragMove, non ci serve la
-    // posizione) - impostano showingCsdDropHighlight e richiedono un
-    // repaint, che in paint() disegna un bordo/overlay evidenziato sopra
-    // l'area dell'editor di codice. filesDropped() sopra azzera comunque
-    // il flag per sicurezza (la documentazione JUCE non garantisce che
-    // fileDragExit scatti sempre dopo un drop andato a buon fine).
+    // posizione) - mostrano/nascondono dropHighlightOverlay sotto.
+    // filesDropped() sopra nasconde comunque l'overlay per sicurezza (la
+    // documentazione JUCE non garantisce che fileDragExit scatti sempre
+    // dopo un drop andato a buon fine).
+    //
+    // NOTA storica: la prima implementazione disegnava il bordo/overlay
+    // direttamente in CsoundAudioProcessorEditor::paint() (il GENITORE) alle
+    // bounds di "editor" - invisibile, perche' JUCE dipinge i figli DOPO il
+    // paint() del genitore: "editor" (CsoundCodeEditor, opaco) ridisegnava
+    // sempre il proprio sfondo sopra, coprendo l'overlay. Serve quindi un
+    // componente FIGLIO dedicato, portato in primo piano (toFront) sopra
+    // "editor", che disegna lui stesso bordo+overlay nel proprio paint() -
+    // cosi' il suo ordine di disegno e' DOPO "editor", non prima.
+    struct DropHighlightOverlay final : public juce::Component
+    {
+        DropHighlightOverlay() { setInterceptsMouseClicks (false, false); }
+        void paint (juce::Graphics& g) override
+        {
+            auto area = getLocalBounds();
+            g.setColour (juce::Colour (0xff3d8bfd).withAlpha (0.12f));
+            g.fillRect (area);
+            g.setColour (juce::Colour (0xff3d8bfd));
+            g.drawRect (area, 3);
+        }
+    };
+    DropHighlightOverlay dropHighlightOverlay;
+
     void fileDragEnter (const juce::StringArray& files, int x, int y) override;
     void fileDragExit (const juce::StringArray& files) override;
-    bool showingCsdDropHighlight = false;
 
-    // Logica di successo comune a promptLoadSession() (FileChooser) e
-    // filesDropped() sopra (drag and drop): carica il file nel processor,
-    // rilegge editor/pannello parametri dal nuovo stato, segnala il
-    // bordo rosso di Apply (vedi markApplyPendingAfterLoad()) e ricorda la
-    // cartella per la prossima volta.
+    // Punto d'ingresso comune a promptLoadSession() (FileChooser) e
+    // filesDropped() sopra (drag and drop): il codice nell'editor (e la
+    // mappatura parametri nella sidebar) e' uno STATO che esiste solo qui
+    // finche' non viene scritto su un .csd - il progetto della DAW lo
+    // salva gia' (getStateInformation), ma caricare un nuovo file lo
+    // sostituirebbe comunque, perdendolo se non e' mai stato esportato.
+    // Mostra quindi SEMPRE un dialogo NATIVO del sistema operativo a 3 vie
+    // (showNativeThreeButtonAlert, vedi NativeAlertMac.h/.mm - un NSAlert
+    // vero con pulsanti "Save"/"Overwrite"/"Cancel" dal testo personalizzato,
+    // non juce::AlertWindow che e' disegnato da JUCE ne' juce::
+    // NativeMessageBox che e' nativo ma coi pulsanti fissi Yes/No/Cancel)
+    // prima di procedere: "Cancel" non fa nulla, "Overwrite" chiama subito
+    // performLoadSessionFile(file) sotto, "Save" apre PRIMA il browser di
+    // esportazione (promptSaveSession) e chiama performLoadSessionFile(file)
+    // solo se il salvataggio va a buon fine (altrimenti annulla il Load).
     void loadSessionFile (const juce::File& file);
+
+    // Logica di successo vera e propria (ex intero corpo di
+    // loadSessionFile() prima di questa modifica): carica il file nel
+    // processor, rilegge editor/pannello parametri dal nuovo stato,
+    // segnala il bordo rosso di Apply (vedi markApplyPendingAfterLoad()) e
+    // ricorda la cartella per la prossima volta - chiamata SOLO da
+    // loadSessionFile() sopra, dopo la conferma dell'utente.
+    void performLoadSessionFile (const juce::File& file);
 
     static constexpr int toolbarHeight = 44;
 

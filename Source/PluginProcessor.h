@@ -525,6 +525,17 @@ private:
     //   vrange/hrange                   -> 2 slot Float (stesso min/max/
     //     skew/increment, default separati)
     //     channel("nomeA", "nomeB"), range(min, max, defaultA:defaultB, skew, increment)
+    //   xypad                           -> 2 slot Float (uno per asse,
+    //     min/max/default INDIPENDENTI per asse - niente sintassi "A:B" qui,
+    //     ciascun asse ha gia' il proprio range(); skew/increment NON sono
+    //     esposti da questo widget in Cabbage, fissi a 1.0/0.001 per
+    //     entrambi gli assi, mai letti dalla riga)
+    //     channel("nomeX", "nomeY"), rangeX(minX, maxX, defaultX), rangeY(minY, maxY, defaultY)
+    //   encoder (endless encoder)       -> 1 slot Float, min/max da due
+    //     proprieta' SEPARATE (non range()); default non esposto da questo
+    //     widget in Cabbage - assunto uguale a min; skew/increment fissi a
+    //     1.0/0.001 come xypad sopra, mai letti dalla riga
+    //     channel("nome"), min(min), max(max)
     //   checkbox                        -> 1 slot Bool
     //     channel("nome"), value(0 o 1)
     //   combobox                        -> 1 slot Choice

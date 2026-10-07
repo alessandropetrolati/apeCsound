@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "NativeAlertMac.h"
 #include <cmath>
 
 namespace
@@ -193,6 +194,15 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // qui sopra, quindi portato in cima esplicitamente qui alla fine.
     clearConsoleButton.toFront (false);
 
+    // dropHighlightOverlay: invisibile finche' non mostrato da
+    // fileDragEnter(), ma va aggiunto (addChildComponent, non
+    // addAndMakeVisible) e portato DAVANTI a "editor" nello z-order gia' da
+    // subito - vedi il commento in testa a DropHighlightOverlay in
+    // PluginEditor.h sul perche' serve un componente figlio invece di
+    // disegnare nel paint() del genitore.
+    addChildComponent (dropHighlightOverlay);
+    dropHighlightOverlay.toFront (false);
+
     audioProcessor.addListener (this);
 
     // false = niente ResizableCornerComponent in basso a destra: il
@@ -242,20 +252,10 @@ void CsoundAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawLine ((float) toolbarBounds.getX(),     (float) toolbarBounds.getBottom() - 0.5f,
                 (float) toolbarBounds.getRight(), (float) toolbarBounds.getBottom() - 0.5f, 1.0f);
 
-    // Evidenziazione mentre un .csd viene trascinato sopra l'editor dal
-    // Finder/Explorer (vedi fileDragEnter/fileDragExit sotto): overlay
-    // semi-trasparente + bordo acceso sull'area di editor.setBounds(),
-    // stesso bounds usato in resized() - non serve ricalcolarlo qui.
-    if (showingCsdDropHighlight)
-    {
-        const auto area = editor.getBounds();
-
-        g.setColour (juce::Colour (0xff3d8bfd).withAlpha (0.12f));
-        g.fillRect (area);
-
-        g.setColour (juce::Colour (0xff3d8bfd));
-        g.drawRect (area, 3);
-    }
+    // L'evidenziazione del drag and drop CSD non si disegna piu' qui: vedi
+    // dropHighlightOverlay (componente figlio dedicato, vedi il commento in
+    // PluginEditor.h sul perche') mostrato/nascosto da fileDragEnter/
+    // fileDragExit e posizionato in resized().
 }
 
 void CsoundAudioProcessorEditor::resized()
@@ -363,6 +363,11 @@ void CsoundAudioProcessorEditor::resized()
 
     editor.setBounds (area);
     opcodeHelpBar.setBounds (helpBarArea);
+
+    // Stesse bounds di "editor", sempre ricalcolate qui cosi' da restare
+    // coerenti anche quando sidebar/consolle si ridimensionano - visibile
+    // solo mentre fileDragEnter() l'ha attivato (vedi .h).
+    dropHighlightOverlay.setBounds (editor.getBounds());
 }
 
 void CsoundAudioProcessorEditor::toggleParameterPanel()
@@ -427,7 +432,7 @@ void CsoundAudioProcessorEditor::markApplyPendingAfterLoad()
     applyButton.repaint();
 }
 
-void CsoundAudioProcessorEditor::promptSaveSession()
+void CsoundAudioProcessorEditor::promptSaveSession (std::function<void()> onSaved)
 {
     // Un .csd VERO, non un formato proprietario: vedi il commento su
     // CsoundAudioProcessor::saveSessionToFile in PluginProcessor.h - il
@@ -442,12 +447,12 @@ void CsoundAudioProcessorEditor::promptSaveSession()
     activeFileChooser->launchAsync (
         juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
             | juce::FileBrowserComponent::warnAboutOverwriting,
-        [this] (const juce::FileChooser& chooser)
+        [this, onSaved] (const juce::FileChooser& chooser)
         {
             auto file = chooser.getResult();
 
             if (file == juce::File{})
-                return; // annullato dall'utente
+                return; // annullato dall'utente - onSaved NON scatta
 
             if (! file.hasFileExtension ("csd"))
                 file = file.withFileExtension ("csd");
@@ -459,6 +464,13 @@ void CsoundAudioProcessorEditor::promptSaveSession()
 
             appendToLog (ok ? ("--- Session saved to " + file.getFullPathName() + " ---")
                              : "--- Failed to save session (file not writable?) ---");
+
+            // Scatta SOLO se il file e' stato scritto davvero - usato da
+            // loadSessionFile() per incatenare "salva, poi procedi col
+            // Load" quando l'utente sceglie "Save" nel dialogo di conferma
+            // (vedi il commento su promptSaveSession() in PluginEditor.h).
+            if (ok && onSaved)
+                onSaved();
         });
 }
 
@@ -490,16 +502,12 @@ bool CsoundAudioProcessorEditor::isInterestedInFileDrag (const juce::StringArray
 void CsoundAudioProcessorEditor::fileDragEnter (const juce::StringArray& files, int, int)
 {
     if (isInterestedInFileDrag (files))
-    {
-        showingCsdDropHighlight = true;
-        repaint();
-    }
+        dropHighlightOverlay.setVisible (true);
 }
 
 void CsoundAudioProcessorEditor::fileDragExit (const juce::StringArray&)
 {
-    showingCsdDropHighlight = false;
-    repaint();
+    dropHighlightOverlay.setVisible (false);
 }
 
 void CsoundAudioProcessorEditor::filesDropped (const juce::StringArray& files, int, int)
@@ -507,14 +515,51 @@ void CsoundAudioProcessorEditor::filesDropped (const juce::StringArray& files, i
     // fileDragExit non e' garantito dopo un drop riuscito (vedi il
     // commento in PluginEditor.h) - spegniamo qui comunque, altrimenti il
     // bordo resterebbe acceso indefinitamente dopo il caricamento.
-    showingCsdDropHighlight = false;
-    repaint();
+    dropHighlightOverlay.setVisible (false);
 
     if (files.size() == 1)
         loadSessionFile (juce::File (files[0]));
 }
 
 void CsoundAudioProcessorEditor::loadSessionFile (const juce::File& file)
+{
+    // Il codice nell'editor (+ la mappatura parametri nella sidebar) e' uno
+    // STATO che esiste solo qui finche' non viene scritto su un .csd - il
+    // progetto della DAW lo salva gia' (getStateInformation), ma caricare
+    // un nuovo file lo sostituirebbe comunque, perdendolo per sempre se non
+    // e' mai stato esportato prima. Chiediamo quindi SEMPRE cosa fare,
+    // incondizionatamente (nessun tentativo di indovinare se "conviene"
+    // chiederlo - vedi il commento in PluginEditor.h sul perche').
+    //
+    // showNativeThreeButtonAlert (vedi NativeAlertMac.h/.mm): dialogo NSAlert
+    // DAVVERO nativo del sistema operativo, richiesto esplicitamente al
+    // posto sia di juce::AlertWindow (testo libero ma disegnato da JUCE, non
+    // nativo) sia di juce::NativeMessageBox (nativo ma pulsanti fissi
+    // Yes/No/Cancel, non rietichettabili - era il compromesso adottato
+    // prima di questo file). NSAlert invece accetta testo libero per
+    // ciascuno dei tre pulsanti ("Save", "Overwrite", "Cancel"), restando
+    // comunque il dialogo nativo del sistema. Sincrono (blocca il message
+    // thread finche' l'utente non sceglie - va bene, siamo gia' su
+    // quel thread, mai sul thread audio): 1 = Save, 2 = Overwrite,
+    // 0 = Cancel o finestra chiusa.
+    const int result = showNativeThreeButtonAlert (
+        "Unsaved changes",
+        "The current inline code (and parameter mapping) is not saved to a .csd file "
+        "and will be lost if you continue.",
+        "Save", "Overwrite", "Cancel");
+
+    if (result == 1) // Save: esporta PRIMA, poi procede col Load solo se riuscito
+    {
+        promptSaveSession ([this, file] { performLoadSessionFile (file); });
+    }
+    else if (result == 2) // Overwrite: procede subito, scartando lo stato attuale
+    {
+        performLoadSessionFile (file);
+    }
+    // result == 0 (Cancel, o finestra chiusa): non fa nulla.
+}
+
+void CsoundAudioProcessorEditor::performLoadSessionFile (const juce::File& file)
 {
     if (audioProcessor.loadSessionFromFile (file))
     {
@@ -531,8 +576,20 @@ void CsoundAudioProcessorEditor::loadSessionFile (const juce::File& file)
         // di leggere il nuovo file) fa si' che un .csd senza nessun
         // parametro svuoti davvero il pannello, invece di lasciare
         // appesa la mappatura della sessione precedente.
+        // NIENTE clearUndoHistory() qui (a differenza del replaceAllContent
+        // nel costruttore, che e' il primo caricamento e non ha nulla da
+        // annullare): un Load CSD deve restare ANNULLABILE con Undo,
+        // tornando al codice precedente - richiesto esplicitamente. Il
+        // newTransaction() prima del replaceAllContent chiude qualunque
+        // gruppo di modifiche precedente (la digitazione dell'utente) cosi'
+        // il Load diventa un singolo passo di undo a se stante: un solo
+        // Cmd+Z annulla l'intero caricamento, non solo meta' del nuovo
+        // testo. NOTA: questo annulla solo il TESTO nell'editor - la
+        // mappatura parametri nella sidebar (parameterPanel) non ha una
+        // propria cronologia di undo e resta quella del CSD appena
+        // caricato anche dopo un Undo del codice.
+        document.newTransaction();
         document.replaceAllContent (audioProcessor.getCsdText());
-        document.clearUndoHistory();
         parameterPanel.refreshAllFromProcessor();
 
         // Il replaceAllContent qui sopra ha gia' fatto scattare

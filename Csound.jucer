@@ -26,6 +26,10 @@
       <FILE id="hQ3NG8" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="ibWe9P" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="nAlrtA" name="NativeAlertMac.mm" compile="1" resource="0"
+            file="Source/NativeAlertMac.mm"/>
+      <FILE id="nAlrtB" name="NativeAlertMac.h" compile="0" resource="0"
+            file="Source/NativeAlertMac.h"/>
       <FILE id="cT0k5A" name="CsoundTokeniser.cpp" compile="1" resource="0"
             file="Source/CsoundTokeniser.cpp"/>
       <FILE id="cT0k5B" name="CsoundTokeniser.h" compile="0" resource="0"

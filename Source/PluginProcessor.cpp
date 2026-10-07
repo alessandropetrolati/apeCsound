@@ -1183,9 +1183,82 @@ namespace
         return false;
     }
 
+    // rangeX(...)/rangeY(...) - SOLO per il widget xypad (vedi il branch
+    // "xypad" in importCabbageParameters): a differenza di range(...) sopra
+    // (riusato invariato da hslider/vslider/rslider/nslider/vrange/hrange),
+    // xypad ha due direttive SEPARATE, una per asse, invece di una singola
+    // range() condivisa - regex dedicate, "rangeX\(" non puo' confondersi
+    // con "range\(" (richiede la X subito dopo "range", non presente nella
+    // sintassi degli altri widget).
+    bool cabbageMatchRangeXContents (const juce::String& line, juce::String& contents)
+    {
+        static const std::regex re (R"re(rangeX\(([^)]*)\))re");
+        std::smatch m;
+        const auto s = line.toStdString();
+
+        if (std::regex_search (s, m, re))
+        {
+            contents = juce::String (m[1].str());
+            return true;
+        }
+
+        return false;
+    }
+
+    bool cabbageMatchRangeYContents (const juce::String& line, juce::String& contents)
+    {
+        static const std::regex re (R"re(rangeY\(([^)]*)\))re");
+        std::smatch m;
+        const auto s = line.toStdString();
+
+        if (std::regex_search (s, m, re))
+        {
+            contents = juce::String (m[1].str());
+            return true;
+        }
+
+        return false;
+    }
+
     bool cabbageMatchValueNumber (const juce::String& line, double& value)
     {
         static const std::regex re (R"re(value\(([^)]*)\))re");
+        std::smatch m;
+        const auto s = line.toStdString();
+
+        if (std::regex_search (s, m, re))
+        {
+            value = juce::String (m[1].str()).trim().getDoubleValue();
+            return true;
+        }
+
+        return false;
+    }
+
+    // min(...)/max(...) - SOLO per il widget encoder (vedi il branch
+    // "encoder" in importCabbageParameters): a differenza di
+    // hslider/vslider/rslider/nslider/vrange/hrange, che prendono
+    // min/max/default/skew/increment tutti insieme da un'unica range(...),
+    // l'endless encoder di Cabbage li espone come due proprieta' separate
+    // e NIENTE default/skew/increment (fissi, vedi il branch).
+    bool cabbageMatchMinNumber (const juce::String& line, double& value)
+    {
+        static const std::regex re (R"re(min\(([^)]*)\))re");
+        std::smatch m;
+        const auto s = line.toStdString();
+
+        if (std::regex_search (s, m, re))
+        {
+            value = juce::String (m[1].str()).trim().getDoubleValue();
+            return true;
+        }
+
+        return false;
+    }
+
+    bool cabbageMatchMaxNumber (const juce::String& line, double& value)
+    {
+        static const std::regex re (R"re(max\(([^)]*)\))re");
         std::smatch m;
         const auto s = line.toStdString();
 
@@ -1273,6 +1346,32 @@ namespace
                     defaultB = values[2];
             }
         }
+
+        return true;
+    }
+
+    // Spezza "min, max, default" (il contenuto grezzo di rangeX(...)/
+    // rangeY(...), vedi cabbageMatchRangeXContents/cabbageMatchRangeYContents
+    // sopra) in fino a 3 numeri - SOLO per xypad: a differenza di
+    // cabbageParseFiveFieldRange sopra, qui non c'e' ne' skew/increment
+    // (fissi, vedi il branch "xypad" in importCabbageParameters) ne' la
+    // sintassi "default1:default2" di vrange/hrange (ogni asse ha gia' il
+    // proprio default separato, tramite rangeX/rangeY distinti). Stessa
+    // tolleranza di cabbageParseFiveFieldRange per un numero di campi
+    // inferiore al massimo: i campi assenti restano al valore che il
+    // chiamante ha gia' messo in "values" prima di chiamare questa funzione.
+    bool cabbageParseThreeFieldRange (const juce::String& contents, double values[3])
+    {
+        juce::StringArray tokens;
+        tokens.addTokens (contents, ",", "");
+
+        if (tokens.isEmpty())
+            return false;
+
+        const int fieldCount = juce::jmin (tokens.size(), 3);
+
+        for (int i = 0; i < fieldCount; ++i)
+            values[i] = tokens[i].trim().getDoubleValue();
 
         return true;
     }
@@ -1541,6 +1640,109 @@ bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
                     ++channelIndex;
                 }
             }
+        }
+        else if (identifier == "xypad")
+        {
+            // channel("xChan", "yChan") identico a vrange/hrange (vedi
+            // cabbageMatchChannelPair sopra) - 2 slot Float, uno per asse.
+            // A differenza di vrange/hrange pero' ogni asse ha il proprio
+            // range INDIPENDENTE (rangeX/rangeY separati, non un'unica
+            // range() con la sintassi "defaultA:defaultB"), e skew/increment
+            // non sono affatto esposti da questo widget in Cabbage - fissi
+            // a 1.0/0.001 per entrambi gli assi, richiesto esplicitamente.
+            juce::String channelA, channelB, rangeXContents, rangeYContents;
+
+            if (! cabbageMatchChannelPair (line, channelA, channelB))
+                continue;
+
+            constexpr float xyPadSkew = 1.0f;
+            constexpr float xyPadIncrement = 0.001f;
+
+            double valuesX[3] = { 0.0, 1.0, 0.0 };
+            double valuesY[3] = { 0.0, 1.0, 0.0 };
+
+            if (cabbageMatchRangeXContents (line, rangeXContents))
+                cabbageParseThreeFieldRange (rangeXContents, valuesX);
+
+            if (cabbageMatchRangeYContents (line, rangeYContents))
+                cabbageParseThreeFieldRange (rangeYContents, valuesY);
+
+            if (channelA.isNotEmpty())
+            {
+                if (channelIndex >= numChannelParams)
+                {
+                    ++skippedFloat;
+                }
+                else
+                {
+                    ChannelParamSlot slot;
+                    slot.channelName  = channelA;
+                    slot.minValue     = (float) valuesX[0];
+                    slot.maxValue     = (float) valuesX[1];
+                    slot.defaultValue = (float) valuesX[2];
+                    slot.skew         = xyPadSkew;
+                    slot.increment    = xyPadIncrement;
+                    setChannelParamSlot (channelIndex, slot);
+                    pushDefaultToHost (getChannelParamID (channelIndex));
+                    ++channelIndex;
+                }
+            }
+
+            if (channelB.isNotEmpty())
+            {
+                if (channelIndex >= numChannelParams)
+                {
+                    ++skippedFloat;
+                }
+                else
+                {
+                    ChannelParamSlot slot;
+                    slot.channelName  = channelB;
+                    slot.minValue     = (float) valuesY[0];
+                    slot.maxValue     = (float) valuesY[1];
+                    slot.defaultValue = (float) valuesY[2];
+                    slot.skew         = xyPadSkew;
+                    slot.increment    = xyPadIncrement;
+                    setChannelParamSlot (channelIndex, slot);
+                    pushDefaultToHost (getChannelParamID (channelIndex));
+                    ++channelIndex;
+                }
+            }
+        }
+        else if (identifier == "encoder")
+        {
+            // Endless encoder: 1 slot Float, channel("nome") identico a
+            // hslider/ecc. (cabbageMatchSingleChannel), ma min/max NON
+            // vengono da range(...) - questo widget li espone come due
+            // proprieta' separate, min(...) e max(...) - e il default non
+            // e' affatto esposto in Cabbage per questo widget: assunto
+            // uguale a min (nessuna indicazione migliore disponibile).
+            // Skew/increment fissi a 1.0/0.001, come xypad sopra.
+            juce::String channelName;
+
+            if (! cabbageMatchSingleChannel (line, channelName) || channelName.isEmpty())
+                continue;
+
+            if (channelIndex >= numChannelParams)
+            {
+                ++skippedFloat;
+                continue;
+            }
+
+            double minValue = 0.0, maxValue = 1.0;
+            cabbageMatchMinNumber (line, minValue);
+            cabbageMatchMaxNumber (line, maxValue);
+
+            ChannelParamSlot slot;
+            slot.channelName  = channelName;
+            slot.minValue     = (float) minValue;
+            slot.maxValue     = (float) maxValue;
+            slot.defaultValue = (float) minValue;
+            slot.skew         = 1.0f;
+            slot.increment    = 0.001f;
+            setChannelParamSlot (channelIndex, slot);
+            pushDefaultToHost (getChannelParamID (channelIndex));
+            ++channelIndex;
         }
         else if (identifier == "checkbox")
         {
