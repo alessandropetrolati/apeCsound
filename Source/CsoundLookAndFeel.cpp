@@ -91,6 +91,17 @@ namespace
         return p;
     }
 
+    // MDI "console": un rettangolo (schermo) con un prompt ">" dentro -
+    // bottone Console/Hide Console nella toolbar (vedi PluginEditor.h/.cpp),
+    // analogo a "params" per la sidebar ma per mostrare/nascondere logConsole.
+    juce::Path makeConsoleIconPath()
+    {
+        return juce::Drawable::parseSVGPath (
+            "M20,19V7H4V19H20M20,3A2,2 0 0,1 22,5V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V5C2,3.89 "
+            "2.9,3 4,3H20M13,17V15H18V17H13M9.58,13L5.57,9H8.4L11.7,12.3C12.09,12.69 12.09,13.33 "
+            "11.7,13.72L8.42,17H5.59L9.58,13Z");
+    }
+
     juce::Path getIconPathForButtonName (const juce::String& name)
     {
         if (name == "apply")
@@ -101,6 +112,9 @@ namespace
 
         if (name == "params")
             return makeTuneIconPath();
+
+        if (name == "console")
+            return makeConsoleIconPath();
 
         if (name == "genericEditor")
             return makeEqualizerIconPath();
@@ -146,8 +160,6 @@ CsoundLookAndFeel::CsoundLookAndFeel()
 void CsoundLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour,
                                               bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
 {
-    // Angoli a 90 gradi ovunque (nessun fillRoundedRectangle): stile
-    // squadrato richiesto per tutti i widget, non solo i bottoni.
     auto bounds = button.getLocalBounds().toFloat().reduced (0.5f);
 
     auto colour = backgroundColour;
@@ -158,7 +170,20 @@ void CsoundLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& b
         colour = colour.brighter (0.12f);
 
     g.setColour (colour);
-    g.fillRect (bounds);
+
+    // Bottone "circolare" (proprieta' dinamica "circular"): STESSO colore e
+    // STESSA risposta a hover/down di tutti gli altri bottoni sopra (stesso
+    // "colour" calcolato identicamente) - cambia SOLO la forma (arrotondata
+    // invece che squadrata), niente ombra o altro trattamento speciale che
+    // lo farebbe sembrare "spento"/diverso dagli altri. Usato da
+    // clearConsoleButton in PluginEditor, in overlap sopra l'angolo in alto
+    // a destra della consolle invece che nella toolbar.
+    const bool circular = (bool) button.getProperties().getWithDefault ("circular", false);
+
+    if (circular)
+        g.fillRoundedRectangle (bounds, bounds.getHeight() * 0.5f);
+    else
+        g.fillRect (bounds); // angoli a 90 gradi per tutti gli ALTRI widget
 
     // Bordo rosso tutto intorno al bottone quando il chiamante lo segnala
     // con una proprieta' dinamica (Component::getProperties(), un semplice
@@ -167,7 +192,7 @@ void CsoundLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& b
     // codice nell'editor e' stato modificato e non coincide piu' con
     // quello applicato/caricato - vedi CsoundAudioProcessorEditor::
     // updateApplyButtonDirtyState().
-    if ((bool) button.getProperties().getWithDefault ("pendingChanges", false))
+    if (! circular && (bool) button.getProperties().getWithDefault ("pendingChanges", false))
     {
         g.setColour (juce::Colours::red);
         g.drawRect (bounds, 2.0f);
@@ -186,8 +211,28 @@ void CsoundLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& but
                                                                   : juce::TextButton::textColourOffId);
     g.setColour (textColour);
 
-    auto bounds = button.getLocalBounds().toFloat().reduced (10.0f, 0.0f);
     auto icon = getIconPathForButtonName (button.getName());
+
+    // Bottone circolare: SOLO icona, centrata su tutto il cerchio, niente
+    // testo (il bottone e' troppo piccolo per ospitarne, e clearConsoleButton
+    // in PluginEditor ha comunque testo vuoto) - vedi il commento identico
+    // su drawButtonBackground sopra.
+    if ((bool) button.getProperties().getWithDefault ("circular", false))
+    {
+        if (! icon.isEmpty())
+        {
+            auto bounds = button.getLocalBounds().toFloat();
+            const float iconSize = bounds.getHeight() * 0.5f;
+            auto iconArea = bounds.withSizeKeepingCentre (iconSize, iconSize);
+
+            icon.scaleToFit (iconArea.getX(), iconArea.getY(), iconArea.getWidth(), iconArea.getHeight(), true);
+            g.fillPath (icon);
+        }
+
+        return;
+    }
+
+    auto bounds = button.getLocalBounds().toFloat().reduced (10.0f, 0.0f);
 
     if (! icon.isEmpty())
     {

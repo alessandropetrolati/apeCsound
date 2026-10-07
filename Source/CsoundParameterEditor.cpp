@@ -11,7 +11,6 @@ namespace
     // condivisa per i colori che contano), cosi' il contrasto e' garantito
     // a prescindere dal tema globale.
     const juce::Colour kPanelBg      { 0xff10181f }; // come logConsole in PluginEditor
-    const juce::Colour kTitleBarBg   { 0xff0a1016 };
     const juce::Colour kFieldBg      { 0xff202a33 };
     const juce::Colour kFieldOutline { 0xff3a4550 };
     const juce::Colour kAccent       { 0xff17a2b8 }; // stesso accento teal del resto dell'app
@@ -29,7 +28,7 @@ namespace
         field.setColour (juce::TextEditor::highlightedTextColourId, kText);
     }
 
-    void applyDarkComboColours (juce::ComboBox& combo)
+    /*void applyDarkComboColours (juce::ComboBox& combo)
     {
         combo.setColour (juce::ComboBox::backgroundColourId, kFieldBg);
         combo.setColour (juce::ComboBox::textColourId,       kText);
@@ -44,7 +43,7 @@ namespace
         combo.setColour (juce::PopupMenu::textColourId,                kText);
         combo.setColour (juce::PopupMenu::highlightedBackgroundColourId, kAccent);
         combo.setColour (juce::PopupMenu::highlightedTextColourId,     juce::Colours::white);
-    }
+    }*/
 
     // Header di colonna condiviso da tutte e tre le pagine: un juce::Label
     // per colonna (non una sola stringa con spazi a mano, che non restava
@@ -1262,12 +1261,12 @@ void CsoundParameterMappingPanel::ChoiceParamRow::mouseDrag (const juce::MouseEv
 // quel tipo.
 CsoundParameterMappingPanel::FloatParamsPage::FloatParamsPage (CsoundAudioProcessor& processorToEdit)
 {
-    setupHeaderLabel (headerNameLabel, "chnget");
+    setupHeaderLabel (headerNameLabel, "Channel (chnget)");
     setupHeaderLabel (headerMinLabel, "Min", juce::Justification::centredLeft);
     setupHeaderLabel (headerMaxLabel, "Max", juce::Justification::centredLeft);
     setupHeaderLabel (headerDefaultLabel, "Default", juce::Justification::centredLeft);
     setupHeaderLabel (headerSkewLabel, "Skew", juce::Justification::centredLeft);
-    setupHeaderLabel (headerIncrementLabel, "Incr", juce::Justification::centredLeft);
+    setupHeaderLabel (headerIncrementLabel, "Step", juce::Justification::centredLeft);
 
     for (auto* label : { &headerNameLabel, &headerMinLabel, &headerMaxLabel, &headerDefaultLabel, &headerSkewLabel, &headerIncrementLabel })
         addAndMakeVisible (*label);
@@ -1284,7 +1283,12 @@ CsoundParameterMappingPanel::FloatParamsPage::FloatParamsPage (CsoundAudioProces
     }
 
     viewport.setViewedComponent (&rowsContainer, false);
-    viewport.setScrollBarsShown (true, false);
+    // true, true: anche orizzontale, non solo verticale - su richiesta
+    // esplicita il pannello non deve piu' schiacciare/nascondere le colonne
+    // quando ridimensionato piu' stretto del necessario (vedi minContentWidth),
+    // deve comparire una scrollbar orizzontale al suo posto.
+    viewport.setScrollBarsShown (true, true);
+    viewport.onHorizontalScrollChanged = [this] (int scrollX) { layoutHeaderForScroll (scrollX); };
     addAndMakeVisible (viewport);
 }
 
@@ -1292,25 +1296,41 @@ void CsoundParameterMappingPanel::FloatParamsPage::resized()
 {
     auto area = getLocalBounds().reduced (8);
 
-    auto headerArea = area.removeFromTop (headerHeight);
+    headerAreaBase = area.removeFromTop (headerHeight);
     area.removeFromTop (4);
 
     viewport.setBounds (area);
 
-    // Larghezza del contenuto: viewport.getWidth() MENO uno spazio fisso
-    // riservato alla scrollbar (vedi scrollbarGutter), non
-    // viewport.getMaximumVisibleWidth() - quel valore dipende da se la
+    // Larghezza del contenuto: MAI sotto minContentWidth (altrimenti le
+    // colonne si schiaccerebbero/sovrapporrebbero, esattamente quello che
+    // non deve piu' succedere), altrimenti viewport.getWidth() meno uno
+    // spazio fisso riservato alla scrollbar verticale (vedi scrollbarGutter,
+    // non viewport.getMaximumVisibleWidth() - quel valore dipende da se la
     // scrollbar e' GIA' visibile in questo esatto istante, che durante
-    // alcune sequenze di layout da' un risultato "vecchio" (misurato prima
-    // che la scrollbar comparisse), con il risultato che i campi finivano
-    // posizionati troppo a destra, sotto la scrollbar stessa.
-    const int contentWidth = juce::jmax (100, viewport.getWidth() - scrollbarGutter);
+    // alcune sequenze di layout da' un risultato "vecchio").
+    const int contentWidth = juce::jmax (minContentWidth, viewport.getWidth() - scrollbarGutter);
     rowsContainer.setSize (contentWidth, CsoundAudioProcessor::numChannelParams * rowHeight);
 
     for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
         rows[(size_t) i]->setBounds (0, i * rowHeight, contentWidth, rowHeight);
 
-    headerArea.setWidth (contentWidth);
+    headerAreaBase.setWidth (contentWidth);
+    layoutHeaderForScroll (viewport.getViewPositionX());
+}
+
+void CsoundParameterMappingPanel::FloatParamsPage::layoutHeaderForScroll (int scrollX)
+{
+    // headerAreaBase e' la larghezza PIENA del contenuto (contentWidth,
+    // possibilmente piu' larga del viewport visibile) a scrollX=0 - la
+    // spostiamo a sinistra di scrollX prima di calcolare le colonne, cosi'
+    // l'intestazione segue esattamente lo scroll orizzontale delle righe
+    // sotto (vedi ScrollSyncedViewport/onHorizontalScrollChanged sopra). Le
+    // etichette restano comunque figlie dirette della pagina (non del
+    // viewport), quindi quelle che finiscono fuori dall'area visibile
+    // vengono semplicemente tagliate dal clipping automatico di JUCE sui
+    // bordi della pagina stessa - non serve nessun componente aggiuntivo.
+    auto headerArea = headerAreaBase;
+    headerArea.setX (headerArea.getX() - scrollX);
 
     // reduced(4,0): stesso inset orizzontale che ParamRow::resized() applica
     // alle righe (getLocalBounds().reduced(4,2)) - senza questo, le colonne
@@ -1344,7 +1364,7 @@ void CsoundParameterMappingPanel::FloatParamsPage::refreshAllFromProcessor()
 //==============================================================================
 CsoundParameterMappingPanel::IntParamsPage::IntParamsPage (CsoundAudioProcessor& processorToEdit)
 {
-    setupHeaderLabel (headerNameLabel, "chnget");
+    setupHeaderLabel (headerNameLabel, "Channel (chnget)");
     setupHeaderLabel (headerMinLabel, "Min", juce::Justification::centredLeft);
     setupHeaderLabel (headerMaxLabel, "Max", juce::Justification::centredLeft);
     setupHeaderLabel (headerDefaultLabel, "Default", juce::Justification::centredLeft);
@@ -1364,7 +1384,8 @@ CsoundParameterMappingPanel::IntParamsPage::IntParamsPage (CsoundAudioProcessor&
     }
 
     viewport.setViewedComponent (&rowsContainer, false);
-    viewport.setScrollBarsShown (true, false);
+    viewport.setScrollBarsShown (true, true);
+    viewport.onHorizontalScrollChanged = [this] (int scrollX) { layoutHeaderForScroll (scrollX); };
     addAndMakeVisible (viewport);
 }
 
@@ -1372,18 +1393,26 @@ void CsoundParameterMappingPanel::IntParamsPage::resized()
 {
     auto area = getLocalBounds().reduced (8);
 
-    auto headerArea = area.removeFromTop (headerHeight);
+    headerAreaBase = area.removeFromTop (headerHeight);
     area.removeFromTop (4);
 
     viewport.setBounds (area);
 
-    const int contentWidth = juce::jmax (100, viewport.getWidth() - scrollbarGutter);
+    const int contentWidth = juce::jmax (minContentWidth, viewport.getWidth() - scrollbarGutter);
     rowsContainer.setSize (contentWidth, CsoundAudioProcessor::numIntParams * rowHeight);
 
     for (int i = 0; i < CsoundAudioProcessor::numIntParams; ++i)
         rows[(size_t) i]->setBounds (0, i * rowHeight, contentWidth, rowHeight);
 
-    headerArea.setWidth (contentWidth);
+    headerAreaBase.setWidth (contentWidth);
+    layoutHeaderForScroll (viewport.getViewPositionX());
+}
+
+void CsoundParameterMappingPanel::IntParamsPage::layoutHeaderForScroll (int scrollX)
+{
+    // Vedi il commento identico su FloatParamsPage::layoutHeaderForScroll.
+    auto headerArea = headerAreaBase;
+    headerArea.setX (headerArea.getX() - scrollX);
     headerArea = headerArea.reduced (4, 0);
 
     juce::Rectangle<int> handle, name, min, max, defaultVal;
@@ -1405,7 +1434,7 @@ void CsoundParameterMappingPanel::IntParamsPage::refreshAllFromProcessor()
 //==============================================================================
 CsoundParameterMappingPanel::BoolParamsPage::BoolParamsPage (CsoundAudioProcessor& processorToEdit)
 {
-    setupHeaderLabel (headerNameLabel, "chnget");
+    setupHeaderLabel (headerNameLabel, "Channel (chnget)");
     setupHeaderLabel (headerDefaultLabel, "Default", juce::Justification::centredLeft);
 
     for (auto* label : { &headerNameLabel, &headerDefaultLabel })
@@ -1423,7 +1452,8 @@ CsoundParameterMappingPanel::BoolParamsPage::BoolParamsPage (CsoundAudioProcesso
     }
 
     viewport.setViewedComponent (&rowsContainer, false);
-    viewport.setScrollBarsShown (true, false);
+    viewport.setScrollBarsShown (true, true);
+    viewport.onHorizontalScrollChanged = [this] (int scrollX) { layoutHeaderForScroll (scrollX); };
     addAndMakeVisible (viewport);
 }
 
@@ -1431,18 +1461,26 @@ void CsoundParameterMappingPanel::BoolParamsPage::resized()
 {
     auto area = getLocalBounds().reduced (8);
 
-    auto headerArea = area.removeFromTop (headerHeight);
+    headerAreaBase = area.removeFromTop (headerHeight);
     area.removeFromTop (4);
 
     viewport.setBounds (area);
 
-    const int contentWidth = juce::jmax (100, viewport.getWidth() - scrollbarGutter);
+    const int contentWidth = juce::jmax (minContentWidth, viewport.getWidth() - scrollbarGutter);
     rowsContainer.setSize (contentWidth, CsoundAudioProcessor::numBoolParams * rowHeight);
 
     for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
         rows[(size_t) i]->setBounds (0, i * rowHeight, contentWidth, rowHeight);
 
-    headerArea.setWidth (contentWidth);
+    headerAreaBase.setWidth (contentWidth);
+    layoutHeaderForScroll (viewport.getViewPositionX());
+}
+
+void CsoundParameterMappingPanel::BoolParamsPage::layoutHeaderForScroll (int scrollX)
+{
+    // Vedi il commento identico su FloatParamsPage::layoutHeaderForScroll.
+    auto headerArea = headerAreaBase;
+    headerArea.setX (headerArea.getX() - scrollX);
     headerArea = headerArea.reduced (4, 0);
 
     juce::Rectangle<int> handle, name, defaultVal;
@@ -1462,7 +1500,7 @@ void CsoundParameterMappingPanel::BoolParamsPage::refreshAllFromProcessor()
 //==============================================================================
 CsoundParameterMappingPanel::ChoiceParamsPage::ChoiceParamsPage (CsoundAudioProcessor& processorToEdit)
 {
-    setupHeaderLabel (headerNameLabel, "chnget");
+    setupHeaderLabel (headerNameLabel, "Channel (chnget)");
     setupHeaderLabel (headerOptionsLabel, "Items (comma-separated)");
     setupHeaderLabel (headerDefaultLabel, "Default", juce::Justification::centredLeft);
 
@@ -1481,7 +1519,8 @@ CsoundParameterMappingPanel::ChoiceParamsPage::ChoiceParamsPage (CsoundAudioProc
     }
 
     viewport.setViewedComponent (&rowsContainer, false);
-    viewport.setScrollBarsShown (true, false);
+    viewport.setScrollBarsShown (true, true);
+    viewport.onHorizontalScrollChanged = [this] (int scrollX) { layoutHeaderForScroll (scrollX); };
     addAndMakeVisible (viewport);
 }
 
@@ -1489,18 +1528,26 @@ void CsoundParameterMappingPanel::ChoiceParamsPage::resized()
 {
     auto area = getLocalBounds().reduced (8);
 
-    auto headerArea = area.removeFromTop (headerHeight);
+    headerAreaBase = area.removeFromTop (headerHeight);
     area.removeFromTop (4);
 
     viewport.setBounds (area);
 
-    const int contentWidth = juce::jmax (100, viewport.getWidth() - scrollbarGutter);
+    const int contentWidth = juce::jmax (minContentWidth, viewport.getWidth() - scrollbarGutter);
     rowsContainer.setSize (contentWidth, CsoundAudioProcessor::numChoiceParams * rowHeight);
 
     for (int i = 0; i < CsoundAudioProcessor::numChoiceParams; ++i)
         rows[(size_t) i]->setBounds (0, i * rowHeight, contentWidth, rowHeight);
 
-    headerArea.setWidth (contentWidth);
+    headerAreaBase.setWidth (contentWidth);
+    layoutHeaderForScroll (viewport.getViewPositionX());
+}
+
+void CsoundParameterMappingPanel::ChoiceParamsPage::layoutHeaderForScroll (int scrollX)
+{
+    // Vedi il commento identico su FloatParamsPage::layoutHeaderForScroll.
+    auto headerArea = headerAreaBase;
+    headerArea.setX (headerArea.getX() - scrollX);
     headerArea = headerArea.reduced (4, 0);
 
     juce::Rectangle<int> handle, name, options, defaultIndex;
@@ -1608,6 +1655,14 @@ CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
 void CsoundParameterMappingPanel::GenericParamRow::resized()
 {
     auto area = getLocalBounds().reduced (4, 2);
+
+    // Colonna del nome FISSA (nameLabelWidth), uguale per OGNI riga - cosi'
+    // tutti gli slider/combo/toggle sotto iniziano comunque allineati alla
+    // stessa X, indipendentemente da quanto e' lungo il nome di questa
+    // singola riga (una larghezza calcolata riga per riga sul testo reale
+    // disallineerebbe i controlli tra una riga e l'altra). Il valore del
+    // costante stesso e' stato ridotto (era 130) per lasciare meno spazio
+    // vuoto prima del controllo - vedi il commento sulla dichiarazione.
     auto nameArea = area.removeFromLeft (nameLabelWidth);
     area.removeFromLeft (8);
     nameLabel.setBounds (nameArea);
@@ -1624,7 +1679,7 @@ void CsoundParameterMappingPanel::GenericParamRow::resized()
 CsoundParameterMappingPanel::GenericEditorPage::GenericEditorPage()
 {
     viewport.setViewedComponent (&rowsContainer, false);
-    viewport.setScrollBarsShown (true, false);
+    viewport.setScrollBarsShown (true, true);
     addAndMakeVisible (viewport);
 
     emptyStateLabel.setText (
@@ -1711,7 +1766,7 @@ void CsoundParameterMappingPanel::GenericEditorPage::resized()
     area = area.reduced (8);
     viewport.setBounds (area);
 
-    const int contentWidth = juce::jmax (100, viewport.getWidth() - scrollbarGutter);
+    const int contentWidth = juce::jmax (minContentWidth, viewport.getWidth() - scrollbarGutter);
     rowsContainer.setSize (contentWidth, (int) rows.size() * genericRowHeight);
 
     for (size_t i = 0; i < rows.size(); ++i)
@@ -1726,26 +1781,6 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     // applica a questo componente e, a cascata, a tutti i figli (barra del
     // titolo, tab, pagine, righe) che non impostano la propria LookAndFeel.
     setLookAndFeel (&lookAndFeel);
-
-    // Barra del titolo della "finestra" flottante (vedi il commento in testa
-    // alla classe in CsoundParameterEditor.h): solo qui, non nelle pagine,
-    // perche' resta identica a prescindere dalla tab selezionata.
-    titleLabel.setText ("Parameters", juce::dontSendNotification);
-    titleLabel.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
-    titleLabel.setColour (juce::Label::textColourId, kText);
-    // Non deve intercettare il mouse: altrimenti un click/trascinamento che
-    // parte esattamente sopra il testo "Parameters" non arriverebbe mai a
-    // CsoundParameterMappingPanel::mouseDown/mouseDrag (vedi sotto), che e'
-    // quello che davvero sposta la finestra.
-    titleLabel.setInterceptsMouseClicks (false, false);
-    addAndMakeVisible (titleLabel);
-
-    closeButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
-    closeButton.setColour (juce::TextButton::buttonOnColourId, kFieldBg);
-    closeButton.setColour (juce::TextButton::textColourOffId, kTextMuted);
-    closeButton.setColour (juce::TextButton::textColourOnId, kText);
-    closeButton.onClick = [this] { if (onCloseButtonClicked) onCloseButtonClicked(); };
-    addAndMakeVisible (closeButton);
 
     floatPage         = std::make_unique<FloatParamsPage>  (processorToEdit);
     intPage           = std::make_unique<IntParamsPage>    (processorToEdit);
@@ -1903,40 +1938,23 @@ void CsoundParameterMappingPanel::refreshAllFromProcessor()
 
 void CsoundParameterMappingPanel::paint (juce::Graphics& g)
 {
-    // Pannello "a finestra": corpo scuro a spigoli vivi (90 gradi, nessun
-    // bordo arrotondato) con una sottile ombra verso l'esterno, cosi' si
-    // stacca visivamente dal resto dell'editor (codice/consolle, visibili
-    // sotto il velo semitrasparente disegnato da PluginEditor) invece di
-    // sembrare parte dello sfondo.
+    // Sidebar ancorata (non piu' una "finestra" flottante): corpo scuro a
+    // spigoli vivi, nessuna ombra (non ha senso per un pannello incollato
+    // al bordo della finestra, la separazione dall'editor la fa gia' il
+    // divisore ridimensionabile disegnato da PluginEditor) e un solo
+    // accento verticale sul bordo sinistro, quello adiacente al divisore.
     auto bounds = getLocalBounds().toFloat();
-
-    juce::DropShadow shadow (juce::Colours::black.withAlpha (0.55f), 18, {});
-    juce::Path outline;
-    outline.addRectangle (bounds);
-    shadow.drawForPath (g, outline);
 
     g.setColour (kPanelBg);
     g.fillRect (bounds);
 
-    auto titleBarBounds = bounds.removeFromTop ((float) titleBarHeight);
-    g.setColour (kTitleBarBg);
-    g.fillRect (titleBarBounds);
-
-    g.setColour (kFieldOutline);
-    g.drawLine (titleBarBounds.getX(), titleBarBounds.getBottom(), titleBarBounds.getRight(), titleBarBounds.getBottom(), 1.0f);
-
     g.setColour (kAccent.withAlpha (0.6f));
-    g.drawRect (getLocalBounds().toFloat().reduced (0.5f), 1.2f);
+    g.drawLine (0.5f, 0.0f, 0.5f, (float) getHeight(), 1.2f);
 }
 
 void CsoundParameterMappingPanel::resized()
 {
     auto area = getLocalBounds();
-
-    auto titleBarArea = area.removeFromTop (titleBarHeight).reduced (10, 4);
-    closeButton.setBounds (titleBarArea.removeFromRight (64));
-    titleLabel.setBounds (titleBarArea);
-
     area = area.reduced (4);
 
     // Barra tab: 5 bottoni di larghezza ESATTAMENTE uguale che riempiono
@@ -1968,33 +1986,3 @@ void CsoundParameterMappingPanel::resized()
     genericEditorPage->setBounds (area);
 }
 
-void CsoundParameterMappingPanel::mouseDown (const juce::MouseEvent& event)
-{
-    // Solo dalla barra del titolo (non dal corpo del pannello, dove si
-    // vuole poter cliccare/trascinare normalmente sui campi) - closeButton
-    // e' un figlio e intercetta gia' da solo i propri click, quindi non
-    // serve escluderlo esplicitamente qui.
-    draggingTitleBar = event.position.y < (float) titleBarHeight;
-
-    if (draggingTitleBar)
-        titleBarDragger.startDraggingComponent (this, event);
-}
-
-void CsoundParameterMappingPanel::mouseDrag (const juce::MouseEvent& event)
-{
-    if (! draggingTitleBar)
-        return;
-
-    titleBarDragger.dragComponent (this, event, nullptr);
-
-    // Resta dentro i confini del genitore (l'editor del plugin): niente
-    // ComponentBoundsConstrainer (pensato per ridimensionare, qui serve solo
-    // bloccare la posizione) - un clamp manuale sulla posizione basta.
-    if (auto* parent = getParentComponent())
-    {
-        auto bounds = getBounds();
-        bounds.setPosition (juce::jlimit (0, juce::jmax (0, parent->getWidth()  - bounds.getWidth()),  bounds.getX()),
-                             juce::jlimit (0, juce::jmax (0, parent->getHeight() - bounds.getHeight()), bounds.getY()));
-        setBounds (bounds);
-    }
-}

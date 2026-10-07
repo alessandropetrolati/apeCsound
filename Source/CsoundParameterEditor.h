@@ -59,11 +59,10 @@ public:
 };
 
 /**
-    Finestra flottante (overlay DENTRO la view del plugin, non una
-    juce::DocumentWindow separata - vedi il commento in testa a
-    CsoundAudioProcessorEditor in PluginEditor.h sul perche') per definire,
-    per ciascuno dei 16 parametri host float (CsoundAudioProcessor::
-    ChannelParamSlot), dei 16 interi (IntParamSlot), dei 16 booleani
+    Sidebar ancorata a destra (non una finestra flottante/overlay - vedi il
+    commento su parameterPanel in PluginEditor.h sul perche') per definire,
+    per ciascuno dei 64 parametri host float (CsoundAudioProcessor::
+    ChannelParamSlot), dei 32 interi (IntParamSlot), dei 32 booleani
     (BoolParamSlot) e dei 16 a scelta multipla (ChoiceParamSlot), il canale
     Csound a cui sono assegnati ("rename" - il parametro apvts resta sempre
     "Float N"/"Int N"/"Bool N"/"Choice N" per l'host) e i relativi metadata
@@ -76,12 +75,13 @@ public:
     scorrevole: con tutte le righe insieme non si distingueva piu' un tipo
     dall'altro.
 
-    E' una finestra "a se'" dentro i confini del plugin: barra del titolo con
-    pulsante di chiusura (onCloseButtonClicked, agganciato da PluginEditor),
-    bordo/ombra disegnati in paint(). PluginEditor la mostra come overlay
-    centrato sopra il resto dell'editor (codice/consolle restano visibili
-    sotto, con un velo semitrasparente dietro per il focus) invece di farla
-    sostituire la consolle come in una versione precedente.
+    Niente barra del titolo (ne' etichetta ne' pulsante di chiusura, rimossa
+    per recuperare spazio verticale per il contenuto): si mostra/nasconde
+    SOLO dal bottone "Parameters" nella toolbar di PluginEditor (vedi
+    toggleParameterPanel()), niente modo di chiuderla dal pannello stesso.
+    La barra tab (Float/Int/Bool/Choice/UI) parte quindi direttamente dal
+    bordo superiore; un bordo/sfondo disegnati in paint() restano a
+    distinguerla dal resto dell'editor.
 
     Non mostra/non crea slider per i VALORI correnti: quelli restano
     affidati al meccanismo automatico di JUCE (juce::GenericAudioProcessor
@@ -113,20 +113,6 @@ public:
     // della sessione precedente.
     void refreshAllFromProcessor();
 
-    // Finestra spostabile: trascinando la barra del titolo (non un overlay
-    // fisso bloccato al centro) si sposta dentro i confini del genitore
-    // (l'editor del plugin) - vedi titleBarHeight/titleLabel sotto.
-    // titleLabel ha setInterceptsMouseClicks(false,...) apposta, cosi' il
-    // click sopra di essa arriva comunque qui invece di fermarsi li'.
-    void mouseDown (const juce::MouseEvent& event) override;
-    void mouseDrag (const juce::MouseEvent& event) override;
-
-    // Chiamata quando l'utente preme la X nella barra del titolo - PluginEditor
-    // la usa per richiudere l'overlay (vedi toggleParameterPanel() in
-    // PluginEditor.cpp). Il pannello stesso non decide mai di nascondersi da
-    // solo: lascia all'editor la responsabilita' di gestire overlay/velo.
-    std::function<void()> onCloseButtonClicked;
-
     // Chiamata quando il tasto destro su una maniglia copia un chnget negli
     // appunti (vedi ParamRow/IntParamRow/BoolParamRow/ChoiceParamRow::
     // onCopiedToClipboard, agganciato riga per riga alla creazione - vedi
@@ -138,9 +124,11 @@ public:
     // Larghezze fisse delle colonne handle/min/max/default/skew/increment (vedi
     // layoutColumns()); nameWidth e' solo la larghezza MINIMA del campo
     // nome, usata per calcolare preferredWidth - il campo stesso si allarga
-    // con la finestra. preferredWidth/preferredHeight sono il riferimento
-    // "naturale" che PluginEditor usa per dimensionare l'overlay (vedi
-    // CsoundAudioProcessorEditor::resized()).
+    // con la larghezza assegnata. preferredWidth e' la larghezza "comoda" di
+    // partenza che CsoundAudioProcessorEditor usa come default per la
+    // sidebar ancorata a destra (vedi sidebarWidth in PluginEditor.h) - non
+    // piu' un vincolo di una finestra flottante, solo il valore iniziale
+    // prima che l'utente la ridimensioni trascinando il divisore.
     static constexpr int handleWidth = 30;
     static constexpr int nameWidth = 108;
     static constexpr int minMaxWidth = 80;
@@ -149,15 +137,6 @@ public:
     // meta' da ParamRow/FloatParamsPage in due campi affiancati.
     static constexpr int curveWidth = 160;
     static constexpr int preferredWidth = handleWidth + nameWidth + minMaxWidth * 2 + defaultWidth + curveWidth + 10 + 16 + 16 + 10;
-
-    // Altezza "comoda" di partenza per il pannello (titleBarHeight +
-    // tabBarHeight + margini pagina/header + un po' di righe visibili).
-    // Da quando Float/Int/Bool sono stati estesi a 64/32/32 slot (Choice
-    // resta a 16) non tutte le righe di una tab entrano piu' senza scroll
-    // a questa altezza - il viewport scrollabile di ogni *ParamsPage se ne
-    // occupa normalmente, questa e' solo la dimensione iniziale "comoda",
-    // non un limite.
-    static constexpr int preferredHeight = 620;
 
     static constexpr int boolDefaultWidth = 70;
     static constexpr int choiceOptionsWidth = 220;
@@ -402,6 +381,32 @@ private:
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChoiceParamRow)
     };
 
+    // Viewport di una tab di metadata: oltre alla normale vista scrollabile,
+    // notifica ogni scorrimento ORIZZONTALE (onHorizontalScrollChanged).
+    // Serve perche' l'intestazione delle colonne (headerNameLabel/
+    // headerMinLabel/ecc.) e' disegnata FUORI dal viewport apposta, per
+    // restare fissa durante lo scroll VERTICALE delle righe - ma da quando
+    // il contenuto ha una larghezza MINIMA (vedi minContentWidth sotto,
+    // introdotto su richiesta esplicita: il pannello non deve piu'
+    // schiacciare/nascondere le colonne quando ridimensionato piu' stretto
+    // del necessario, deve comparire una scrollbar orizzontale invece)
+    // puo' essere piu' largo del viewport visibile, quindi serve anche
+    // scorrere ORIZZONTALMENTE - e in quel caso l'intestazione deve
+    // spostarsi in sincrono, altrimenti smette di allinearsi alle colonne
+    // sotto. Vedi *ParamsPage::layoutHeaderForScroll().
+    struct ScrollSyncedViewport final : public juce::Viewport
+    {
+        std::function<void (int)> onHorizontalScrollChanged;
+
+        void visibleAreaChanged (const juce::Rectangle<int>& newVisibleArea) override
+        {
+            juce::Viewport::visibleAreaChanged (newVisibleArea);
+
+            if (onHorizontalScrollChanged)
+                onHorizontalScrollChanged (newVisibleArea.getX());
+        }
+    };
+
     // Una "pagina" di tab: intestazione colonne (fissa in alto) + viewport
     // scrollabile con SOLO le righe di un tipo di parametro. Le quattro
     // istanze sotto (una per tab: Float, Int, Bool, Choice) isolano
@@ -423,11 +428,29 @@ private:
         // questo per inoltrare al proprio onParameterCopiedToClipboard.
         std::function<void (const juce::String&)> onParameterCopiedToClipboard;
 
+        // Larghezza minima del contenuto (handle + nome minimo + min/max/
+        // default/skew/increment + margini, stessa formula di
+        // CsoundParameterMappingPanel::preferredWidth) - sotto questa
+        // larghezza il viewport mostra una scrollbar orizzontale invece di
+        // schiacciare le colonne (vedi resized()).
+        static constexpr int minContentWidth = handleWidth + nameWidth + minMaxWidth * 2 + defaultWidth + curveWidth + 4 + 6 + 6 + 6 + 6 + 8;
+
     private:
-        juce::Viewport viewport;
+        // Riposiziona le etichette di intestazione in base allo scroll
+        // orizzontale corrente del viewport (vedi ScrollSyncedViewport sopra)
+        // - fattorizzato qui per essere chiamato sia da resized() sia dal
+        // callback onHorizontalScrollChanged, invece di duplicare la stessa
+        // logica in due posti.
+        void layoutHeaderForScroll (int scrollX);
+
+        ScrollSyncedViewport viewport;
         juce::Component rowsContainer;
         juce::Label headerNameLabel, headerMinLabel, headerMaxLabel, headerDefaultLabel, headerSkewLabel, headerIncrementLabel;
         std::array<std::unique_ptr<ParamRow>, (size_t) CsoundAudioProcessor::numChannelParams> rows;
+
+        // Base (a scrollX=0) dell'area di intestazione, calcolata in
+        // resized() e riusata da layoutHeaderForScroll() ad ogni scroll.
+        juce::Rectangle<int> headerAreaBase;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FloatParamsPage)
     };
@@ -440,11 +463,17 @@ private:
 
         std::function<void (const juce::String&)> onParameterCopiedToClipboard;
 
+        // Vedi il commento identico su FloatParamsPage::minContentWidth sopra.
+        static constexpr int minContentWidth = handleWidth + nameWidth + minMaxWidth * 2 + defaultWidth + 4 + 6 + 6 + 6 + 8;
+
     private:
-        juce::Viewport viewport;
+        void layoutHeaderForScroll (int scrollX);
+
+        ScrollSyncedViewport viewport;
         juce::Component rowsContainer;
         juce::Label headerNameLabel, headerMinLabel, headerMaxLabel, headerDefaultLabel;
         std::array<std::unique_ptr<IntParamRow>, (size_t) CsoundAudioProcessor::numIntParams> rows;
+        juce::Rectangle<int> headerAreaBase;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (IntParamsPage)
     };
@@ -457,11 +486,17 @@ private:
 
         std::function<void (const juce::String&)> onParameterCopiedToClipboard;
 
+        // Vedi il commento identico su FloatParamsPage::minContentWidth sopra.
+        static constexpr int minContentWidth = handleWidth + nameWidth + boolDefaultWidth + 4 + 6 + 8;
+
     private:
-        juce::Viewport viewport;
+        void layoutHeaderForScroll (int scrollX);
+
+        ScrollSyncedViewport viewport;
         juce::Component rowsContainer;
         juce::Label headerNameLabel, headerDefaultLabel;
         std::array<std::unique_ptr<BoolParamRow>, (size_t) CsoundAudioProcessor::numBoolParams> rows;
+        juce::Rectangle<int> headerAreaBase;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BoolParamsPage)
     };
@@ -474,11 +509,17 @@ private:
 
         std::function<void (const juce::String&)> onParameterCopiedToClipboard;
 
+        // Vedi il commento identico su FloatParamsPage::minContentWidth sopra.
+        static constexpr int minContentWidth = handleWidth + nameWidth + choiceOptionsWidth + choiceDefaultIndexWidth + 4 + 6 + 6 + 8;
+
     private:
-        juce::Viewport viewport;
+        void layoutHeaderForScroll (int scrollX);
+
+        ScrollSyncedViewport viewport;
         juce::Component rowsContainer;
         juce::Label headerNameLabel, headerOptionsLabel, headerDefaultLabel;
         std::array<std::unique_ptr<ChoiceParamRow>, (size_t) CsoundAudioProcessor::numChoiceParams> rows;
+        juce::Rectangle<int> headerAreaBase;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChoiceParamsPage)
     };
@@ -510,11 +551,12 @@ private:
         void resized() override;
 
     private:
-        // Larghezza FISSA e minima per il nome canale (quasi sempre corto):
-        // tutto il resto della riga va al controllo - vedi resized(), che
-        // massimizza lo spazio del controllo (in particolare dello slider)
-        // invece del nome.
-        static constexpr int nameLabelWidth = 130;
+        // Larghezza FISSA (uguale per ogni riga, cosi' i controlli sotto
+        // restano tutti allineati alla stessa X - vedi resized()) per il
+        // nome canale: ridotta da 130 (lasciava troppo spazio vuoto prima
+        // dello slider/combo quando il nome e' corto, richiesto
+        // esplicitamente) - tutto il resto della riga va al controllo.
+        static constexpr int nameLabelWidth = 90;
 
         juce::Label nameLabel;
 
@@ -558,6 +600,14 @@ private:
     private:
         static constexpr int genericRowHeight = 34;
 
+        // Vedi il commento su FloatParamsPage::minContentWidth - stessa idea,
+        // ma qui non c'e' un'intestazione separata da tenere allineata (ogni
+        // riga e' gia' autonoma: nome + un solo controllo), quindi basta
+        // impedire che il contenuto scenda sotto una larghezza leggibile.
+        // 90 = GenericParamRow::nameLabelWidth (privato li', duplicato qui
+        // come letterale per evitare di doverlo esporre solo per questo).
+        static constexpr int minContentWidth = 90 + 8 + 180;
+
         juce::Viewport viewport;
         juce::Component rowsContainer;
         std::vector<std::unique_ptr<GenericParamRow>> rows;
@@ -585,11 +635,6 @@ private:
     // (setLookAndFeel(nullptr) nel distruttore stacca comunque subito il
     // collegamento, per sicurezza).
     CsoundParameterPanelLookAndFeel lookAndFeel;
-
-    // Barra del titolo della "finestra" flottante: etichetta + pulsante di
-    // chiusura (onCloseButtonClicked).
-    juce::Label titleLabel;
-    juce::TextButton closeButton { "Close" };
 
     // Barra tab fatta a mano (4 TextButton + switch diretto di visibilita'
     // tra le 4 pagine), al posto di juce::TabbedComponent/TabbedButtonBar:
@@ -627,13 +672,8 @@ private:
     std::unique_ptr<ChoiceParamsPage> choicePage;
     std::unique_ptr<GenericEditorPage> genericEditorPage;
 
-    // Trascinamento della barra del titolo (vedi mouseDown/mouseDrag sopra).
-    juce::ComponentDragger titleBarDragger;
-    bool draggingTitleBar = false;
-
     static constexpr int rowHeight = 30;
     static constexpr int headerHeight = 24;
-    static constexpr int titleBarHeight = 34;
     static constexpr int tabBarHeight = 28;
 
     // Spazio riservato SEMPRE (indipendentemente dal fatto che la scrollbar

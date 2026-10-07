@@ -1008,7 +1008,7 @@ juce::ValueTree CsoundAudioProcessor::buildStateTree (bool includeCsdText)
             slotTree.setProperty ("max", (double) slot.maxValue, nullptr);
             slotTree.setProperty ("default", (double) slot.defaultValue, nullptr);
             slotTree.setProperty ("skew", (double) slot.skew, nullptr);
-            slotTree.setProperty ("increment", (double) slot.increment, nullptr);
+            slotTree.setProperty ("step", (double) slot.increment, nullptr);
             slotsTree.appendChild (slotTree, nullptr);
         }
 
@@ -1663,7 +1663,7 @@ void CsoundAudioProcessor::restoreStateFromTree (const juce::ValueTree& state, c
                         // vecchia versione a tendina curve (nessuna property
                         // skew/increment presente in quel caso).
                         slot.skew        = (float) (double) slotTree.getProperty ("skew", 1.0);
-                        slot.increment   = (float) (double) slotTree.getProperty ("increment", 0.001);
+                        slot.increment   = (float) (double) slotTree.getProperty ("step", 0.001);
                     }
                 }
             }

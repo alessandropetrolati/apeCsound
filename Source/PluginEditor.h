@@ -139,20 +139,82 @@ private:
     juce::TextEditor logConsole;
 
     // Pannello del mapping parametri (rename canale + metadata per slot):
-    // nascosto di default, mostrato come "finestra" spostabile (vedi il
-    // commento in testa alla classe) quando si preme paramsButton - vedi
-    // showingParameterPanel e toggleParameterPanel() in PluginEditor.cpp.
-    // editor/logConsole restano SEMPRE al loro posto e sempre interagibili:
-    // nessun velo li copre, parameterPanel si limita a comparire sopra di
-    // essi nello z-order. La posizione iniziale (centrata) viene impostata
-    // solo la prima volta che il pannello viene mostrato - vedi
-    // parameterPanelPositioned - cosi' un trascinamento dell'utente non
-    // viene annullato dai resized() successivi (es. ridimensionando la
-    // finestra del plugin).
+    // nascosto di default, mostrato come SIDEBAR ANCORATA a destra (non
+    // piu' una finestra flottante spostabile - cambiato su richiesta
+    // esplicita: l'overlay centrato "non convinceva") quando si preme
+    // paramsButton - vedi showingParameterPanel e toggleParameterPanel() in
+    // PluginEditor.cpp. editor/opcodeHelpBar/logConsole restano SEMPRE a
+    // sinistra della sidebar, mai coperti: resized() si limita a
+    // restringere la loro larghezza di sidebarWidth + sidebarDividerWidth
+    // quando la sidebar e' visibile, cosi' sia l'editing del codice sia il
+    // drag della maniglia "#N" sull'editor restano sempre possibili.
     CsoundParameterMappingPanel parameterPanel { audioProcessor };
     bool showingParameterPanel = false;
-    bool parameterPanelPositioned = false;
     void toggleParameterPanel();
+
+    // Larghezza corrente della sidebar (ridimensionabile trascinando
+    // sidebarDivider sotto) - inizializzata a CsoundParameterMappingPanel::
+    // preferredWidth, poi limitata in resized() tra sidebarMinWidth e uno
+    // spazio che lascia comunque sidebarEditorMinWidth all'editor/consolle.
+    int sidebarWidth = CsoundParameterMappingPanel::preferredWidth;
+    static constexpr int sidebarMinWidth = 280;
+    static constexpr int sidebarEditorMinWidth = 300;
+    static constexpr int sidebarDividerWidth = 6;
+
+    // Striscia verticale draggabile tra editor/consolle e la sidebar:
+    // cattura il proprio mouseDown/mouseDrag per ridimensionare sidebarWidth
+    // (vedi .cpp) invece di spostare l'intero pannello come succedeva prima
+    // con la barra del titolo della vecchia finestra flottante.
+    struct SidebarDivider final : public juce::Component
+    {
+        SidebarDivider();
+        void paint (juce::Graphics& g) override;
+        void mouseDown (const juce::MouseEvent& event) override;
+        void mouseDrag (const juce::MouseEvent& event) override;
+
+        // getCurrentWidth fornisce la larghezza attuale al mouseDown (per
+        // calcolare il delta rispetto al punto di partenza del trascinamento);
+        // onDrag riceve poi la nuova larghezza desiderata ad ogni mouseDrag -
+        // il clamp (sidebarMinWidth/sidebarEditorMinWidth) resta a resized()
+        // del genitore, non a questo componente.
+        std::function<int()> getCurrentWidth;
+        std::function<void (int)> onDrag;
+
+    private:
+        int widthAtDragStart = 0;
+    };
+    SidebarDivider sidebarDivider;
+
+    // Altezza corrente della consolle (ridimensionabile trascinando
+    // consoleDivider sotto, richiesto esplicitamente) - stesso meccanismo di
+    // sidebarWidth/sidebarDivider ma sull'asse verticale, tra editor/
+    // opcodeHelpBar sopra e logConsole sotto (ancorata al bordo inferiore
+    // della finestra, vedi resized()).
+    int consoleHeight = 180;
+    static constexpr int consoleMinHeight = 80;
+    static constexpr int consoleEditorMinHeight = 200;
+    static constexpr int consoleDividerHeight = 6;
+
+    // Striscia orizzontale draggabile tra editor/opcodeHelpBar e la
+    // consolle: stesso schema di SidebarDivider sopra, ma sull'asse Y (resize
+    // dell'ALTEZZA della consolle invece della larghezza della sidebar).
+    struct ConsoleDivider final : public juce::Component
+    {
+        ConsoleDivider();
+        void paint (juce::Graphics& g) override;
+        void mouseDown (const juce::MouseEvent& event) override;
+        void mouseDrag (const juce::MouseEvent& event) override;
+
+        // Vedi il commento identico su SidebarDivider::getCurrentWidth/onDrag
+        // sopra - stessa idea, sull'altezza della consolle invece della
+        // larghezza della sidebar.
+        std::function<int()> getCurrentHeight;
+        std::function<void (int)> onDrag;
+
+    private:
+        int heightAtDragStart = 0;
+    };
+    ConsoleDivider consoleDivider;
 
     // La toolbar e' una barra dedicata (sfondo + separatore disegnati in
     // paint(), bounds calcolati in resized()) che contiene questi bottoni,
@@ -160,8 +222,31 @@ private:
     // (Component::setName) assegnato nel costruttore.
     juce::Rectangle<int> toolbarBounds;
     juce::TextButton applyButton        { "Apply" };
-    juce::TextButton clearConsoleButton { "Clear console" };
     juce::TextButton paramsButton       { "Parameters" };
+
+    // Non piu' nella toolbar (richiesta esplicita): un piccolo bottone
+    // CIRCOLARE (proprieta' dinamica "circular", vedi CsoundLookAndFeel::
+    // drawButtonBackground/drawButtonText), posizionato in resized() in
+    // overlap sopra l'angolo in alto a destra di logConsole invece che in
+    // fila con gli altri bottoni - testo vuoto apposta (icona "clear",
+    // cioe' lo stesso cestino, gia' centrata senza testo dal ramo
+    // "circular" di drawButtonText). static constexpr sotto: diametro fisso,
+    // non proporzionato al testo (non c'e' testo) ne' all'altezza toolbar.
+    juce::TextButton clearConsoleButton {};
+    static constexpr int clearConsoleButtonDiameter = 28;
+    static constexpr int clearConsoleButtonMargin = 6;
+
+    // Mostra/nasconde logConsole (+ consoleDivider), analogo a paramsButton/
+    // parameterPanel sopra - vedi toggleConsole() e showingConsole sotto.
+    // Ancorato a destra nella toolbar come paramsButton (vedi resized()),
+    // alla sua sinistra.
+    // Testo iniziale "Hide Console": showingConsole parte a true (la
+    // consolle e' aperta di default), quindi il bottone deve gia' offrire
+    // l'azione di nasconderla, non "Console" (che implicherebbe aprirla) -
+    // vedi toggleConsole(), che aggiorna il testo ad ogni click.
+    juce::TextButton consoleButton      { "Hide Console" };
+    bool showingConsole = true;
+    void toggleConsole();
 
     // Save/Load CSD: scrivono/leggono su disco (FileChooser, filtro *.csd -
     // un .csd VERO, il mapping dei parametri va in appendice dentro un tag

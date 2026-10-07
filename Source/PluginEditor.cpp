@@ -129,20 +129,43 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     addAndMakeVisible (applyButton);
 
     clearConsoleButton.setName ("clear");
+    clearConsoleButton.getProperties().set ("circular", true);
     clearConsoleButton.onClick = [this] { logConsole.clear(); };
     addAndMakeVisible (clearConsoleButton);
 
-    // Mostra/nasconde il pannello flottante per rinominare i canali Csound
-    // dei 64 slot apvts (float/int/bool/choice) e definirne range/skew/increment -
-    // vedi CsoundParameterEditor.h/.cpp e toggleParameterPanel().
+    // Mostra/nasconde la sidebar per rinominare i canali Csound dei 64 slot
+    // apvts (float/int/bool/choice) e definirne range/skew/increment - vedi
+    // CsoundParameterEditor.h/.cpp e toggleParameterPanel().
     paramsButton.setName ("params");
     paramsButton.onClick = [this] { toggleParameterPanel(); };
     addAndMakeVisible (paramsButton);
 
-    // Pannello nascosto finche' non si preme paramsButton - nessun velo
-    // dietro di esso: editor/consolle restano sempre interagibili.
+    // Sidebar + divisore nascosti finche' non si preme paramsButton -
+    // editor/consolle occupano tutta la larghezza finche' resta chiusa.
     addChildComponent (parameterPanel);
-    parameterPanel.onCloseButtonClicked = [this] { toggleParameterPanel(); };
+    addChildComponent (sidebarDivider);
+
+    sidebarDivider.getCurrentWidth = [this] { return sidebarWidth; };
+    sidebarDivider.onDrag = [this] (int newWidth)
+    {
+        sidebarWidth = newWidth;
+        resized();
+    };
+
+    // Mostra/nasconde logConsole (+ consoleDivider), analogo a paramsButton/
+    // parameterPanel sopra - vedi toggleConsole(). Visibile di default
+    // (showingConsole = true), a differenza della sidebar.
+    consoleButton.setName ("console");
+    consoleButton.onClick = [this] { toggleConsole(); };
+    addAndMakeVisible (consoleButton);
+
+    addAndMakeVisible (consoleDivider);
+    consoleDivider.getCurrentHeight = [this] { return consoleHeight; };
+    consoleDivider.onDrag = [this] (int newHeight)
+    {
+        consoleHeight = newHeight;
+        resized();
+    };
 
     // Riscontro in consolle per il tasto destro sulla maniglia (copia
     // chnget negli appunti) - vedi il commento su onParameterCopiedToClipboard
@@ -164,6 +187,12 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     loadSessionButton.onClick = [this] { promptLoadSession(); };
     addAndMakeVisible (loadSessionButton);
 
+    // clearConsoleButton galleggia in overlap sopra l'angolo in alto a
+    // destra di logConsole (vedi resized()): deve restare sempre sopra di
+    // essa nello z-order a prescindere dall'ordine di addAndMakeVisible
+    // qui sopra, quindi portato in cima esplicitamente qui alla fine.
+    clearConsoleButton.toFront (false);
+
     audioProcessor.addListener (this);
 
     // false = niente ResizableCornerComponent in basso a destra: il
@@ -171,7 +200,8 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // nativo della finestra (host/wrapper Standalone), non una maniglia
     // disegnata da noi.
     setResizable (true, false);
-    setSize (960, 680);
+    //setSize (960, 680);
+    setSize (1024, 768);
 
     // Tentiamo di dare il focus da tastiera all'editor di codice non appena
     // la finestra del plugin e' pronta, cosi' digitare funziona subito
@@ -242,77 +272,125 @@ void CsoundAudioProcessorEditor::resized()
     // aggiunge lo spazio occupato dall'icona.
     const auto applyWidth = applyButton.getBestWidthForHeight (toolbar.getHeight())
                            + CsoundLookAndFeel::getIconAllowance (applyButton.getName());
-    const auto clearWidth = clearConsoleButton.getBestWidthForHeight (toolbar.getHeight())
-                           + CsoundLookAndFeel::getIconAllowance (clearConsoleButton.getName());
     const auto paramsWidth = paramsButton.getBestWidthForHeight (toolbar.getHeight())
                             + CsoundLookAndFeel::getIconAllowance (paramsButton.getName());
+    const auto consoleWidth = consoleButton.getBestWidthForHeight (toolbar.getHeight())
+                             + CsoundLookAndFeel::getIconAllowance (consoleButton.getName());
     const auto saveWidth = saveSessionButton.getBestWidthForHeight (toolbar.getHeight())
                           + CsoundLookAndFeel::getIconAllowance (saveSessionButton.getName());
     const auto loadWidth = loadSessionButton.getBestWidthForHeight (toolbar.getHeight())
                           + CsoundLookAndFeel::getIconAllowance (loadSessionButton.getName());
 
+    // paramsButton/consoleButton sono ancorati a DESTRA nella toolbar
+    // (richiesta esplicita per paramsButton, consoleButton analogo), staccati
+    // dagli altri bottoni che restano ancorati a sinistra nel loro ordine
+    // originale - rimossi per primi cosi' la larghezza restante per gli
+    // altri non li considera piu' parte della sequenza da sinistra.
+    paramsButton.setBounds (toolbar.removeFromRight (paramsWidth));
+    toolbar.removeFromRight (8);
+    consoleButton.setBounds (toolbar.removeFromRight (consoleWidth));
+
     applyButton.setBounds (toolbar.removeFromLeft (applyWidth));
-    toolbar.removeFromLeft (8);
-    clearConsoleButton.setBounds (toolbar.removeFromLeft (clearWidth));
-    toolbar.removeFromLeft (8);
-    paramsButton.setBounds (toolbar.removeFromLeft (paramsWidth));
     toolbar.removeFromLeft (8);
     saveSessionButton.setBounds (toolbar.removeFromLeft (saveWidth));
     toolbar.removeFromLeft (8);
     loadSessionButton.setBounds (toolbar.removeFromLeft (loadWidth));
 
-    // Niente inset laterali e niente spazio tra editor e console: solo lo
-    // spazio verticale tra toolbar ed editor resta. Editor e consolle
-    // occupano SEMPRE questa stessa area, a prescindere dal pannello
-    // parametri (vedi sotto): non vengono piu' sostituiti da esso.
+    // Niente inset laterali: solo lo spazio verticale tra toolbar ed editor
+    // resta. Sidebar ancorata A DESTRA, su tutta l'altezza rimanente (editor
+    // + opcodeHelpBar + consolle si restringono insieme, non solo l'editor)
+    // quando visibile - vedi il commento in testa a parameterPanel in
+    // PluginEditor.h sul perche' (richiesta esplicita: editor sempre
+    // accessibile/editabile sia per editing che per il drag della maniglia,
+    // mai coperto da un overlay).
     area.removeFromTop (8);
 
-    auto bottomArea = area.removeFromBottom (180);
+    if (showingParameterPanel)
+    {
+        // Clamp della larghezza: mai sotto sidebarMinWidth, mai cosi' larga
+        // da lasciare all'editor meno di sidebarEditorMinWidth - ricalcolato
+        // ad OGNI resized() (sia per un ridimensionamento della finestra sia
+        // per un trascinamento di sidebarDivider), cosi' i due casi usano la
+        // stessa unica logica invece di duplicarla.
+        const int maxSidebarWidth = juce::jmax (sidebarMinWidth,
+                                                 area.getWidth() - sidebarEditorMinWidth - sidebarDividerWidth);
+        sidebarWidth = juce::jlimit (sidebarMinWidth, maxSidebarWidth, sidebarWidth);
+
+        auto sidebarArea = area.removeFromRight (sidebarWidth);
+        auto dividerArea = area.removeFromRight (sidebarDividerWidth);
+
+        parameterPanel.setBounds (sidebarArea);
+        sidebarDivider.setBounds (dividerArea);
+    }
+
+    // Consolle nascosta (showingConsole = false, vedi toggleConsole()):
+    // editor/opcodeHelpBar recuperano TUTTO lo spazio altrimenti occupato da
+    // consolle + divisore, niente di quello spazio resta riservato/vuoto.
+    if (showingConsole)
+    {
+        // Altezza della consolle ridimensionabile (richiesto esplicitamente),
+        // stesso schema di clamp della sidebar sopra: mai sotto
+        // consoleMinHeight, mai cosi' alta da lasciare a editor/opcodeHelpBar
+        // meno di consoleEditorMinHeight.
+        const int maxConsoleHeight = juce::jmax (consoleMinHeight,
+                                                  area.getHeight() - consoleEditorMinHeight - consoleDividerHeight - opcodeHelpBarHeight);
+        consoleHeight = juce::jlimit (consoleMinHeight, maxConsoleHeight, consoleHeight);
+
+        auto bottomArea = area.removeFromBottom (consoleHeight);
+        auto consoleDividerArea = area.removeFromBottom (consoleDividerHeight);
+
+        logConsole.setBounds (bottomArea);
+        consoleDivider.setBounds (consoleDividerArea);
+
+        // clearConsoleButton galleggia in overlap sopra l'angolo in alto a
+        // destra di logConsole (richiesto esplicitamente, al posto del
+        // posto fisso che aveva nella toolbar): centrato esattamente sul
+        // bordo superiore della consolle (meta' dentro, meta' fuori), come
+        // un badge - toFront() nel costruttore lo tiene sempre sopra al
+        // testo della consolle sotto.
+        const auto consoleTopRight = bottomArea.getTopRight();
+        clearConsoleButton.setBounds (consoleTopRight.x - clearConsoleButtonMargin*2 - clearConsoleButtonDiameter,
+                                      consoleTopRight.y + clearConsoleButtonMargin,
+                                      clearConsoleButtonDiameter, clearConsoleButtonDiameter);
+        clearConsoleButton.setVisible (true);
+    }
+    else
+    {
+        clearConsoleButton.setVisible (false);
+    }
+
     auto helpBarArea = area.removeFromBottom (opcodeHelpBarHeight);
 
     editor.setBounds (area);
     opcodeHelpBar.setBounds (helpBarArea);
-    logConsole.setBounds (bottomArea);
-
-    // Il pannello e' una "finestra" spostabile (vedi CsoundParameterMappingPanel::
-    // mouseDown/mouseDrag): la posizioniamo centrata SOLO la prima volta che
-    // viene mostrata, non ad ogni resized() - altrimenti ogni ridimensionamento
-    // della finestra del plugin (o anche solo il resized() scatenato da
-    // toggleParameterPanel() stesso) la rimetterebbe al centro, annullando
-    // un trascinamento manuale dell'utente. Dopo il primo posizionamento ci
-    // limitiamo a tenerla dentro i bordi se la finestra si e' ristretta.
-    const int panelWidth  = juce::jmin (CsoundParameterMappingPanel::preferredWidth,  getWidth()  - 48);
-    const int panelHeight = juce::jmin (CsoundParameterMappingPanel::preferredHeight, getHeight() - 48);
-
-    if (! parameterPanelPositioned)
-    {
-        parameterPanel.setBounds (getLocalBounds().withSizeKeepingCentre (panelWidth, panelHeight));
-
-        if (parameterPanel.isVisible())
-            parameterPanelPositioned = true;
-    }
-    else
-    {
-        auto bounds = parameterPanel.getBounds().withSize (panelWidth, panelHeight);
-        bounds.setPosition (juce::jlimit (0, juce::jmax (0, getWidth()  - bounds.getWidth()),  bounds.getX()),
-                             juce::jlimit (0, juce::jmax (0, getHeight() - bounds.getHeight()), bounds.getY()));
-        parameterPanel.setBounds (bounds);
-    }
 }
 
 void CsoundAudioProcessorEditor::toggleParameterPanel()
 {
     showingParameterPanel = ! showingParameterPanel;
 
-    // "Finestra" spostabile, non overlay: editor/consolle restano sempre al
-    // loro posto e sempre interagibili, il pannello compare/scompare sopra
-    // di essi senza nulla che li scurisca o blocchi i click.
+    // Sidebar ancorata, non overlay: editor/consolle restano sempre
+    // interagibili, si limitano a restringersi per farle spazio (vedi
+    // resized() sopra) invece di essere coperti da essa.
     parameterPanel.setVisible (showingParameterPanel);
-
-    if (showingParameterPanel)
-        parameterPanel.toFront (true); // porta anche la tastiera sul pannello
+    sidebarDivider.setVisible (showingParameterPanel);
 
     paramsButton.setButtonText (showingParameterPanel ? "Hide parameters" : "Parameters");
+
+    resized();
+    repaint();
+}
+
+void CsoundAudioProcessorEditor::toggleConsole()
+{
+    showingConsole = ! showingConsole;
+
+    // Stesso schema di toggleParameterPanel() sopra: editor/opcodeHelpBar si
+    // allargano per recuperare lo spazio (vedi resized()), nessun overlay.
+    logConsole.setVisible (showingConsole);
+    consoleDivider.setVisible (showingConsole);
+
+    consoleButton.setButtonText (showingConsole ? "Hide Console" : "Console");
 
     resized();
     repaint();
@@ -478,6 +556,58 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::setHelpText (const juce::String&
     syntaxText = syntax;
     descriptionText = description;
     repaint();
+}
+
+CsoundAudioProcessorEditor::SidebarDivider::SidebarDivider()
+{
+    setMouseCursor (juce::MouseCursor::LeftRightResizeCursor);
+}
+
+void CsoundAudioProcessorEditor::SidebarDivider::paint (juce::Graphics& g)
+{
+    g.fillAll (juce::Colour (0xffd7dee3));
+}
+
+void CsoundAudioProcessorEditor::SidebarDivider::mouseDown (const juce::MouseEvent&)
+{
+    widthAtDragStart = getCurrentWidth ? getCurrentWidth() : 0;
+}
+
+void CsoundAudioProcessorEditor::SidebarDivider::mouseDrag (const juce::MouseEvent& event)
+{
+    // Trascinare verso sinistra (dx negativo) allarga la sidebar, verso
+    // destra la restringe - il divisore sta a sinistra della sidebar,
+    // quindi il segno e' invertito rispetto al semplice spostamento del
+    // mouse. Il clamp vero e proprio (sidebarMinWidth/sidebarEditorMinWidth)
+    // e' responsabilita' di CsoundAudioProcessorEditor::resized(), non di
+    // questo componente - onDrag passa solo la larghezza "richiesta".
+    if (onDrag)
+        onDrag (widthAtDragStart - event.getDistanceFromDragStartX());
+}
+
+CsoundAudioProcessorEditor::ConsoleDivider::ConsoleDivider()
+{
+    setMouseCursor (juce::MouseCursor::UpDownResizeCursor);
+}
+
+void CsoundAudioProcessorEditor::ConsoleDivider::paint (juce::Graphics& g)
+{
+    g.fillAll (juce::Colour (0xffd7dee3));
+}
+
+void CsoundAudioProcessorEditor::ConsoleDivider::mouseDown (const juce::MouseEvent&)
+{
+    heightAtDragStart = getCurrentHeight ? getCurrentHeight() : 0;
+}
+
+void CsoundAudioProcessorEditor::ConsoleDivider::mouseDrag (const juce::MouseEvent& event)
+{
+    // Vedi il commento identico su SidebarDivider::mouseDrag sopra: stessa
+    // idea, sull'asse Y - il divisore sta SOPRA la consolle (ancorata al
+    // bordo inferiore), quindi trascinare verso l'alto (dy negativo)
+    // allarga la consolle, verso il basso la restringe.
+    if (onDrag)
+        onDrag (heightAtDragStart - event.getDistanceFromDragStartY());
 }
 
 void CsoundAudioProcessorEditor::OpcodeHelpBar::paint (juce::Graphics& g)
