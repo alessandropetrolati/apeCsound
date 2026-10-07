@@ -70,6 +70,36 @@ namespace
         return varName + " chnget \"" + channelName + "\"\n";
     }
 
+    // Menu contestuale "Copy" mostrato dal tasto destro sulla maniglia -
+    // su richiesta esplicita l'azione NON e' piu' automatica al solo
+    // right-click: deve comparire un vero menu con una voce "Copy" da
+    // selezionare, cosi' il right-click da solo non fa nulla (nessuna
+    // sorpresa, coerente con la convenzione di qualunque altro programma).
+    // channelName vuoto -> voce disabilitata (niente da copiare).
+    // notifyResult riceve il messaggio da mostrare in consolle SOLO se
+    // l'utente seleziona davvero "Copy" (non se chiude il menu senza
+    // scegliere nulla).
+    void showCopyChngetMenu (const juce::String& channelName,
+                              std::function<void (const juce::String&)> notifyResult)
+    {
+        juce::PopupMenu menu;
+        constexpr int copyItemId = 1;
+        menu.addItem (copyItemId, "Copy", channelName.isNotEmpty());
+
+        menu.showMenuAsync (juce::PopupMenu::Options(),
+            [channelName, notifyResult] (int result)
+            {
+                if (result != copyItemId)
+                    return; // menu chiuso senza scegliere "Copy"
+
+                const auto clip = makeChngetClipboardText (channelName);
+                juce::SystemClipboard::copyTextToClipboard (clip);
+
+                if (notifyResult)
+                    notifyResult ("--- Copiato negli appunti: " + clip.trim() + " ---");
+            });
+    }
+
     // Stesso identico path SVG di CsoundLookAndFeel's makeTuneIconPath (il
     // bottone "Parameters" nella toolbar) - duplicato qui invece di
     // condiviso: e' una singola riga, non vale un header apposito solo per
@@ -362,6 +392,22 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     // senso, quindi la maniglia non compare finche' non c'e' un nome.
     setMouseCursor (juce::MouseCursor::NormalCursor);
 
+    // Senza questo, JUCE porta automaticamente il focus da tastiera sul
+    // primo figlio focalizzabile (channelNameEditor) ad OGNI click sulla
+    // riga - incluso un click sulla maniglia "#N", che e' un'area
+    // disegnata dentro ParamRow stesso, non un componente figlio separato
+    // (vedi Component::internalMouseDown/grabKeyboardFocusInternal in
+    // JUCE: chiama sempre grabKeyboardFocusInternal su "this" PRIMA del
+    // nostro mouseDown, e se "this" - cioe' ParamRow - non vuole il focus,
+    // JUCE lo passa al default child, trovando channelNameEditor). Risultato
+    // indesiderato: cliccare la maniglia (sx per trascinare, dx per il
+    // menu Copy) faceva anche entrare il campo nome in editing. Disattivato
+    // qui: il focus da tastiera arriva SOLO cliccando direttamente su un
+    // campo (channelNameEditor/minEditor/ecc, che gestiscono il proprio
+    // grabKeyboardFocus perche' il click arriva a LORO come "this", non a
+    // ParamRow), esattamente come richiesto.
+    setMouseClickGrabsKeyboardFocus (false);
+
     // "Rename": qui si da' al parametro il suo nome VERO, cioe' il nome del
     // canale Csound (chnget) a cui e' agganciato - l'host continua a
     // vedere sempre "Param N" (vedi CsoundAudioProcessor::createChannelParamLayout),
@@ -540,27 +586,14 @@ void CsoundParameterMappingPanel::ParamRow::resized()
 
 void CsoundParameterMappingPanel::ParamRow::mouseDown (const juce::MouseEvent& event)
 {
-    // Tasto destro sulla maniglia: copia negli appunti lo stesso chnget che
-    // trascinarla sull'editor inserirebbe (vedi makeChngetClipboardText),
-    // senza dover trascinare fisicamente - comodo quando il pannello e
-    // l'editor non sono entrambi comodamente visibili/raggiungibili.
+    // Tasto destro sulla maniglia: apre un menu con la voce "Copy" (NON
+    // copia automaticamente al solo right-click) - selezionandola copia
+    // negli appunti lo stesso chnget che trascinare la maniglia sull'editor
+    // inserirebbe (vedi makeChngetClipboardText/showCopyChngetMenu), senza
+    // dover trascinare fisicamente.
     if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
     {
-        const auto slot = processor.getChannelParamSlot (index);
-
-        if (slot.channelName.isNotEmpty())
-        {
-            const auto clip = makeChngetClipboardText (slot.channelName);
-            juce::SystemClipboard::copyTextToClipboard (clip);
-
-            if (onCopiedToClipboard)
-                onCopiedToClipboard ("--- Copiato negli appunti: " + clip.trim() + " ---");
-        }
-        else if (onCopiedToClipboard)
-        {
-            onCopiedToClipboard ("--- Slot #" + juce::String (index) + ": nessun nome canale, niente da copiare ---");
-        }
-
+        showCopyChngetMenu (processor.getChannelParamSlot (index).channelName, onCopiedToClipboard);
         return;
     }
 
@@ -706,6 +739,10 @@ CsoundParameterMappingPanel::IntParamRow::IntParamRow (CsoundAudioProcessor& pro
 {
     setMouseCursor (juce::MouseCursor::NormalCursor);
 
+    // Vedi il commento identico su ParamRow::ParamRow sopra: senza questo
+    // il click sulla maniglia porterebbe il focus su channelNameEditor.
+    setMouseClickGrabsKeyboardFocus (false);
+
     channelNameEditor.setTextToShowWhenEmpty ("(no channel)", kPlaceholder);
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
@@ -826,21 +863,7 @@ void CsoundParameterMappingPanel::IntParamRow::mouseDown (const juce::MouseEvent
     // Vedi il commento identico in ParamRow::mouseDown sopra.
     if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
     {
-        const auto slot = processor.getIntParamSlot (index);
-
-        if (slot.channelName.isNotEmpty())
-        {
-            const auto clip = makeChngetClipboardText (slot.channelName);
-            juce::SystemClipboard::copyTextToClipboard (clip);
-
-            if (onCopiedToClipboard)
-                onCopiedToClipboard ("--- Copiato negli appunti: " + clip.trim() + " ---");
-        }
-        else if (onCopiedToClipboard)
-        {
-            onCopiedToClipboard ("--- Slot #" + juce::String (index) + ": nessun nome canale, niente da copiare ---");
-        }
-
+        showCopyChngetMenu (processor.getIntParamSlot (index).channelName, onCopiedToClipboard);
         return;
     }
 
@@ -898,6 +921,10 @@ CsoundParameterMappingPanel::BoolParamRow::BoolParamRow (CsoundAudioProcessor& p
       index (slotIndex)
 {
     setMouseCursor (juce::MouseCursor::NormalCursor);
+
+    // Vedi il commento identico su ParamRow::ParamRow sopra: senza questo
+    // il click sulla maniglia porterebbe il focus su channelNameEditor.
+    setMouseClickGrabsKeyboardFocus (false);
 
     channelNameEditor.setTextToShowWhenEmpty ("(no channel)", kPlaceholder);
     channelNameEditor.addListener (this);
@@ -994,21 +1021,7 @@ void CsoundParameterMappingPanel::BoolParamRow::mouseDown (const juce::MouseEven
     // Vedi il commento identico in ParamRow::mouseDown sopra.
     if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
     {
-        const auto slot = processor.getBoolParamSlot (index);
-
-        if (slot.channelName.isNotEmpty())
-        {
-            const auto clip = makeChngetClipboardText (slot.channelName);
-            juce::SystemClipboard::copyTextToClipboard (clip);
-
-            if (onCopiedToClipboard)
-                onCopiedToClipboard ("--- Copiato negli appunti: " + clip.trim() + " ---");
-        }
-        else if (onCopiedToClipboard)
-        {
-            onCopiedToClipboard ("--- Slot #" + juce::String (index) + ": nessun nome canale, niente da copiare ---");
-        }
-
+        showCopyChngetMenu (processor.getBoolParamSlot (index).channelName, onCopiedToClipboard);
         return;
     }
 
@@ -1066,6 +1079,10 @@ CsoundParameterMappingPanel::ChoiceParamRow::ChoiceParamRow (CsoundAudioProcesso
       index (slotIndex)
 {
     setMouseCursor (juce::MouseCursor::NormalCursor);
+
+    // Vedi il commento identico su ParamRow::ParamRow sopra: senza questo
+    // il click sulla maniglia porterebbe il focus su channelNameEditor.
+    setMouseClickGrabsKeyboardFocus (false);
 
     channelNameEditor.setTextToShowWhenEmpty ("(no channel)", kPlaceholder);
     channelNameEditor.addListener (this);
@@ -1186,21 +1203,7 @@ void CsoundParameterMappingPanel::ChoiceParamRow::mouseDown (const juce::MouseEv
     // Vedi il commento identico in ParamRow::mouseDown sopra.
     if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
     {
-        const auto slot = processor.getChoiceParamSlot (index);
-
-        if (slot.channelName.isNotEmpty())
-        {
-            const auto clip = makeChngetClipboardText (slot.channelName);
-            juce::SystemClipboard::copyTextToClipboard (clip);
-
-            if (onCopiedToClipboard)
-                onCopiedToClipboard ("--- Copiato negli appunti: " + clip.trim() + " ---");
-        }
-        else if (onCopiedToClipboard)
-        {
-            onCopiedToClipboard ("--- Slot #" + juce::String (index) + ": nessun nome canale, niente da copiare ---");
-        }
-
+        showCopyChngetMenu (processor.getChoiceParamSlot (index).channelName, onCopiedToClipboard);
         return;
     }
 
