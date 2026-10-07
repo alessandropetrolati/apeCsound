@@ -127,6 +127,14 @@ public:
     // solo: lascia all'editor la responsabilita' di gestire overlay/velo.
     std::function<void()> onCloseButtonClicked;
 
+    // Chiamata quando il tasto destro su una maniglia copia un chnget negli
+    // appunti (vedi ParamRow/IntParamRow/BoolParamRow/ChoiceParamRow::
+    // onCopiedToClipboard, agganciato riga per riga alla creazione - vedi
+    // il costruttore) - PluginEditor la usa per scrivere una riga in
+    // consolle (vedi appendToLog), cosi' l'azione (altrimenti invisibile:
+    // nessun popup, nessun cambio grafico) lascia una traccia verificabile.
+    std::function<void (const juce::String&)> onParameterCopiedToClipboard;
+
     // Larghezze fisse delle colonne handle/min/max/default/skew/increment (vedi
     // layoutColumns()); nameWidth e' solo la larghezza MINIMA del campo
     // nome, usata per calcolare preferredWidth - il campo stesso si allarga
@@ -142,10 +150,13 @@ public:
     static constexpr int curveWidth = 160;
     static constexpr int preferredWidth = handleWidth + nameWidth + minMaxWidth * 2 + defaultWidth + curveWidth + 10 + 16 + 16 + 10;
 
-    // Abbastanza alto da mostrare tutte le 16 righe di qualunque tab (Float/
-    // Int/Bool/Choice) SENZA scroll verticale (titleBarHeight + tabBarHeight
-    // + margini pagina/header + 16*rowHeight, con un margine extra) - vedi
-    // il commento sul perche' in CsoundParameterMappingPanel::resized().
+    // Altezza "comoda" di partenza per il pannello (titleBarHeight +
+    // tabBarHeight + margini pagina/header + un po' di righe visibili).
+    // Da quando Float/Int/Bool sono stati estesi a 64/32/32 slot (Choice
+    // resta a 16) non tutte le righe di una tab entrano piu' senza scroll
+    // a questa altezza - il viewport scrollabile di ogni *ParamsPage se ne
+    // occupa normalmente, questa e' solo la dimensione iniziale "comoda",
+    // non un limite.
     static constexpr int preferredHeight = 620;
 
     static constexpr int boolDefaultWidth = 70;
@@ -223,6 +234,15 @@ private:
         // invece di restare con i vecchi valori mostrati prima del caricamento.
         void refreshFromProcessor();
 
+        // Chiamata dal tasto destro sulla maniglia dopo aver copiato negli
+        // appunti (vedi mouseDown) - usata SOLO per dare un riscontro
+        // visibile in consolle (CsoundParameterMappingPanel::
+        // onParameterCopiedToClipboard -> PluginEditor::appendToLog):
+        // senza questo riscontro l'azione e' invisibile (nessun popup,
+        // nessun cambio grafico), rendendo impossibile per l'utente
+        // distinguere "ha copiato ma non si vede" da "non ha fatto nulla".
+        std::function<void (const juce::String&)> onCopiedToClipboard;
+
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
         void textEditorFocusLost (juce::TextEditor&) override;
@@ -272,6 +292,9 @@ private:
 
         void refreshFromProcessor();
 
+        // Vedi il commento identico su ParamRow::onCopiedToClipboard sopra.
+        std::function<void (const juce::String&)> onCopiedToClipboard;
+
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
         void textEditorFocusLost (juce::TextEditor&) override;
@@ -312,6 +335,9 @@ private:
 
         void refreshFromProcessor();
 
+        // Vedi il commento identico su ParamRow::onCopiedToClipboard sopra.
+        std::function<void (const juce::String&)> onCopiedToClipboard;
+
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
         void textEditorFocusLost (juce::TextEditor&) override;
@@ -351,6 +377,9 @@ private:
 
         void refreshFromProcessor();
 
+        // Vedi il commento identico su ParamRow::onCopiedToClipboard sopra.
+        std::function<void (const juce::String&)> onCopiedToClipboard;
+
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
         void textEditorFocusLost (juce::TextEditor&) override;
@@ -389,6 +418,11 @@ private:
         // valori della sessione precedente.
         void refreshAllFromProcessor();
 
+        // Agganciata riga per riga ad ogni ParamRow::onCopiedToClipboard nel
+        // costruttore (vedi .cpp) - CsoundParameterMappingPanel imposta
+        // questo per inoltrare al proprio onParameterCopiedToClipboard.
+        std::function<void (const juce::String&)> onParameterCopiedToClipboard;
+
     private:
         juce::Viewport viewport;
         juce::Component rowsContainer;
@@ -403,6 +437,8 @@ private:
         explicit IntParamsPage (CsoundAudioProcessor& processorToEdit);
         void resized() override;
         void refreshAllFromProcessor();
+
+        std::function<void (const juce::String&)> onParameterCopiedToClipboard;
 
     private:
         juce::Viewport viewport;
@@ -419,6 +455,8 @@ private:
         void resized() override;
         void refreshAllFromProcessor();
 
+        std::function<void (const juce::String&)> onParameterCopiedToClipboard;
+
     private:
         juce::Viewport viewport;
         juce::Component rowsContainer;
@@ -433,6 +471,8 @@ private:
         explicit ChoiceParamsPage (CsoundAudioProcessor& processorToEdit);
         void resized() override;
         void refreshAllFromProcessor();
+
+        std::function<void (const juce::String&)> onParameterCopiedToClipboard;
 
     private:
         juce::Viewport viewport;

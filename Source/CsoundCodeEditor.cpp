@@ -249,12 +249,26 @@ void CsoundCodeEditor::mouseWheelMove (const juce::MouseEvent& event, const juce
     // e il successivo, cosi' uno scroll lento e preciso resta fluido (non
     // si "perde" nulla sotto la soglia di una riga) e uno scroll rapido
     // viene spalmato su piu' eventi invece di saltare in un colpo solo.
+    //
+    // IMPORTANTE (il vero motivo per cui restava "incontrollabile" anche
+    // con questo limite): senza un tetto anche su wheelScrollRemainder,
+    // durante uno swipe forte su trackpad macOS (che manda MOLTI eventi in
+    // rapida sequenza, ciascuno gia' con un deltaY grande per conto suo)
+    // l'accumulo entrava piu' velocemente di quanto il limite per evento
+    // riuscisse a scaricarlo: il "debito" di righe cresceva senza fondo e
+    // continuava a scaricarsi per secondi anche DOPO che l'utente aveva
+    // fermato il gesto, durante la sola fase di decelerazione inerziale -
+    // la sensazione di "accelerazione fuori controllo" lamentata. Il
+    // jlimit sul remainder sotto impedisce che quel debito superi mai un
+    // singolo scatto (maxLinesPerEvent): lo scroll si ferma non appena si
+    // ferma il gesto, non dopo.
     if (! juce::approximatelyEqual (wheel.deltaY, 0.0f))
     {
-        constexpr float linesPerNotch     = 3.0f;
-        constexpr int   maxLinesPerEvent  = 6;
+        constexpr float linesPerNotch     = 1.2f;
+        constexpr int   maxLinesPerEvent  = 3;
 
-        wheelScrollRemainder += wheel.deltaY * linesPerNotch;
+        wheelScrollRemainder = juce::jlimit (-(float) maxLinesPerEvent, (float) maxLinesPerEvent,
+                                              wheelScrollRemainder + wheel.deltaY * linesPerNotch);
 
         const int wholeLines = (int) wheelScrollRemainder; // troncato verso zero
         const int clampedLines = juce::jlimit (-maxLinesPerEvent, maxLinesPerEvent, wholeLines);

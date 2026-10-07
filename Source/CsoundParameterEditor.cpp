@@ -58,6 +58,18 @@ namespace
         label.setJustificationType (justification);
     }
 
+    // Stesso formato ESATTO che CsoundCodeEditor::itemDropped inserisce
+    // trascinando la maniglia "#N" sull'editor di codice (vedi li'), MENO
+    // l'indentazione (che dipende da dove l'utente incollera' il testo,
+    // non prevedibile qui) - usato dal tasto destro sulla maniglia di
+    // ciascuna riga (Param/Int/Bool/ChoiceParamRow::mouseDown) per copiare
+    // negli appunti senza dover trascinare fisicamente sull'editor.
+    juce::String makeChngetClipboardText (const juce::String& channelName)
+    {
+        const auto varName = "k" + channelName.removeCharacters (" \t");
+        return varName + " chnget \"" + channelName + "\"\n";
+    }
+
     // Stesso identico path SVG di CsoundLookAndFeel's makeTuneIconPath (il
     // bottone "Parameters" nella toolbar) - duplicato qui invece di
     // condiviso: e' una singola riga, non vale un header apposito solo per
@@ -528,6 +540,30 @@ void CsoundParameterMappingPanel::ParamRow::resized()
 
 void CsoundParameterMappingPanel::ParamRow::mouseDown (const juce::MouseEvent& event)
 {
+    // Tasto destro sulla maniglia: copia negli appunti lo stesso chnget che
+    // trascinarla sull'editor inserirebbe (vedi makeChngetClipboardText),
+    // senza dover trascinare fisicamente - comodo quando il pannello e
+    // l'editor non sono entrambi comodamente visibili/raggiungibili.
+    if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
+    {
+        const auto slot = processor.getChannelParamSlot (index);
+
+        if (slot.channelName.isNotEmpty())
+        {
+            const auto clip = makeChngetClipboardText (slot.channelName);
+            juce::SystemClipboard::copyTextToClipboard (clip);
+
+            if (onCopiedToClipboard)
+                onCopiedToClipboard ("--- Copiato negli appunti: " + clip.trim() + " ---");
+        }
+        else if (onCopiedToClipboard)
+        {
+            onCopiedToClipboard ("--- Slot #" + juce::String (index) + ": nessun nome canale, niente da copiare ---");
+        }
+
+        return;
+    }
+
     draggingFromHandle = handleBounds.contains (event.getPosition());
 }
 
@@ -787,6 +823,27 @@ void CsoundParameterMappingPanel::IntParamRow::resized()
 
 void CsoundParameterMappingPanel::IntParamRow::mouseDown (const juce::MouseEvent& event)
 {
+    // Vedi il commento identico in ParamRow::mouseDown sopra.
+    if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
+    {
+        const auto slot = processor.getIntParamSlot (index);
+
+        if (slot.channelName.isNotEmpty())
+        {
+            const auto clip = makeChngetClipboardText (slot.channelName);
+            juce::SystemClipboard::copyTextToClipboard (clip);
+
+            if (onCopiedToClipboard)
+                onCopiedToClipboard ("--- Copiato negli appunti: " + clip.trim() + " ---");
+        }
+        else if (onCopiedToClipboard)
+        {
+            onCopiedToClipboard ("--- Slot #" + juce::String (index) + ": nessun nome canale, niente da copiare ---");
+        }
+
+        return;
+    }
+
     draggingFromHandle = handleBounds.contains (event.getPosition());
 }
 
@@ -934,6 +991,27 @@ void CsoundParameterMappingPanel::BoolParamRow::resized()
 
 void CsoundParameterMappingPanel::BoolParamRow::mouseDown (const juce::MouseEvent& event)
 {
+    // Vedi il commento identico in ParamRow::mouseDown sopra.
+    if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
+    {
+        const auto slot = processor.getBoolParamSlot (index);
+
+        if (slot.channelName.isNotEmpty())
+        {
+            const auto clip = makeChngetClipboardText (slot.channelName);
+            juce::SystemClipboard::copyTextToClipboard (clip);
+
+            if (onCopiedToClipboard)
+                onCopiedToClipboard ("--- Copiato negli appunti: " + clip.trim() + " ---");
+        }
+        else if (onCopiedToClipboard)
+        {
+            onCopiedToClipboard ("--- Slot #" + juce::String (index) + ": nessun nome canale, niente da copiare ---");
+        }
+
+        return;
+    }
+
     draggingFromHandle = handleBounds.contains (event.getPosition());
 }
 
@@ -1105,6 +1183,27 @@ void CsoundParameterMappingPanel::ChoiceParamRow::resized()
 
 void CsoundParameterMappingPanel::ChoiceParamRow::mouseDown (const juce::MouseEvent& event)
 {
+    // Vedi il commento identico in ParamRow::mouseDown sopra.
+    if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
+    {
+        const auto slot = processor.getChoiceParamSlot (index);
+
+        if (slot.channelName.isNotEmpty())
+        {
+            const auto clip = makeChngetClipboardText (slot.channelName);
+            juce::SystemClipboard::copyTextToClipboard (clip);
+
+            if (onCopiedToClipboard)
+                onCopiedToClipboard ("--- Copiato negli appunti: " + clip.trim() + " ---");
+        }
+        else if (onCopiedToClipboard)
+        {
+            onCopiedToClipboard ("--- Slot #" + juce::String (index) + ": nessun nome canale, niente da copiare ---");
+        }
+
+        return;
+    }
+
     draggingFromHandle = handleBounds.contains (event.getPosition());
 }
 
@@ -1173,6 +1272,11 @@ CsoundParameterMappingPanel::FloatParamsPage::FloatParamsPage (CsoundAudioProces
     for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
     {
         rows[(size_t) i] = std::make_unique<ParamRow> (processorToEdit, i);
+        rows[(size_t) i]->onCopiedToClipboard = [this] (const juce::String& msg)
+        {
+            if (onParameterCopiedToClipboard)
+                onParameterCopiedToClipboard (msg);
+        };
         rowsContainer.addAndMakeVisible (*rows[(size_t) i]);
     }
 
@@ -1248,6 +1352,11 @@ CsoundParameterMappingPanel::IntParamsPage::IntParamsPage (CsoundAudioProcessor&
     for (int i = 0; i < CsoundAudioProcessor::numIntParams; ++i)
     {
         rows[(size_t) i] = std::make_unique<IntParamRow> (processorToEdit, i);
+        rows[(size_t) i]->onCopiedToClipboard = [this] (const juce::String& msg)
+        {
+            if (onParameterCopiedToClipboard)
+                onParameterCopiedToClipboard (msg);
+        };
         rowsContainer.addAndMakeVisible (*rows[(size_t) i]);
     }
 
@@ -1302,6 +1411,11 @@ CsoundParameterMappingPanel::BoolParamsPage::BoolParamsPage (CsoundAudioProcesso
     for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
     {
         rows[(size_t) i] = std::make_unique<BoolParamRow> (processorToEdit, i);
+        rows[(size_t) i]->onCopiedToClipboard = [this] (const juce::String& msg)
+        {
+            if (onParameterCopiedToClipboard)
+                onParameterCopiedToClipboard (msg);
+        };
         rowsContainer.addAndMakeVisible (*rows[(size_t) i]);
     }
 
@@ -1355,6 +1469,11 @@ CsoundParameterMappingPanel::ChoiceParamsPage::ChoiceParamsPage (CsoundAudioProc
     for (int i = 0; i < CsoundAudioProcessor::numChoiceParams; ++i)
     {
         rows[(size_t) i] = std::make_unique<ChoiceParamRow> (processorToEdit, i);
+        rows[(size_t) i]->onCopiedToClipboard = [this] (const juce::String& msg)
+        {
+            if (onParameterCopiedToClipboard)
+                onParameterCopiedToClipboard (msg);
+        };
         rowsContainer.addAndMakeVisible (*rows[(size_t) i]);
     }
 
@@ -1629,6 +1748,19 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     intPage           = std::make_unique<IntParamsPage>    (processorToEdit);
     boolPage          = std::make_unique<BoolParamsPage>   (processorToEdit);
     choicePage        = std::make_unique<ChoiceParamsPage> (processorToEdit);
+
+    // Inoltra il riscontro "copiato negli appunti" di ogni riga, di
+    // qualunque tab, fino a onParameterCopiedToClipboard (vedi dichiarazione
+    // in CsoundParameterEditor.h) - PluginEditor lo aggancia a appendToLog.
+    auto forwardCopyNotice = [this] (const juce::String& msg)
+    {
+        if (onParameterCopiedToClipboard)
+            onParameterCopiedToClipboard (msg);
+    };
+    floatPage->onParameterCopiedToClipboard  = forwardCopyNotice;
+    intPage->onParameterCopiedToClipboard    = forwardCopyNotice;
+    boolPage->onParameterCopiedToClipboard   = forwardCopyNotice;
+    choicePage->onParameterCopiedToClipboard = forwardCopyNotice;
     genericEditorPage = std::make_unique<GenericEditorPage>();
 
     // Le 5 pagine sono figli diretti del pannello (non piu' ospitate da un
@@ -1680,7 +1812,12 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     }
 
     updateTabButtonStyles();
-    showPage (0);
+
+    // Tab mostrata di default all'apertura del pannello: 4 = "UI" (Generic
+    // Editor, vedi getOrderedTabs()), non 0 (Float) - e' la vista con gli
+    // slider/toggle/combo VERI agganciati ai parametri reali, quella che
+    // l'utente vuole vedere per prima entrando nel pannello Parametri.
+    showPage (4);
 }
 
 std::array<std::pair<juce::TextButton*, int>, 5> CsoundParameterMappingPanel::getOrderedTabs()

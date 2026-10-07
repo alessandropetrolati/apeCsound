@@ -60,6 +60,7 @@
 */
 class CsoundAudioProcessorEditor final : public juce::AudioProcessorEditor,
                                           public juce::DragAndDropContainer,
+                                          public juce::FileDragAndDropTarget,
                                           private CsoundAudioProcessor::Listener,
                                           private juce::CodeDocument::Listener
 {
@@ -86,15 +87,28 @@ private:
     void codeDocumentTextInserted (const juce::String&, int) override { updateApplyButtonDirtyState(); }
     void codeDocumentTextDeleted (int, int) override                  { updateApplyButtonDirtyState(); }
 
-    // Confronta il testo ATTUALE dell'editor con l'ultimo testo applicato/
-    // caricato nel processor (audioProcessor.getCsdText()): se sono diversi,
-    // il bottone Apply viene circondato da un bordo rosso (vedi
+    // Confronta il testo ATTUALE dell'editor con l'ultimo testo applicato
+    // nel processor (audioProcessor.getCsdText()): se sono diversi, il
+    // bottone Apply viene circondato da un bordo rosso (vedi
     // CsoundLookAndFeel::drawButtonBackground, che legge la proprieta'
     // dinamica "pendingChanges" sul bottone) per segnalare che il codice e'
-    // stato modificato e non coincide piu' con quello in esecuzione/salvato
-    // - chiamata ad ogni modifica del document (sopra) e dopo ogni Apply/
-    // Load Session, quando i due testi tornano a coincidere.
+    // stato modificato e non coincide piu' con quello in esecuzione - vedi
+    // il listener del document sopra. Dopo un Load CSD questo confronto
+    // risulterebbe "non modificato" (il document e' stato appena
+    // sincronizzato col testo caricato), ma l'utente non ha ancora premuto
+    // Apply su QUESTO codice - vedi markApplyPendingAfterLoad() sotto, che
+    // forza il bordo rosso in quel caso specifico invece di chiamare questa.
     void updateApplyButtonDirtyState();
+
+    // Promemoria visivo dopo un Load CSD: anche se il document e' appena
+    // stato sincronizzato col testo del file caricato (quindi
+    // updateApplyButtonDirtyState() sopra lo giudicherebbe "non
+    // modificato"), caricare un .csd e' comunque un cambio di codice che
+    // l'utente non ha confermato premendo Apply - il bordo rosso resta
+    // quindi acceso finche' non si preme Apply esplicitamente, anche se il
+    // motore e' gia' stato ricompilato in automatico (vedi
+    // CsoundAudioProcessor::restoreStateFromTree).
+    void markApplyPendingAfterLoad();
 
     void appendToLog (const juce::String& text);
 
@@ -149,17 +163,17 @@ private:
     juce::TextButton clearConsoleButton { "Clear console" };
     juce::TextButton paramsButton       { "Parameters" };
 
-    // Save/Load Session: scrivono/leggono su disco (FileChooser, extension
-    // .csd - un .csd VERO, il mapping dei parametri va in appendice dentro
-    // un tag dedicato, vedi CsoundAudioProcessor::saveSessionToFile)
-    // l'intero stato - codice Csound + mapping dei 64 parametri -
-    // INDIPENDENTEMENTE dal progetto della DAW (che resta comunque salvato/
-    // ripristinato come sempre da getStateInformation/setStateInformation).
-    // Senza questo, rimuovere il plugin dalla traccia o perdere il progetto
-    // avrebbe fatto perdere anche il codice: vedi CsoundAudioProcessor::
+    // Save/Load CSD: scrivono/leggono su disco (FileChooser, filtro *.csd -
+    // un .csd VERO, il mapping dei parametri va in appendice dentro un tag
+    // dedicato, vedi CsoundAudioProcessor::saveSessionToFile) l'intero
+    // stato - codice Csound + mapping dei 64 parametri - INDIPENDENTEMENTE
+    // dal progetto della DAW (che resta comunque salvato/ripristinato come
+    // sempre da getStateInformation/setStateInformation). Senza questo,
+    // rimuovere il plugin dalla traccia o perdere il progetto avrebbe
+    // fatto perdere anche il codice: vedi CsoundAudioProcessor::
     // saveSessionToFile/loadSessionFromFile.
-    juce::TextButton saveSessionButton { "Save Session..." };
-    juce::TextButton loadSessionButton { "Load Session..." };
+    juce::TextButton saveSessionButton { "Save CSD" };
+    juce::TextButton loadSessionButton { "Load CSD" };
 
     // juce::FileChooser e' asincrono (launchAsync): deve restare in vita
     // finche' il suo callback non e' scattato, quindi va tenuto come
@@ -169,6 +183,50 @@ private:
     std::unique_ptr<juce::FileChooser> activeFileChooser;
     void promptSaveSession();
     void promptLoadSession();
+
+    // juce::FileDragAndDropTarget: drag and drop di un .csd dal Finder/
+    // Explorer DIRETTAMENTE sull'editor, stessa destinazione finale di
+    // "Load CSD..." - vedi loadSessionFile() sotto, che fattorizza la
+    // logica di successo comune a entrambi i percorsi (FileChooser e
+    // drag and drop) invece di duplicarla. Interfaccia DIVERSA da
+    // juce::DragAndDropTarget (quella che CsoundCodeEditor implementa per
+    // il drag INTERNO delle righe del pannello Parametri, vedi il
+    // commento in testa a questa classe) - questa qui e' per file che
+    // arrivano da FUORI l'applicazione (dal sistema operativo), nessun
+    // conflitto tra le due essendo interfacce distinte.
+    //
+    // L'EREDITA' da FileDragAndDropTarget sopra (vedi l'elenco classi in
+    // testa al file) deve restare PUBLIC, non private: ComponentPeer
+    // individua chi supporta il drop di file con un dynamic_cast fatto da
+    // codice DI JUCE, fuori da questa classe - con ereditarieta' privata
+    // quel cast fallisce silenziosamente (ritorna nullptr) e
+    // isInterestedInFileDrag/filesDropped non vengono MAI chiamati, pur
+    // compilando senza errori. Stesso identico motivo per cui
+    // juce::DragAndDropContainer qui sopra e' gia' public (lo richiede
+    // CsoundCodeEditor::itemDropped tramite
+    // DragAndDropContainer::findParentDragContainerFor, un cast
+    // altrettanto "esterno").
+    bool isInterestedInFileDrag (const juce::StringArray& files) override;
+    void filesDropped (const juce::StringArray& files, int x, int y) override;
+
+    // Feedback visivo mentre il file e' trascinato SOPRA l'editor (prima
+    // del rilascio): fileDragEnter/fileDragExit sono virtuali OPZIONALI di
+    // FileDragAndDropTarget (non serve fileDragMove, non ci serve la
+    // posizione) - impostano showingCsdDropHighlight e richiedono un
+    // repaint, che in paint() disegna un bordo/overlay evidenziato sopra
+    // l'area dell'editor di codice. filesDropped() sopra azzera comunque
+    // il flag per sicurezza (la documentazione JUCE non garantisce che
+    // fileDragExit scatti sempre dopo un drop andato a buon fine).
+    void fileDragEnter (const juce::StringArray& files, int x, int y) override;
+    void fileDragExit (const juce::StringArray& files) override;
+    bool showingCsdDropHighlight = false;
+
+    // Logica di successo comune a promptLoadSession() (FileChooser) e
+    // filesDropped() sopra (drag and drop): carica il file nel processor,
+    // rilegge editor/pannello parametri dal nuovo stato, segnala il
+    // bordo rosso di Apply (vedi markApplyPendingAfterLoad()) e ricorda la
+    // cartella per la prossima volta.
+    void loadSessionFile (const juce::File& file);
 
     static constexpr int toolbarHeight = 44;
 

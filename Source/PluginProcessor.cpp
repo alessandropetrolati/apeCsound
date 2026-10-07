@@ -2,6 +2,7 @@
 #include "PluginEditor.h"
 #include <cstdlib>
 #include <cmath>
+#include <regex>
 
 namespace
 {
@@ -211,7 +212,7 @@ float ChoiceHostParameter::getDefaultValue() const
     return (float) clampedIndex / (float) (numChoices - 1);
 }
 
-// --- 16 "macro" parametri host <-> canali Csound --------------------------
+// --- 64 "macro" parametri host <-> canali Csound --------------------------
 // (vedi il commento su ChannelParamSlot in PluginProcessor.h per il perche'
 // di questo disegno: parametro apvts sempre 0..1 fisso, metadata reali solo
 // qui).
@@ -248,8 +249,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout CsoundAudioProcessor::create
             "Float " + juce::String (i + 1)));
     }
 
-    // --- 16 parametri interi, stesso schema dei float ma senza curva (vedi
-    //     IntParamSlot in PluginProcessor.h) ----------------------------------
+    // --- 32 parametri interi, stesso schema dei float ma senza skew/increment
+    //     (vedi IntParamSlot in PluginProcessor.h) -----------------------------
     for (int i = 0; i < numIntParams; ++i)
     {
         params.push_back (std::make_unique<IntHostParameter> (
@@ -258,7 +259,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout CsoundAudioProcessor::create
             "Int " + juce::String (i + 1)));
     }
 
-    // --- 16 parametri booleani, stesso schema (vedi BoolParamSlot in
+    // --- 32 parametri booleani, stesso schema (vedi BoolParamSlot in
     //     PluginProcessor.h) ------------------------------------------------
     for (int i = 0; i < numBoolParams; ++i)
     {
@@ -316,7 +317,7 @@ void CsoundAudioProcessor::setChannelParamSlot (int index, const ChannelParamSlo
     updateHostDisplay (juce::AudioProcessor::ChangeDetails().withParameterInfoChanged (true));
 }
 
-// --- 16 "macro" parametri host interi (vedi il commento su IntParamSlot in
+// --- 32 "macro" parametri host interi (vedi il commento su IntParamSlot in
 // PluginProcessor.h) ---------------------------------------------------------
 juce::String CsoundAudioProcessor::getIntParamID (int index)
 {
@@ -361,7 +362,7 @@ float CsoundAudioProcessor::normalizeIntParam (const IntParamSlot& slot, double 
     return (float) juce::jlimit (0.0, 1.0, juce::jmap (real, (double) slot.minValue, (double) slot.maxValue, 0.0, 1.0));
 }
 
-// --- 16 "macro" parametri host booleani (vedi il commento su BoolParamSlot
+// --- 32 "macro" parametri host booleani (vedi il commento su BoolParamSlot
 // in PluginProcessor.h) -----------------------------------------------------
 juce::String CsoundAudioProcessor::getBoolParamID (int index)
 {
@@ -435,12 +436,18 @@ double CsoundAudioProcessor::denormalizeChannelParam (const ChannelParamSlot& sl
 {
     normalized = juce::jlimit (0.0f, 1.0f, normalized);
 
-    // Skew: stesso significato di juce::Slider::setSkewFactor - reshape di
-    // x (0..1) PRIMA dell'interpolazione lineare tra min e max, con
-    // x' = pow(x, skew). skew<=0 non ha senso (pow indefinito/instabile),
-    // ripieghiamo su 1 (lineare) in quel caso.
+    // Skew: stesso significato di juce::Slider::setSkewFactor (la stessa
+    // convenzione usata da Cabbage per il campo skew di range()) - reshape
+    // di x (0..1) PRIMA dell'interpolazione lineare tra min e max, con
+    // x' = pow(x, 1/skew), NON pow(x, skew) (esponente invertito rispetto
+    // a quanto scritto qui in precedenza: skew<1 deve dare PIU'
+    // risoluzione vicino a MIN, skew>1 vicino a MAX - verificato contro il
+    // comportamento di Cabbage, che segnalava lo skew letto "al contrario"
+    // - es. 0.5 in Cabbage si comportava come se fosse 2, cioe' 1/0.5).
+    // skew<=0 non ha senso (pow indefinito/instabile), ripieghiamo su 1
+    // (lineare) in quel caso.
     const double skew = slot.skew > 0.0f ? (double) slot.skew : 1.0;
-    const double shaped = ! juce::approximatelyEqual (skew, 1.0) ? std::pow ((double) normalized, skew)
+    const double shaped = ! juce::approximatelyEqual (skew, 1.0) ? std::pow ((double) normalized, 1.0 / skew)
                                                                    : (double) normalized;
     double real = juce::jmap (shaped, 0.0, 1.0, (double) slot.minValue, (double) slot.maxValue);
 
@@ -464,14 +471,14 @@ float CsoundAudioProcessor::normalizeChannelParam (const ChannelParamSlot& slot,
 
     // Inversa di denormalizeChannelParam: dal valore reale alla forma
     // "shaped" (0..1, interpolazione lineare tra min/max), poi inversa di
-    // shaped = pow(x, skew) => x = pow(shaped, 1/skew). Lo snap
-    // dell'increment non ha un'inversa esatta (e' una perdita di
+    // shaped = pow(x, 1/skew) => x = pow(shaped, skew).
+    // Lo snap dell'increment non ha un'inversa esatta (e' una perdita di
     // informazione voluta): qui si normalizza il valore reale cosi' com'e'.
     const double shaped = juce::jlimit (0.0, 1.0, juce::jmap (real, (double) slot.minValue, (double) slot.maxValue, 0.0, 1.0));
     const double skew = slot.skew > 0.0f ? (double) slot.skew : 1.0;
 
     if (! juce::approximatelyEqual (skew, 1.0))
-        return (float) juce::jlimit (0.0, 1.0, std::pow (shaped, 1.0 / skew));
+        return (float) juce::jlimit (0.0, 1.0, std::pow (shaped, skew));
 
     return (float) shaped;
 }
@@ -561,7 +568,23 @@ void CsoundAudioProcessor::pushChannelParametersToCsound (CSOUND* cs)
             if (auto* rawValue = apvts.getRawParameterValue (getChoiceParamID (i)))
             {
                 const int optionIndex = juce::jlimit (0, maxChoiceOptions - 1, juce::roundToInt (rawValue->load()));
-                CsoundAPI::csoundSetControlChannel (cs, slot.channelName.toRawUTF8(), (cs_float) optionIndex);
+
+                // +1: Cabbage stesso numera le opzioni del combobox a
+                // partire da 1 (stessa convenzione gia' verificata per
+                // value() nell'import - vedi importCabbageParameters),
+                // quindi un .csd scritto per Cabbage ha il codice Csound
+                // (if/elseif su chnget di questo canale) che si aspetta
+                // 1..N, non 0..N-1. optionIndex resta 0-based ovunque
+                // ALTROVE (array optionLabels, ID del combobox nel Generic
+                // Editor, defaultIndex) - solo il valore scritto nel
+                // canale Csound e' spostato di 1, qui, al limite esatto in
+                // cui serve. Prima di questo fix, selezionare la PRIMA
+                // opzione (indice 0) mandava un channel value di 0, che
+                // nel codice Csound (scritto assumendo 1..N) non
+                // combinava con nessun "if kChan == 1 ... N" e cadeva
+                // nell'ultimo ramo "else" - il sintomo esatto segnalato
+                // (selezionando la prima voce partiva l'ultimo ramo).
+                CsoundAPI::csoundSetControlChannel (cs, slot.channelName.toRawUTF8(), (cs_float) (optionIndex + 1));
             }
         }
     }
@@ -992,7 +1015,7 @@ juce::ValueTree CsoundAudioProcessor::buildStateTree (bool includeCsdText)
         state.appendChild (slotsTree, nullptr);
     }
 
-    // Idem per i 16 slot interi.
+    // Idem per i 32 slot interi.
     {
         const juce::ScopedLock sl (intParamSlotsLock);
         juce::ValueTree slotsTree ("INT_PARAM_SLOTS");
@@ -1016,7 +1039,7 @@ juce::ValueTree CsoundAudioProcessor::buildStateTree (bool includeCsdText)
         state.appendChild (slotsTree, nullptr);
     }
 
-    // Idem per i 16 slot booleani.
+    // Idem per i 32 slot booleani.
     {
         const juce::ScopedLock sl (boolParamSlotsLock);
         juce::ValueTree slotsTree ("BOOL_PARAM_SLOTS");
@@ -1094,6 +1117,182 @@ namespace
     const juce::String kParamsTagClose = "</CsoundStudioParams>";
 }
 
+//==============================================================================
+// Import automatico da <Cabbage> - vedi il commento su importCabbageParameters
+// in PluginProcessor.h per la mappatura widget -> tipo di parametro. Piccoli
+// helper regex isolati qui (std::regex, non juce - JUCE non ha un tokenizer
+// per espressioni "nomeCampo(...)" pronto all'uso) che leggono UNA riga alla
+// volta: lo stile Cabbage compatto (una dichiarazione di widget per riga) e'
+// quello assunto, righe spezzate su piu' linee non sono gestite.
+namespace
+{
+    bool cabbageMatchSingleChannel (const juce::String& line, juce::String& channelName)
+    {
+        // Delimitatore custom "re(...)re" (non il default "(...)"): il
+        // pattern contiene ")\"" al suo interno (chiusura del gruppo subito
+        // seguita dalla virgoletta letterale), che con il delimitatore di
+        // default avrebbe chiuso la raw string PRIMA della fine vera - il
+        // resto del pattern sarebbe finito fuori dalle virgolette come
+        // codice C++ invece che come testo, mandando in errore tutto cio'
+        // che segue (esattamente l'errore "undeclared identifier"/"expected
+        // ';'" segnalato).
+        static const std::regex re (R"re(channel\(\s*"([^"]*)"\s*\))re");
+        std::smatch m;
+        const auto s = line.toStdString();
+
+        if (std::regex_search (s, m, re))
+        {
+            channelName = juce::String (m[1].str());
+            return true;
+        }
+
+        return false;
+    }
+
+    bool cabbageMatchChannelPair (const juce::String& line, juce::String& channelA, juce::String& channelB)
+    {
+        // Stesso motivo del delimitatore custom spiegato in
+        // cabbageMatchSingleChannel sopra - qui il pattern ha ADDIRITTURA
+        // due occorrenze di ")\"" al suo interno.
+        static const std::regex re (R"re(channel\(\s*"([^"]*)"\s*,\s*"([^"]*)"\s*\))re");
+        std::smatch m;
+        const auto s = line.toStdString();
+
+        if (std::regex_search (s, m, re))
+        {
+            channelA = juce::String (m[1].str());
+            channelB = juce::String (m[2].str());
+            return true;
+        }
+
+        return false;
+    }
+
+    bool cabbageMatchRangeContents (const juce::String& line, juce::String& contents)
+    {
+        static const std::regex re (R"re(range\(([^)]*)\))re");
+        std::smatch m;
+        const auto s = line.toStdString();
+
+        if (std::regex_search (s, m, re))
+        {
+            contents = juce::String (m[1].str());
+            return true;
+        }
+
+        return false;
+    }
+
+    bool cabbageMatchValueNumber (const juce::String& line, double& value)
+    {
+        static const std::regex re (R"re(value\(([^)]*)\))re");
+        std::smatch m;
+        const auto s = line.toStdString();
+
+        if (std::regex_search (s, m, re))
+        {
+            value = juce::String (m[1].str()).trim().getDoubleValue();
+            return true;
+        }
+
+        return false;
+    }
+
+    bool cabbageMatchItems (const juce::String& line, juce::StringArray& items)
+    {
+        // La proprieta' Cabbage con le etichette del combobox e'
+        // text("A", "B", ...), NON items(...) (quest'ultimo tentato prima
+        // per sbaglio - un combobox Cabbage reale usa sempre text()).
+        // Proviamo comunque anche items(...) come fallback, nel caso un
+        // file scritto a mano/esportato da un'altra versione lo usi.
+        static const std::regex reText  (R"re(text\(([^)]*)\))re");
+        static const std::regex reItems (R"re(items\(([^)]*)\))re");
+        std::smatch m;
+        const auto s = line.toStdString();
+
+        if (! std::regex_search (s, m, reText) && ! std::regex_search (s, m, reItems))
+            return false;
+
+        juce::StringArray rawTokens;
+        rawTokens.addTokens (juce::String (m[1].str()), ",", "");
+
+        for (auto token : rawTokens)
+        {
+            token = token.trim();
+
+            if (token.startsWithChar ('"') && token.endsWithChar ('"'))
+                token = token.substring (1, token.length() - 1);
+
+            items.add (token);
+        }
+
+        return true;
+    }
+
+    // Spezza "min, max, default, skew, increment" (il contenuto grezzo di
+    // range(...), vedi cabbageMatchRangeContents) in fino a 5 numeri. Il
+    // campo "default" (indice 2) puo' contenere un secondo numero separato
+    // da ':' - solo per vrange/hrange (vedi il commento in
+    // PluginProcessor.h) - che finisce in defaultB; altrimenti defaultB
+    // resta identico a values[2].
+    //
+    // Cabbage accetta range() anche con MENO di 5 campi (tipicamente solo
+    // min, max, default - skew e increment sono opzionali con un loro
+    // default): qui sovrascriviamo SOLO i campi effettivamente presenti,
+    // lasciando gli altri al valore che il chiamante ha gia' messo in
+    // "values" prima di chiamare questa funzione (gli inizializzatori
+    // {0, 1, 0, 1, 0.001} nei tre punti da cui viene chiamata) - cosi' un
+    // range(-10, 10, 6.791) con solo 3 campi imposta min/max/default e
+    // lascia skew=1.0/increment=0.001 come se non fossero stati scritti.
+    bool cabbageParseFiveFieldRange (const juce::String& contents, double values[5], double& defaultB)
+    {
+        juce::StringArray tokens;
+        tokens.addTokens (contents, ",", "");
+
+        if (tokens.isEmpty())
+            return false;
+
+        const int fieldCount = juce::jmin (tokens.size(), 5);
+        defaultB = values[2]; // valore di partenza se il campo 2 non e' presente o non ha ':'
+
+        for (int i = 0; i < fieldCount; ++i)
+        {
+            auto token = tokens[i].trim();
+
+            if (i == 2 && token.containsChar (':'))
+            {
+                const auto colon = token.indexOfChar (':');
+                values[2] = token.substring (0, colon).trim().getDoubleValue();
+                defaultB  = token.substring (colon + 1).trim().getDoubleValue();
+            }
+            else
+            {
+                values[i] = token.getDoubleValue();
+
+                if (i == 2)
+                    defaultB = values[2];
+            }
+        }
+
+        return true;
+    }
+
+    // Identifica il tipo di widget dal primo token della riga (dopo aver
+    // scartato spazi iniziali) - non basta un contains() perche' "hslider"
+    // compare anche dentro commenti o altri nomi; serve il token di testa.
+    juce::String cabbageLeadingIdentifier (const juce::String& line)
+    {
+        static const std::regex re (R"re(^\s*([A-Za-z_][A-Za-z0-9_]*))re");
+        std::smatch m;
+        const auto s = line.toStdString();
+
+        if (std::regex_search (s, m, re))
+            return juce::String (m[1].str());
+
+        return {};
+    }
+}
+
 bool CsoundAudioProcessor::saveSessionToFile (const juce::File& file)
 {
     // includeCsdText=false: il codice e' GIA' scritto per intero, in
@@ -1119,6 +1318,18 @@ bool CsoundAudioProcessor::saveSessionToFile (const juce::File& file)
     return file.replaceWithText (fileContents);
 }
 
+void CsoundAudioProcessor::resetAllParameterSlots()
+{
+    for (int i = 0; i < numChannelParams; ++i)
+        setChannelParamSlot (i, ChannelParamSlot{});
+    for (int i = 0; i < numIntParams; ++i)
+        setIntParamSlot (i, IntParamSlot{});
+    for (int i = 0; i < numBoolParams; ++i)
+        setBoolParamSlot (i, BoolParamSlot{});
+    for (int i = 0; i < numChoiceParams; ++i)
+        setChoiceParamSlot (i, ChoiceParamSlot{});
+}
+
 bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
 {
     const auto fullText = file.loadFileAsString();
@@ -1126,16 +1337,26 @@ bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
     if (fullText.isEmpty())
         return false;
 
+    // Ripulisce SEMPRE la mappatura dei parametri prima di qualunque altra
+    // cosa, qualunque sia il formato del file che segue - vedi il commento
+    // su resetAllParameterSlots() in PluginProcessor.h sul perche'.
+    resetAllParameterSlots();
+
     const auto tagStart = fullText.indexOf (kParamsTagOpen);
 
     if (tagStart < 0)
     {
         // Nessun tag d'appendice: e' un .csd "normale", magari scritto a
         // mano o esportato da un'altra sessione - carichiamo comunque il
-        // codice (molto meglio che fallire del tutto), lasciando INVARIATO
-        // il mapping dei parametri attuale, visto che qui non ce n'e' uno
-        // da ripristinare.
+        // codice (molto meglio che fallire del tutto).
         setCsdText (fullText);
+
+        // Se contiene un <Cabbage>, non e' mai stato salvato da questo
+        // plugin ma e' probabilmente un .csd Cabbage scritto a mano/da
+        // un'altra app: proviamo a dedurre il mapping dei parametri dai
+        // widget, invece di lasciare INVARIATO (o vuoto) quello attuale -
+        // vedi importCabbageParameters in PluginProcessor.h.
+        importCabbageParameters (fullText);
         return true;
     }
 
@@ -1171,6 +1392,240 @@ bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
     // XML d'appendice malformato: ancora meglio caricare il codice da solo
     // che fallire l'intero caricamento.
     setCsdText (codeText);
+    return true;
+}
+
+bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
+{
+    static const juce::String kCabbageOpen  = "<Cabbage>";
+    static const juce::String kCabbageClose = "</Cabbage>";
+
+    const auto sectionStart = csdText.indexOf (kCabbageOpen);
+
+    if (sectionStart < 0)
+        return false;
+
+    const auto innerStart = sectionStart + kCabbageOpen.length();
+    const auto sectionEnd = csdText.indexOf (innerStart, kCabbageClose);
+    const auto cabbageSection = sectionEnd < 0 ? csdText.substring (innerStart)
+                                                 : csdText.substring (innerStart, sectionEnd);
+
+    // Un nuovo import RIMPIAZZA la mappatura precedente (non la somma):
+    // gli indici assegnati qui sotto partono da zero, quindi senza questo
+    // reset uno slot scritto da una sessione precedente ma non toccato da
+    // questo file resterebbe incollato alla mappatura vecchia.
+    for (int i = 0; i < numChannelParams; ++i)
+        setChannelParamSlot (i, ChannelParamSlot{});
+    for (int i = 0; i < numBoolParams; ++i)
+        setBoolParamSlot (i, BoolParamSlot{});
+    for (int i = 0; i < numChoiceParams; ++i)
+        setChoiceParamSlot (i, ChoiceParamSlot{});
+
+    int channelIndex = 0, boolIndex = 0, choiceIndex = 0;
+    int skippedFloat = 0, skippedBool = 0, skippedChoice = 0, skippedListbox = 0;
+
+    // setChannelParamSlot/setBoolParamSlot/setChoiceParamSlot aggiornano SOLO
+    // i metadata dello slot (vedi il commento su ChannelParamSlot in
+    // PluginProcessor.h: il parametro apvts resta sempre dov'era, i VALORI
+    // sono affidati all'automazione host) - per questo, dopo un normale
+    // rename/modifica range dal pannello Parametri, lo slider NON si sposta.
+    // Qui invece e' un IMPORT di un file nuovo: non c'e' nessuna automazione
+    // precedente da preservare, quindi il valore attuale del parametro va
+    // spinto esplicitamente al suo nuovo default appena importato, altrimenti
+    // resta a quello con cui l'host l'aveva istanziato (es. 0) e la UI
+    // (slider della tab Generic Editor, agganciato al VALORE del parametro,
+    // non al suo default) continua a mostrare quello vecchio anche se lo
+    // slot e' stato importato bene - esattamente il problema segnalato.
+    // getDefaultValue() di ciascun HostParameter legge gia' lo slot
+    // CORRENTE (appena scritto dalla setXxxParamSlot qui sopra), quindi
+    // basta richiederlo e rispedirlo come valore attuale - nessuna
+    // duplicazione delle formule di normalizzazione.
+    auto pushDefaultToHost = [this] (const juce::String& paramID)
+    {
+        if (auto* param = apvts.getParameter (paramID))
+            param->setValueNotifyingHost (param->getDefaultValue());
+    };
+
+    for (auto line : juce::StringArray::fromLines (cabbageSection))
+    {
+        const auto identifier = cabbageLeadingIdentifier (line);
+
+        if (identifier.isEmpty())
+            continue;
+
+        if (identifier == "hslider" || identifier == "vslider"
+            || identifier == "rslider" || identifier == "nslider")
+        {
+            juce::String channelName;
+            juce::String rangeContents;
+
+            if (! cabbageMatchSingleChannel (line, channelName) || channelName.isEmpty())
+                continue;
+
+            double values[5] = { 0.0, 1.0, 0.0, 1.0, 0.001 };
+            double unusedDefaultB = 0.0;
+
+            if (cabbageMatchRangeContents (line, rangeContents))
+                cabbageParseFiveFieldRange (rangeContents, values, unusedDefaultB);
+
+            if (channelIndex >= numChannelParams)
+            {
+                ++skippedFloat;
+                continue;
+            }
+
+            ChannelParamSlot slot;
+            slot.channelName  = channelName;
+            slot.minValue     = (float) values[0];
+            slot.maxValue     = (float) values[1];
+            slot.defaultValue = (float) values[2];
+            slot.skew         = (float) values[3];
+            slot.increment    = (float) values[4];
+            setChannelParamSlot (channelIndex, slot);
+            pushDefaultToHost (getChannelParamID (channelIndex));
+            ++channelIndex;
+        }
+        else if (identifier == "vrange" || identifier == "hrange")
+        {
+            juce::String channelA, channelB, rangeContents;
+
+            if (! cabbageMatchChannelPair (line, channelA, channelB))
+                continue;
+
+            double values[5] = { 0.0, 1.0, 0.0, 1.0, 0.001 };
+            double defaultB = 0.0;
+
+            if (cabbageMatchRangeContents (line, rangeContents))
+                cabbageParseFiveFieldRange (rangeContents, values, defaultB);
+            else
+                defaultB = values[2];
+
+            if (channelA.isNotEmpty())
+            {
+                if (channelIndex >= numChannelParams)
+                {
+                    ++skippedFloat;
+                }
+                else
+                {
+                    ChannelParamSlot slot;
+                    slot.channelName  = channelA;
+                    slot.minValue     = (float) values[0];
+                    slot.maxValue     = (float) values[1];
+                    slot.defaultValue = (float) values[2];
+                    slot.skew         = (float) values[3];
+                    slot.increment    = (float) values[4];
+                    setChannelParamSlot (channelIndex, slot);
+                    pushDefaultToHost (getChannelParamID (channelIndex));
+                    ++channelIndex;
+                }
+            }
+
+            if (channelB.isNotEmpty())
+            {
+                if (channelIndex >= numChannelParams)
+                {
+                    ++skippedFloat;
+                }
+                else
+                {
+                    ChannelParamSlot slot;
+                    slot.channelName  = channelB;
+                    slot.minValue     = (float) values[0];
+                    slot.maxValue     = (float) values[1];
+                    slot.defaultValue = (float) defaultB;
+                    slot.skew         = (float) values[3];
+                    slot.increment    = (float) values[4];
+                    setChannelParamSlot (channelIndex, slot);
+                    pushDefaultToHost (getChannelParamID (channelIndex));
+                    ++channelIndex;
+                }
+            }
+        }
+        else if (identifier == "checkbox")
+        {
+            juce::String channelName;
+
+            if (! cabbageMatchSingleChannel (line, channelName) || channelName.isEmpty())
+                continue;
+
+            if (boolIndex >= numBoolParams)
+            {
+                ++skippedBool;
+                continue;
+            }
+
+            double value = 0.0;
+            cabbageMatchValueNumber (line, value);
+
+            BoolParamSlot slot;
+            slot.channelName  = channelName;
+            slot.defaultValue = ! juce::approximatelyEqual (value, 0.0);
+            setBoolParamSlot (boolIndex, slot);
+            pushDefaultToHost (getBoolParamID (boolIndex));
+            ++boolIndex;
+        }
+        else if (identifier == "combobox")
+        {
+            juce::String channelName;
+
+            if (! cabbageMatchSingleChannel (line, channelName) || channelName.isEmpty())
+                continue;
+
+            if (choiceIndex >= numChoiceParams)
+            {
+                ++skippedChoice;
+                continue;
+            }
+
+            juce::StringArray items;
+            cabbageMatchItems (line, items);
+
+            // value(N) viene letto letteralmente, nessuna conversione
+            // 1-based/0-based: il campo Default del pannello Choice deve
+            // mostrare lo stesso numero scritto nel .csd.
+            double value = 0.0;
+            cabbageMatchValueNumber (line, value);
+
+            ChoiceParamSlot slot;
+            slot.channelName = channelName;
+
+            for (int i = 0; i < juce::jmin (items.size(), maxChoiceOptions); ++i)
+                slot.optionLabels.add (items[i]);
+
+            slot.defaultIndex = juce::jlimit (0, juce::jmax (0, slot.optionLabels.size() - 1), (int) value);
+            setChoiceParamSlot (choiceIndex, slot);
+            pushDefaultToHost (getChoiceParamID (choiceIndex));
+            ++choiceIndex;
+        }
+        else if (identifier == "listbox")
+        {
+            // Nessun parametro DAW per questo widget - vedi la tabella nel
+            // commento di importCabbageParameters in PluginProcessor.h.
+            ++skippedListbox;
+        }
+    }
+
+    juce::String summary;
+    summary << "--- Cabbage import: " << channelIndex << " float, " << boolIndex << " bool, "
+            << choiceIndex << " choice parameters mapped";
+
+    // Messaggio per tipo (non un conteggio unico "oltre il limite di 16"):
+    // il limite per tipo NON e' piu' lo stesso per tutti da quando Float/
+    // Int/Bool sono stati estesi a 64/32/32 (Choice resta a 16).
+    if (skippedFloat > 0)
+        summary << " (" << skippedFloat << " float widget(s) skipped: oltre il limite di " << numChannelParams << ")";
+    if (skippedBool > 0)
+        summary << " (" << skippedBool << " bool widget(s) skipped: oltre il limite di " << numBoolParams << ")";
+    if (skippedChoice > 0)
+        summary << " (" << skippedChoice << " choice widget(s) skipped: oltre il limite di " << numChoiceParams << ")";
+
+    if (skippedListbox > 0)
+        summary << " - " << skippedListbox << " listbox ignorato/i (nessun parametro DAW)";
+
+    summary << " ---";
+    handleMessage (summary);
+
     return true;
 }
 

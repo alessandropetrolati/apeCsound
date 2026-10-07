@@ -208,15 +208,17 @@ public:
     // sull'opcode nel codice) - MAI per rinominare o cambiare range al
     // parametro apvts stesso, che da' problemi su molti host se fatto a
     // runtime.
-    static constexpr int numChannelParams = 16;
+    static constexpr int numChannelParams = 64;
 
-    // skew: stesso significato di juce::Slider::setSkewFactor - reshape del
-    // normalizzato x (0..1) PRIMA di interpolare linearmente tra min e max,
-    // con x' = pow(x, skew). skew=1 e' lineare; skew<1 da' piu' risoluzione
-    // vicino a max (sale rapido all'inizio, poi si appiattisce - utile per
-    // es. per una frequenza, dove interessa il dettaglio in alto); skew>1
-    // da' piu' risoluzione vicino a min. Funziona con QUALSIASI min/max
-    // (anche negativi), a differenza di un esponenziale classico.
+    // skew: stesso significato di juce::Slider::setSkewFactor (la stessa
+    // convenzione usata da Cabbage per il campo skew di range(), verificata
+    // contro il comportamento reale di Cabbage) - reshape del normalizzato
+    // x (0..1) PRIMA di interpolare linearmente tra min e max, con
+    // x' = pow(x, 1/skew). skew=1 e' lineare; skew<1 da' piu' risoluzione
+    // vicino a MIN (la parte bassa del range occupa piu' corsa dello
+    // slider); skew>1 da' piu' risoluzione vicino a MAX. Funziona con
+    // QUALSIASI min/max (anche negativi), a differenza di un esponenziale
+    // classico.
     // increment: passo di quantizzazione in unita' REALI (come minValue/
     // maxValue) - il valore denormalizzato viene arrotondato al multiplo
     // di increment piu' vicino a partire da minValue. <= 0 disabilita lo
@@ -252,14 +254,14 @@ public:
         Funzione pura, nessun lock. */
     static float normalizeChannelParam (const ChannelParamSlot& slot, double real);
 
-    // --- 16 "macro" parametri host INTERI, stesso disegno dei 16 float qui
+    // --- 32 "macro" parametri host INTERI, stesso disegno dei 64 float qui
     //     sopra ma senza skew/increment (sempre lineare, passo 1) - vedi IntHostParameter e
     //     IntParamSlot. Range nativo apvts fisso 0..intHostRangeMax (molti
     //     passi per una risoluzione di automazione decente), min/max/default
     //     REALI (interi) solo nello slot. Il valore spinto al canale Csound
     //     e' l'intero reale (denormalizeIntParam), non il valore nativo
     //     0..intHostRangeMax.
-    static constexpr int numIntParams = 16;
+    static constexpr int numIntParams = 32;
     static constexpr int intHostRangeMax = 1000;
 
     struct IntParamSlot
@@ -284,12 +286,12 @@ public:
     /** Inversa di denormalizeIntParam. Funzione pura, nessun lock. */
     static float normalizeIntParam (const IntParamSlot& slot, double real);
 
-    // --- 16 "macro" parametri host booleani, stesso disegno dei parametri
+    // --- 32 "macro" parametri host booleani, stesso disegno dei parametri
     //     qui sopra (pool fisso, parametro apvts stabile, metadata reali
     //     solo nello slot) - vedi BoolHostParameter e BoolParamSlot. Il
     //     valore (0.0/1.0) viene spinto al canale Csound assegnato con
     //     csoundSetControlChannel, esattamente come i parametri float.
-    static constexpr int numBoolParams = 16;
+    static constexpr int numBoolParams = 32;
 
     struct BoolParamSlot
     {
@@ -311,9 +313,15 @@ public:
     //     su molti host) - le etichette VERE (fino a maxChoiceOptions,
     //     eventualmente meno se l'utente ne lascia alcune vuote, che
     //     ricadono su "Option N") vivono nello slot, non nel parametro
-    //     apvts. L'indice selezionato (0..maxChoiceOptions-1) viene spinto
-    //     al canale Csound assegnato con csoundSetControlChannel, come
-    //     valore float.
+    //     apvts. L'indice selezionato e' 0-based OVUNQUE internamente
+    //     (optionLabels, defaultIndex, ID del combobox nel Generic Editor)
+    //     ma viene spinto al canale Csound assegnato con
+    //     csoundSetControlChannel GIA' +1 (1..maxChoiceOptions, non
+    //     0..maxChoiceOptions-1) - Cabbage stessa numera le opzioni del
+    //     combobox a partire da 1 (vedi anche importCabbageParameters), e
+    //     un .csd scritto per Cabbage ha gia' il codice Csound che si
+    //     aspetta channel value 1..N: vedi il commento su
+    //     pushChannelParametersToCsound nel .cpp.
     static constexpr int numChoiceParams = 16;
     static constexpr int maxChoiceOptions = 8;
 
@@ -490,6 +498,43 @@ private:
         tag. Ricompila subito se il motore e' gia' in esecuzione (stesso
         schema di setStateInformation - vedi il commento li' sul perche'). */
     void restoreStateFromTree (const juce::ValueTree& state, const juce::String& csdTextToRestore);
+
+    // Svuota TUTTI gli slot Float/Int/Bool/Choice (channelName tornato
+    // vuoto = non assegnato, come un plugin appena istanziato) - chiamata
+    // da loadSessionFromFile PRIMA di qualunque altra cosa, incondizionata:
+    // il nuovo .csd potrebbe non definire nessun parametro (un .csd
+    // "normale" scritto a mano, senza <CsoundStudioParams> ne' <Cabbage>),
+    // quindi senza questo reset preventivo i mapping della sessione
+    // PRECEDENTE resterebbero appesi a canali che il nuovo file magari non
+    // usa nemmeno piu'. I rami che DEFINISCONO davvero dei parametri
+    // (restoreStateFromTree, importCabbageParameters) sovrascrivono questi
+    // slot vuoti con quelli veri subito dopo - il reset qui e' quindi
+    // ridondante ma innocuo in quei casi, e l'unica protezione nel caso
+    // "nessun parametro nel file".
+    void resetAllParameterSlots();
+
+    // Import automatico dei parametri da un .csd Cabbage "allo stato
+    // brado" - chiamato da loadSessionFromFile quando il file contiene un
+    // tag <Cabbage> ma NON il nostro <CsoundStudioParams> (cioe' non e' mai
+    // stato salvato da questo plugin): legge le dichiarazioni dei widget
+    // Cabbage dentro quel tag e popola i 16 slot Float, i 16 Bool e i 16
+    // Choice leggendo channel()/range()/value()/text(), cosi' l'utente non
+    // deve reimpostare ogni canale a mano. Mappatura:
+    //   hslider/vslider/rslider/nslider -> 1 slot Float
+    //     channel("nome"), range(min, max, default, skew, increment)
+    //   vrange/hrange                   -> 2 slot Float (stesso min/max/
+    //     skew/increment, default separati)
+    //     channel("nomeA", "nomeB"), range(min, max, defaultA:defaultB, skew, increment)
+    //   checkbox                        -> 1 slot Bool
+    //     channel("nome"), value(0 o 1)
+    //   combobox                        -> 1 slot Choice
+    //     channel("nome"), text("A", "B", ...), value(indice di default, letto letteralmente)
+    //   listbox                         -> nessun parametro (ignorato)
+    // Resetta PRIMA tutti gli slot Float/Bool/Choice (un nuovo import
+    // rimpiazza la mappatura precedente, non la somma) - gli slot Int non
+    // sono toccati (Cabbage non ha un equivalente diretto nella tabella
+    // sopra). Ritorna false se non e' stato trovato nessun tag <Cabbage>.
+    bool importCabbageParameters (const juce::String& csdText);
 
     // Costruisce il layout COMPLETO di apvts: i 16 parametri float (vedi
     // ChannelHostParameter), i 16 interi (IntHostParameter), i 16 booleani

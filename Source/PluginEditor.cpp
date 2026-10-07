@@ -2,6 +2,56 @@
 #include "PluginEditor.h"
 #include <cmath>
 
+namespace
+{
+    // Ricorda l'ultima cartella usata per Save/Load CSD in un piccolo file
+    // di preferenze utente su disco (juce::PropertiesFile) - NON e' lo
+    // stato del plugin (niente a che fare con getStateInformation/
+    // setStateInformation o col progetto della DAW): e' una preferenza
+    // dell'applicazione, condivisa da tutte le istanze del plugin/
+    // standalone e persistente anche chiudendo e riaprendo l'host, esattamente
+    // come l'utente si aspetta da un "ricorda l'ultima cartella" di un
+    // qualunque altro programma.
+    juce::PropertiesFile& getCsdFileChooserSettings()
+    {
+        juce::PropertiesFile::Options options;
+        options.applicationName     = "CsoundStudio";
+        options.filenameSuffix      = "settings";
+        options.folderName          = "CsoundStudio";
+        options.osxLibrarySubFolder = "Application Support";
+
+        static juce::PropertiesFile settings (options);
+        return settings;
+    }
+
+    const juce::String kLastCsdDirectoryKey = "lastCsdDirectory";
+
+    juce::File getLastCsdDirectory()
+    {
+        const auto savedPath = getCsdFileChooserSettings().getValue (kLastCsdDirectoryKey);
+
+        if (savedPath.isNotEmpty())
+        {
+            const juce::File savedDir (savedPath);
+
+            if (savedDir.isDirectory())
+                return savedDir;
+        }
+
+        // Prima volta (o cartella salvata non piu' valida, es. un disco
+        // esterno scollegato): stesso punto di partenza "ragionevole" di
+        // prima.
+        return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
+    }
+
+    void setLastCsdDirectory (const juce::File& directory)
+    {
+        auto& settings = getCsdFileChooserSettings();
+        settings.setValue (kLastCsdDirectoryKey, directory.getFullPathName());
+        settings.saveIfNeeded();
+    }
+}
+
 //==============================================================================
 CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     : AudioProcessorEditor (&p),
@@ -94,6 +144,15 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     addChildComponent (parameterPanel);
     parameterPanel.onCloseButtonClicked = [this] { toggleParameterPanel(); };
 
+    // Riscontro in consolle per il tasto destro sulla maniglia (copia
+    // chnget negli appunti) - vedi il commento su onParameterCopiedToClipboard
+    // in CsoundParameterEditor.h: senza questo l'azione non lascia alcuna
+    // traccia visibile.
+    parameterPanel.onParameterCopiedToClipboard = [this] (const juce::String& message)
+    {
+        appendToLog (message);
+    };
+
     // Save/Load Session su file (.csd), indipendenti dal progetto della
     // DAW - vedi il commento su saveSessionButton/loadSessionButton in
     // PluginEditor.h sul perche'.
@@ -152,6 +211,21 @@ void CsoundAudioProcessorEditor::paint (juce::Graphics& g)
     g.setColour (juce::Colour (0xffd7dee3));
     g.drawLine ((float) toolbarBounds.getX(),     (float) toolbarBounds.getBottom() - 0.5f,
                 (float) toolbarBounds.getRight(), (float) toolbarBounds.getBottom() - 0.5f, 1.0f);
+
+    // Evidenziazione mentre un .csd viene trascinato sopra l'editor dal
+    // Finder/Explorer (vedi fileDragEnter/fileDragExit sotto): overlay
+    // semi-trasparente + bordo acceso sull'area di editor.setBounds(),
+    // stesso bounds usato in resized() - non serve ricalcolarlo qui.
+    if (showingCsdDropHighlight)
+    {
+        const auto area = editor.getBounds();
+
+        g.setColour (juce::Colour (0xff3d8bfd).withAlpha (0.12f));
+        g.fillRect (area);
+
+        g.setColour (juce::Colour (0xff3d8bfd));
+        g.drawRect (area, 3);
+    }
 }
 
 void CsoundAudioProcessorEditor::resized()
@@ -263,17 +337,29 @@ void CsoundAudioProcessorEditor::updateApplyButtonDirtyState()
     applyButton.repaint();
 }
 
+void CsoundAudioProcessorEditor::markApplyPendingAfterLoad()
+{
+    // A differenza di updateApplyButtonDirtyState() sopra, qui non si
+    // confronta nulla: il bordo rosso viene forzato ACCESO
+    // incondizionatamente, perche' un Load CSD e' sempre un cambio di
+    // codice non ancora confermato con Apply, anche quando il testo
+    // dell'editor coincide gia' (appena sincronizzato) con quello del
+    // processor.
+    applyButton.getProperties().set ("pendingChanges", true);
+    applyButton.repaint();
+}
+
 void CsoundAudioProcessorEditor::promptSaveSession()
 {
     // Un .csd VERO, non un formato proprietario: vedi il commento su
     // CsoundAudioProcessor::saveSessionToFile in PluginProcessor.h - il
     // codice resta testo Csound puro, il mapping dei parametri va in
-    // appendice dentro <CsoundStudioParams>.
-    const auto startingFile = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
-                                   .getChildFile ("CsoundStudio Session.csd");
+    // appendice dentro <CsoundStudioParams>. Si riparte dall'ultima
+    // cartella usata (getLastCsdDirectory), non sempre da Documents.
+    const auto startingFile = getLastCsdDirectory().getChildFile ("CsoundStudio Session.csd");
 
     activeFileChooser = std::make_unique<juce::FileChooser> (
-        "Save CsoundStudio Session (.csd)...", startingFile, "*.csd");
+        "Save CSD...", startingFile, "*.csd");
 
     activeFileChooser->launchAsync (
         juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
@@ -289,6 +375,10 @@ void CsoundAudioProcessorEditor::promptSaveSession()
                 file = file.withFileExtension ("csd");
 
             const bool ok = audioProcessor.saveSessionToFile (file);
+
+            if (ok)
+                setLastCsdDirectory (file.getParentDirectory());
+
             appendToLog (ok ? ("--- Session saved to " + file.getFullPathName() + " ---")
                              : "--- Failed to save session (file not writable?) ---");
         });
@@ -296,10 +386,10 @@ void CsoundAudioProcessorEditor::promptSaveSession()
 
 void CsoundAudioProcessorEditor::promptLoadSession()
 {
-    const auto startingDir = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
+    const auto startingDir = getLastCsdDirectory();
 
     activeFileChooser = std::make_unique<juce::FileChooser> (
-        "Load CsoundStudio Session (.csd)...", startingDir, "*.csd");
+        "Load CSD...", startingDir, "*.csd");
 
     activeFileChooser->launchAsync (
         juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
@@ -307,28 +397,80 @@ void CsoundAudioProcessorEditor::promptLoadSession()
         {
             auto file = chooser.getResult();
 
-            if (file == juce::File{})
-                return; // annullato dall'utente
-
-            if (audioProcessor.loadSessionFromFile (file))
-            {
-                // L'editor di codice e il pannello parametri hanno il
-                // proprio stato locale (document/righe), costruito a
-                // partire dal processor - vanno rilette esplicitamente
-                // ora che loadSessionFromFile ha sostituito quello stato,
-                // altrimenti continuerebbero a mostrare la sessione
-                // precedente finche' non si cambia tab/si riapre il pannello.
-                document.replaceAllContent (audioProcessor.getCsdText());
-                document.clearUndoHistory();
-                parameterPanel.refreshAllFromProcessor();
-
-                appendToLog ("--- Session loaded from " + file.getFullPathName() + " ---");
-            }
-            else
-            {
-                appendToLog ("--- Failed to load session (empty or unreadable file?) ---");
-            }
+            if (file != juce::File{}) // non annullato dall'utente
+                loadSessionFile (file);
         });
+}
+
+bool CsoundAudioProcessorEditor::isInterestedInFileDrag (const juce::StringArray& files)
+{
+    // Un solo file, con estensione .csd - niente drag multiplo (quale dei
+    // tanti andrebbe caricato?) o di altri tipi di file.
+    return files.size() == 1 && juce::File (files[0]).hasFileExtension ("csd");
+}
+
+void CsoundAudioProcessorEditor::fileDragEnter (const juce::StringArray& files, int, int)
+{
+    if (isInterestedInFileDrag (files))
+    {
+        showingCsdDropHighlight = true;
+        repaint();
+    }
+}
+
+void CsoundAudioProcessorEditor::fileDragExit (const juce::StringArray&)
+{
+    showingCsdDropHighlight = false;
+    repaint();
+}
+
+void CsoundAudioProcessorEditor::filesDropped (const juce::StringArray& files, int, int)
+{
+    // fileDragExit non e' garantito dopo un drop riuscito (vedi il
+    // commento in PluginEditor.h) - spegniamo qui comunque, altrimenti il
+    // bordo resterebbe acceso indefinitamente dopo il caricamento.
+    showingCsdDropHighlight = false;
+    repaint();
+
+    if (files.size() == 1)
+        loadSessionFile (juce::File (files[0]));
+}
+
+void CsoundAudioProcessorEditor::loadSessionFile (const juce::File& file)
+{
+    if (audioProcessor.loadSessionFromFile (file))
+    {
+        setLastCsdDirectory (file.getParentDirectory());
+
+        // L'editor di codice e il pannello parametri hanno il proprio
+        // stato locale (document/righe), costruito a partire dal
+        // processor - vanno rilette esplicitamente ora che
+        // loadSessionFromFile ha sostituito quello stato, altrimenti
+        // continuerebbero a mostrare la sessione precedente finche' non
+        // si cambia tab/si riapre il pannello. Il reset incondizionato
+        // dei 4 tipi di slot (vedi CsoundAudioProcessor::
+        // resetAllParameterSlots, chiamato da loadSessionFromFile PRIMA
+        // di leggere il nuovo file) fa si' che un .csd senza nessun
+        // parametro svuoti davvero il pannello, invece di lasciare
+        // appesa la mappatura della sessione precedente.
+        document.replaceAllContent (audioProcessor.getCsdText());
+        document.clearUndoHistory();
+        parameterPanel.refreshAllFromProcessor();
+
+        // Il replaceAllContent qui sopra ha gia' fatto scattare
+        // updateApplyButtonDirtyState() (listener del document), che con
+        // editor e processor appena sincronizzati risulta "non
+        // modificato" - sovrascriviamo subito con il bordo rosso forzato:
+        // vedi il commento su markApplyPendingAfterLoad() in
+        // PluginEditor.h sul perche'.
+        markApplyPendingAfterLoad();
+
+        appendToLog ("--- Session loaded from " + file.getFullPathName() + " ---");
+    }
+    else
+    {
+        appendToLog ("--- Failed to load session (empty or unreadable file?) ---");
+    }
 }
 
 void CsoundAudioProcessorEditor::OpcodeHelpBar::setHelpText (const juce::String& syntax, const juce::String& description)
