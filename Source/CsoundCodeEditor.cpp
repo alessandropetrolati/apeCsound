@@ -300,14 +300,23 @@ void CsoundCodeEditor::focusLost (juce::Component::FocusChangeType cause)
 
 //==============================================================================
 // Drag and drop di uno slot dal pannello parametri (CsoundParameterMappingPanel::
-// ParamRow/BoolParamRow/ChoiceParamRow, vedi PluginEditor::parameterPanel) -
-// vedi il commento in testa alla classe in CsoundCodeEditor.h. Il
-// "description" del drag e' una juce::var stringa nel formato
-// "csoundChannel:<nome canale>", creata da ParamRow/BoolParamRow/
-// ChoiceParamRow::mouseDrag.
+// ParamRow/IntParamRow/BoolParamRow/ChoiceParamRow/GenericParamRow, vedi
+// PluginEditor::parameterPanel) - vedi il commento in testa alla classe in
+// CsoundCodeEditor.h. Il "description" del drag e' una juce::var stringa nel
+// formato "csoundChannel:<nome canale>\x01<commento di configurazione>",
+// creata dal mouseDrag di quelle classi - il separatore e' il carattere di
+// controllo 0x01 (SOH), che non puo' comparire ne' in un nome canale digitato
+// dall'utente ne' nel commento stesso (tutti e due testo semplice), cosi'
+// channelDragSeparatorChar non e' mai ambiguo con il resto del contenuto. Il
+// commento (puo' essere vuoto, es. canale non ancora assegnato) e' gia'
+// completamente formattato ("SLIDER FLOAT: Min=0; Max=10; ...", vedi
+// makeFloatConfigComment() ecc. in CsoundParameterEditor.cpp) - qui serve
+// solo anteporgli ";" e metterlo su una riga propria PRIMA del chnget
+// (commento Csound classico, non "/* */" - vedi itemDropped sotto).
 namespace
 {
     const juce::String channelDragPrefix = "csoundChannel:";
+    constexpr juce_wchar channelDragSeparatorChar = 0x01;
 }
 
 bool CsoundCodeEditor::isInterestedInDragSource (const SourceDetails& dragSourceDetails)
@@ -342,7 +351,9 @@ void CsoundCodeEditor::itemDropped (const SourceDetails& dragSourceDetails)
     dragHighlightLine = -1;
     repaint();
 
-    const auto channelName = dragSourceDetails.description.toString().fromFirstOccurrenceOf (channelDragPrefix, false, false);
+    const auto afterPrefix = dragSourceDetails.description.toString().fromFirstOccurrenceOf (channelDragPrefix, false, false);
+    const auto channelName = afterPrefix.upToFirstOccurrenceOf (juce::String::charToString (channelDragSeparatorChar), false, false);
+    const auto configComment = afterPrefix.fromFirstOccurrenceOf (juce::String::charToString (channelDragSeparatorChar), false, false);
 
     if (channelName.isEmpty())
         return;
@@ -364,7 +375,15 @@ void CsoundCodeEditor::itemDropped (const SourceDetails& dragSourceDetails)
     // lo stesso scopo): cosi' un chnget trascinato dentro un instr risulta
     // gia' indentato correttamente, non sempre a colonna 0.
     const auto indent = juce::String::repeatedString (" ", indentSpaces * indentDepthBeforeLine (dropLine));
-    const auto lineText = indent + varName + " chnget \"" + channelName + "\"\n";
+
+    // Commento di configurazione (richiesta esplicita): un commento Csound
+    // CLASSICO (";...", non "/* */") su una riga PROPRIA, PRIMA del chnget
+    // (stessa indentazione) - non accodato in coda alla stessa riga. Vuoto
+    // (nessuna riga di commento) se configComment non conteneva nulla
+    // (dovrebbe sempre contenerlo, essendo lo slot gia' assegnato -
+    // channelName non sarebbe vuoto altrimenti).
+    const auto commentLine = configComment.isNotEmpty() ? (indent + ";" + configComment + "\n") : juce::String();
+    const auto lineText = commentLine + indent + varName + " chnget \"" + channelName + "\"\n";
 
     moveCaretTo (lineStart, false);
     insertTextAtCaret (lineText);

@@ -6,17 +6,25 @@ namespace
     // di log in PluginEditor, che e' gia' scura): il resto dell'app usa un
     // tema chiaro (CsoundLookAndFeel) sotto cui il testo nero di default di
     // TextEditor/ComboBox risultava illeggibile su alcuni sfondi/stati -
-    // qui i colori vengono impostati ESPLICITAMENTE su ogni componente
-    // (TextEditor/ComboBox non ereditano piu' nulla dalla LookAndFeel
-    // condivisa per i colori che contano), cosi' il contrasto e' garantito
-    // a prescindere dal tema globale.
+    // qui i colori vengono impostati ESPLICITAMENTE su ogni componente,
+    // cosi' il contrasto e' garantito a prescindere dal tema globale.
     const juce::Colour kPanelBg      { 0xff10181f }; // come logConsole in PluginEditor
+    const juce::Colour kCardBg       { 0xff19232c }; // sfondo di ogni "card" Edit, leggermente piu' chiaro del pannello
     const juce::Colour kFieldBg      { 0xff202a33 };
     const juce::Colour kFieldOutline { 0xff3a4550 };
     const juce::Colour kAccent       { 0xff17a2b8 }; // stesso accento teal del resto dell'app
+    const juce::Colour kDanger       { 0xffb33a3a }; // bottone di rimozione riga
     const juce::Colour kText         { 0xffe8eef1 };
     const juce::Colour kTextMuted    { 0xff8a9aa5 };
     const juce::Colour kPlaceholder  { 0xff5b6b74 };
+
+    // Colore della maniglia/etichetta tipo, uno per ciascuno dei 4 tipi di
+    // card Edit (vedi mockup: barra verticale a sinistra colorata) - "Slider
+    // Float" per Float, "Slider Int" per Int, "Toggle" per Bool, "Menu" per Choice.
+    const juce::Colour kSliderAccent { 0xff4a90e2 }; // blu
+    const juce::Colour kKnobAccent   { 0xff9370db }; // viola
+    const juce::Colour kToggleAccent { 0xff2ecc9a }; // verde/teal
+    const juce::Colour kMenuAccent   { 0xffe8954a }; // arancione
 
     void applyDarkFieldColours (juce::TextEditor& field)
     {
@@ -28,57 +36,104 @@ namespace
         field.setColour (juce::TextEditor::highlightedTextColourId, kText);
     }
 
-    /*void applyDarkComboColours (juce::ComboBox& combo)
+    // Etichetta piccola, grigia, MAIUSCOLA - usata sopra ogni campo numerico
+    // nelle card Edit (MIN/MAX/INIT/EXP/STEP/DEFAULT/OPZIONI...).
+    void setupFieldCaption (juce::Label& label, const juce::String& text)
     {
-        combo.setColour (juce::ComboBox::backgroundColourId, kFieldBg);
-        combo.setColour (juce::ComboBox::textColourId,       kText);
-        combo.setColour (juce::ComboBox::outlineColourId,    kFieldOutline);
-        combo.setColour (juce::ComboBox::arrowColourId,      kTextMuted);
-
-        // Colori del menu a tendina (PopupMenu): la LookAndFeel condivisa
-        // non li imposta (resta sul tema chiaro per il resto dell'app), ma
-        // li cerca comunque risalendo dal ComboBox che l'ha aperto - basta
-        // impostarli qui.
-        combo.setColour (juce::PopupMenu::backgroundColourId,          kFieldBg);
-        combo.setColour (juce::PopupMenu::textColourId,                kText);
-        combo.setColour (juce::PopupMenu::highlightedBackgroundColourId, kAccent);
-        combo.setColour (juce::PopupMenu::highlightedTextColourId,     juce::Colours::white);
-    }*/
-
-    // Header di colonna condiviso da tutte e tre le pagine: un juce::Label
-    // per colonna (non una sola stringa con spazi a mano, che non restava
-    // allineata ai campi sotto), stile comune centralizzato qui.
-    void setupHeaderLabel (juce::Label& label, const juce::String& text,
-                            juce::Justification justification = juce::Justification::centredLeft)
-    {
-        label.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
-        label.setColour (juce::Label::textColourId, kTextMuted);
         label.setText (text, juce::dontSendNotification);
-        label.setJustificationType (justification);
+        label.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
+        label.setColour (juce::Label::textColourId, kTextMuted);
+        label.setJustificationType (juce::Justification::centredLeft);
+        label.setMinimumHorizontalScale (1.0f);
+    }
+
+    // Etichetta tipo in testa alla card ("SLIDER · CANALE" ecc.) - colorata
+    // come l'accento del tipo.
+    void setupTypeLabel (juce::Label& label, const juce::String& text, juce::Colour accent)
+    {
+        label.setText (text, juce::dontSendNotification);
+        label.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
+        label.setColour (juce::Label::textColourId, accent);
+        label.setJustificationType (juce::Justification::centredLeft);
+    }
+
+    // Formattazione di un numero reale per il commento di configurazione
+    // (vedi sotto): arrotonda a 6 decimali e toglie gli zero finali inutili,
+    // cosi' 10.0f diventa "10" e 0.001f resta "0.001" invece di stampare
+    // artefatti tipo "0.0010000000475" dovuti alla precisione float.
+    juce::String formatConfigNumber (double value)
+    {
+        auto text = juce::String (value, 6);
+        if (text.containsChar ('.'))
+        {
+            while (text.endsWithChar ('0'))
+                text = text.dropLastCharacters (1);
+            if (text.endsWithChar ('.'))
+                text = text.dropLastCharacters (1);
+        }
+        return text;
+    }
+
+    // Contenuto del commento "TIPO: chiave=valore; ..." che accompagna ogni
+    // chnget trascinato o copiato (richiesta esplicita) - SENZA il prefisso
+    // ";" del commento Csound classico, aggiunto da makeConfigCommentLine()
+    // sotto. Una funzione per tipo, usando esattamente i nomi/etichette gia'
+    // visti nelle card Edit (MIN/MAX/EXP/STEP per Float, MIN/MAX per Int,
+    // INIT per Bool, OPTIONS/DEFAULT per Choice) cosi' il commento si legge
+    // come le didascalie del pannello.
+    juce::String makeFloatConfigComment (const CsoundAudioProcessor::ChannelParamSlot& slot)
+    {
+        return "SLIDER FLOAT: Min=" + formatConfigNumber (slot.minValue)
+             + "; Max=" + formatConfigNumber (slot.maxValue)
+             + "; Skew=" + formatConfigNumber (slot.skew)
+             + "; Step=" + formatConfigNumber (slot.increment);
+    }
+
+    juce::String makeIntConfigComment (const CsoundAudioProcessor::IntParamSlot& slot)
+    {
+        return "SLIDER INT: Min=" + juce::String (slot.minValue) + "; Max=" + juce::String (slot.maxValue);
+    }
+
+    juce::String makeBoolConfigComment (const CsoundAudioProcessor::BoolParamSlot& slot)
+    {
+        return juce::String ("TOGGLE: Init=") + (slot.defaultValue ? "On" : "Off");
+    }
+
+    juce::String makeChoiceConfigComment (const CsoundAudioProcessor::ChoiceParamSlot& slot)
+    {
+        auto options = slot.optionLabels;
+        options.removeEmptyStrings();
+        const auto defaultLabel = CsoundAudioProcessor::getChoiceOptionLabel (slot, slot.defaultIndex);
+        return "MENU: Options=" + options.joinIntoString (",") + "; Default=" + defaultLabel;
+    }
+
+    // Avvolge il contenuto di cui sopra in un commento Csound CLASSICO
+    // (";...", non "/* */" - richiesto esplicitamente) da solo su una riga
+    // PRIMA del chnget, non in coda alla stessa riga - stringa vuota se non
+    // c'e' nessun commento (channelName vuoto, slot non ancora assegnato).
+    juce::String makeConfigCommentLine (const juce::String& configComment)
+    {
+        return configComment.isNotEmpty() ? (";" + configComment + "\n") : juce::String();
     }
 
     // Stesso formato ESATTO che CsoundCodeEditor::itemDropped inserisce
-    // trascinando la maniglia "#N" sull'editor di codice (vedi li'), MENO
-    // l'indentazione (che dipende da dove l'utente incollera' il testo,
-    // non prevedibile qui) - usato dal tasto destro sulla maniglia di
-    // ciascuna riga (Param/Int/Bool/ChoiceParamRow::mouseDown) per copiare
-    // negli appunti senza dover trascinare fisicamente sull'editor.
-    juce::String makeChngetClipboardText (const juce::String& channelName)
+    // trascinando la maniglia sull'editor di codice (vedi li'), MENO
+    // l'indentazione - usato dal tasto destro sulla maniglia di ciascuna
+    // riga per copiare negli appunti senza dover trascinare fisicamente.
+    juce::String makeChngetClipboardText (const juce::String& channelName, const juce::String& configComment)
     {
         const auto varName = "k" + channelName.removeCharacters (" \t");
-        return varName + " chnget \"" + channelName + "\"\n";
+        return makeConfigCommentLine (configComment) + varName + " chnget \"" + channelName + "\"\n";
     }
 
     // Menu contestuale "Copy" mostrato dal tasto destro sulla maniglia -
-    // su richiesta esplicita l'azione NON e' piu' automatica al solo
-    // right-click: deve comparire un vero menu con una voce "Copy" da
-    // selezionare, cosi' il right-click da solo non fa nulla (nessuna
-    // sorpresa, coerente con la convenzione di qualunque altro programma).
-    // channelName vuoto -> voce disabilitata (niente da copiare).
-    // notifyResult riceve il messaggio da mostrare in consolle SOLO se
-    // l'utente seleziona davvero "Copy" (non se chiude il menu senza
-    // scegliere nulla).
-    void showCopyChngetMenu (const juce::String& channelName,
+    // NON copia automaticamente al solo right-click: deve comparire un vero
+    // menu con una voce "Copy" da selezionare. channelName vuoto -> voce
+    // disabilitata. notifyResult riceve il messaggio da mostrare in
+    // consolle SOLO se l'utente seleziona davvero "Copy". configComment e'
+    // il contenuto SENZA braces/delimitatori (vedi makeFloatConfigComment
+    // ecc. sopra) - puo' essere vuoto (nessun commento aggiunto).
+    void showCopyChngetMenu (const juce::String& channelName, const juce::String& configComment,
                               std::function<void (const juce::String&)> notifyResult)
     {
         juce::PopupMenu menu;
@@ -86,24 +141,22 @@ namespace
         menu.addItem (copyItemId, "Copy", channelName.isNotEmpty());
 
         menu.showMenuAsync (juce::PopupMenu::Options(),
-            [channelName, notifyResult] (int result)
+            [channelName, configComment, notifyResult] (int result)
             {
                 if (result != copyItemId)
                     return; // menu chiuso senza scegliere "Copy"
 
-                const auto clip = makeChngetClipboardText (channelName);
+                const auto clip = makeChngetClipboardText (channelName, configComment);
                 juce::SystemClipboard::copyTextToClipboard (clip);
 
                 if (notifyResult)
-                    notifyResult ("--- Copiato negli appunti: " + clip.trim() + " ---");
+                    notifyResult ("--- Copied to clipboard: " + clip.trim() + " ---");
             });
     }
 
     // Stesso identico path SVG di CsoundLookAndFeel's makeTuneIconPath (il
-    // bottone "Parameters" nella toolbar) - duplicato qui invece di
-    // condiviso: e' una singola riga, non vale un header apposito solo per
-    // questo. Usata per la tab "UI" su richiesta esplicita ("usa la stessa
-    // che hai usato per Parameters"), invece di inventare un'icona nuova.
+    // bottone "Parameters" nella toolbar principale) - usata per il
+    // bottone "Edit" di questo pannello.
     juce::Path makeTuneIconPath()
     {
         return juce::Drawable::parseSVGPath (
@@ -114,10 +167,6 @@ namespace
 
 //==============================================================================
 // CsoundParameterPanelLookAndFeel - vedi il commento in CsoundParameterEditor.h.
-// Niente "piatto": bordi arrotondati ovunque, un alone (glow) accentato
-// sui campi col focus/sotto il mouse, freccia del combo disegnata a mano -
-// il tocco "cool" che differenzia questo pannello dal resto, chiaro e
-// squadrato, dell'app.
 CsoundParameterPanelLookAndFeel::CsoundParameterPanelLookAndFeel()
 {
     setColour (juce::ScrollBar::thumbColourId, kAccent.withAlpha (0.55f));
@@ -127,15 +176,6 @@ CsoundParameterPanelLookAndFeel::CsoundParameterPanelLookAndFeel()
     setColour (juce::PopupMenu::highlightedBackgroundColourId, kAccent);
     setColour (juce::PopupMenu::highlightedTextColourId,       juce::Colours::white);
 
-    // Colori comuni a QUALUNQUE componente "di serie" di JUCE che finisca
-    // dentro un pannello con questa LookAndFeel (non solo TextEditor/
-    // ComboBox dei field custom sopra, che hanno gia' i loro setColour()
-    // per-istanza): servono soprattutto a GenericEditorWindow (vedi
-    // PluginEditor.h), che usa Slider/ToggleButton/ComboBox "di serie" -
-    // senza questi colori qui, quei controlli ereditano il tema CHIARO di
-    // CsoundLookAndFeel (il resto dell'app) e diventano illeggibili/
-    // invisibili su questo sfondo scuro (es. il tick del ToggleButton che
-    // "non si vede" segnalato).
     setColour (juce::Label::textColourId, kText);
 
     setColour (juce::ToggleButton::textColourId,         kText);
@@ -171,7 +211,16 @@ void CsoundParameterPanelLookAndFeel::drawButtonBackground (juce::Graphics& g, j
         colour = colour.brighter (0.12f);
 
     g.setColour (colour);
-    g.fillRect (bounds);
+
+    // Proprieta' dinamica "circular" (stessa convenzione usata da
+    // CsoundLookAndFeel per il bottone Clear Console nella toolbar
+    // principale) - il bottone "+" di questo pannello la usa per un aspetto
+    // piu' da "azione primaria", invece di un TextButton piatto uguale a
+    // tutti gli altri (richiesto esplicitamente: "il bottone + non e' bello").
+    if (button.getProperties().getWithDefault ("circular", false))
+        g.fillRoundedRectangle (bounds, bounds.getHeight() * 0.5f);
+    else
+        g.fillRect (bounds);
 }
 
 void CsoundParameterPanelLookAndFeel::fillTextEditorBackground (juce::Graphics& g, int width, int height, juce::TextEditor& editor)
@@ -189,9 +238,6 @@ void CsoundParameterPanelLookAndFeel::drawTextEditorOutline (juce::Graphics& g, 
 
     if (editor.hasKeyboardFocus (true))
     {
-        // Alone accentato: due tratti concentrici a opacita' decrescente
-        // invece di un bordo secco - da' un effetto di "luce" morbida
-        // intorno al campo attivo.
         g.setColour (kAccent.withAlpha (0.25f));
         g.drawRect (bounds.expanded (1.5f), 2.5f);
         g.setColour (kAccent);
@@ -222,9 +268,6 @@ void CsoundParameterPanelLookAndFeel::drawComboBox (juce::Graphics& g, int width
     g.setColour (box.hasKeyboardFocus (true) ? kAccent : box.findColour (juce::ComboBox::outlineColourId));
     g.drawRect (bounds, 1.2f);
 
-    // Piccolo chevron centrato nel pulsante freccia (buttonX/Y/W/H, passati
-    // da JUCE - non vanno ignorati: usarli e' quello che evita una freccia
-    // enorme alta quanto l'intero combo, il bug della versione precedente).
     constexpr float arrowWidth  = 8.0f;
     constexpr float arrowHeight = 4.5f;
     const auto arrowCentre = juce::Rectangle<int> (buttonX, buttonY, buttonW, buttonH).toFloat().getCentre();
@@ -239,13 +282,6 @@ void CsoundParameterPanelLookAndFeel::drawComboBox (juce::Graphics& g, int width
 
 void CsoundParameterPanelLookAndFeel::drawPopupMenuBackground (juce::Graphics& g, int width, int height)
 {
-    // Niente angoli arrotondati qui: la finestra nativa del PopupMenu resta
-    // comunque un rettangolo squadrato e opaco (bianco) sotto di noi - un
-    // fillRoundedRectangle lascia scoperti i 4 angoli, che e' esattamente il
-    // difetto "si vede il bianco sotto l'angolo arrotondato" segnalato.
-    // Riempiendo l'intero rettangolo non resta alcun pixel scoperto; il tocco
-    // "cool" del pannello resta nell'evidenziazione arrotondata delle singole
-    // voci (vedi drawPopupMenuItem), non nel contorno del menu stesso.
     g.setColour (findColour (juce::PopupMenu::backgroundColourId));
     g.fillAll();
     g.setColour (kFieldOutline);
@@ -257,8 +293,6 @@ void CsoundParameterPanelLookAndFeel::getIdealPopupMenuItemSize (const juce::Str
 {
     juce::LookAndFeel_V4::getIdealPopupMenuItemSize (text, isSeparator, standardMenuItemHeight, idealWidth, idealHeight);
 
-    // Un po' piu' alte delle righe di default: piu' respiro, piu' facili
-    // da centrare col mouse - coerente con l'altezza dei campi del pannello.
     if (! isSeparator)
         idealHeight = juce::jmax (idealHeight, 26);
 }
@@ -269,7 +303,7 @@ void CsoundParameterPanelLookAndFeel::drawPopupMenuItem (juce::Graphics& g, cons
                                                            const juce::String& shortcutKeyText, const juce::Drawable* icon,
                                                            const juce::Colour* textColour)
 {
-    juce::ignoreUnused (icon); // nessuna voce di questo pannello usa un'icona
+    juce::ignoreUnused (icon);
 
     if (isSeparator)
     {
@@ -281,9 +315,6 @@ void CsoundParameterPanelLookAndFeel::drawPopupMenuItem (juce::Graphics& g, cons
 
     auto itemArea = area.reduced (4, 1);
 
-    // Riquadro pieno a spigoli vivi dietro la voce evidenziata (hover/
-    // selezione da tastiera) - stesso linguaggio visivo squadrato del
-    // resto del pannello (handle di drag, bordo dei campi, ecc.).
     if (isHighlighted && isActive)
     {
         g.setColour (kAccent);
@@ -294,11 +325,6 @@ void CsoundParameterPanelLookAndFeel::drawPopupMenuItem (juce::Graphics& g, cons
 
     if (isTicked)
     {
-        // Spunta minimale (non l'icona di sistema): un segno di spunta
-        // disegnato a mano, stesso stile accentato. Dimensione FISSA e
-        // centrata verticalmente nella riga (non tickArea.getBottom()/getY()
-        // dell'intera riga, che la allungava quanto l'altezza della voce -
-        // il bug della "spunta enorme" segnalato).
         auto tickColumn = textArea.removeFromLeft (16);
         constexpr float tickSize = 9.0f;
         const auto tickBounds = juce::Rectangle<float> (tickSize, tickSize)
@@ -319,8 +345,6 @@ void CsoundParameterPanelLookAndFeel::drawPopupMenuItem (juce::Graphics& g, cons
 
     if (hasSubMenu || shortcutKeyText.isNotEmpty())
     {
-        // Non usato in questo pannello (nessun sottomenu/scorciatoia nei
-        // combo "Curva"), ma lasciato per correttezza se in futuro servisse.
         g.setColour (kTextMuted);
         g.setFont (juce::Font (juce::FontOptions (12.0f)));
         g.drawFittedText (shortcutKeyText, textArea, juce::Justification::centredRight, 1);
@@ -336,10 +360,6 @@ void CsoundParameterPanelLookAndFeel::drawScrollbar (juce::Graphics& g, juce::Sc
     if (thumbSize <= 0)
         return;
 
-    // Niente binario/frecce disegnati: solo un thumb sottile a spigoli
-    // vivi, inset di 2px dai bordi, che si accende leggermente al
-    // passaggio/pressione del mouse - stile minimale coerente col resto
-    // del pannello.
     auto thumbBounds = isScrollbarVertical
                             ? juce::Rectangle<int> (x + 2, thumbStartPosition, juce::jmax (2, width - 4), thumbSize)
                             : juce::Rectangle<int> (thumbStartPosition, y + 2, thumbSize, juce::jmax (2, height - 4));
@@ -349,108 +369,344 @@ void CsoundParameterPanelLookAndFeel::drawScrollbar (juce::Graphics& g, juce::Sc
     g.fillRect (thumbBounds);
 }
 
-void CsoundParameterPanelLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& button,
-                                                        bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
+void CsoundParameterPanelLookAndFeel::drawLinearSlider (juce::Graphics& g, int x, int y, int width, int height,
+                                                          float sliderPos, float minSliderPos, float maxSliderPos,
+                                                          const juce::Slider::SliderStyle style, juce::Slider& slider)
 {
-    // Solo la tab "UI" ha un'icona - le altre quattro (Float/Int/Bool/
-    // Choice) restano col rendering di testo standard di LookAndFeel_V4.
-    if (button.getName() != "genericEditorTab")
+    juce::ignoreUnused (minSliderPos, maxSliderPos, style);
+
+    const auto bounds = juce::Rectangle<float> ((float) x, (float) y, (float) width, (float) height);
+    const auto centreY = bounds.getCentreY();
+
+    // Track sottile (sfondo + riempito fino alla maniglia) - niente Slider::
+    // TextBoxRight da dover far stare nella stessa riga, lo spazio e' tutto
+    // per il track + la maniglia.
+    const float trackThickness = juce::jmax (3.0f, bounds.getHeight() * 0.18f);
+    auto trackBounds = juce::Rectangle<float> (bounds.getX(), centreY - trackThickness * 0.5f, bounds.getWidth(), trackThickness);
+
+    g.setColour (slider.findColour (juce::Slider::backgroundColourId));
+    g.fillRoundedRectangle (trackBounds, trackThickness * 0.5f);
+
+    g.setColour (slider.findColour (juce::Slider::trackColourId));
+    g.fillRoundedRectangle (trackBounds.withWidth (juce::jlimit (0.0f, bounds.getWidth(), sliderPos - bounds.getX())),
+                             trackThickness * 0.5f);
+
+    // Maniglia (thumb) MOLTO piu' grande del normale (richiesta esplicita) -
+    // quasi tutta l'altezza disponibile del componente, indipendentemente
+    // da quanto e' sottile il track sopra: e' questo, non la riga intera,
+    // che deve risultare grande/cliccabile.
+    const float thumbDiameter = juce::jmax (trackThickness, bounds.getHeight());
+    g.setColour (slider.findColour (juce::Slider::thumbColourId));
+    g.fillEllipse (juce::Rectangle<float> (thumbDiameter, thumbDiameter).withCentre ({ sliderPos, centreY }));
+}
+
+void CsoundParameterPanelLookAndFeel::drawToggleButton (juce::Graphics& g, juce::ToggleButton& button,
+                                                          bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
+{
+    if (button.getName() != "pillToggle")
     {
-        juce::LookAndFeel_V4::drawButtonText (g, button, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
+        LookAndFeel_V4::drawToggleButton (g, button, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
         return;
     }
 
-    auto textColour = button.findColour (button.getToggleState() ? juce::TextButton::textColourOnId
-                                                                   : juce::TextButton::textColourOffId);
-    g.setColour (textColour);
+    auto bounds = button.getLocalBounds().toFloat();
+    const bool isOn = button.getToggleState();
 
-    auto bounds = button.getLocalBounds().toFloat().reduced (8.0f, 0.0f);
-    auto icon = makeTuneIconPath();
+    g.setColour (kFieldBg.brighter (shouldDrawButtonAsDown ? 0.08f : (shouldDrawButtonAsHighlighted ? 0.04f : 0.0f)));
+    g.fillRect (bounds);
+    g.setColour (kFieldOutline);
+    g.drawRect (bounds, 1.0f);
 
-    const float iconSize = juce::jmin (bounds.getHeight() * 0.55f, 15.0f);
-    auto iconArea = bounds.removeFromLeft (iconSize).withSizeKeepingCentre (iconSize, iconSize);
-    icon.scaleToFit (iconArea.getX(), iconArea.getY(), iconArea.getWidth(), iconArea.getHeight(), true);
-    g.fillPath (icon);
+    auto content = bounds.reduced (10.0f, 0.0f);
+    const float dotSize = juce::jmin (10.0f, content.getHeight() * 0.4f);
+    auto dotArea = content.removeFromLeft (dotSize).withSizeKeepingCentre (dotSize, dotSize);
+    g.setColour (isOn ? kToggleAccent : kPlaceholder);
+    g.fillEllipse (dotArea);
 
-    bounds.removeFromLeft (6.0f);
+    content.removeFromLeft (8.0f);
+    g.setColour (isOn ? kText : kTextMuted);
+    g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+    g.drawFittedText (isOn ? "ON" : "OFF", content.toNearestInt(), juce::Justification::centredLeft, 1);
+}
 
-    g.setFont (juce::Font (juce::FontOptions (juce::jmin (14.0f, (float) button.getHeight() * 0.5f), juce::Font::bold)));
-    g.drawFittedText (button.getButtonText(), bounds.toNearestInt(), juce::Justification::centredLeft, 1);
+void CsoundParameterPanelLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& button,
+                                                        bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
+{
+    juce::ignoreUnused (shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
+
+    // Bottone "Edit" (riconosciuto dal nome "editToggle"): SOLO icona
+    // (tune), nessun testo, centrata - circolare come "+" (richiesta
+    // esplicita), controllato PRIMA del ramo "circular" qui sotto perche'
+    // anche "Edit" ha quella proprieta' impostata (stesso aspetto rotondo
+    // di "+"), ma deve disegnare l'icona "tune", non il simbolo "+".
+    if (button.getName() == "editToggle")
+    {
+        auto textColour = button.findColour (button.getToggleState() ? juce::TextButton::textColourOnId
+                                                                       : juce::TextButton::textColourOffId);
+        g.setColour (textColour);
+
+        auto bounds = button.getLocalBounds().toFloat();
+        auto icon = makeTuneIconPath();
+
+        const float iconSize = juce::jmin (bounds.getHeight() * 0.42f, 16.0f);
+        auto iconArea = bounds.withSizeKeepingCentre (iconSize, iconSize);
+        icon.scaleToFit (iconArea.getX(), iconArea.getY(), iconArea.getWidth(), iconArea.getHeight(), true);
+        g.fillPath (icon);
+        return;
+    }
+
+    // Bottone "+"/Add (proprieta' dinamica "circular"): icona "+" disegnata
+    // a mano, non il carattere di testo "+" - a quella scala un glifo di
+    // font risultava sottile/poco centrato ("il bottone + non e' bello").
+    if (button.getProperties().getWithDefault ("circular", false))
+    {
+        auto bounds = button.getLocalBounds().toFloat();
+        const float plusSize = bounds.getHeight() * 0.42f;
+        const float thickness = juce::jmax (2.0f, bounds.getHeight() * 0.12f);
+        const auto centre = bounds.getCentre();
+
+        juce::Path plus;
+        plus.addRoundedRectangle (centre.x - plusSize * 0.5f, centre.y - thickness * 0.5f, plusSize, thickness, thickness * 0.3f);
+        plus.addRoundedRectangle (centre.x - thickness * 0.5f, centre.y - plusSize * 0.5f, thickness, plusSize, thickness * 0.3f);
+
+        g.setColour (juce::Colours::white);
+        g.fillPath (plus);
+        return;
+    }
+
+    // Tutti gli altri bottoni: rendering di testo standard di LookAndFeel_V4.
+    juce::LookAndFeel_V4::drawButtonText (g, button, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
 }
 
 //==============================================================================
+// Scheletro comune delle card Edit - vedi il commento in testa alla
+// dichiarazione in CsoundParameterEditor.h.
+void CsoundParameterMappingPanel::layoutCardSkeleton (juce::Rectangle<int> full,
+                                                        juce::Rectangle<int>& handleStrip,
+                                                        juce::Rectangle<int>& typeLabelArea,
+                                                        juce::Rectangle<int>& removeArea,
+                                                        juce::Rectangle<int>& nameArea,
+                                                        juce::Rectangle<int>& fieldsArea)
+{
+    handleStrip = full.removeFromLeft (handleStripWidth);
+
+    auto content = full.reduced (cardPaddingH, cardPaddingV);
+
+    auto header = content.removeFromTop (cardHeaderHeight);
+    removeArea = header.removeFromRight (cardHeaderHeight).reduced (1);
+    header.removeFromRight (6);
+    typeLabelArea = header;
+
+    content.removeFromTop (cardHeaderGap);
+    nameArea = content.removeFromTop (cardNameHeight);
+    content.removeFromTop (cardNameGap);
+
+    fieldsArea = content;
+}
+
+// Scheletro compatto delle card UI - vedi il commento in testa alla
+// dichiarazione in CsoundParameterEditor.h. Stessa logica di
+// layoutCardSkeleton() sopra ma con la geometria uiCard* (piu' bassa) e
+// senza bottone di rimozione (GenericParamRow non ne ha uno).
+void CsoundParameterMappingPanel::layoutUiCardSkeleton (juce::Rectangle<int> full,
+                                                          juce::Rectangle<int>& handleStrip,
+                                                          juce::Rectangle<int>& typeLabelArea,
+                                                          juce::Rectangle<int>& nameArea,
+                                                          juce::Rectangle<int>& fieldsArea)
+{
+    handleStrip = full.removeFromLeft (handleStripWidth);
+
+    auto content = full.reduced (cardPaddingH, uiCardPaddingV);
+
+    typeLabelArea = content.removeFromTop (uiCardHeaderHeight);
+    content.removeFromTop (uiCardHeaderGap);
+
+    nameArea = content.removeFromTop (uiCardNameHeight);
+    content.removeFromTop (uiCardNameGap);
+
+    fieldsArea = content;
+}
+
+void CsoundParameterMappingPanel::layoutCaptionedField (juce::Rectangle<int> cell, juce::Label& caption, juce::Component& field)
+{
+    caption.setBounds (cell.removeFromTop (cardFieldCaptionHeight));
+    cell.removeFromTop (cardFieldCaptionGap);
+    field.setBounds (cell.removeFromTop (cardFieldBoxHeight));
+}
+
+void CsoundParameterMappingPanel::paintCardChrome (juce::Graphics& g, juce::Rectangle<int> bounds, juce::Colour accent,
+                                                     juce::Rectangle<int> handleStrip, bool showHandleDots, bool handleHovered)
+{
+    g.setColour (kCardBg);
+    g.fillRect (bounds);
+
+    g.setColour (accent);
+    g.fillRect (bounds.getX(), bounds.getY(), 5, bounds.getHeight());
+
+    if (! showHandleDots)
+        return;
+
+    g.setColour (handleHovered ? juce::Colours::white : juce::Colours::white.withAlpha (0.6f));
+    const auto centre = handleStrip.toFloat().getCentre();
+    constexpr float dotSize = 3.4f;
+    constexpr float dotSpacingX = 7.0f;
+    constexpr float dotSpacingY = 7.0f;
+    for (int row = -1; row <= 1; ++row)
+    {
+        for (int col = 0; col <= 1; ++col)
+        {
+            const float dx = (col == 0 ? -1.0f : 1.0f) * (dotSpacingX / 2.0f);
+            const float dy = (float) row * dotSpacingY;
+            g.fillEllipse (centre.x + dx - dotSize / 2.0f, centre.y + dy - dotSize / 2.0f, dotSize, dotSize);
+        }
+    }
+}
+
+int CsoundParameterMappingPanel::fieldsAvailableWidth (int fullCardWidth)
+{
+    return juce::jmax (0, fullCardWidth - handleStripWidth - cardPaddingH * 2);
+}
+
+int CsoundParameterMappingPanel::computeWrappedFieldRows (int availableWidth, std::initializer_list<int> fieldWidths, int gap)
+{
+    int x = 0;
+    int rows = 1;
+
+    for (int w : fieldWidths)
+    {
+        if (x != 0 && x + gap + w > availableWidth)
+        {
+            ++rows;
+            x = w;
+        }
+        else
+        {
+            x += (x == 0 ? 0 : gap) + w;
+        }
+    }
+
+    return rows;
+}
+
+void CsoundParameterMappingPanel::layoutWrappedFields (juce::Rectangle<int> fieldsArea, std::initializer_list<int> fieldWidths, int gap,
+                                                         const std::function<void (int, juce::Rectangle<int>)>& onPlaceField)
+{
+    // STESSO algoritmo di computeWrappedFieldRows() (vedi il commento li'):
+    // qui pero' si piazzano davvero le celle invece di contarle soltanto -
+    // deve restare IDENTICO, altrimenti il numero di righe previsto da
+    // getPreferredHeight() e quello usato davvero da resized() potrebbero
+    // andare fuori sincrono.
+    const int rowHeightPx = cardFieldCaptionHeight + cardFieldCaptionGap + cardFieldBoxHeight;
+    const int availableWidth = fieldsArea.getWidth();
+
+    int x = 0;
+    int row = 0;
+    int index = 0;
+
+    for (int w : fieldWidths)
+    {
+        if (x != 0 && x + gap + w > availableWidth)
+        {
+            ++row;
+            x = 0;
+        }
+
+        auto cell = juce::Rectangle<int> (fieldsArea.getX() + x,
+                                            fieldsArea.getY() + row * (rowHeightPx + cardFieldRowGap),
+                                            w, rowHeightPx);
+        onPlaceField (index, cell);
+
+        x += w + gap;
+        ++index;
+    }
+}
+
+//==============================================================================
+// ParamRow ("SLIDER" nel mockup, slot Float) - vedi il commento in testa
+// alla dichiarazione in CsoundParameterEditor.h.
 CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processorToEdit, int slotIndex)
     : processor (processorToEdit),
       index (slotIndex)
 {
-    // Niente juce::Label per "#N": e' disegnato direttamente in paint(),
-    // nell'area handleBounds (calcolata in resized()), che mouseDown/
-    // mouseDrag usano per riconoscere un trascinamento - vedi il commento
-    // sulla maniglia in CsoundParameterEditor.h. Mostrata SOLO se il canale
-    // ha gia' un nome (vedi paint()): trascinare uno slot vuoto non ha
-    // senso, quindi la maniglia non compare finche' non c'e' un nome.
     setMouseCursor (juce::MouseCursor::NormalCursor);
 
-    // Senza questo, JUCE porta automaticamente il focus da tastiera sul
-    // primo figlio focalizzabile (channelNameEditor) ad OGNI click sulla
-    // riga - incluso un click sulla maniglia "#N", che e' un'area
-    // disegnata dentro ParamRow stesso, non un componente figlio separato
-    // (vedi Component::internalMouseDown/grabKeyboardFocusInternal in
-    // JUCE: chiama sempre grabKeyboardFocusInternal su "this" PRIMA del
-    // nostro mouseDown, e se "this" - cioe' ParamRow - non vuole il focus,
-    // JUCE lo passa al default child, trovando channelNameEditor). Risultato
-    // indesiderato: cliccare la maniglia (sx per trascinare, dx per il
-    // menu Copy) faceva anche entrare il campo nome in editing. Disattivato
-    // qui: il focus da tastiera arriva SOLO cliccando direttamente su un
-    // campo (channelNameEditor/minEditor/ecc, che gestiscono il proprio
-    // grabKeyboardFocus perche' il click arriva a LORO come "this", non a
-    // ParamRow), esattamente come richiesto.
+    // Vedi il commento in CsoundParameterEditor.h: senza questo il click
+    // sulla maniglia porterebbe il focus su channelNameEditor.
     setMouseClickGrabsKeyboardFocus (false);
 
-    // "Rename": qui si da' al parametro il suo nome VERO, cioe' il nome del
-    // canale Csound (chnget) a cui e' agganciato - l'host continua a
-    // vedere sempre "Param N" (vedi CsoundAudioProcessor::createChannelParamLayout),
-    // cosi' l'automazione resta stabile anche rinominando/riassegnando i canali.
+    setupTypeLabel (typeLabel, "SLIDER FLOAT " + juce::String (juce::CharPointer_UTF8 ("\xc2\xb7")) + " CHANNEL", kSliderAccent);
+    addAndMakeVisible (typeLabel);
+
     channelNameEditor.setTextToShowWhenEmpty ("(no channel)", kPlaceholder);
+    channelNameEditor.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
     addAndMakeVisible (channelNameEditor);
 
+    setupFieldCaption (minCaption, "MIN");
+    addAndMakeVisible (minCaption);
     minEditor.setInputRestrictions (0, "0123456789.,-eE");
-    minEditor.setJustification (juce::Justification::centredRight);
+    minEditor.setJustification (juce::Justification::centredLeft);
     minEditor.addListener (this);
     applyDarkFieldColours (minEditor);
     addAndMakeVisible (minEditor);
 
+    setupFieldCaption (maxCaption, "MAX");
+    addAndMakeVisible (maxCaption);
     maxEditor.setInputRestrictions (0, "0123456789.,-eE");
-    maxEditor.setJustification (juce::Justification::centredRight);
+    maxEditor.setJustification (juce::Justification::centredLeft);
     maxEditor.addListener (this);
     applyDarkFieldColours (maxEditor);
     addAndMakeVisible (maxEditor);
 
+    setupFieldCaption (initCaption, "INIT");
+    addAndMakeVisible (initCaption);
     defaultEditor.setInputRestrictions (0, "0123456789.,-eE");
-    defaultEditor.setJustification (juce::Justification::centredRight);
+    defaultEditor.setJustification (juce::Justification::centredLeft);
     defaultEditor.addListener (this);
     applyDarkFieldColours (defaultEditor);
     addAndMakeVisible (defaultEditor);
 
-    // Skew (juce::Slider::setSkewFactor - 1.0 = lineare) e increment (passo
-    // di quantizzazione in unita' reali) al posto del vecchio menu a
-    // tendina Linear/Exponential/Logarithmic: due numeri, niente curve
-    // predefinite da scegliere da una lista.
+    setupFieldCaption (expCaption, "EXP");
+    addAndMakeVisible (expCaption);
     skewEditor.setInputRestrictions (0, "0123456789.,-eE");
-    skewEditor.setJustification (juce::Justification::centredRight);
+    skewEditor.setJustification (juce::Justification::centredLeft);
     skewEditor.addListener (this);
     applyDarkFieldColours (skewEditor);
     addAndMakeVisible (skewEditor);
 
+    setupFieldCaption (stepCaption, "STEP");
+    addAndMakeVisible (stepCaption);
     incrementEditor.setInputRestrictions (0, "0123456789.,-eE");
-    incrementEditor.setJustification (juce::Justification::centredRight);
+    incrementEditor.setJustification (juce::Justification::centredLeft);
     incrementEditor.addListener (this);
     applyDarkFieldColours (incrementEditor);
     addAndMakeVisible (incrementEditor);
 
+    removeButton.setColour (juce::TextButton::buttonColourId, kDanger);
+    removeButton.setColour (juce::TextButton::textColourOffId, juce::Colours::white);
+    removeButton.setTooltip ("Remove this parameter");
+    removeButton.onClick = [this]
+    {
+        // Il nome va letto QUI, prima di svuotarlo: dopo commitFromFields()
+        // lo slot (e quindi channelNameEditor) sono gia' vuoti.
+        const auto removedName = channelNameEditor.getText().trim();
+        channelNameEditor.setText ({}, false);
+        commitFromFields();
+        if (onCopiedToClipboard && removedName.isNotEmpty())
+            onCopiedToClipboard ("--- Removed parameter: " + removedName + " ---");
+        if (onRemoveRequested)
+            onRemoveRequested();
+    };
+    addAndMakeVisible (removeButton);
+
     refreshFromProcessor();
+}
+
+void CsoundParameterMappingPanel::ParamRow::focusChannelNameField()
+{
+    channelNameEditor.grabKeyboardFocus();
+    channelNameEditor.selectAll();
 }
 
 void CsoundParameterMappingPanel::ParamRow::refreshFromProcessor()
@@ -463,6 +719,7 @@ void CsoundParameterMappingPanel::ParamRow::refreshFromProcessor()
     defaultEditor.setText (juce::String (slot.defaultValue), false);
     skewEditor.setText (juce::String (slot.skew), false);
     incrementEditor.setText (juce::String (slot.increment), false);
+    removeButton.setVisible (slot.channelName.isNotEmpty());
 }
 
 void CsoundParameterMappingPanel::ParamRow::commitFromFields()
@@ -471,11 +728,6 @@ void CsoundParameterMappingPanel::ParamRow::commitFromFields()
 
     slot.channelName = channelNameEditor.getText().trim();
 
-    // getText().getFloatValue() torna 0 anche su testo non numerico: per un
-    // campo vuoto o illeggibile manteniamo il range di default (0..1)
-    // invece di forzare silenziosamente 0, cosi' un errore di digitazione
-    // non trasforma il range in un punto singolo senza che l'utente se ne
-    // accorga subito.
     const auto minText = minEditor.getText().trim();
     const auto maxText = maxEditor.getText().trim();
     const auto defaultText = defaultEditor.getText().trim();
@@ -483,9 +735,6 @@ void CsoundParameterMappingPanel::ParamRow::commitFromFields()
     slot.maxValue = maxText.isNotEmpty() ? maxText.getFloatValue() : 1.0f;
     slot.defaultValue = defaultText.isNotEmpty() ? defaultText.getFloatValue() : slot.minValue;
 
-    // Stesso principio: un campo vuoto o illeggibile mantiene il default
-    // (skew=1.0 lineare, increment=0.001) invece di forzare silenziosamente
-    // 0 (che per skew non avrebbe nemmeno senso - vedi denormalizeChannelParam).
     const auto skewText = skewEditor.getText().trim();
     const auto incrementText = incrementEditor.getText().trim();
     slot.skew = skewText.isNotEmpty() ? skewText.getFloatValue() : 1.0f;
@@ -493,106 +742,86 @@ void CsoundParameterMappingPanel::ParamRow::commitFromFields()
 
     processor.setChannelParamSlot (index, slot);
 
-    // La maniglia di trascinamento compare/scompare in base al nome canale
-    // (vedi paint()): va ridisegnata subito, non solo alla prossima
-    // occasione di repaint.
+    removeButton.setVisible (slot.channelName.isNotEmpty());
     repaint();
+}
+
+void CsoundParameterMappingPanel::ParamRow::notifyRemovedIfEmpty()
+{
+    if (processor.getChannelParamSlot (index).channelName.isEmpty() && onRemoveRequested)
+        onRemoveRequested();
+}
+
+void CsoundParameterMappingPanel::ParamRow::notifyCommittedIfNonEmpty()
+{
+    if (processor.getChannelParamSlot (index).channelName.isNotEmpty() && onCommittedNonEmpty)
+        onCommittedNonEmpty();
 }
 
 void CsoundParameterMappingPanel::ParamRow::textEditorReturnKeyPressed (juce::TextEditor& editor)
 {
     commitFromFields();
     editor.giveAwayKeyboardFocus();
+    notifyRemovedIfEmpty();
+    notifyCommittedIfNonEmpty();
 }
 
 void CsoundParameterMappingPanel::ParamRow::textEditorFocusLost (juce::TextEditor&)
 {
     commitFromFields();
+    notifyRemovedIfEmpty();
+    notifyCommittedIfNonEmpty();
 }
 
 void CsoundParameterMappingPanel::ParamRow::textEditorTextChanged (juce::TextEditor&)
 {
     // Commit ad ogni carattere (non solo a Return/focus perso): cosi' la
-    // maniglia di trascinamento compare/scompare SUBITO mentre si digita o
-    // si cancella il nome canale, non solo dopo aver confermato - vedi
-    // paint() e il commento sulla maniglia in CsoundParameterEditor.h.
+    // maniglia di trascinamento compare/scompare SUBITO - ma le notifiche
+    // di rimozione/promozione restano SOLO su Return/focus perso (vedi
+    // sopra): farle scattare a META' di una digitazione distruggerebbe la
+    // riga sotto le dita dell'utente.
     commitFromFields();
 }
 
 void CsoundParameterMappingPanel::ParamRow::paint (juce::Graphics& g)
 {
-    // Righe "zebrate" (sfondo leggermente alternato ogni due) cosi' e' piu'
-    // facile seguire una riga su 32 a colpo d'occhio, invece di un unico
-    // sfondo scuro uniforme - tocco "cool" in piu' rispetto a prima.
-    if ((index % 2) == 1)
-    {
-        g.setColour (juce::Colours::white.withAlpha (0.025f));
-        g.fillRect (getLocalBounds());
-    }
-
-    // La maniglia (riquadro + griglia di pallini) compare SOLO se il
-    // canale ha gia' un nome: trascinare uno slot vuoto produrrebbe un
-    // chnget senza nome, quindi non ha senso offrirla prima.
-    if (processor.getChannelParamSlot (index).channelName.isEmpty())
-        return;
-
-    // Riquadro ben visibile (non solo testo/icona su sfondo trasparente):
-    // bordo accentato sempre presente, riempimento che si accende
-    // ulteriormente al passaggio del mouse - cosi' e' inequivocabile che
-    // e' un controllo trascinabile, non un'etichetta.
-    auto box = handleBounds.toFloat().reduced (2.0f);
-    g.setColour (kAccent.withAlpha (handleHovered ? 0.45f : 0.22f));
-    g.fillRect (box);
-    g.setColour (kAccent.withAlpha (handleHovered ? 1.0f : 0.75f));
-    g.drawRect (box, 1.2f);
-
-    // Griglia 2x3 di pallini grandi e ben contrastati - la classica icona
-    // "grip"/maniglia di trascinamento, immediatamente riconoscibile.
-    g.setColour (handleHovered ? juce::Colours::white : kText);
-    const auto cx = box.getCentreX();
-    const auto cy = box.getCentreY();
-    constexpr float dotSize = 3.4f;
-    constexpr float dotSpacingX = 6.5f;
-    constexpr float dotSpacingY = 6.0f;
-    for (int row = -1; row <= 1; ++row)
-    {
-        for (int col = 0; col <= 1; ++col)
-        {
-            const float dx = (col == 0 ? -1.0f : 1.0f) * (dotSpacingX / 2.0f);
-            const float dy = (float) row * dotSpacingY;
-            g.fillEllipse (cx + dx - dotSize / 2.0f, cy + dy - dotSize / 2.0f, dotSize, dotSize);
-        }
-    }
+    const bool hasName = processor.getChannelParamSlot (index).channelName.isNotEmpty();
+    CsoundParameterMappingPanel::paintCardChrome (g, getLocalBounds(), kSliderAccent, handleBounds, hasName, handleHovered);
 }
 
 void CsoundParameterMappingPanel::ParamRow::resized()
 {
-    juce::Rectangle<int> name, min, max, defaultVal, skewIncrement;
-    CsoundParameterMappingPanel::layoutColumns (getLocalBounds().reduced (4, 2), handleBounds, name, min, max, defaultVal, skewIncrement);
+    juce::Rectangle<int> handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea;
+    CsoundParameterMappingPanel::layoutCardSkeleton (getLocalBounds(), handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea);
 
-    channelNameEditor.setBounds (name);
-    minEditor.setBounds (min);
-    maxEditor.setBounds (max);
-    defaultEditor.setBounds (defaultVal);
+    handleBounds = handleStrip;
+    typeLabel.setBounds (typeLabelArea);
+    removeButton.setBounds (removeArea);
+    channelNameEditor.setBounds (nameArea);
 
-    // skewIncrement e' un'unica colonna condivisa dai due campi: divisa a
-    // meta' con un piccolo margine fra loro.
-    auto skewArea = skewIncrement.removeFromLeft (skewIncrement.getWidth() / 2 - 3);
-    skewIncrement.removeFromLeft (6);
-    skewEditor.setBounds (skewArea);
-    incrementEditor.setBounds (skewIncrement);
+    // Min/Max/Init/Exp/Step vanno a capo (invece di far comparire una
+    // scrollbar orizzontale) quando il pannello e' troppo stretto per
+    // contenerli tutti su una riga sola - STESSO algoritmo usato da
+    // FloatUnifiedRow::getPreferredHeight() per calcolare l'altezza, vedi
+    // layoutWrappedFields()/computeWrappedFieldRows().
+    juce::Label* const captions[] = { &minCaption, &maxCaption, &initCaption, &expCaption, &stepCaption };
+    juce::TextEditor* const editors[] = { &minEditor, &maxEditor, &defaultEditor, &skewEditor, &incrementEditor };
+
+    CsoundParameterMappingPanel::layoutWrappedFields (fieldsArea,
+        { cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldStepWidth },
+        cardFieldGap,
+        [&] (int index, juce::Rectangle<int> cell)
+        {
+            CsoundParameterMappingPanel::layoutCaptionedField (cell, *captions[index], *editors[index]);
+        });
 }
 
 void CsoundParameterMappingPanel::ParamRow::mouseDown (const juce::MouseEvent& event)
 {
-    // Tasto destro sulla maniglia: apre un menu con la voce "Copy" (NON
-    // copia automaticamente al solo right-click) - selezionandola copia
-    // negli appunti lo stesso chnget che trascinare la maniglia sull'editor
-    // inserirebbe (vedi makeChngetClipboardText/showCopyChngetMenu), senza
-    // dover trascinare fisicamente.
     if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
     {
-        showCopyChngetMenu (processor.getChannelParamSlot (index).channelName, onCopiedToClipboard);
+        const auto slot = processor.getChannelParamSlot (index);
+        showCopyChngetMenu (slot.channelName, makeFloatConfigComment (slot), onCopiedToClipboard);
         return;
     }
 
@@ -637,135 +866,78 @@ void CsoundParameterMappingPanel::ParamRow::mouseDrag (const juce::MouseEvent& e
     if (container == nullptr || container->isDragAndDropActive())
         return;
 
-    // Si trascina solo se lo slot ha gia' un canale assegnato: trascinare
-    // uno slot vuoto produrrebbe un "chnget" senza nome, inutile.
     const auto slot = processor.getChannelParamSlot (index);
     if (slot.channelName.isEmpty())
         return;
 
-    container->startDragging ("csoundChannel:" + slot.channelName, this);
+    container->startDragging ("csoundChannel:" + slot.channelName + "\x01" + makeFloatConfigComment (slot), this);
 }
 
 //==============================================================================
-void CsoundParameterMappingPanel::layoutColumns (juce::Rectangle<int> area,
-                                                   juce::Rectangle<int>& handle,
-                                                   juce::Rectangle<int>& name,
-                                                   juce::Rectangle<int>& min,
-                                                   juce::Rectangle<int>& max,
-                                                   juce::Rectangle<int>& defaultVal,
-                                                   juce::Rectangle<int>& skewIncrement)
-{
-    handle = area.removeFromLeft (handleWidth);
-    area.removeFromLeft (4);
-
-    skewIncrement = area.removeFromRight (curveWidth);
-    area.removeFromRight (6);
-
-    defaultVal = area.removeFromRight (defaultWidth);
-    area.removeFromRight (6);
-
-    max = area.removeFromRight (minMaxWidth);
-    area.removeFromRight (6);
-
-    min = area.removeFromRight (minMaxWidth);
-    area.removeFromRight (6);
-
-    // Il nome prende TUTTO lo spazio che resta, fino al campo min (non una
-    // larghezza fissa): cosi' la riga - e quindi l'intera pagina - scala
-    // con la larghezza della finestra del plugin invece di lasciare spazio
-    // vuoto o tagliare il nome.
-    name = area;
-}
-
-void CsoundParameterMappingPanel::layoutIntColumns (juce::Rectangle<int> area,
-                                                      juce::Rectangle<int>& handle,
-                                                      juce::Rectangle<int>& name,
-                                                      juce::Rectangle<int>& min,
-                                                      juce::Rectangle<int>& max,
-                                                      juce::Rectangle<int>& defaultVal)
-{
-    handle = area.removeFromLeft (handleWidth);
-    area.removeFromLeft (4);
-
-    defaultVal = area.removeFromRight (defaultWidth);
-    area.removeFromRight (6);
-
-    max = area.removeFromRight (minMaxWidth);
-    area.removeFromRight (6);
-
-    min = area.removeFromRight (minMaxWidth);
-    area.removeFromRight (6);
-
-    name = area;
-}
-
-void CsoundParameterMappingPanel::layoutBoolColumns (juce::Rectangle<int> area,
-                                                       juce::Rectangle<int>& handle,
-                                                       juce::Rectangle<int>& name,
-                                                       juce::Rectangle<int>& defaultVal)
-{
-    handle = area.removeFromLeft (handleWidth);
-    area.removeFromLeft (4);
-
-    defaultVal = area.removeFromRight (boolDefaultWidth);
-    area.removeFromRight (6);
-
-    name = area;
-}
-
-void CsoundParameterMappingPanel::layoutChoiceColumns (juce::Rectangle<int> area,
-                                                         juce::Rectangle<int>& handle,
-                                                         juce::Rectangle<int>& name,
-                                                         juce::Rectangle<int>& options,
-                                                         juce::Rectangle<int>& defaultIndex)
-{
-    handle = area.removeFromLeft (handleWidth);
-    area.removeFromLeft (4);
-
-    defaultIndex = area.removeFromRight (choiceDefaultIndexWidth);
-    area.removeFromRight (6);
-
-    options = area.removeFromRight (choiceOptionsWidth);
-    area.removeFromRight (6);
-
-    name = area;
-}
-
-//==============================================================================
+// IntParamRow ("KNOB" nel mockup, slot Int).
 CsoundParameterMappingPanel::IntParamRow::IntParamRow (CsoundAudioProcessor& processorToEdit, int slotIndex)
     : processor (processorToEdit),
       index (slotIndex)
 {
     setMouseCursor (juce::MouseCursor::NormalCursor);
-
-    // Vedi il commento identico su ParamRow::ParamRow sopra: senza questo
-    // il click sulla maniglia porterebbe il focus su channelNameEditor.
     setMouseClickGrabsKeyboardFocus (false);
 
+    setupTypeLabel (typeLabel, "SLIDER INT " + juce::String (juce::CharPointer_UTF8 ("\xc2\xb7")) + " CHANNEL", kKnobAccent);
+    addAndMakeVisible (typeLabel);
+
     channelNameEditor.setTextToShowWhenEmpty ("(no channel)", kPlaceholder);
+    channelNameEditor.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
     addAndMakeVisible (channelNameEditor);
 
+    setupFieldCaption (minCaption, "MIN");
+    addAndMakeVisible (minCaption);
     minEditor.setInputRestrictions (0, "0123456789-");
-    minEditor.setJustification (juce::Justification::centredRight);
+    minEditor.setJustification (juce::Justification::centredLeft);
     minEditor.addListener (this);
     applyDarkFieldColours (minEditor);
     addAndMakeVisible (minEditor);
 
+    setupFieldCaption (maxCaption, "MAX");
+    addAndMakeVisible (maxCaption);
     maxEditor.setInputRestrictions (0, "0123456789-");
-    maxEditor.setJustification (juce::Justification::centredRight);
+    maxEditor.setJustification (juce::Justification::centredLeft);
     maxEditor.addListener (this);
     applyDarkFieldColours (maxEditor);
     addAndMakeVisible (maxEditor);
 
+    setupFieldCaption (initCaption, "INIT");
+    addAndMakeVisible (initCaption);
     defaultEditor.setInputRestrictions (0, "0123456789-");
-    defaultEditor.setJustification (juce::Justification::centredRight);
+    defaultEditor.setJustification (juce::Justification::centredLeft);
     defaultEditor.addListener (this);
     applyDarkFieldColours (defaultEditor);
     addAndMakeVisible (defaultEditor);
 
+    removeButton.setColour (juce::TextButton::buttonColourId, kDanger);
+    removeButton.setColour (juce::TextButton::textColourOffId, juce::Colours::white);
+    removeButton.setTooltip ("Remove this parameter");
+    removeButton.onClick = [this]
+    {
+        // Vedi il commento identico su ParamRow::removeButton.onClick sopra.
+        const auto removedName = channelNameEditor.getText().trim();
+        channelNameEditor.setText ({}, false);
+        commitFromFields();
+        if (onCopiedToClipboard && removedName.isNotEmpty())
+            onCopiedToClipboard ("--- Removed parameter: " + removedName + " ---");
+        if (onRemoveRequested)
+            onRemoveRequested();
+    };
+    addAndMakeVisible (removeButton);
+
     refreshFromProcessor();
+}
+
+void CsoundParameterMappingPanel::IntParamRow::focusChannelNameField()
+{
+    channelNameEditor.grabKeyboardFocus();
+    channelNameEditor.selectAll();
 }
 
 void CsoundParameterMappingPanel::IntParamRow::refreshFromProcessor()
@@ -776,6 +948,7 @@ void CsoundParameterMappingPanel::IntParamRow::refreshFromProcessor()
     minEditor.setText (juce::String (slot.minValue), false);
     maxEditor.setText (juce::String (slot.maxValue), false);
     defaultEditor.setText (juce::String (slot.defaultValue), false);
+    removeButton.setVisible (slot.channelName.isNotEmpty());
 }
 
 void CsoundParameterMappingPanel::IntParamRow::commitFromFields()
@@ -793,18 +966,35 @@ void CsoundParameterMappingPanel::IntParamRow::commitFromFields()
 
     processor.setIntParamSlot (index, slot);
 
+    removeButton.setVisible (slot.channelName.isNotEmpty());
     repaint();
+}
+
+void CsoundParameterMappingPanel::IntParamRow::notifyRemovedIfEmpty()
+{
+    if (processor.getIntParamSlot (index).channelName.isEmpty() && onRemoveRequested)
+        onRemoveRequested();
+}
+
+void CsoundParameterMappingPanel::IntParamRow::notifyCommittedIfNonEmpty()
+{
+    if (processor.getIntParamSlot (index).channelName.isNotEmpty() && onCommittedNonEmpty)
+        onCommittedNonEmpty();
 }
 
 void CsoundParameterMappingPanel::IntParamRow::textEditorReturnKeyPressed (juce::TextEditor& editor)
 {
     commitFromFields();
     editor.giveAwayKeyboardFocus();
+    notifyRemovedIfEmpty();
+    notifyCommittedIfNonEmpty();
 }
 
 void CsoundParameterMappingPanel::IntParamRow::textEditorFocusLost (juce::TextEditor&)
 {
     commitFromFields();
+    notifyRemovedIfEmpty();
+    notifyCommittedIfNonEmpty();
 }
 
 void CsoundParameterMappingPanel::IntParamRow::textEditorTextChanged (juce::TextEditor&)
@@ -814,55 +1004,41 @@ void CsoundParameterMappingPanel::IntParamRow::textEditorTextChanged (juce::Text
 
 void CsoundParameterMappingPanel::IntParamRow::paint (juce::Graphics& g)
 {
-    if ((index % 2) == 1)
-    {
-        g.setColour (juce::Colours::white.withAlpha (0.025f));
-        g.fillRect (getLocalBounds());
-    }
-
-    if (processor.getIntParamSlot (index).channelName.isEmpty())
-        return;
-
-    auto box = handleBounds.toFloat().reduced (2.0f);
-    g.setColour (kAccent.withAlpha (handleHovered ? 0.45f : 0.22f));
-    g.fillRect (box);
-    g.setColour (kAccent.withAlpha (handleHovered ? 1.0f : 0.75f));
-    g.drawRect (box, 1.2f);
-
-    g.setColour (handleHovered ? juce::Colours::white : kText);
-    const auto cx = box.getCentreX();
-    const auto cy = box.getCentreY();
-    constexpr float dotSize = 3.4f;
-    constexpr float dotSpacingX = 6.5f;
-    constexpr float dotSpacingY = 6.0f;
-    for (int row = -1; row <= 1; ++row)
-    {
-        for (int col = 0; col <= 1; ++col)
-        {
-            const float dx = (col == 0 ? -1.0f : 1.0f) * (dotSpacingX / 2.0f);
-            const float dy = (float) row * dotSpacingY;
-            g.fillEllipse (cx + dx - dotSize / 2.0f, cy + dy - dotSize / 2.0f, dotSize, dotSize);
-        }
-    }
+    const bool hasName = processor.getIntParamSlot (index).channelName.isNotEmpty();
+    CsoundParameterMappingPanel::paintCardChrome (g, getLocalBounds(), kKnobAccent, handleBounds, hasName, handleHovered);
 }
 
 void CsoundParameterMappingPanel::IntParamRow::resized()
 {
-    juce::Rectangle<int> name, min, max, defaultVal;
-    CsoundParameterMappingPanel::layoutIntColumns (getLocalBounds().reduced (4, 2), handleBounds, name, min, max, defaultVal);
+    juce::Rectangle<int> handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea;
+    CsoundParameterMappingPanel::layoutCardSkeleton (getLocalBounds(), handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea);
 
-    channelNameEditor.setBounds (name);
-    minEditor.setBounds (min);
-    maxEditor.setBounds (max);
-    defaultEditor.setBounds (defaultVal);
+    handleBounds = handleStrip;
+    typeLabel.setBounds (typeLabelArea);
+    removeButton.setBounds (removeArea);
+    channelNameEditor.setBounds (nameArea);
+
+    // Stesso meccanismo "a capo" di ParamRow::resized() - qui raramente
+    // serve (3 campi stretti ci stanno quasi sempre), ma resta corretto
+    // anche nel caso limite di un pannello strettissimo.
+    juce::Label* const captions[] = { &minCaption, &maxCaption, &initCaption };
+    juce::TextEditor* const editors[] = { &minEditor, &maxEditor, &defaultEditor };
+
+    CsoundParameterMappingPanel::layoutWrappedFields (fieldsArea,
+        { cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldNarrowWidth },
+        cardFieldGap,
+        [&] (int index, juce::Rectangle<int> cell)
+        {
+            CsoundParameterMappingPanel::layoutCaptionedField (cell, *captions[index], *editors[index]);
+        });
 }
 
 void CsoundParameterMappingPanel::IntParamRow::mouseDown (const juce::MouseEvent& event)
 {
-    // Vedi il commento identico in ParamRow::mouseDown sopra.
     if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
     {
-        showCopyChngetMenu (processor.getIntParamSlot (index).channelName, onCopiedToClipboard);
+        const auto slot = processor.getIntParamSlot (index);
+        showCopyChngetMenu (slot.channelName, makeIntConfigComment (slot), onCopiedToClipboard);
         return;
     }
 
@@ -911,32 +1087,57 @@ void CsoundParameterMappingPanel::IntParamRow::mouseDrag (const juce::MouseEvent
     if (slot.channelName.isEmpty())
         return;
 
-    container->startDragging ("csoundChannel:" + slot.channelName, this);
+    container->startDragging ("csoundChannel:" + slot.channelName + "\x01" + makeIntConfigComment (slot), this);
 }
 
 //==============================================================================
+// BoolParamRow ("TOGGLE" nel mockup, slot Bool).
 CsoundParameterMappingPanel::BoolParamRow::BoolParamRow (CsoundAudioProcessor& processorToEdit, int slotIndex)
     : processor (processorToEdit),
       index (slotIndex)
 {
     setMouseCursor (juce::MouseCursor::NormalCursor);
-
-    // Vedi il commento identico su ParamRow::ParamRow sopra: senza questo
-    // il click sulla maniglia porterebbe il focus su channelNameEditor.
     setMouseClickGrabsKeyboardFocus (false);
 
+    setupTypeLabel (typeLabel, "TOGGLE " + juce::String (juce::CharPointer_UTF8 ("\xc2\xb7")) + " CHANNEL", kToggleAccent);
+    addAndMakeVisible (typeLabel);
+
     channelNameEditor.setTextToShowWhenEmpty ("(no channel)", kPlaceholder);
+    channelNameEditor.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
     addAndMakeVisible (channelNameEditor);
 
+    setupFieldCaption (initCaption, "INIT");
+    addAndMakeVisible (initCaption);
     defaultToggle.setColour (juce::ToggleButton::textColourId, kText);
-    defaultToggle.setColour (juce::ToggleButton::tickColourId, kAccent);
+    defaultToggle.setColour (juce::ToggleButton::tickColourId, kToggleAccent);
     defaultToggle.setColour (juce::ToggleButton::tickDisabledColourId, kFieldOutline);
     defaultToggle.onClick = [this] { commitFromFields(); };
     addAndMakeVisible (defaultToggle);
 
+    removeButton.setColour (juce::TextButton::buttonColourId, kDanger);
+    removeButton.setColour (juce::TextButton::textColourOffId, juce::Colours::white);
+    removeButton.setTooltip ("Remove this parameter");
+    removeButton.onClick = [this]
+    {
+        const auto removedName = channelNameEditor.getText().trim();
+        channelNameEditor.setText ({}, false);
+        commitFromFields();
+        if (onCopiedToClipboard && removedName.isNotEmpty())
+            onCopiedToClipboard ("--- Removed parameter: " + removedName + " ---");
+        if (onRemoveRequested)
+            onRemoveRequested();
+    };
+    addAndMakeVisible (removeButton);
+
     refreshFromProcessor();
+}
+
+void CsoundParameterMappingPanel::BoolParamRow::focusChannelNameField()
+{
+    channelNameEditor.grabKeyboardFocus();
+    channelNameEditor.selectAll();
 }
 
 void CsoundParameterMappingPanel::BoolParamRow::refreshFromProcessor()
@@ -944,6 +1145,7 @@ void CsoundParameterMappingPanel::BoolParamRow::refreshFromProcessor()
     const auto slot = processor.getBoolParamSlot (index);
     channelNameEditor.setText (slot.channelName, false);
     defaultToggle.setToggleState (slot.defaultValue, juce::dontSendNotification);
+    removeButton.setVisible (slot.channelName.isNotEmpty());
 }
 
 void CsoundParameterMappingPanel::BoolParamRow::commitFromFields()
@@ -953,18 +1155,35 @@ void CsoundParameterMappingPanel::BoolParamRow::commitFromFields()
     slot.defaultValue = defaultToggle.getToggleState();
 
     processor.setBoolParamSlot (index, slot);
+    removeButton.setVisible (slot.channelName.isNotEmpty());
     repaint();
+}
+
+void CsoundParameterMappingPanel::BoolParamRow::notifyRemovedIfEmpty()
+{
+    if (processor.getBoolParamSlot (index).channelName.isEmpty() && onRemoveRequested)
+        onRemoveRequested();
+}
+
+void CsoundParameterMappingPanel::BoolParamRow::notifyCommittedIfNonEmpty()
+{
+    if (processor.getBoolParamSlot (index).channelName.isNotEmpty() && onCommittedNonEmpty)
+        onCommittedNonEmpty();
 }
 
 void CsoundParameterMappingPanel::BoolParamRow::textEditorReturnKeyPressed (juce::TextEditor& editor)
 {
     commitFromFields();
     editor.giveAwayKeyboardFocus();
+    notifyRemovedIfEmpty();
+    notifyCommittedIfNonEmpty();
 }
 
 void CsoundParameterMappingPanel::BoolParamRow::textEditorFocusLost (juce::TextEditor&)
 {
     commitFromFields();
+    notifyRemovedIfEmpty();
+    notifyCommittedIfNonEmpty();
 }
 
 void CsoundParameterMappingPanel::BoolParamRow::textEditorTextChanged (juce::TextEditor&)
@@ -974,53 +1193,29 @@ void CsoundParameterMappingPanel::BoolParamRow::textEditorTextChanged (juce::Tex
 
 void CsoundParameterMappingPanel::BoolParamRow::paint (juce::Graphics& g)
 {
-    if ((index % 2) == 1)
-    {
-        g.setColour (juce::Colours::white.withAlpha (0.025f));
-        g.fillRect (getLocalBounds());
-    }
-
-    if (processor.getBoolParamSlot (index).channelName.isEmpty())
-        return;
-
-    auto box = handleBounds.toFloat().reduced (2.0f);
-    g.setColour (kAccent.withAlpha (handleHovered ? 0.45f : 0.22f));
-    g.fillRect (box);
-    g.setColour (kAccent.withAlpha (handleHovered ? 1.0f : 0.75f));
-    g.drawRect (box, 1.2f);
-
-    g.setColour (handleHovered ? juce::Colours::white : kText);
-    const auto cx = box.getCentreX();
-    const auto cy = box.getCentreY();
-    constexpr float dotSize = 3.4f;
-    constexpr float dotSpacingX = 6.5f;
-    constexpr float dotSpacingY = 6.0f;
-    for (int row = -1; row <= 1; ++row)
-    {
-        for (int col = 0; col <= 1; ++col)
-        {
-            const float dx = (col == 0 ? -1.0f : 1.0f) * (dotSpacingX / 2.0f);
-            const float dy = (float) row * dotSpacingY;
-            g.fillEllipse (cx + dx - dotSize / 2.0f, cy + dy - dotSize / 2.0f, dotSize, dotSize);
-        }
-    }
+    const bool hasName = processor.getBoolParamSlot (index).channelName.isNotEmpty();
+    CsoundParameterMappingPanel::paintCardChrome (g, getLocalBounds(), kToggleAccent, handleBounds, hasName, handleHovered);
 }
 
 void CsoundParameterMappingPanel::BoolParamRow::resized()
 {
-    juce::Rectangle<int> name, defaultArea;
-    CsoundParameterMappingPanel::layoutBoolColumns (getLocalBounds().reduced (4, 2), handleBounds, name, defaultArea);
+    juce::Rectangle<int> handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea;
+    CsoundParameterMappingPanel::layoutCardSkeleton (getLocalBounds(), handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea);
 
-    channelNameEditor.setBounds (name);
-    defaultToggle.setBounds (defaultArea);
+    handleBounds = handleStrip;
+    typeLabel.setBounds (typeLabelArea);
+    removeButton.setBounds (removeArea);
+    channelNameEditor.setBounds (nameArea);
+
+    CsoundParameterMappingPanel::layoutCaptionedField (fieldsArea.removeFromLeft (cardBoolFieldWidth), initCaption, defaultToggle);
 }
 
 void CsoundParameterMappingPanel::BoolParamRow::mouseDown (const juce::MouseEvent& event)
 {
-    // Vedi il commento identico in ParamRow::mouseDown sopra.
     if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
     {
-        showCopyChngetMenu (processor.getBoolParamSlot (index).channelName, onCopiedToClipboard);
+        const auto slot = processor.getBoolParamSlot (index);
+        showCopyChngetMenu (slot.channelName, makeBoolConfigComment (slot), onCopiedToClipboard);
         return;
     }
 
@@ -1069,37 +1264,70 @@ void CsoundParameterMappingPanel::BoolParamRow::mouseDrag (const juce::MouseEven
     if (slot.channelName.isEmpty())
         return;
 
-    container->startDragging ("csoundChannel:" + slot.channelName, this);
+    container->startDragging ("csoundChannel:" + slot.channelName + "\x01" + makeBoolConfigComment (slot), this);
 }
 
 //==============================================================================
+// ChoiceParamRow ("MENU" nel mockup, slot Choice).
 CsoundParameterMappingPanel::ChoiceParamRow::ChoiceParamRow (CsoundAudioProcessor& processorToEdit, int slotIndex)
     : processor (processorToEdit),
       index (slotIndex)
 {
     setMouseCursor (juce::MouseCursor::NormalCursor);
-
-    // Vedi il commento identico su ParamRow::ParamRow sopra: senza questo
-    // il click sulla maniglia porterebbe il focus su channelNameEditor.
     setMouseClickGrabsKeyboardFocus (false);
 
+    setupTypeLabel (typeLabel, "MENU " + juce::String (juce::CharPointer_UTF8 ("\xc2\xb7")) + " CHANNEL", kMenuAccent);
+    addAndMakeVisible (typeLabel);
+
     channelNameEditor.setTextToShowWhenEmpty ("(no channel)", kPlaceholder);
+    channelNameEditor.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
     addAndMakeVisible (channelNameEditor);
 
-    optionsEditor.setTextToShowWhenEmpty ("opt1, opt2, opt3...", kPlaceholder);
+    setupFieldCaption (optionsCaption, "OPTIONS (COMMA SEPARATED)");
+    addAndMakeVisible (optionsCaption);
+    optionsEditor.setTextToShowWhenEmpty ("item1, item2, item3...", kPlaceholder);
     optionsEditor.addListener (this);
     applyDarkFieldColours (optionsEditor);
     addAndMakeVisible (optionsEditor);
 
-    defaultIndexEditor.setInputRestrictions (0, "0123456789");
-    defaultIndexEditor.setJustification (juce::Justification::centredRight);
-    defaultIndexEditor.addListener (this);
-    applyDarkFieldColours (defaultIndexEditor);
-    addAndMakeVisible (defaultIndexEditor);
+    setupFieldCaption (defaultCaption, "DEFAULT");
+    addAndMakeVisible (defaultCaption);
+    defaultIndexCombo.setColour (juce::ComboBox::backgroundColourId, kFieldBg);
+    defaultIndexCombo.setColour (juce::ComboBox::textColourId,       kText);
+    defaultIndexCombo.setColour (juce::ComboBox::outlineColourId,    kFieldOutline);
+    defaultIndexCombo.setColour (juce::PopupMenu::backgroundColourId,            kFieldBg);
+    defaultIndexCombo.setColour (juce::PopupMenu::textColourId,                  kText);
+    defaultIndexCombo.setColour (juce::PopupMenu::highlightedBackgroundColourId, kMenuAccent);
+    defaultIndexCombo.setColour (juce::PopupMenu::highlightedTextColourId,       juce::Colours::white);
+    defaultIndexCombo.setTextWhenNoChoicesAvailable ("(no options yet)");
+    defaultIndexCombo.setTextWhenNothingSelected ("(no options yet)");
+    defaultIndexCombo.onChange = [this] { commitFromFields(); };
+    addAndMakeVisible (defaultIndexCombo);
+
+    removeButton.setColour (juce::TextButton::buttonColourId, kDanger);
+    removeButton.setColour (juce::TextButton::textColourOffId, juce::Colours::white);
+    removeButton.setTooltip ("Remove this parameter");
+    removeButton.onClick = [this]
+    {
+        const auto removedName = channelNameEditor.getText().trim();
+        channelNameEditor.setText ({}, false);
+        commitFromFields();
+        if (onCopiedToClipboard && removedName.isNotEmpty())
+            onCopiedToClipboard ("--- Removed parameter: " + removedName + " ---");
+        if (onRemoveRequested)
+            onRemoveRequested();
+    };
+    addAndMakeVisible (removeButton);
 
     refreshFromProcessor();
+}
+
+void CsoundParameterMappingPanel::ChoiceParamRow::focusChannelNameField()
+{
+    channelNameEditor.grabKeyboardFocus();
+    channelNameEditor.selectAll();
 }
 
 void CsoundParameterMappingPanel::ChoiceParamRow::refreshFromProcessor()
@@ -1107,7 +1335,34 @@ void CsoundParameterMappingPanel::ChoiceParamRow::refreshFromProcessor()
     const auto slot = processor.getChoiceParamSlot (index);
     channelNameEditor.setText (slot.channelName, false);
     optionsEditor.setText (slot.optionLabels.joinIntoString (", "), false);
-    defaultIndexEditor.setText (juce::String (slot.defaultIndex), false);
+    refreshDefaultOptions();
+    const auto idToSelect = juce::jlimit (0, defaultIndexCombo.getNumItems() - 1, slot.defaultIndex) + 1;
+    if (defaultIndexCombo.getNumItems() > 0)
+        defaultIndexCombo.setSelectedId (idToSelect, juce::dontSendNotification);
+    removeButton.setVisible (slot.channelName.isNotEmpty());
+}
+
+void CsoundParameterMappingPanel::ChoiceParamRow::refreshDefaultOptions()
+{
+    juce::StringArray parsed;
+    parsed.addTokens (optionsEditor.getText(), ",", "");
+    for (auto& option : parsed)
+        option = option.trim();
+    parsed.removeEmptyStrings();
+    while (parsed.size() > CsoundAudioProcessor::maxChoiceOptions)
+        parsed.remove (parsed.size() - 1);
+
+    const auto previousId = defaultIndexCombo.getSelectedId();
+
+    defaultIndexCombo.clear (juce::dontSendNotification);
+    for (int i = 0; i < parsed.size(); ++i)
+        defaultIndexCombo.addItem (parsed[i], i + 1);
+
+    if (parsed.isEmpty())
+        return;
+
+    const auto restoredId = juce::jlimit (1, parsed.size(), previousId > 0 ? previousId : 1);
+    defaultIndexCombo.setSelectedId (restoredId, juce::dontSendNotification);
 }
 
 void CsoundParameterMappingPanel::ChoiceParamRow::commitFromFields()
@@ -1115,11 +1370,8 @@ void CsoundParameterMappingPanel::ChoiceParamRow::commitFromFields()
     CsoundAudioProcessor::ChoiceParamSlot slot;
     slot.channelName = channelNameEditor.getText().trim();
 
-    // Etichette separate da virgole, spazi ai bordi tolti, voci vuote
-    // ignorate (es. "a,,b" -> "a","b", non "a","","b"): oltre
-    // maxChoiceOptions vengono scartate, perche' l'host vede comunque sempre
-    // esattamente quel numero di opzioni (vedi ChoiceHostParameter) - non
-    // avrebbero un indice raggiungibile.
+    refreshDefaultOptions();
+
     juce::StringArray parsed;
     parsed.addTokens (optionsEditor.getText(), ",", "");
     for (auto& option : parsed)
@@ -1129,23 +1381,39 @@ void CsoundParameterMappingPanel::ChoiceParamRow::commitFromFields()
         parsed.remove (parsed.size() - 1);
     slot.optionLabels = parsed;
 
-    const auto defaultText = defaultIndexEditor.getText().trim();
-    slot.defaultIndex = juce::jlimit (0, CsoundAudioProcessor::maxChoiceOptions - 1,
-                                       defaultText.isNotEmpty() ? defaultText.getIntValue() : 0);
+    const auto selectedId = defaultIndexCombo.getSelectedId();
+    slot.defaultIndex = selectedId > 0 ? juce::jlimit (0, CsoundAudioProcessor::maxChoiceOptions - 1, selectedId - 1) : 0;
 
     processor.setChoiceParamSlot (index, slot);
+    removeButton.setVisible (slot.channelName.isNotEmpty());
     repaint();
+}
+
+void CsoundParameterMappingPanel::ChoiceParamRow::notifyRemovedIfEmpty()
+{
+    if (processor.getChoiceParamSlot (index).channelName.isEmpty() && onRemoveRequested)
+        onRemoveRequested();
+}
+
+void CsoundParameterMappingPanel::ChoiceParamRow::notifyCommittedIfNonEmpty()
+{
+    if (processor.getChoiceParamSlot (index).channelName.isNotEmpty() && onCommittedNonEmpty)
+        onCommittedNonEmpty();
 }
 
 void CsoundParameterMappingPanel::ChoiceParamRow::textEditorReturnKeyPressed (juce::TextEditor& editor)
 {
     commitFromFields();
     editor.giveAwayKeyboardFocus();
+    notifyRemovedIfEmpty();
+    notifyCommittedIfNonEmpty();
 }
 
 void CsoundParameterMappingPanel::ChoiceParamRow::textEditorFocusLost (juce::TextEditor&)
 {
     commitFromFields();
+    notifyRemovedIfEmpty();
+    notifyCommittedIfNonEmpty();
 }
 
 void CsoundParameterMappingPanel::ChoiceParamRow::textEditorTextChanged (juce::TextEditor&)
@@ -1155,54 +1423,35 @@ void CsoundParameterMappingPanel::ChoiceParamRow::textEditorTextChanged (juce::T
 
 void CsoundParameterMappingPanel::ChoiceParamRow::paint (juce::Graphics& g)
 {
-    if ((index % 2) == 1)
-    {
-        g.setColour (juce::Colours::white.withAlpha (0.025f));
-        g.fillRect (getLocalBounds());
-    }
-
-    if (processor.getChoiceParamSlot (index).channelName.isEmpty())
-        return;
-
-    auto box = handleBounds.toFloat().reduced (2.0f);
-    g.setColour (kAccent.withAlpha (handleHovered ? 0.45f : 0.22f));
-    g.fillRect (box);
-    g.setColour (kAccent.withAlpha (handleHovered ? 1.0f : 0.75f));
-    g.drawRect (box, 1.2f);
-
-    g.setColour (handleHovered ? juce::Colours::white : kText);
-    const auto cx = box.getCentreX();
-    const auto cy = box.getCentreY();
-    constexpr float dotSize = 3.4f;
-    constexpr float dotSpacingX = 6.5f;
-    constexpr float dotSpacingY = 6.0f;
-    for (int row = -1; row <= 1; ++row)
-    {
-        for (int col = 0; col <= 1; ++col)
-        {
-            const float dx = (col == 0 ? -1.0f : 1.0f) * (dotSpacingX / 2.0f);
-            const float dy = (float) row * dotSpacingY;
-            g.fillEllipse (cx + dx - dotSize / 2.0f, cy + dy - dotSize / 2.0f, dotSize, dotSize);
-        }
-    }
+    const bool hasName = processor.getChoiceParamSlot (index).channelName.isNotEmpty();
+    CsoundParameterMappingPanel::paintCardChrome (g, getLocalBounds(), kMenuAccent, handleBounds, hasName, handleHovered);
 }
 
 void CsoundParameterMappingPanel::ChoiceParamRow::resized()
 {
-    juce::Rectangle<int> name, options, defaultIndex;
-    CsoundParameterMappingPanel::layoutChoiceColumns (getLocalBounds().reduced (4, 2), handleBounds, name, options, defaultIndex);
+    juce::Rectangle<int> handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea;
+    CsoundParameterMappingPanel::layoutCardSkeleton (getLocalBounds(), handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea);
 
-    channelNameEditor.setBounds (name);
-    optionsEditor.setBounds (options);
-    defaultIndexEditor.setBounds (defaultIndex);
+    handleBounds = handleStrip;
+    typeLabel.setBounds (typeLabelArea);
+    removeButton.setBounds (removeArea);
+    channelNameEditor.setBounds (nameArea);
+
+    // Row 1: OPTIONS, full card width.
+    auto row1 = fieldsArea.removeFromTop (cardFieldCaptionHeight + cardFieldCaptionGap + cardFieldBoxHeight);
+    CsoundParameterMappingPanel::layoutCaptionedField (row1, optionsCaption, optionsEditor);
+
+    // Row 2: DEFAULT (narrow, left-aligned combo showing the chosen label).
+    fieldsArea.removeFromTop (cardFieldRowGap);
+    CsoundParameterMappingPanel::layoutCaptionedField (fieldsArea.removeFromLeft (cardChoiceDefaultWidth), defaultCaption, defaultIndexCombo);
 }
 
 void CsoundParameterMappingPanel::ChoiceParamRow::mouseDown (const juce::MouseEvent& event)
 {
-    // Vedi il commento identico in ParamRow::mouseDown sopra.
     if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
     {
-        showCopyChngetMenu (processor.getChoiceParamSlot (index).channelName, onCopiedToClipboard);
+        const auto slot = processor.getChoiceParamSlot (index);
+        showCopyChngetMenu (slot.channelName, makeChoiceConfigComment (slot), onCopiedToClipboard);
         return;
     }
 
@@ -1251,392 +1500,91 @@ void CsoundParameterMappingPanel::ChoiceParamRow::mouseDrag (const juce::MouseEv
     if (slot.channelName.isEmpty())
         return;
 
-    container->startDragging ("csoundChannel:" + slot.channelName, this);
-}
-
-//==============================================================================
-// FloatParamsPage / BoolParamsPage / ChoiceParamsPage - vedi il commento in
-// testa alla loro dichiarazione in CsoundParameterEditor.h: una tab = un
-// header di colonne fisso + un viewport scrollabile con SOLO le righe di
-// quel tipo.
-CsoundParameterMappingPanel::FloatParamsPage::FloatParamsPage (CsoundAudioProcessor& processorToEdit)
-{
-    setupHeaderLabel (headerNameLabel, "Channel (chnget)");
-    setupHeaderLabel (headerMinLabel, "Min", juce::Justification::centredLeft);
-    setupHeaderLabel (headerMaxLabel, "Max", juce::Justification::centredLeft);
-    setupHeaderLabel (headerDefaultLabel, "Default", juce::Justification::centredLeft);
-    setupHeaderLabel (headerSkewLabel, "Skew", juce::Justification::centredLeft);
-    setupHeaderLabel (headerIncrementLabel, "Step", juce::Justification::centredLeft);
-
-    for (auto* label : { &headerNameLabel, &headerMinLabel, &headerMaxLabel, &headerDefaultLabel, &headerSkewLabel, &headerIncrementLabel })
-        addAndMakeVisible (*label);
-
-    for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
-    {
-        rows[(size_t) i] = std::make_unique<ParamRow> (processorToEdit, i);
-        rows[(size_t) i]->onCopiedToClipboard = [this] (const juce::String& msg)
-        {
-            if (onParameterCopiedToClipboard)
-                onParameterCopiedToClipboard (msg);
-        };
-        rowsContainer.addAndMakeVisible (*rows[(size_t) i]);
-    }
-
-    viewport.setViewedComponent (&rowsContainer, false);
-    // true, true: anche orizzontale, non solo verticale - su richiesta
-    // esplicita il pannello non deve piu' schiacciare/nascondere le colonne
-    // quando ridimensionato piu' stretto del necessario (vedi minContentWidth),
-    // deve comparire una scrollbar orizzontale al suo posto.
-    viewport.setScrollBarsShown (true, true);
-    viewport.onHorizontalScrollChanged = [this] (int scrollX) { layoutHeaderForScroll (scrollX); };
-    addAndMakeVisible (viewport);
-}
-
-void CsoundParameterMappingPanel::FloatParamsPage::resized()
-{
-    auto area = getLocalBounds().reduced (8);
-
-    headerAreaBase = area.removeFromTop (headerHeight);
-    area.removeFromTop (4);
-
-    viewport.setBounds (area);
-
-    // Larghezza del contenuto: MAI sotto minContentWidth (altrimenti le
-    // colonne si schiaccerebbero/sovrapporrebbero, esattamente quello che
-    // non deve piu' succedere), altrimenti viewport.getWidth() meno uno
-    // spazio fisso riservato alla scrollbar verticale (vedi scrollbarGutter,
-    // non viewport.getMaximumVisibleWidth() - quel valore dipende da se la
-    // scrollbar e' GIA' visibile in questo esatto istante, che durante
-    // alcune sequenze di layout da' un risultato "vecchio").
-    const int contentWidth = juce::jmax (minContentWidth, viewport.getWidth() - scrollbarGutter);
-    rowsContainer.setSize (contentWidth, CsoundAudioProcessor::numChannelParams * rowHeight);
-
-    for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
-        rows[(size_t) i]->setBounds (0, i * rowHeight, contentWidth, rowHeight);
-
-    headerAreaBase.setWidth (contentWidth);
-    layoutHeaderForScroll (viewport.getViewPositionX());
-}
-
-void CsoundParameterMappingPanel::FloatParamsPage::layoutHeaderForScroll (int scrollX)
-{
-    // headerAreaBase e' la larghezza PIENA del contenuto (contentWidth,
-    // possibilmente piu' larga del viewport visibile) a scrollX=0 - la
-    // spostiamo a sinistra di scrollX prima di calcolare le colonne, cosi'
-    // l'intestazione segue esattamente lo scroll orizzontale delle righe
-    // sotto (vedi ScrollSyncedViewport/onHorizontalScrollChanged sopra). Le
-    // etichette restano comunque figlie dirette della pagina (non del
-    // viewport), quindi quelle che finiscono fuori dall'area visibile
-    // vengono semplicemente tagliate dal clipping automatico di JUCE sui
-    // bordi della pagina stessa - non serve nessun componente aggiuntivo.
-    auto headerArea = headerAreaBase;
-    headerArea.setX (headerArea.getX() - scrollX);
-
-    // reduced(4,0): stesso inset orizzontale che ParamRow::resized() applica
-    // alle righe (getLocalBounds().reduced(4,2)) - senza questo, le colonne
-    // dell'intestazione partivano 4px piu' a sinistra dei campi veri sotto,
-    // un disallineamento sottile ma visibile su Min/Max/Default/Skew/Incr.
-    headerArea = headerArea.reduced (4, 0);
-
-    juce::Rectangle<int> handle, name, min, max, defaultVal, skewIncrement;
-    CsoundParameterMappingPanel::layoutColumns (headerArea, handle, name, min, max, defaultVal, skewIncrement);
-    juce::ignoreUnused (handle);
-
-    headerNameLabel.setBounds (name);
-    headerMinLabel.setBounds (min);
-    headerMaxLabel.setBounds (max);
-    headerDefaultLabel.setBounds (defaultVal);
-
-    // Stessa divisione a meta' di ParamRow::resized(), cosi' le due
-    // etichette "Skew"/"Incr" restano allineate ai due campi sotto.
-    auto skewArea = skewIncrement.removeFromLeft (skewIncrement.getWidth() / 2 - 3);
-    skewIncrement.removeFromLeft (6);
-    headerSkewLabel.setBounds (skewArea);
-    headerIncrementLabel.setBounds (skewIncrement);
-}
-
-void CsoundParameterMappingPanel::FloatParamsPage::refreshAllFromProcessor()
-{
-    for (auto& row : rows)
-        row->refreshFromProcessor();
-}
-
-//==============================================================================
-CsoundParameterMappingPanel::IntParamsPage::IntParamsPage (CsoundAudioProcessor& processorToEdit)
-{
-    setupHeaderLabel (headerNameLabel, "Channel (chnget)");
-    setupHeaderLabel (headerMinLabel, "Min", juce::Justification::centredLeft);
-    setupHeaderLabel (headerMaxLabel, "Max", juce::Justification::centredLeft);
-    setupHeaderLabel (headerDefaultLabel, "Default", juce::Justification::centredLeft);
-
-    for (auto* label : { &headerNameLabel, &headerMinLabel, &headerMaxLabel, &headerDefaultLabel })
-        addAndMakeVisible (*label);
-
-    for (int i = 0; i < CsoundAudioProcessor::numIntParams; ++i)
-    {
-        rows[(size_t) i] = std::make_unique<IntParamRow> (processorToEdit, i);
-        rows[(size_t) i]->onCopiedToClipboard = [this] (const juce::String& msg)
-        {
-            if (onParameterCopiedToClipboard)
-                onParameterCopiedToClipboard (msg);
-        };
-        rowsContainer.addAndMakeVisible (*rows[(size_t) i]);
-    }
-
-    viewport.setViewedComponent (&rowsContainer, false);
-    viewport.setScrollBarsShown (true, true);
-    viewport.onHorizontalScrollChanged = [this] (int scrollX) { layoutHeaderForScroll (scrollX); };
-    addAndMakeVisible (viewport);
-}
-
-void CsoundParameterMappingPanel::IntParamsPage::resized()
-{
-    auto area = getLocalBounds().reduced (8);
-
-    headerAreaBase = area.removeFromTop (headerHeight);
-    area.removeFromTop (4);
-
-    viewport.setBounds (area);
-
-    const int contentWidth = juce::jmax (minContentWidth, viewport.getWidth() - scrollbarGutter);
-    rowsContainer.setSize (contentWidth, CsoundAudioProcessor::numIntParams * rowHeight);
-
-    for (int i = 0; i < CsoundAudioProcessor::numIntParams; ++i)
-        rows[(size_t) i]->setBounds (0, i * rowHeight, contentWidth, rowHeight);
-
-    headerAreaBase.setWidth (contentWidth);
-    layoutHeaderForScroll (viewport.getViewPositionX());
-}
-
-void CsoundParameterMappingPanel::IntParamsPage::layoutHeaderForScroll (int scrollX)
-{
-    // Vedi il commento identico su FloatParamsPage::layoutHeaderForScroll.
-    auto headerArea = headerAreaBase;
-    headerArea.setX (headerArea.getX() - scrollX);
-    headerArea = headerArea.reduced (4, 0);
-
-    juce::Rectangle<int> handle, name, min, max, defaultVal;
-    CsoundParameterMappingPanel::layoutIntColumns (headerArea, handle, name, min, max, defaultVal);
-    juce::ignoreUnused (handle);
-
-    headerNameLabel.setBounds (name);
-    headerMinLabel.setBounds (min);
-    headerMaxLabel.setBounds (max);
-    headerDefaultLabel.setBounds (defaultVal);
-}
-
-void CsoundParameterMappingPanel::IntParamsPage::refreshAllFromProcessor()
-{
-    for (auto& row : rows)
-        row->refreshFromProcessor();
-}
-
-//==============================================================================
-CsoundParameterMappingPanel::BoolParamsPage::BoolParamsPage (CsoundAudioProcessor& processorToEdit)
-{
-    setupHeaderLabel (headerNameLabel, "Channel (chnget)");
-    setupHeaderLabel (headerDefaultLabel, "Default", juce::Justification::centredLeft);
-
-    for (auto* label : { &headerNameLabel, &headerDefaultLabel })
-        addAndMakeVisible (*label);
-
-    for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
-    {
-        rows[(size_t) i] = std::make_unique<BoolParamRow> (processorToEdit, i);
-        rows[(size_t) i]->onCopiedToClipboard = [this] (const juce::String& msg)
-        {
-            if (onParameterCopiedToClipboard)
-                onParameterCopiedToClipboard (msg);
-        };
-        rowsContainer.addAndMakeVisible (*rows[(size_t) i]);
-    }
-
-    viewport.setViewedComponent (&rowsContainer, false);
-    viewport.setScrollBarsShown (true, true);
-    viewport.onHorizontalScrollChanged = [this] (int scrollX) { layoutHeaderForScroll (scrollX); };
-    addAndMakeVisible (viewport);
-}
-
-void CsoundParameterMappingPanel::BoolParamsPage::resized()
-{
-    auto area = getLocalBounds().reduced (8);
-
-    headerAreaBase = area.removeFromTop (headerHeight);
-    area.removeFromTop (4);
-
-    viewport.setBounds (area);
-
-    const int contentWidth = juce::jmax (minContentWidth, viewport.getWidth() - scrollbarGutter);
-    rowsContainer.setSize (contentWidth, CsoundAudioProcessor::numBoolParams * rowHeight);
-
-    for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
-        rows[(size_t) i]->setBounds (0, i * rowHeight, contentWidth, rowHeight);
-
-    headerAreaBase.setWidth (contentWidth);
-    layoutHeaderForScroll (viewport.getViewPositionX());
-}
-
-void CsoundParameterMappingPanel::BoolParamsPage::layoutHeaderForScroll (int scrollX)
-{
-    // Vedi il commento identico su FloatParamsPage::layoutHeaderForScroll.
-    auto headerArea = headerAreaBase;
-    headerArea.setX (headerArea.getX() - scrollX);
-    headerArea = headerArea.reduced (4, 0);
-
-    juce::Rectangle<int> handle, name, defaultVal;
-    CsoundParameterMappingPanel::layoutBoolColumns (headerArea, handle, name, defaultVal);
-    juce::ignoreUnused (handle);
-
-    headerNameLabel.setBounds (name);
-    headerDefaultLabel.setBounds (defaultVal);
-}
-
-void CsoundParameterMappingPanel::BoolParamsPage::refreshAllFromProcessor()
-{
-    for (auto& row : rows)
-        row->refreshFromProcessor();
-}
-
-//==============================================================================
-CsoundParameterMappingPanel::ChoiceParamsPage::ChoiceParamsPage (CsoundAudioProcessor& processorToEdit)
-{
-    setupHeaderLabel (headerNameLabel, "Channel (chnget)");
-    setupHeaderLabel (headerOptionsLabel, "Items (comma-separated)");
-    setupHeaderLabel (headerDefaultLabel, "Default", juce::Justification::centredLeft);
-
-    for (auto* label : { &headerNameLabel, &headerOptionsLabel, &headerDefaultLabel })
-        addAndMakeVisible (*label);
-
-    for (int i = 0; i < CsoundAudioProcessor::numChoiceParams; ++i)
-    {
-        rows[(size_t) i] = std::make_unique<ChoiceParamRow> (processorToEdit, i);
-        rows[(size_t) i]->onCopiedToClipboard = [this] (const juce::String& msg)
-        {
-            if (onParameterCopiedToClipboard)
-                onParameterCopiedToClipboard (msg);
-        };
-        rowsContainer.addAndMakeVisible (*rows[(size_t) i]);
-    }
-
-    viewport.setViewedComponent (&rowsContainer, false);
-    viewport.setScrollBarsShown (true, true);
-    viewport.onHorizontalScrollChanged = [this] (int scrollX) { layoutHeaderForScroll (scrollX); };
-    addAndMakeVisible (viewport);
-}
-
-void CsoundParameterMappingPanel::ChoiceParamsPage::resized()
-{
-    auto area = getLocalBounds().reduced (8);
-
-    headerAreaBase = area.removeFromTop (headerHeight);
-    area.removeFromTop (4);
-
-    viewport.setBounds (area);
-
-    const int contentWidth = juce::jmax (minContentWidth, viewport.getWidth() - scrollbarGutter);
-    rowsContainer.setSize (contentWidth, CsoundAudioProcessor::numChoiceParams * rowHeight);
-
-    for (int i = 0; i < CsoundAudioProcessor::numChoiceParams; ++i)
-        rows[(size_t) i]->setBounds (0, i * rowHeight, contentWidth, rowHeight);
-
-    headerAreaBase.setWidth (contentWidth);
-    layoutHeaderForScroll (viewport.getViewPositionX());
-}
-
-void CsoundParameterMappingPanel::ChoiceParamsPage::layoutHeaderForScroll (int scrollX)
-{
-    // Vedi il commento identico su FloatParamsPage::layoutHeaderForScroll.
-    auto headerArea = headerAreaBase;
-    headerArea.setX (headerArea.getX() - scrollX);
-    headerArea = headerArea.reduced (4, 0);
-
-    juce::Rectangle<int> handle, name, options, defaultIndex;
-    CsoundParameterMappingPanel::layoutChoiceColumns (headerArea, handle, name, options, defaultIndex);
-    juce::ignoreUnused (handle);
-
-    headerNameLabel.setBounds (name);
-    headerOptionsLabel.setBounds (options);
-    headerDefaultLabel.setBounds (defaultIndex);
-}
-
-void CsoundParameterMappingPanel::ChoiceParamsPage::refreshAllFromProcessor()
-{
-    for (auto& row : rows)
-        row->refreshFromProcessor();
+    container->startDragging ("csoundChannel:" + slot.channelName + "\x01" + makeChoiceConfigComment (slot), this);
 }
 
 //==============================================================================
 // GenericParamRow - vedi il commento in testa alla dichiarazione in
-// CsoundParameterEditor.h. Colori impostati DIRETTAMENTE sui componenti
-// (stesso approccio di applyDarkFieldColours/applyDarkComboColours sopra),
-// non solo sulla LookAndFeel condivisa: uno Slider "congela" i colori della
-// sua casella di testo interna (valueBox) nell'istante esatto in cui viene
-// creata - un colore impostato qui, DIRETTAMENTE sull'istanza, vince
-// comunque su qualunque LookAndFeel a prescindere da quando/se la
-// propagazione di un eventuale cambio di LookAndFeel scatta.
+// CsoundParameterEditor.h.
 CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
     const juce::String& channelName, juce::RangedAudioParameter& parameter,
-    Kind rowKind, const juce::StringArray& choiceLabels)
-    : kind (rowKind)
+    Kind rowKind, const juce::StringArray& choiceLabels,
+    juce::Colour accent, const juce::String& typeLabelText,
+    std::function<juce::String()> getChannelNameFn,
+    std::function<juce::String()> getConfigCommentFn, bool treatAsInteger)
+    : kind (rowKind), accentColour (accent), isIntegerLike (treatAsInteger),
+      getChannelName (std::move (getChannelNameFn)),
+      getConfigComment (std::move (getConfigCommentFn))
 {
-    nameLabel.setText (channelName, juce::dontSendNotification);
-    nameLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
-    nameLabel.setColour (juce::Label::textColourId, kText);
-    addAndMakeVisible (nameLabel);
+    setMouseCursor (juce::MouseCursor::NormalCursor);
+    setMouseClickGrabsKeyboardFocus (false);
+
+    setupTypeLabel (typeLabel, typeLabelText, accentColour);
+    addAndMakeVisible (typeLabel);
+
+    channelNameLabel.setText (channelName, juce::dontSendNotification);
+    channelNameLabel.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+    channelNameLabel.setColour (juce::Label::textColourId, kText);
+    channelNameLabel.setMinimumHorizontalScale (1.0f);
+    addAndMakeVisible (channelNameLabel);
 
     switch (kind)
     {
         case Kind::slider:
+        {
             slider.setScrollWheelEnabled (false);
-
-            // Casella di testo EDITABILE (TextBoxRight, vedi l'header): si
-            // puo' anche scrivere il valore a mano, non solo trascinare -
-            // richiesto esplicitamente. Colori impostati DIRETTAMENTE
-            // sull'istanza (non solo sulla LookAndFeel condivisa, che pure
-            // li imposta - vedi CsoundParameterPanelLookAndFeel): uno
-            // Slider "congela" i colori della sua casella di testo interna
-            // nell'istante esatto in cui viene creata, quindi un colore
-            // impostato qui, PRIMA che la casella sia creata (succede dentro
-            // il costruttore dell'attachment sotto, la prima volta che la
-            // LookAndFeel viene letta), e' la garanzia piu' solida che il
-            // testo non resti "congelato" con i colori sbagliati.
-            slider.setColour (juce::Slider::trackColourId,             kAccent);
-            slider.setColour (juce::Slider::thumbColourId,             kAccent);
-            slider.setColour (juce::Slider::backgroundColourId,        kFieldBg);
-            slider.setColour (juce::Slider::textBoxTextColourId,       juce::Colours::white);
-            slider.setColour (juce::Slider::textBoxBackgroundColourId, kFieldBg);
-            slider.setColour (juce::Slider::textBoxOutlineColourId,    kFieldOutline);
-            slider.setColour (juce::Slider::textBoxHighlightColourId,  kAccent.withAlpha (0.35f));
+            slider.setColour (juce::Slider::trackColourId,      accentColour);
+            slider.setColour (juce::Slider::thumbColourId,      accentColour);
+            slider.setColour (juce::Slider::backgroundColourId, kFieldBg);
             addAndMakeVisible (slider);
 
-            // sendInitialUpdate() (chiamata dentro il costruttore
-            // dell'attachment) imposta subito lo slider al valore corrente
-            // del parametro - niente valore "a zero" fino al primo cambio.
             sliderAttachment = std::make_unique<juce::SliderParameterAttachment> (parameter, slider);
-
-            // Forza la casella di testo a rileggere ORA i colori appena
-            // impostati sopra: la casella viene creata/ricreata da
-            // LookAndFeel::createSliderTextBox ogni volta che
-            // sendLookAndFeelChange()/colourChanged() scattano - qui lo
-            // forziamo esplicitamente invece di sperare che sia gia'
-            // successo "per conto suo" nell'ordine giusto.
             slider.sendLookAndFeelChange();
+
+            auto setupRangeLabel = [] (juce::Label& l)
+            {
+                l.setFont (juce::Font (juce::FontOptions (9.0f)));
+                l.setColour (juce::Label::textColourId, kTextMuted);
+                l.setMinimumHorizontalScale (1.0f);
+            };
+            setupRangeLabel (minLabel);
+            setupRangeLabel (maxLabel);
+            minLabel.setJustificationType (juce::Justification::centredLeft);
+            maxLabel.setJustificationType (juce::Justification::centredRight);
+            minLabel.setText (juce::String ((int) std::round (slider.getMinimum())), juce::dontSendNotification);
+            maxLabel.setText (juce::String ((int) std::round (slider.getMaximum())), juce::dontSendNotification);
+            addAndMakeVisible (minLabel);
+            addAndMakeVisible (maxLabel);
+
+            // Editabile da tastiera (richiesta esplicita) - solo cifre, '-'
+            // e, per i Float, anche '.'; commit SOLO su Return/focus perso
+            // (vedi commitValueFromField()), MAI ad ogni carattere. Niente
+            // didascalia "VALUE" sopra (riga compatta, economia verticale) -
+            // il contesto (etichetta tipo + slider accanto) e' gia' chiaro.
+            valueReadout.setInputRestrictions (0, isIntegerLike ? "-0123456789" : "-0123456789.");
+            valueReadout.setJustification (juce::Justification::centred);
+            valueReadout.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
+            applyDarkFieldColours (valueReadout);
+            valueReadout.onReturnKey = [this]
+            {
+                commitValueFromField();
+                valueReadout.giveAwayKeyboardFocus();
+            };
+            valueReadout.onFocusLost = [this] { commitValueFromField(); };
+            addAndMakeVisible (valueReadout);
+
+            slider.onValueChange = [this] { updateValueReadout(); };
+            updateValueReadout();
             break;
+        }
 
         case Kind::toggle:
-            toggle.setColour (juce::ToggleButton::textColourId,         kText);
-            toggle.setColour (juce::ToggleButton::tickColourId,         kAccent);
-            toggle.setColour (juce::ToggleButton::tickDisabledColourId, kFieldOutline);
+            toggle.setName ("pillToggle");
             addAndMakeVisible (toggle);
-            // ButtonParameterAttachment chiama gia' da solo sendInitialUpdate().
             buttonAttachment = std::make_unique<juce::ButtonParameterAttachment> (parameter, toggle);
             break;
 
         case Kind::choice:
-            // Le etichette vanno aggiunte PRIMA di costruire l'attachment,
-            // nello STESSO ordine (0-based, indice+1 come ID) con cui
-            // ComboBoxParameterAttachment mappera' l'indice selezionato al
-            // valore del parametro - vedi GenericEditorPage::refreshRows().
             for (int i = 0; i < choiceLabels.size(); ++i)
                 comboBox.addItem (choiceLabels[i], i + 1);
             comboBox.setColour (juce::ComboBox::backgroundColourId, kFieldBg);
@@ -1644,7 +1592,7 @@ CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
             comboBox.setColour (juce::ComboBox::outlineColourId,    kFieldOutline);
             comboBox.setColour (juce::PopupMenu::backgroundColourId,            kFieldBg);
             comboBox.setColour (juce::PopupMenu::textColourId,                  kText);
-            comboBox.setColour (juce::PopupMenu::highlightedBackgroundColourId, kAccent);
+            comboBox.setColour (juce::PopupMenu::highlightedBackgroundColourId, accentColour);
             comboBox.setColour (juce::PopupMenu::highlightedTextColourId,       juce::Colours::white);
             addAndMakeVisible (comboBox);
             comboAttachment = std::make_unique<juce::ComboBoxParameterAttachment> (parameter, comboBox);
@@ -1652,297 +1600,656 @@ CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
     }
 }
 
+void CsoundParameterMappingPanel::GenericParamRow::updateValueReadout()
+{
+    // Mai mentre l'utente ci sta scrivendo dentro - altrimenti gli
+    // sovrascriverebbe il testo (e il cursore) a meta' digitazione, ad
+    // esempio ogni volta che l'host automatizza il parametro.
+    if (valueReadout.hasKeyboardFocus (true))
+        return;
+
+    const auto value = slider.getValue();
+    valueReadout.setText (isIntegerLike ? juce::String ((int) std::round (value))
+                                         : juce::String (value, 3),
+                          false);
+}
+
+void CsoundParameterMappingPanel::GenericParamRow::commitValueFromField()
+{
+    const auto text = valueReadout.getText().trim();
+    if (text.isNotEmpty())
+    {
+        const auto typed = text.getDoubleValue();
+        slider.setValue (juce::jlimit (slider.getMinimum(), slider.getMaximum(), typed), juce::sendNotificationSync);
+    }
+
+    // Rilegge comunque il valore (clampato/riformattato, o invariato se il
+    // testo non era un numero valido) - cosi' il campo non resta mai con un
+    // testo "sporco" dopo un Return/focus perso.
+    const auto value = slider.getValue();
+    valueReadout.setText (isIntegerLike ? juce::String ((int) std::round (value))
+                                         : juce::String (value, 3),
+                          false);
+}
+
+void CsoundParameterMappingPanel::GenericParamRow::paint (juce::Graphics& g)
+{
+    // Stessa maniglia (con puntini di trascinamento) delle card Edit -
+    // trascinabile anche qui, vedi mouseDown/mouseDrag sotto.
+    const bool hasName = getChannelName && getChannelName().isNotEmpty();
+    CsoundParameterMappingPanel::paintCardChrome (g, getLocalBounds(), accentColour, handleBounds, hasName, handleHovered);
+}
+
+void CsoundParameterMappingPanel::GenericParamRow::mouseDown (const juce::MouseEvent& event)
+{
+    if (event.mods.isPopupMenu() && handleBounds.contains (event.getPosition()))
+    {
+        showCopyChngetMenu (getChannelName ? getChannelName() : juce::String(),
+                             getConfigComment ? getConfigComment() : juce::String(),
+                             onCopiedToClipboard);
+        return;
+    }
+
+    draggingFromHandle = handleBounds.contains (event.getPosition());
+}
+
+void CsoundParameterMappingPanel::GenericParamRow::mouseMove (const juce::MouseEvent& event)
+{
+    updateHandleHover (event.getPosition());
+}
+
+void CsoundParameterMappingPanel::GenericParamRow::mouseExit (const juce::MouseEvent&)
+{
+    if (handleHovered)
+    {
+        handleHovered = false;
+        setMouseCursor (juce::MouseCursor::NormalCursor);
+        repaint();
+    }
+}
+
+void CsoundParameterMappingPanel::GenericParamRow::updateHandleHover (juce::Point<int> position)
+{
+    const bool nowHovered = handleBounds.contains (position)
+                             && getChannelName && getChannelName().isNotEmpty();
+
+    if (nowHovered != handleHovered)
+    {
+        handleHovered = nowHovered;
+        setMouseCursor (handleHovered ? juce::MouseCursor::DraggingHandCursor
+                                       : juce::MouseCursor::NormalCursor);
+        repaint();
+    }
+}
+
+void CsoundParameterMappingPanel::GenericParamRow::mouseDrag (const juce::MouseEvent& event)
+{
+    if (! draggingFromHandle)
+        return;
+
+    auto* container = juce::DragAndDropContainer::findParentDragContainerFor (this);
+    if (container == nullptr || container->isDragAndDropActive())
+        return;
+
+    const auto name = getChannelName ? getChannelName() : juce::String();
+    if (name.isEmpty())
+        return;
+
+    const auto configComment = getConfigComment ? getConfigComment() : juce::String();
+    container->startDragging ("csoundChannel:" + name + "\x01" + configComment, this);
+}
+
 void CsoundParameterMappingPanel::GenericParamRow::resized()
 {
-    auto area = getLocalBounds().reduced (4, 2);
+    juce::Rectangle<int> handleStrip, typeLabelArea, nameArea, fieldsArea;
+    CsoundParameterMappingPanel::layoutUiCardSkeleton (getLocalBounds(), handleStrip, typeLabelArea, nameArea, fieldsArea);
 
-    // Colonna del nome FISSA (nameLabelWidth), uguale per OGNI riga - cosi'
-    // tutti gli slider/combo/toggle sotto iniziano comunque allineati alla
-    // stessa X, indipendentemente da quanto e' lungo il nome di questa
-    // singola riga (una larghezza calcolata riga per riga sul testo reale
-    // disallineerebbe i controlli tra una riga e l'altra). Il valore del
-    // costante stesso e' stato ridotto (era 130) per lasciare meno spazio
-    // vuoto prima del controllo - vedi il commento sulla dichiarazione.
-    auto nameArea = area.removeFromLeft (nameLabelWidth);
-    area.removeFromLeft (8);
-    nameLabel.setBounds (nameArea);
+    handleBounds = handleStrip;
+    typeLabel.setBounds (typeLabelArea);
+    channelNameLabel.setBounds (nameArea);
 
+    // fieldsArea e' un'UNICA riga compatta (uiCardControlHeight, niente
+    // didascalia sopra) - usata per intero da ciascun tipo di controllo.
     switch (kind)
     {
-        case Kind::slider:  slider.setBounds (area);   break;
-        case Kind::toggle:  toggle.setBounds (area.removeFromLeft (juce::jmin (area.getWidth(), 120))); break;
-        case Kind::choice:  comboBox.setBounds (area); break;
+        case Kind::slider:
+        {
+            // Box VALUE a destra, larghezza fissa, ALTA QUANTO l'intera riga
+            // (niente didascalia sopra) - tutto il resto (a sinistra) va
+            // allo slider, per sfruttare il massimo spazio orizzontale
+            // possibile.
+            auto valueArea = fieldsArea.removeFromRight (uiValueBoxWidth);
+            fieldsArea.removeFromRight (uiValueGap);
+            valueReadout.setBounds (valueArea);
+
+            // Sotto lo slider, le etichette min/max - lo slider stesso resta
+            // COMPATTO (non e' l'altezza totale che deve crescere): la
+            // maniglia e' disegnata molto piu' grande del normale
+            // indipendentemente da quanto e' sottile questo rettangolo -
+            // vedi CsoundParameterPanelLookAndFeel::drawLinearSlider nel .cpp.
+            auto rangeLabelsArea = fieldsArea.removeFromBottom (uiRangeLabelHeight);
+            minLabel.setBounds (rangeLabelsArea.removeFromLeft (rangeLabelsArea.getWidth() / 2));
+            maxLabel.setBounds (rangeLabelsArea);
+
+            fieldsArea.removeFromBottom (uiSliderTrackGap);
+            slider.setBounds (fieldsArea);
+            break;
+        }
+
+        case Kind::toggle:
+            toggle.setBounds (fieldsArea.removeFromLeft (uiTogglePillWidth));
+            break;
+
+        case Kind::choice:
+            comboBox.setBounds (fieldsArea);
+            break;
     }
 }
 
 //==============================================================================
-CsoundParameterMappingPanel::GenericEditorPage::GenericEditorPage()
+// FloatUnifiedRow/IntUnifiedRow/BoolUnifiedRow/ChoiceUnifiedRow - vedi il
+// commento in testa alla dichiarazione in CsoundParameterEditor.h: editRow
+// (metadata) e uiRow (controllo vero) sovrapposti sulle stesse bounds, uno
+// dei due nascosto in base a setEditMode().
+CsoundParameterMappingPanel::FloatUnifiedRow::FloatUnifiedRow (
+    CsoundAudioProcessor& processorToEdit, int slotIndex,
+    std::function<void (const juce::String&)> onCopied, std::function<void()> onRemoved)
 {
-    viewport.setViewedComponent (&rowsContainer, false);
-    viewport.setScrollBarsShown (true, true);
-    addAndMakeVisible (viewport);
+    editRow = std::make_unique<ParamRow> (processorToEdit, slotIndex);
+    editRow->onCopiedToClipboard = onCopied;
+    editRow->onRemoveRequested = onRemoved;
+    addChildComponent (*editRow);
 
-    emptyStateLabel.setText (
-                             "No parameters configured.\n"
-                             "Assign a Csound channel to the parameters in the Float, Int, Bool, or Choice tabs to see them here.",
-        juce::dontSendNotification);
-    emptyStateLabel.setJustificationType (juce::Justification::centred);
-    emptyStateLabel.setFont (juce::Font (juce::FontOptions (14.0f)));
-    emptyStateLabel.setColour (juce::Label::textColourId, kTextMuted);
-    emptyStateLabel.setMinimumHorizontalScale (1.0f);
-    addChildComponent (emptyStateLabel);
+    const auto slot = processorToEdit.getChannelParamSlot (slotIndex);
+    if (auto* param = processorToEdit.apvts.getParameter (CsoundAudioProcessor::getChannelParamID (slotIndex)))
+    {
+        uiRow = std::make_unique<GenericParamRow> (slot.channelName, *param, GenericParamRow::Kind::slider,
+                                                     juce::StringArray(), kSliderAccent, "SLIDER FLOAT",
+                                                     [&processorToEdit, slotIndex] { return processorToEdit.getChannelParamSlot (slotIndex).channelName; },
+                                                     [&processorToEdit, slotIndex] { return makeFloatConfigComment (processorToEdit.getChannelParamSlot (slotIndex)); },
+                                                     false);
+        uiRow->onCopiedToClipboard = onCopied;
+        addChildComponent (*uiRow);
+    }
+
+    setEditMode (false);
 }
 
-void CsoundParameterMappingPanel::GenericEditorPage::refreshRows (CsoundAudioProcessor& processor)
+void CsoundParameterMappingPanel::FloatUnifiedRow::resized()
 {
-    rows.clear();
+    editRow->setBounds (getLocalBounds());
+    if (uiRow != nullptr)
+        uiRow->setBounds (getLocalBounds());
+}
 
-    for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
-    {
-        const auto slot = processor.getChannelParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
-
-        if (auto* param = processor.apvts.getParameter (CsoundAudioProcessor::getChannelParamID (i)))
-            rows.push_back (std::make_unique<GenericParamRow> (slot.channelName, *param,
-                                                                  GenericParamRow::Kind::slider, juce::StringArray()));
-    }
-
-    for (int i = 0; i < CsoundAudioProcessor::numIntParams; ++i)
-    {
-        const auto slot = processor.getIntParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
-
-        if (auto* param = processor.apvts.getParameter (CsoundAudioProcessor::getIntParamID (i)))
-            rows.push_back (std::make_unique<GenericParamRow> (slot.channelName, *param,
-                                                                  GenericParamRow::Kind::slider, juce::StringArray()));
-    }
-
-    for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
-    {
-        const auto slot = processor.getBoolParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
-
-        if (auto* param = processor.apvts.getParameter (CsoundAudioProcessor::getBoolParamID (i)))
-            rows.push_back (std::make_unique<GenericParamRow> (slot.channelName, *param,
-                                                                  GenericParamRow::Kind::toggle, juce::StringArray()));
-    }
-
-    for (int i = 0; i < CsoundAudioProcessor::numChoiceParams; ++i)
-    {
-        const auto slot = processor.getChoiceParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
-
-        if (auto* param = processor.apvts.getParameter (CsoundAudioProcessor::getChoiceParamID (i)))
-        {
-            juce::StringArray labels;
-            for (int opt = 0; opt < CsoundAudioProcessor::maxChoiceOptions; ++opt)
-                labels.add (CsoundAudioProcessor::getChoiceOptionLabel (slot, opt));
-
-            rows.push_back (std::make_unique<GenericParamRow> (slot.channelName, *param,
-                                                                  GenericParamRow::Kind::choice, labels));
-        }
-    }
-
-    for (auto& row : rows)
-        rowsContainer.addAndMakeVisible (*row);
-
-    const bool empty = rows.empty();
-    viewport.setVisible (! empty);
-    emptyStateLabel.setVisible (empty);
-
+void CsoundParameterMappingPanel::FloatUnifiedRow::setEditMode (bool edit)
+{
+    editRow->setVisible (edit);
+    if (uiRow != nullptr)
+        uiRow->setVisible (! edit);
     resized();
 }
 
-void CsoundParameterMappingPanel::GenericEditorPage::resized()
+CsoundParameterMappingPanel::IntUnifiedRow::IntUnifiedRow (
+    CsoundAudioProcessor& processorToEdit, int slotIndex,
+    std::function<void (const juce::String&)> onCopied, std::function<void()> onRemoved)
 {
-    auto area = getLocalBounds();
+    editRow = std::make_unique<IntParamRow> (processorToEdit, slotIndex);
+    editRow->onCopiedToClipboard = onCopied;
+    editRow->onRemoveRequested = onRemoved;
+    addChildComponent (*editRow);
 
-    emptyStateLabel.setBounds (area.reduced (24));
+    const auto slot = processorToEdit.getIntParamSlot (slotIndex);
+    if (auto* param = processorToEdit.apvts.getParameter (CsoundAudioProcessor::getIntParamID (slotIndex)))
+    {
+        uiRow = std::make_unique<GenericParamRow> (slot.channelName, *param, GenericParamRow::Kind::slider,
+                                                     juce::StringArray(), kKnobAccent, "SLIDER INT",
+                                                     [&processorToEdit, slotIndex] { return processorToEdit.getIntParamSlot (slotIndex).channelName; },
+                                                     [&processorToEdit, slotIndex] { return makeIntConfigComment (processorToEdit.getIntParamSlot (slotIndex)); },
+                                                     true);
+        uiRow->onCopiedToClipboard = onCopied;
+        addChildComponent (*uiRow);
+    }
 
-    area = area.reduced (8);
-    viewport.setBounds (area);
+    setEditMode (false);
+}
 
-    const int contentWidth = juce::jmax (minContentWidth, viewport.getWidth() - scrollbarGutter);
-    rowsContainer.setSize (contentWidth, (int) rows.size() * genericRowHeight);
+void CsoundParameterMappingPanel::IntUnifiedRow::resized()
+{
+    editRow->setBounds (getLocalBounds());
+    if (uiRow != nullptr)
+        uiRow->setBounds (getLocalBounds());
+}
 
-    for (size_t i = 0; i < rows.size(); ++i)
-        rows[i]->setBounds (0, (int) i * genericRowHeight, contentWidth, genericRowHeight);
+void CsoundParameterMappingPanel::IntUnifiedRow::setEditMode (bool edit)
+{
+    editRow->setVisible (edit);
+    if (uiRow != nullptr)
+        uiRow->setVisible (! edit);
+    resized();
+}
+
+CsoundParameterMappingPanel::BoolUnifiedRow::BoolUnifiedRow (
+    CsoundAudioProcessor& processorToEdit, int slotIndex,
+    std::function<void (const juce::String&)> onCopied, std::function<void()> onRemoved)
+{
+    editRow = std::make_unique<BoolParamRow> (processorToEdit, slotIndex);
+    editRow->onCopiedToClipboard = onCopied;
+    editRow->onRemoveRequested = onRemoved;
+    addChildComponent (*editRow);
+
+    const auto slot = processorToEdit.getBoolParamSlot (slotIndex);
+    if (auto* param = processorToEdit.apvts.getParameter (CsoundAudioProcessor::getBoolParamID (slotIndex)))
+    {
+        uiRow = std::make_unique<GenericParamRow> (slot.channelName, *param, GenericParamRow::Kind::toggle,
+                                                     juce::StringArray(), kToggleAccent, "TOGGLE",
+                                                     [&processorToEdit, slotIndex] { return processorToEdit.getBoolParamSlot (slotIndex).channelName; },
+                                                     [&processorToEdit, slotIndex] { return makeBoolConfigComment (processorToEdit.getBoolParamSlot (slotIndex)); });
+        uiRow->onCopiedToClipboard = onCopied;
+        addChildComponent (*uiRow);
+    }
+
+    setEditMode (false);
+}
+
+void CsoundParameterMappingPanel::BoolUnifiedRow::resized()
+{
+    editRow->setBounds (getLocalBounds());
+    if (uiRow != nullptr)
+        uiRow->setBounds (getLocalBounds());
+}
+
+void CsoundParameterMappingPanel::BoolUnifiedRow::setEditMode (bool edit)
+{
+    editRow->setVisible (edit);
+    if (uiRow != nullptr)
+        uiRow->setVisible (! edit);
+    resized();
+}
+
+CsoundParameterMappingPanel::ChoiceUnifiedRow::ChoiceUnifiedRow (
+    CsoundAudioProcessor& processorToEdit, int slotIndex,
+    std::function<void (const juce::String&)> onCopied, std::function<void()> onRemoved)
+{
+    editRow = std::make_unique<ChoiceParamRow> (processorToEdit, slotIndex);
+    editRow->onCopiedToClipboard = onCopied;
+    editRow->onRemoveRequested = onRemoved;
+    addChildComponent (*editRow);
+
+    const auto slot = processorToEdit.getChoiceParamSlot (slotIndex);
+    if (auto* param = processorToEdit.apvts.getParameter (CsoundAudioProcessor::getChoiceParamID (slotIndex)))
+    {
+        juce::StringArray labels;
+        for (int opt = 0; opt < CsoundAudioProcessor::maxChoiceOptions; ++opt)
+            labels.add (CsoundAudioProcessor::getChoiceOptionLabel (slot, opt));
+
+        uiRow = std::make_unique<GenericParamRow> (slot.channelName, *param, GenericParamRow::Kind::choice,
+                                                     labels, kMenuAccent, "MENU",
+                                                     [&processorToEdit, slotIndex] { return processorToEdit.getChoiceParamSlot (slotIndex).channelName; },
+                                                     [&processorToEdit, slotIndex] { return makeChoiceConfigComment (processorToEdit.getChoiceParamSlot (slotIndex)); });
+        uiRow->onCopiedToClipboard = onCopied;
+        addChildComponent (*uiRow);
+    }
+
+    setEditMode (false);
+}
+
+void CsoundParameterMappingPanel::ChoiceUnifiedRow::resized()
+{
+    editRow->setBounds (getLocalBounds());
+    if (uiRow != nullptr)
+        uiRow->setBounds (getLocalBounds());
+}
+
+void CsoundParameterMappingPanel::ChoiceUnifiedRow::setEditMode (bool edit)
+{
+    editRow->setVisible (edit);
+    if (uiRow != nullptr)
+        uiRow->setVisible (! edit);
+    resized();
 }
 
 //==============================================================================
 CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& processorToEdit)
     : processor (processorToEdit)
 {
-    // Tema dedicato "cool" (vedi CsoundParameterPanelLookAndFeel) - si
-    // applica a questo componente e, a cascata, a tutti i figli (barra del
-    // titolo, tab, pagine, righe) che non impostano la propria LookAndFeel.
     setLookAndFeel (&lookAndFeel);
 
-    floatPage         = std::make_unique<FloatParamsPage>  (processorToEdit);
-    intPage           = std::make_unique<IntParamsPage>    (processorToEdit);
-    boolPage          = std::make_unique<BoolParamsPage>   (processorToEdit);
-    choicePage        = std::make_unique<ChoiceParamsPage> (processorToEdit);
+    // Circolare come "+" (proprieta' dinamica "circular", vedi
+    // CsoundParameterPanelLookAndFeel) - sola icona "tune" (nessun testo,
+    // vedi drawButtonText), richiesto esplicitamente.
+    editToggleButton.setName ("editToggle");
+    editToggleButton.getProperties().set ("circular", true);
+    editToggleButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff2a3540));
+    editToggleButton.setColour (juce::TextButton::textColourOffId, kText);
+    editToggleButton.setTooltip ("Toggle Edit mode");
+    editToggleButton.onClick = [this] { toggleEditMode(); };
+    addAndMakeVisible (editToggleButton);
 
-    // Inoltra il riscontro "copiato negli appunti" di ogni riga, di
-    // qualunque tab, fino a onParameterCopiedToClipboard (vedi dichiarazione
-    // in CsoundParameterEditor.h) - PluginEditor lo aggancia a appendToLog.
-    auto forwardCopyNotice = [this] (const juce::String& msg)
-    {
-        if (onParameterCopiedToClipboard)
-            onParameterCopiedToClipboard (msg);
-    };
-    floatPage->onParameterCopiedToClipboard  = forwardCopyNotice;
-    intPage->onParameterCopiedToClipboard    = forwardCopyNotice;
-    boolPage->onParameterCopiedToClipboard   = forwardCopyNotice;
-    choicePage->onParameterCopiedToClipboard = forwardCopyNotice;
-    genericEditorPage = std::make_unique<GenericEditorPage>();
+    // Bottone "+"/Add: circolare e accentato (proprieta' dinamica
+    // "circular", vedi CsoundParameterPanelLookAndFeel), icona "+" disegnata
+    // a mano invece del testo - richiesto esplicitamente.
+    addButton.getProperties().set ("circular", true);
+    addButton.setColour (juce::TextButton::buttonColourId, kAccent);
+    addButton.setTooltip ("Add a parameter");
+    addButton.onClick = [this] { showAddMenu(); };
+    addAndMakeVisible (addButton);
 
-    // Le 5 pagine sono figli diretti del pannello (non piu' ospitate da un
-    // TabbedComponent): showPage() decide quale e' visibile, addChildComponent
-    // (non addAndMakeVisible) le aggiunge gia' nascoste - showPage(0) in
-    // fondo al costruttore le rende visibili/invisibili correttamente.
-    addChildComponent (*floatPage);
-    addChildComponent (*intPage);
-    addChildComponent (*boolPage);
-    addChildComponent (*choicePage);
-    addChildComponent (*genericEditorPage);
+    viewport.setViewedComponent (&rowsContainer, false);
+    // Solo verticale: il contenuto ora va sempre a capo per restare entro
+    // la larghezza disponibile (vedi computeWrappedFieldRows()), quindi non
+    // serve piu' scorrimento orizzontale.
+    viewport.setScrollBarsShown (true, false);
+    addAndMakeVisible (viewport);
 
-    // 5 bottoni "a mano" al posto di TabbedButtonBar - vedi il commento sul
-    // perche' in CsoundParameterEditor.h. onClick chiama semplicemente
-    // showPage(i): nessuna euristica di layout/overflow di mezzo.
-    //
-    // setConnectedEdges unisce visivamente i 5 bottoni in un'unica barra
-    // segmentata (stile macOS/iOS segmented control) - tutti gli angoli
-    // sono comunque a 90 gradi (vedi CsoundParameterPanelLookAndFeel::
-    // drawButtonBackground, che non arrotonda nulla), setConnectedEdges
-    // qui serve solo a non disegnare il bordo tra bottoni adiacenti.
-    //
-    // Ordine VISIVO richiesto: UI, Float, Int, Bool, Choice (UI per prima a
-    // sinistra) - DIVERSO dall'ordine degli indici di pagina (float=0,
-    // int=1, bool=2, choice=3, genericEditor=4, usati da showPage() e da
-    // tutte le pagine/array esistenti, invariati per non toccare altrove).
-    // getOrderedTabs() sotto e' l'UNICA fonte di verita' per l'ordine
-    // visivo, condivisa da questo ciclo, updateTabButtonStyles() e
-    // resized() - evita di dover tenere sincronizzati tre elenchi scritti
-    // a mano in punti diversi.
-    genericEditorTabButton.setConnectedEdges (juce::Button::ConnectedOnRight);
-    floatTabButton.setConnectedEdges         (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnRight);
-    intTabButton.setConnectedEdges           (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnRight);
-    boolTabButton.setConnectedEdges          (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnRight);
-    choiceTabButton.setConnectedEdges        (juce::Button::ConnectedOnLeft);
+    emptyStateLabel.setText (
+        "Use the + button to add a Slider Float, Slider Int, Toggle, or Menu parameter.",
+        juce::dontSendNotification);
+    emptyStateLabel.setJustificationType (juce::Justification::centred);
+    emptyStateLabel.setFont (juce::Font (juce::FontOptions (14.0f)));
+    emptyStateLabel.setColour (juce::Label::textColourId, kTextMuted);
+    emptyStateLabel.setMinimumHorizontalScale (1.0f);
+    addChildComponent (emptyStateLabel);
 
-    // Nome usato da CsoundParameterPanelLookAndFeel::drawButtonText per
-    // riconoscere questo bottone e disegnarci sopra l'icona "tune" - vedi
-    // makeTuneIconPath sopra.
-    genericEditorTabButton.setName ("genericEditorTab");
-
-    for (auto& tab : getOrderedTabs())
-    {
-        auto* button = tab.first;
-        const int pageIndex = tab.second;
-        button->onClick = [this, pageIndex] { showPage (pageIndex); };
-        button->setColour (juce::TextButton::textColourOnId, juce::Colours::white);
-        addAndMakeVisible (*button);
-    }
-
-    updateTabButtonStyles();
-
-    // Tab mostrata di default all'apertura del pannello: 4 = "UI" (Generic
-    // Editor, vedi getOrderedTabs()), non 0 (Float) - e' la vista con gli
-    // slider/toggle/combo VERI agganciati ai parametri reali, quella che
-    // l'utente vuole vedere per prima entrando nel pannello Parametri.
-    showPage (4);
-}
-
-std::array<std::pair<juce::TextButton*, int>, 5> CsoundParameterMappingPanel::getOrderedTabs()
-{
-    // {bottone, indice di pagina} nell'ordine VISIVO sinistra->destra - vedi
-    // il commento nel costruttore sopra. L'indice di pagina e' quello usato
-    // da showPage()/floatPage/intPage/boolPage/choicePage/genericEditorPage,
-    // invariato: solo l'ORDINE in questo elenco decide la posizione a video.
-    return { { { &genericEditorTabButton, 4 },
-               { &floatTabButton,         0 },
-               { &intTabButton,           1 },
-               { &boolTabButton,          2 },
-               { &choiceTabButton,        3 } } };
+    rebuildUnifiedRows();
 }
 
 CsoundParameterMappingPanel::~CsoundParameterMappingPanel()
 {
-    // Stacca subito il collegamento alla nostra LookAndFeel (membro di
-    // questa stessa classe, distrutto comunque dopo per ordine di
-    // dichiarazione - vedi CsoundParameterEditor.h): farlo qui, per primo,
-    // evita che un repaint durante lo smontaggio dei figli trovi un
-    // puntatore a LookAndFeel gia' invalido.
     setLookAndFeel (nullptr);
 }
 
-void CsoundParameterMappingPanel::showPage (int pageIndex)
+void CsoundParameterMappingPanel::toggleEditMode()
 {
-    currentPageIndex = pageIndex;
+    editMode = ! editMode;
 
-    floatPage->setVisible         (pageIndex == 0);
-    intPage->setVisible           (pageIndex == 1);
-    boolPage->setVisible          (pageIndex == 2);
-    choicePage->setVisible        (pageIndex == 3);
-    genericEditorPage->setVisible (pageIndex == 4);
+    editToggleButton.setColour (juce::TextButton::buttonColourId, editMode ? kAccent : juce::Colour (0xff2a3540));
+    editToggleButton.setColour (juce::TextButton::textColourOffId, editMode ? juce::Colours::white : kText);
 
-    // La tab "UI" mostra i VALORI correnti: va ricostruita ogni volta che
-    // diventa quella corrente (non solo alla prima apertura), cosi' un
-    // canale rinominato/assegnato nel frattempo in una delle altre 4 tab si
-    // riflette qui subito invece di restare congelato.
-    if (pageIndex == 4)
-        genericEditorPage->refreshRows (processor);
+    for (auto& row : unifiedRows)
+        if (auto* iface = dynamic_cast<UnifiedRowInterface*> (row.get()))
+            iface->setEditMode (editMode);
 
-    updateTabButtonStyles();
+    // Le altezze preferite dipendono da editMode (le card Edit sono molto
+    // piu' alte di una riga UI) - senza questo resized() le righe
+    // cambierebbero contenuto ma non altezza fino al prossimo
+    // ridimensionamento della finestra.
+    resized();
 }
 
-void CsoundParameterMappingPanel::updateTabButtonStyles()
+void CsoundParameterMappingPanel::showAddMenu()
 {
-    // Stesso massimo contrasto del precedente drawTabButton: selezionata =
-    // pieno accento teal/testo bianco, non selezionata = grigio chiaro/testo
-    // quasi nero - qui applicato con semplici setColour() su TextButton
-    // normali, niente LookAndFeel custom per i bottoni.
-    for (auto& tab : getOrderedTabs())
-    {
-        auto* button = tab.first;
-        const bool selected = (tab.second == currentPageIndex);
+    // Etichette user-facing (Slider Float/Slider Int/Toggle/Menu);
+    // internamente restano Float/Int/Bool/Choice (kind 0..3).
+    juce::PopupMenu menu;
+    menu.addItem (1, "Slider Float");
+    menu.addItem (2, "Slider Int");
+    menu.addItem (3, "Toggle");
+    menu.addItem (4, "Menu");
 
-        button->setColour (juce::TextButton::buttonColourId, selected ? kAccent : juce::Colour (0xff9aa7b0));
-        button->setColour (juce::TextButton::buttonOnColourId, selected ? kAccent : juce::Colour (0xff9aa7b0));
-        button->setColour (juce::TextButton::textColourOffId, selected ? juce::Colours::white : juce::Colour (0xff0e1318));
-        button->setColour (juce::TextButton::textColourOnId, selected ? juce::Colours::white : juce::Colour (0xff0e1318));
+    menu.showMenuAsync (juce::PopupMenu::Options(), [this] (int result)
+    {
+        if (result >= 1 && result <= 4)
+            addNewParameter (result - 1);
+    });
+}
+
+void CsoundParameterMappingPanel::addNewParameter (int kind)
+{
+    // Trova il primo slot LIBERO (channelName vuoto) del tipo scelto - NON
+    // scrive ancora nulla nel processor (vedi createPendingRow() e il
+    // commento in testa alla classe sul perche': niente nome placeholder,
+    // la riga compare vuota con il focus gia' sul campo nome).
+    auto notify = [this] (const juce::String& msg)
+    {
+        if (onParameterCopiedToClipboard)
+            onParameterCopiedToClipboard (msg);
+    };
+
+    switch (kind)
+    {
+        case 0:
+            for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
+                if (processor.getChannelParamSlot (i).channelName.isEmpty())
+                {
+                    createPendingRow (0, i);
+                    return;
+                }
+            notify ("--- No free Slider Float slots (limit " + juce::String (CsoundAudioProcessor::numChannelParams) + ") ---");
+            return;
+
+        case 1:
+            for (int i = 0; i < CsoundAudioProcessor::numIntParams; ++i)
+                if (processor.getIntParamSlot (i).channelName.isEmpty())
+                {
+                    createPendingRow (1, i);
+                    return;
+                }
+            notify ("--- No free Slider Int slots (limit " + juce::String (CsoundAudioProcessor::numIntParams) + ") ---");
+            return;
+
+        case 2:
+            for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
+                if (processor.getBoolParamSlot (i).channelName.isEmpty())
+                {
+                    createPendingRow (2, i);
+                    return;
+                }
+            notify ("--- No free Toggle slots (limit " + juce::String (CsoundAudioProcessor::numBoolParams) + ") ---");
+            return;
+
+        case 3:
+            for (int i = 0; i < CsoundAudioProcessor::numChoiceParams; ++i)
+                if (processor.getChoiceParamSlot (i).channelName.isEmpty())
+                {
+                    createPendingRow (3, i);
+                    return;
+                }
+            notify ("--- No free Menu slots (limit " + juce::String (CsoundAudioProcessor::numChoiceParams) + ") ---");
+            return;
+
+        default:
+            return;
     }
+}
+
+void CsoundParameterMappingPanel::createPendingRow (int kind, int slotIndex)
+{
+    // Un solo pending alla volta - se ce n'era gia' uno (non ancora
+    // promosso/scartato) viene distrutto subito: il suo eventuale
+    // callAsync in volo (vedi onDiscard/onPromote sotto) trovera' comunque
+    // pendingRow nullptr o rimpiazzato e non fara' nulla di pericoloso.
+    pendingRow.reset();
+
+    auto onCopied = [this] (const juce::String& msg)
+    {
+        if (onParameterCopiedToClipboard)
+            onParameterCopiedToClipboard (msg);
+    };
+
+    // Invio/focus perso con il nome ANCORA vuoto: scarta la riga sospesa,
+    // nessuno slot resta allocato (ParamRow::commitFromFields scrive
+    // comunque un ChannelParamSlot{} vuoto, identico a prima - nessun
+    // residuo). MAI sincrono nel callback che lo richiama - vedi il
+    // commento su onRemoveRequested in CsoundParameterEditor.h.
+    auto onDiscard = [this]
+    {
+        juce::MessageManager::callAsync ([this]
+        {
+            pendingRow = nullptr;
+            resized();
+        });
+    };
+
+    UnifiedRowInterface* iface = nullptr;
+
+    switch (kind)
+    {
+        case 0:
+        {
+            auto row = std::make_unique<FloatUnifiedRow> (processor, slotIndex, onCopied, onDiscard);
+            row->editRow->onCommittedNonEmpty = [this, slotIndex, onCopied]
+            {
+                juce::MessageManager::callAsync ([this, slotIndex, onCopied]
+                {
+                    const auto name = processor.getChannelParamSlot (slotIndex).channelName;
+                    pendingRow = nullptr;
+                    rebuildUnifiedRows();
+                    onCopied ("--- Added Slider Float parameter: " + name + " ---");
+                });
+            };
+            iface = row.get();
+            pendingRow = std::move (row);
+            break;
+        }
+        case 1:
+        {
+            auto row = std::make_unique<IntUnifiedRow> (processor, slotIndex, onCopied, onDiscard);
+            row->editRow->onCommittedNonEmpty = [this, slotIndex, onCopied]
+            {
+                juce::MessageManager::callAsync ([this, slotIndex, onCopied]
+                {
+                    const auto name = processor.getIntParamSlot (slotIndex).channelName;
+                    pendingRow = nullptr;
+                    rebuildUnifiedRows();
+                    onCopied ("--- Added Slider Int parameter: " + name + " ---");
+                });
+            };
+            iface = row.get();
+            pendingRow = std::move (row);
+            break;
+        }
+        case 2:
+        {
+            auto row = std::make_unique<BoolUnifiedRow> (processor, slotIndex, onCopied, onDiscard);
+            row->editRow->onCommittedNonEmpty = [this, slotIndex, onCopied]
+            {
+                juce::MessageManager::callAsync ([this, slotIndex, onCopied]
+                {
+                    const auto name = processor.getBoolParamSlot (slotIndex).channelName;
+                    pendingRow = nullptr;
+                    rebuildUnifiedRows();
+                    onCopied ("--- Added Toggle parameter: " + name + " ---");
+                });
+            };
+            iface = row.get();
+            pendingRow = std::move (row);
+            break;
+        }
+        case 3:
+        {
+            auto row = std::make_unique<ChoiceUnifiedRow> (processor, slotIndex, onCopied, onDiscard);
+            row->editRow->onCommittedNonEmpty = [this, slotIndex, onCopied]
+            {
+                juce::MessageManager::callAsync ([this, slotIndex, onCopied]
+                {
+                    const auto name = processor.getChoiceParamSlot (slotIndex).channelName;
+                    pendingRow = nullptr;
+                    rebuildUnifiedRows();
+                    onCopied ("--- Added Menu parameter: " + name + " ---");
+                });
+            };
+            iface = row.get();
+            pendingRow = std::move (row);
+            break;
+        }
+        default:
+            return;
+    }
+
+    rowsContainer.addAndMakeVisible (*pendingRow);
+    iface->setEditMode (true); // la riga sospesa mostra SEMPRE i campi, a prescindere da editMode globale
+
+    viewport.setVisible (true);
+    emptyStateLabel.setVisible (false);
+
+    resized();
+
+    viewport.setViewPosition (viewport.getViewPositionX(), juce::jmax (0, rowsContainer.getHeight() - viewport.getHeight()));
+    iface->focusNameField();
+}
+
+void CsoundParameterMappingPanel::rebuildUnifiedRows()
+{
+    unifiedRows.clear();
+
+    auto onCopied = [this] (const juce::String& msg)
+    {
+        if (onParameterCopiedToClipboard)
+            onParameterCopiedToClipboard (msg);
+    };
+
+    // juce::MessageManager::callAsync: MAI distruggere/ricostruire la lista
+    // SINCRONAMENTE dentro il callback che l'ha richiesta (es. il click del
+    // removeButton di una riga che stiamo per distruggere).
+    auto onRemoved = [this] { juce::MessageManager::callAsync ([this] { rebuildUnifiedRows(); }); };
+
+    for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
+    {
+        if (processor.getChannelParamSlot (i).channelName.isEmpty())
+            continue;
+
+        auto row = std::make_unique<FloatUnifiedRow> (processor, i, onCopied, onRemoved);
+        row->setEditMode (editMode);
+        rowsContainer.addAndMakeVisible (*row);
+        unifiedRows.push_back (std::move (row));
+    }
+
+    for (int i = 0; i < CsoundAudioProcessor::numIntParams; ++i)
+    {
+        if (processor.getIntParamSlot (i).channelName.isEmpty())
+            continue;
+
+        auto row = std::make_unique<IntUnifiedRow> (processor, i, onCopied, onRemoved);
+        row->setEditMode (editMode);
+        rowsContainer.addAndMakeVisible (*row);
+        unifiedRows.push_back (std::move (row));
+    }
+
+    for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
+    {
+        if (processor.getBoolParamSlot (i).channelName.isEmpty())
+            continue;
+
+        auto row = std::make_unique<BoolUnifiedRow> (processor, i, onCopied, onRemoved);
+        row->setEditMode (editMode);
+        rowsContainer.addAndMakeVisible (*row);
+        unifiedRows.push_back (std::move (row));
+    }
+
+    for (int i = 0; i < CsoundAudioProcessor::numChoiceParams; ++i)
+    {
+        if (processor.getChoiceParamSlot (i).channelName.isEmpty())
+            continue;
+
+        auto row = std::make_unique<ChoiceUnifiedRow> (processor, i, onCopied, onRemoved);
+        row->setEditMode (editMode);
+        rowsContainer.addAndMakeVisible (*row);
+        unifiedRows.push_back (std::move (row));
+    }
+
+    const bool empty = unifiedRows.empty() && pendingRow == nullptr;
+    viewport.setVisible (! empty);
+    emptyStateLabel.setVisible (empty);
+
+    resized();
 }
 
 void CsoundParameterMappingPanel::refreshAllFromProcessor()
 {
-    floatPage->refreshAllFromProcessor();
-    intPage->refreshAllFromProcessor();
-    boolPage->refreshAllFromProcessor();
-    choicePage->refreshAllFromProcessor();
-
-    // La tab Generic Editor si ricostruisce comunque da sola ogni volta che
-    // diventa quella corrente (vedi showPage()), ma se e' GIA' quella
-    // visibile in questo momento (l'utente ha caricato una sessione mentre
-    // era su "UI") va aggiornata subito, altrimenti mostrerebbe ancora
-    // slider/toggle/combo della sessione precedente finche' non si cambia
-    // tab e si ritorna.
-    if (currentPageIndex == 4)
-        genericEditorPage->refreshRows (processor);
+    // Ricostruire da zero (invece di rileggere riga per riga) e' la via
+    // piu' semplice e sicura per riflettere un Load Session: non solo i
+    // VALORI dei metadata possono essere cambiati, ma anche QUALI slot sono
+    // allocati - una lista che "appare solo se allocato" deve comunque far
+    // apparire/sparire righe di conseguenza. Una eventuale pendingRow in
+    // sospeso viene scartata (il nuovo stato caricato la rende comunque
+    // priva di senso).
+    pendingRow = nullptr;
+    rebuildUnifiedRows();
 }
 
 void CsoundParameterMappingPanel::paint (juce::Graphics& g)
 {
-    // Sidebar ancorata (non piu' una "finestra" flottante): corpo scuro a
-    // spigoli vivi, nessuna ombra (non ha senso per un pannello incollato
-    // al bordo della finestra, la separazione dall'editor la fa gia' il
-    // divisore ridimensionabile disegnato da PluginEditor) e un solo
-    // accento verticale sul bordo sinistro, quello adiacente al divisore.
     auto bounds = getLocalBounds().toFloat();
 
     g.setColour (kPanelBg);
@@ -1954,35 +2261,55 @@ void CsoundParameterMappingPanel::paint (juce::Graphics& g)
 
 void CsoundParameterMappingPanel::resized()
 {
-    auto area = getLocalBounds();
-    area = area.reduced (4);
+    auto area = getLocalBounds().reduced (4);
 
-    // Barra tab: 5 bottoni di larghezza ESATTAMENTE uguale che riempiono
-    // tutta la riga - layout banale, niente auto-layout/euristiche di
-    // overflow di mezzo (vedi il commento in testa ai membri *TabButton in
-    // CsoundParameterEditor.h sul perche' non usiamo piu' TabbedComponent).
-    auto tabBarArea = area.removeFromTop (tabBarHeight);
-    const int eachTabWidth = tabBarArea.getWidth() / 5;
+    auto toolbar = area.removeFromTop (toolbarHeight);
 
-    const auto orderedTabs = getOrderedTabs();
+    // "+" ed "Edit" - entrambi circolari, stesso diametro (toolbarHeight,
+    // ingrandito - richiesta esplicita), centrati sulla larghezza TOTALE del
+    // pannello (non della sola toolbar), ravvicinati con solo
+    // toolbarButtonGap tra loro invece del margine di 10px di prima.
+    const int buttonSize = toolbarHeight;
+    const int centreX = getWidth() / 2;
 
-    for (int i = 0; i < 5; ++i)
-    {
-        const int x = i * eachTabWidth;
-        const int w = (i == 4) ? (tabBarArea.getWidth() - x) : eachTabWidth;
-        orderedTabs[(size_t) i].first->setBounds (tabBarArea.getX() + x, tabBarArea.getY(), w, tabBarArea.getHeight());
-    }
+    addButton.setBounds (centreX - buttonSize - toolbarButtonGap / 2, toolbar.getY(), buttonSize, buttonSize);
+    editToggleButton.setBounds (centreX + toolbarButtonGap / 2, toolbar.getY(), buttonSize, buttonSize);
 
     area.removeFromTop (4);
 
-    // Tutte e 5 le pagine occupano la stessa area sotto la barra tab -
-    // showPage() decide quale e' visibile, qui basta dare a tutte lo stesso
-    // rettangolo (quella nascosta non viene disegnata, il costo e'
-    // trascurabile).
-    floatPage->setBounds (area);
-    intPage->setBounds (area);
-    boolPage->setBounds (area);
-    choicePage->setBounds (area);
-    genericEditorPage->setBounds (area);
-}
+    emptyStateLabel.setBounds (area.reduced (24));
 
+    viewport.setBounds (area);
+
+    // Non c'e' piu' un minimo forzato: se il pannello e' piu' stretto della
+    // riga di campi piu' larga, i campi vanno a capo (vedi
+    // computeWrappedFieldRows()/layoutWrappedFields()) invece di mostrare
+    // una scrollbar orizzontale - richiesto esplicitamente.
+    const int contentWidth = juce::jmax (120, viewport.getWidth() - scrollbarGutter);
+
+    int y = 0;
+
+    // Sia in modalita' Edit che UI le righe sono "card" (vedi
+    // paintCardChrome()/GenericParamRow::paint()) separate da uno spazio
+    // (cardGap) che lascia trasparire lo sfondo scuro del pannello
+    // (kPanelBg) tra una card e la successiva.
+    const int gapBetweenRows = cardGap;
+
+    for (auto& row : unifiedRows)
+    {
+        auto* iface = dynamic_cast<UnifiedRowInterface*> (row.get());
+        const int h = iface != nullptr ? iface->getPreferredHeight (editMode, contentWidth) : rowHeight;
+        row->setBounds (0, y, contentWidth, h);
+        y += h + gapBetweenRows;
+    }
+
+    if (pendingRow != nullptr)
+    {
+        auto* iface = dynamic_cast<UnifiedRowInterface*> (pendingRow.get());
+        const int h = iface != nullptr ? iface->getPreferredHeight (true, contentWidth) : rowHeight;
+        pendingRow->setBounds (0, y, contentWidth, h);
+        y += h + gapBetweenRows;
+    }
+
+    rowsContainer.setSize (contentWidth, y);
+}

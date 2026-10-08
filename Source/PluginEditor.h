@@ -149,14 +149,15 @@ private:
     // quando la sidebar e' visibile, cosi' sia l'editing del codice sia il
     // drag della maniglia "#N" sull'editor restano sempre possibili.
     CsoundParameterMappingPanel parameterPanel { audioProcessor };
-    bool showingParameterPanel = false;
+    bool showingParameterPanel = true;
     void toggleParameterPanel();
 
     // Larghezza corrente della sidebar (ridimensionabile trascinando
-    // sidebarDivider sotto) - inizializzata a CsoundParameterMappingPanel::
-    // preferredWidth, poi limitata in resized() tra sidebarMinWidth e uno
-    // spazio che lascia comunque sidebarEditorMinWidth all'editor/consolle.
-    int sidebarWidth = CsoundParameterMappingPanel::preferredWidth;
+    // sidebarDivider sotto) - inizializzata a una larghezza stretta ma
+    // comoda (le card si adattano comunque, vedi wrap dinamico dei campi),
+    // poi limitata in resized() tra sidebarMinWidth e uno spazio che lascia
+    // comunque sidebarEditorMinWidth all'editor/consolle.
+    int sidebarWidth = 360;
     static constexpr int sidebarMinWidth = 280;
     static constexpr int sidebarEditorMinWidth = 300;
     static constexpr int sidebarDividerWidth = 6;

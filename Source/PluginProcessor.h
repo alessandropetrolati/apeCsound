@@ -465,7 +465,7 @@ public:
     // plugin (Csound stesso, un editor di testo, un altro host) - non un
     // formato proprietario/binario. Il mapping dei 64 parametri (nome
     // canale/range/skew/increment/default per slot) viene scritto in APPENDICE, dopo
-    // il codice, dentro un tag <CsoundStudioParams>...</CsoundStudioParams>
+    // il codice, dentro un tag <CsoundParams>...</CsoundParams>
     // creato apposta: Csound analizza un .csd cercando i tag <CsOptions>/
     // <CsInstruments>/<CsScore> per nome, quindi ignora senza problemi
     // qualunque tag sconosciuto dopo </CsoundSynthesizer> - il file resta
@@ -493,7 +493,7 @@ private:
         testo del .csd da usare - passato esplicitamente dal chiamante
         (invece di leggerlo da state.getProperty("csd",...)) cosi'
         loadSessionFromFile puo' usare il testo LETTERALE che precede il tag
-        <CsoundStudioParams> nel file, che resta la fonte di verita' per il
+        <CsoundParams> nel file, che resta la fonte di verita' per il
         codice anche se qualcuno modifica il .csd a mano senza toccare il
         tag. Ricompila subito se il motore e' gia' in esecuzione (stesso
         schema di setStateInformation - vedi il commento li' sul perche'). */
@@ -503,7 +503,7 @@ private:
     // vuoto = non assegnato, come un plugin appena istanziato) - chiamata
     // da loadSessionFromFile PRIMA di qualunque altra cosa, incondizionata:
     // il nuovo .csd potrebbe non definire nessun parametro (un .csd
-    // "normale" scritto a mano, senza <CsoundStudioParams> ne' <Cabbage>),
+    // "normale" scritto a mano, senza <CsoundParams> ne' <Cabbage>),
     // quindi senza questo reset preventivo i mapping della sessione
     // PRECEDENTE resterebbero appesi a canali che il nuovo file magari non
     // usa nemmeno piu'. I rami che DEFINISCONO davvero dei parametri
@@ -515,7 +515,7 @@ private:
 
     // Import automatico dei parametri da un .csd Cabbage "allo stato
     // brado" - chiamato da loadSessionFromFile quando il file contiene un
-    // tag <Cabbage> ma NON il nostro <CsoundStudioParams> (cioe' non e' mai
+    // tag <Cabbage> ma NON il nostro <CsoundParams> (cioe' non e' mai
     // stato salvato da questo plugin): legge le dichiarazioni dei widget
     // Cabbage dentro quel tag e popola i 16 slot Float, i 16 Bool e i 16
     // Choice leggendo channel()/range()/value()/text(), cosi' l'utente non

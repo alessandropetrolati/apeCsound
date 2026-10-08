@@ -21,11 +21,11 @@ class CsoundParameterPanelLookAndFeel final : public juce::LookAndFeel_V4
 public:
     CsoundParameterPanelLookAndFeel();
 
-    // Angoli a 90 gradi anche sulla tab bar segmentata (altrimenti
-    // LookAndFeel_V4 arrotonderebbe automaticamente i bordi "non connessi"
-    // del primo/ultimo bottone del gruppo - vedi setConnectedEdges in
-    // CsoundParameterMappingPanel) - coerente con lo stile squadrato
-    // richiesto per tutti i widget del plugin.
+    // Angoli a 90 gradi anche sui bottoni Edit/+ (altrimenti LookAndFeel_V4
+    // arrotonderebbe automaticamente i bordi) - coerente con lo stile
+    // squadrato richiesto per tutti i widget del plugin. Il bottone "+" fa
+    // eccezione (proprieta' dinamica "circular", vedi il .cpp) ed e'
+    // disegnato circolare con un'icona "+" dedicata (vedi drawButtonText).
     void drawButtonBackground (juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour,
                                 bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
 
@@ -48,53 +48,93 @@ public:
                          bool isScrollbarVertical, int thumbStartPosition, int thumbSize,
                          bool isMouseOver, bool isMouseDown) override;
 
-    // Disegna icona + testo SOLO per il bottone della tab "UI" (riconosciuto
-    // da Component::setName("genericEditorTab") - vedi CsoundParameterMappingPanel);
-    // per tutti gli altri bottoni (Float/Int/Bool/Choice, senza icona) delega
-    // al comportamento standard di LookAndFeel_V4. L'icona e' la STESSA
-    // "tune" del bottone Parameters nella toolbar (vedi makeTuneIconPath nel
-    // .cpp) - stesso path SVG, nessuna icona nuova da inventare.
+    // Slider orizzontale della card UI (GenericParamRow, Kind::slider):
+    // track SOTTILE a tutta larghezza + maniglia (thumb) MOLTO grande,
+    // quasi quanto l'intera altezza del componente - richiesta esplicita
+    // ("la maniglia dev'essere molto piu' grande, non l'altezza totale dello
+    // slider"): invece di ingrandire la riga (che userebbe piu' spazio
+    // verticale), si ingrandisce SOLO la maniglia rispetto a un track
+    // sottile, nello stesso ingombro compatto di sempre.
+    void drawLinearSlider (juce::Graphics& g, int x, int y, int width, int height,
+                            float sliderPos, float minSliderPos, float maxSliderPos,
+                            const juce::Slider::SliderStyle style, juce::Slider& slider) override;
+
+    // Disegna un "pill" squadrato (sfondo come i campi, pallino pieno +
+    // testo ON/OFF) SOLO per i ToggleButton riconosciuti dal nome
+    // ("pillToggle", vedi GenericParamRow) - il bottone On/Off della card
+    // Edit resta sulla checkbox standard di LookAndFeel_V4.
+    void drawToggleButton (juce::Graphics& g, juce::ToggleButton& button,
+                            bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
+
+    // Disegna icona + testo SOLO per il bottone Edit (riconosciuto da
+    // Component::setName("editToggle")); disegna un'icona "+" dedicata
+    // (nessun testo) per il bottone circolare Add (riconosciuto dalla
+    // proprieta' dinamica "circular") - per tutti gli altri bottoni delega
+    // al comportamento standard di LookAndFeel_V4.
     void drawButtonText (juce::Graphics& g, juce::TextButton& button,
                           bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
 };
 
 /**
-    Sidebar ancorata a destra (non una finestra flottante/overlay - vedi il
-    commento su parameterPanel in PluginEditor.h sul perche') per definire,
-    per ciascuno dei 64 parametri host float (CsoundAudioProcessor::
+    Sidebar ancorata a destra (non una finestra flottante/overlay) per
+    definire, per ciascuno dei 64 parametri host float (CsoundAudioProcessor::
     ChannelParamSlot), dei 32 interi (IntParamSlot), dei 32 booleani
     (BoolParamSlot) e dei 16 a scelta multipla (ChoiceParamSlot), il canale
     Csound a cui sono assegnati ("rename" - il parametro apvts resta sempre
-    "Float N"/"Int N"/"Bool N"/"Choice N" per l'host) e i relativi metadata
-    (range/default/skew/increment per i float, range/default per gli interi, default
-    on/off per i bool, etichette/indice di default per i choice).
+    "Float N"/"Int N"/"Bool N"/"Choice N" per l'host) e i relativi metadata.
 
-    I quattro tipi sono isolati in QUATTRO TAB separate, nell'ordine Float,
-    Int, Bool, Choice (FloatParamsPage/IntParamsPage/BoolParamsPage/
-    ChoiceParamsPage, vedi sotto), non impilati in un'unica lista
-    scorrevole: con tutte le righe insieme non si distingueva piu' un tipo
-    dall'altro.
+    Una SOLA lista (niente tab Float/Int/Bool/Choice/UI), che mostra SOLO gli
+    slot gia' ALLOCATI (channelName non vuoto) - i 64+32+32+16 slot sono un
+    pool da cui si "consuma" tramite il bottone "+"/Add (vedi showAddMenu()/
+    addNewParameter()/createPendingRow()).
 
-    Niente barra del titolo (ne' etichetta ne' pulsante di chiusura, rimossa
-    per recuperare spazio verticale per il contenuto): si mostra/nasconde
-    SOLO dal bottone "Parameters" nella toolbar di PluginEditor (vedi
-    toggleParameterPanel()), niente modo di chiuderla dal pannello stesso.
-    La barra tab (Float/Int/Bool/Choice/UI) parte quindi direttamente dal
-    bordo superiore; un bordo/sfondo disegnati in paint() restano a
-    distinguerla dal resto dell'editor.
+    Il flusso di Add (richiesto esplicitamente): "+" apre un menu Slider/Knob/
+    Toggle/Menu (= Float/Int/Bool/Choice internamente); scelto il tipo, il
+    primo slot libero di quel tipo NON viene allocato subito - compare una
+    card "in sospeso" (pendingRow) con il campo nome VUOTO (nessun nome
+    placeholder) e il focus gia' li', pronta a scrivere il chnget. Da quel
+    momento il campo si comporta come una riga normale (commit ad ogni
+    carattere, vedi ParamRow::commitFromFields):
+      - Invio (o click altrove, che perde il focus) con il campo ANCORA
+        VUOTO -> la card sospesa scompare, lo slot resta libero, come se
+        "+" non fosse mai stato premuto (vedi ParamRow::onRemoveRequested,
+        qui agganciato a uno scarto invece che a una rimozione normale);
+      - Invio (o perdita del focus) con un nome scritto -> lo slot e'
+        gia' stato scritto nel processor (succede ad ogni carattere, non
+        solo alla fine), la card sospesa viene sostituita dalla riga VERA
+        della lista unificata (vedi ParamRow::onCommittedNonEmpty) - stesso
+        slot, ma ora persistente/ricostruibile come ogni altra riga.
 
-    Non mostra/non crea slider per i VALORI correnti: quelli restano
-    affidati al meccanismo automatico di JUCE (juce::GenericAudioProcessor
-    Editor, agganciato a CsoundAudioProcessor::apvts) o a una skin dedicata
-    in futuro - questo pannello riguarda solo i metadata per slot.
+    Un bottone "Edit" (sempre visibile, vedi editToggleButton) commuta OGNI
+    riga della lista tra due visualizzazioni, SENZA cambiare quali righe sono
+    presenti:
+      - modalita' UI (default): una card (vedi uiCardHeight) con etichetta
+        tipo + nome canale in testa e il controllo VERO (slider/toggle/combo,
+        agganciato al parametro apvts reale tramite GenericParamRow) a tutta
+        larghezza sotto - stessa maniglia colorata e sfondo delle card Edit,
+        ma senza campi editabili;
+      - modalita' Edit: una "card" piu' alta (vedi cardHeightSingleRow/
+        cardHeightDoubleRow) con, dall'alto in basso: etichetta tipo colorata
+        + bottone di rimozione ("SLIDER · CANALE" ecc. - vedi
+        ParamRow/IntParamRow/BoolParamRow/ChoiceParamRow), il campo nome
+        canale a tutta larghezza in grande, poi una riga di campi con
+        etichetta sopra ciascuno (MIN/MAX/INIT/EXP/STEP per Float, MIN/MAX/
+        INIT per Int, INIT+checkbox per Bool, DEFAULT per Choice) e, solo
+        per Choice, una seconda riga larga quanto la card per le opzioni
+        (OPZIONI, separate da virgola). La maniglia di trascinamento e' una
+        barra verticale colorata (diversa per tipo) sul lato sinistro della
+        card - vedi layoutCardSkeleton()/paintCardChrome().
 
-    Ogni riga (in tutte e quattro le tab) e' anche una sorgente di drag and
-    drop (vedi ParamRow::mouseDrag/IntParamRow::mouseDrag/BoolParamRow::
-    mouseDrag/ChoiceParamRow::mouseDrag): trascinando l'area "#N" sull'editor
-    di codice (CsoundCodeEditor,
-    che implementa DragAndDropTarget) e rilasciando su una riga, viene
-    inserito automaticamente un chnget per quel canale - vedi il commento in
-    testa a CsoundCodeEditor.h per il formato esatto.
+    Ogni riga (in ENTRAMBE le modalita' - anche quella UI, vedi
+    GenericParamRow::mouseDrag, ha la sua maniglia) e' anche una sorgente di
+    drag and drop (vedi ParamRow::mouseDrag/ecc.): trascinando l'area della
+    maniglia sull'editor di codice (CsoundCodeEditor, che implementa
+    DragAndDropTarget) e rilasciando su una riga, viene inserito
+    automaticamente un chnget per quel canale, seguito da un commento con i
+    parametri di configurazione dello slot (Min/Max/Skew/Step per Float,
+    Min/Max per Int, Init per Bool, Options/Default per Choice - vedi
+    makeFloatConfigComment() ecc. nel .cpp) - vedi il commento in testa a
+    CsoundCodeEditor.h per il formato esatto.
 */
 class CsoundParameterMappingPanel final : public juce::Component
 {
@@ -105,8 +145,7 @@ public:
     void resized() override;
     void paint (juce::Graphics& g) override;
 
-    // Rilegge TUTTE le righe (tutte e 4 le tab di metadata, piu' la tab
-    // Generic Editor se e' quella corrente) dallo stato attuale del
+    // Ricostruisce l'intera lista unificata dallo stato attuale del
     // processor - chiamata da PluginEditor dopo un Load Session da file
     // (vedi CsoundAudioProcessor::loadSessionFromFile), cosi' il pannello
     // mostra subito il contenuto appena caricato invece dei vecchi valori
@@ -114,87 +153,168 @@ public:
     void refreshAllFromProcessor();
 
     // Chiamata quando il tasto destro su una maniglia copia un chnget negli
-    // appunti (vedi ParamRow/IntParamRow/BoolParamRow/ChoiceParamRow::
-    // onCopiedToClipboard, agganciato riga per riga alla creazione - vedi
-    // il costruttore) - PluginEditor la usa per scrivere una riga in
-    // consolle (vedi appendToLog), cosi' l'azione (altrimenti invisibile:
-    // nessun popup, nessun cambio grafico) lascia una traccia verificabile.
+    // appunti, quando un parametro viene creato/rimosso dal flusso "+", o
+    // quando il pool di uno dei quattro tipi e' esaurito (nessuno slot
+    // libero) - PluginEditor la usa per scrivere una riga in consolle (vedi
+    // appendToLog), cosi' ogni azione altrimenti invisibile lascia una
+    // traccia verificabile.
     std::function<void (const juce::String&)> onParameterCopiedToClipboard;
 
-    // Larghezze fisse delle colonne handle/min/max/default/skew/increment (vedi
-    // layoutColumns()); nameWidth e' solo la larghezza MINIMA del campo
-    // nome, usata per calcolare preferredWidth - il campo stesso si allarga
-    // con la larghezza assegnata. preferredWidth e' la larghezza "comoda" di
-    // partenza che CsoundAudioProcessorEditor usa come default per la
-    // sidebar ancorata a destra (vedi sidebarWidth in PluginEditor.h) - non
-    // piu' un vincolo di una finestra flottante, solo il valore iniziale
-    // prima che l'utente la ridimensioni trascinando il divisore.
-    static constexpr int handleWidth = 30;
-    static constexpr int nameWidth = 108;
-    static constexpr int minMaxWidth = 80;
-    static constexpr int defaultWidth = 80;
-    // Colonna condivisa da skew e increment (vedi layoutColumns()): divisa a
-    // meta' da ParamRow/FloatParamsPage in due campi affiancati.
-    static constexpr int curveWidth = 160;
-    static constexpr int preferredWidth = handleWidth + nameWidth + minMaxWidth * 2 + defaultWidth + curveWidth + 10 + 16 + 16 + 10;
+    // Geometria della "card" Edit - vedi layoutCardSkeleton()/
+    // paintCardChrome() in CsoundParameterEditor.cpp. handleStripWidth e'
+    // sia la barra colorata (maniglia) sia lo spazio riservato ad essa a
+    // sinistra del contenuto.
+    static constexpr int handleStripWidth = 34;
+    static constexpr int cardPaddingH = 14;
+    static constexpr int cardPaddingV = 12;
+    static constexpr int cardHeaderHeight = 20;
+    static constexpr int cardHeaderGap = 6;
+    static constexpr int cardNameHeight = 30;
+    static constexpr int cardNameGap = 10;
+    static constexpr int cardFieldCaptionHeight = 13;
+    static constexpr int cardFieldCaptionGap = 3;
+    static constexpr int cardFieldBoxHeight = 30;
+    static constexpr int cardFieldRowGap = 10;
+    static constexpr int cardGap = 8; // spazio verticale TRA le card, nella lista
 
-    static constexpr int boolDefaultWidth = 70;
-    static constexpr int choiceOptionsWidth = 220;
-    static constexpr int choiceDefaultIndexWidth = 50;
+    // Larghezze dei singoli campi numerici nella riga sotto il nome -
+    // diverse per tipo, come nel mockup (lo "STEP" del Float e' piu' largo
+    // degli altri, deve contenere valori come "0.001").
+    static constexpr int cardFieldNarrowWidth = 68;
+    static constexpr int cardFieldStepWidth = 92;
+    static constexpr int cardFieldGap = 14;
+    static constexpr int cardBoolFieldWidth = 120;
+    static constexpr int cardChoiceDefaultWidth = 160; // ComboBox: deve mostrare l'etichetta scelta, non solo un indice
+
+    // Altezza di una card Edit con "numFieldRows" righe di campi (etichetta
+    // sopra + campo sotto, ripetute verticalmente con cardFieldRowGap tra
+    // una riga e l'altra) - usata sia per i tipi a righe FISSE (Bool: 1,
+    // Choice: 2) sia, dinamicamente, per Slider/Knob quando i campi non
+    // entrano tutti su una riga sola e vanno a capo (vedi
+    // computeWrappedFieldRows()/ParamRow::resized()).
+    static constexpr int cardHeightForFieldRows (int numFieldRows)
+    {
+        return cardPaddingV * 2 + cardHeaderHeight + cardHeaderGap + cardNameHeight + cardNameGap
+               + numFieldRows * (cardFieldCaptionHeight + cardFieldCaptionGap + cardFieldBoxHeight)
+               + (numFieldRows - 1) * cardFieldRowGap;
+    }
+
+    // NON scritte come cardHeightForFieldRows(1)/(2): l'inizializzatore di
+    // un dato membro static NON e' un "complete-class context" (a
+    // differenza del CORPO di cardHeightForFieldRows() sopra, che infatti
+    // puo' essere chiamato liberamente da dentro altri corpi di funzione,
+    // es. FloatUnifiedRow::getPreferredHeight() piu' sotto) - su alcuni
+    // compiler chiamarla qui fallisce. Stessa formula, scritta per esteso.
+    static constexpr int cardHeightSingleRow = cardPaddingV * 2 + cardHeaderHeight + cardHeaderGap
+                                                + cardNameHeight + cardNameGap
+                                                + 1 * (cardFieldCaptionHeight + cardFieldCaptionGap + cardFieldBoxHeight)
+                                                + 0 * cardFieldRowGap;
+    static constexpr int cardHeightDoubleRow = cardPaddingV * 2 + cardHeaderHeight + cardHeaderGap
+                                                + cardNameHeight + cardNameGap
+                                                + 2 * (cardFieldCaptionHeight + cardFieldCaptionGap + cardFieldBoxHeight)
+                                                + 1 * cardFieldRowGap;
+
+    // Geometria della card "UI" (modalita' NON Edit, vedi mockup): maniglia
+    // colorata + sfondo delle card Edit, MA una propria skeleton piu'
+    // compatta (layoutUiCardSkeleton(), non layoutCardSkeleton()) - niente
+    // bottone di rimozione, etichetta tipo e nome canale (sola lettura) piu'
+    // bassi di quelli Edit, nessuna didascalia sopra il controllo. Economia
+    // verticale massima (richiesta esplicita, l'altezza Edit-like era
+    // "troppo alta, spreca spazio"): uiCardControlHeight e' l'UNICA riga
+    // sotto il nome, usata per intero da slider/toggle/combo/box VALUE -
+    // niente spazi di allineamento aggiuntivi. La maniglia (thumb) dello
+    // slider resta pero' grande relativamente a questa riga sottile (vedi
+    // CsoundParameterPanelLookAndFeel::drawLinearSlider nel .cpp) - e'
+    // quello, non l'altezza della riga, a dover risultare grande.
+    static constexpr int uiCardPaddingV = 6;
+    static constexpr int uiCardHeaderHeight = 14;   // solo etichetta tipo, niente bottone rimozione
+    static constexpr int uiCardHeaderGap = 3;
+    static constexpr int uiCardNameHeight = 18;     // nome canale, sola lettura - piu' basso del campo Edit
+    static constexpr int uiCardNameGap = 3;
+    static constexpr int uiCardControlHeight = 28;  // slider/toggle/combo/box VALUE - un'unica riga, niente didascalia sopra
+
+    static constexpr int uiCardHeight = uiCardPaddingV * 2 + uiCardHeaderHeight + uiCardHeaderGap
+                                         + uiCardNameHeight + uiCardNameGap + uiCardControlHeight;
+
+    static constexpr int uiValueGap = 10;        // spazio orizzontale tra lo slider e il box VALUE
+    static constexpr int uiValueBoxWidth = 80;   // editabile - "0.00001" ci sta comodo
+    static constexpr int uiRangeLabelHeight = 10; // "0"/"127" sotto lo slider - piccola, non e' una didascalia di campo
+    static constexpr int uiSliderTrackGap = 2;    // tra lo slider e le etichette min/max sotto
+    static constexpr int uiTogglePillWidth = 100;
+
+    // Larghezza "di comodo" iniziale della sidebar (vedi PluginEditor.h) -
+    // la riga di campi piu' larga (Slider, con 5 campi fissi) SU UNA SOLA
+    // riga. Non e' piu' un minimo forzato per il contenuto: se il pannello
+    // e' piu' stretto di cosi', le righe di campi vanno semplicemente a
+    // capo (vedi computeWrappedFieldRows()) invece di mostrare una
+    // scrollbar orizzontale.
+    static constexpr int minContentWidth = handleStripWidth + cardPaddingH * 2
+                                            + cardFieldNarrowWidth * 4 + cardFieldStepWidth + cardFieldGap * 4;
 
 private:
-    // Divide "area" nelle stesse 6 colonne (handle/nome/min/max/default/
-    // skew+increment) sia per l'intestazione sia per ogni ParamRow, cosi'
-    // le etichette nell'intestazione restano SEMPRE allineate ai campi
-    // sotto - un'unica fonte di verita' per il layout, invece di
-    // ricalcolarlo due volte con margini separati che potrebbero
-    // disallinearsi. handle/min/max/default/skewIncrement hanno larghezza
-    // FISSA (l'ultima e' condivisa da due campi affiancati - vedi
-    // ParamRow::resized()); il nome prende tutto lo spazio che resta (fino
-    // al campo min), quindi l'intera riga scala con la larghezza di "area".
-    static void layoutColumns (juce::Rectangle<int> area,
-                                juce::Rectangle<int>& handle,
-                                juce::Rectangle<int>& name,
-                                juce::Rectangle<int>& min,
-                                juce::Rectangle<int>& max,
-                                juce::Rectangle<int>& defaultVal,
-                                juce::Rectangle<int>& skewIncrement);
+    // Larghezza disponibile per i campi di una card (dopo maniglia e
+    // padding) dato lo spazio totale della card - stessa identica
+    // sottrazione che fa layoutCardSkeleton() per fieldsArea, cosi' il
+    // conteggio righe qui e il posizionamento reale in resized() restano
+    // sempre d'accordo.
+    static int fieldsAvailableWidth (int fullCardWidth);
 
-    // Stesso schema di layoutColumns() ma per le righe Int: handle + nome
-    // (elastico) + min/max/default (fissi), senza colonna skew/increment
-    // (sempre lineare, passo 1, per gli interi). Usata sia per IntParamRow sia per
-    // l'intestazione della tab Int.
-    static void layoutIntColumns (juce::Rectangle<int> area,
-                                   juce::Rectangle<int>& handle,
-                                   juce::Rectangle<int>& name,
-                                   juce::Rectangle<int>& min,
-                                   juce::Rectangle<int>& max,
-                                   juce::Rectangle<int>& defaultVal);
+    // Conta quante righe servono per sistemare "fieldWidths" (larghezze, in
+    // ordine) dentro "availableWidth", andando a capo (stesso algoritmo
+    // "greedy" left-to-right di un flex-wrap CSS) invece di schiacciare le
+    // colonne o mostrare una scrollbar orizzontale - usata sia da
+    // FloatUnifiedRow/IntUnifiedRow::getPreferredHeight() sia da
+    // ParamRow::resized()/IntParamRow::resized(), che DEVONO restare
+    // d'accordo su quante righe risultano per la stessa larghezza.
+    static int computeWrappedFieldRows (int availableWidth, std::initializer_list<int> fieldWidths, int gap);
 
-    // Stesso schema di layoutColumns() ma per le righe Bool: handle + nome
-    // (elastico) + default (fisso). Usata sia per BoolParamRow sia per
-    // l'intestazione della tab Bool.
-    static void layoutBoolColumns (juce::Rectangle<int> area,
-                                    juce::Rectangle<int>& handle,
-                                    juce::Rectangle<int>& name,
-                                    juce::Rectangle<int>& defaultVal);
+    // Posiziona "fieldWidths" (in ordine, stessa lista data a
+    // computeWrappedFieldRows()) dentro "fieldsArea", andando a capo con lo
+    // STESSO algoritmo - chiama onPlaceField(index, cellBounds) per ciascun
+    // campo, cosi' il chiamante puo' smistare la cella alla coppia
+    // etichetta+editor giusta (vedi ParamRow::resized()).
+    static void layoutWrappedFields (juce::Rectangle<int> fieldsArea, std::initializer_list<int> fieldWidths, int gap,
+                                      const std::function<void (int index, juce::Rectangle<int> cell)>& onPlaceField);
 
-    // Stesso schema ma per le righe Choice: handle + nome (elastico) +
-    // opzioni (fisso, testo libero separato da virgole) + indice di default
-    // (fisso). Usata sia per ChoiceParamRow sia per l'intestazione della
-    // tab Choice.
-    static void layoutChoiceColumns (juce::Rectangle<int> area,
-                                      juce::Rectangle<int>& handle,
-                                      juce::Rectangle<int>& name,
-                                      juce::Rectangle<int>& options,
-                                      juce::Rectangle<int>& defaultIndex);
+    // Scheletro comune a tutte le card Edit: ritaglia da "full" la striscia
+    // della maniglia (handleStrip, piena altezza), poi - dal resto, dopo il
+    // padding - l'area di intestazione (typeLabel + bottone rimozione), il
+    // campo nome (tutta la larghezza), e cio' che resta per i campi
+    // specifici del tipo (fieldsArea, da suddividere nel chiamante).
+    static void layoutCardSkeleton (juce::Rectangle<int> full,
+                                     juce::Rectangle<int>& handleStrip,
+                                     juce::Rectangle<int>& typeLabelArea,
+                                     juce::Rectangle<int>& removeArea,
+                                     juce::Rectangle<int>& nameArea,
+                                     juce::Rectangle<int>& fieldsArea);
 
-    // Una riga per slot: maniglia di trascinamento "#N", nome canale
-    // (TextEditor, larghezza elastica - vedi layoutColumns()), min/max/
-    // default/skew/increment (tutti TextEditor). Ogni modifica (Return o
-    // focus perso) rilegge subito lo slot corrente dal processor, applica
-    // il singolo campo cambiato e lo riscrive - cosi' una modifica a un
-    // campo non perde quelle fatte agli altri nel frattempo.
+    // Stesso principio di layoutCardSkeleton() sopra ma con la geometria
+    // COMPATTA delle card UI (uiCardPaddingV/uiCardHeaderHeight/ecc., vedi
+    // sopra) - niente bottone di rimozione (GenericParamRow non ne ha uno),
+    // usata SOLO da GenericParamRow::resized().
+    static void layoutUiCardSkeleton (juce::Rectangle<int> full,
+                                       juce::Rectangle<int>& handleStrip,
+                                       juce::Rectangle<int>& typeLabelArea,
+                                       juce::Rectangle<int>& nameArea,
+                                       juce::Rectangle<int>& fieldsArea);
+
+    // Posiziona una coppia (etichetta sopra, campo sotto) dentro "cell" -
+    // usata per ogni campo di ogni tipo (Min/Max/Init/Exp/Step/Default...).
+    static void layoutCaptionedField (juce::Rectangle<int> cell, juce::Label& caption, juce::Component& field);
+
+    // Sfondo della card (leggermente piu' chiaro del pannello) + barra
+    // colorata della maniglia (con i puntini, se la riga ha gia' un nome) -
+    // condiviso dai paint() di tutti e 4 i tipi.
+    static void paintCardChrome (juce::Graphics& g, juce::Rectangle<int> bounds, juce::Colour accent,
+                                  juce::Rectangle<int> handleStrip, bool showHandleDots, bool handleHovered);
+
+    // Una riga EDIT per slot float ("SLIDER" nel mockup): barra colorata
+    // (blu) a sinistra come maniglia di trascinamento, etichetta tipo +
+    // bottone di rimozione in alto, nome canale (TextEditor, grande) sotto,
+    // poi min/max/init/exp/step su una riga di campi con etichetta sopra
+    // ciascuno. Ogni modifica (Return o focus perso) rilegge subito lo slot
+    // corrente dal processor, applica il singolo campo cambiato e lo
+    // riscrive.
     struct ParamRow final : public juce::Component,
                              private juce::TextEditor::Listener
     {
@@ -207,20 +327,41 @@ private:
         void mouseMove (const juce::MouseEvent& event) override;
         void mouseExit (const juce::MouseEvent& event) override;
 
-        // Pubblico (a differenza di commitFromFields/updateHandleHover):
-        // chiamato anche da FloatParamsPage::refreshAllFromProcessor() dopo
-        // un Load Session da file, per rileggere lo slot appena ripristinato
-        // invece di restare con i vecchi valori mostrati prima del caricamento.
+        // Pubblico: chiamato anche dopo un Load Session da file, per
+        // rileggere lo slot appena ripristinato invece di restare con i
+        // vecchi valori mostrati prima del caricamento.
         void refreshFromProcessor();
 
         // Chiamata dal tasto destro sulla maniglia dopo aver copiato negli
-        // appunti (vedi mouseDown) - usata SOLO per dare un riscontro
-        // visibile in consolle (CsoundParameterMappingPanel::
-        // onParameterCopiedToClipboard -> PluginEditor::appendToLog):
-        // senza questo riscontro l'azione e' invisibile (nessun popup,
-        // nessun cambio grafico), rendendo impossibile per l'utente
-        // distinguere "ha copiato ma non si vede" da "non ha fatto nulla".
+        // appunti - usata SOLO per dare un riscontro visibile in consolle.
         std::function<void (const juce::String&)> onCopiedToClipboard;
+
+        // Chiamata quando lo slot diventa vuoto - sia per il bottone
+        // removeButton sia perche' l'utente ha cancellato/non ha mai
+        // scritto il nome e poi e' uscito dal campo (Return/focus perso,
+        // non ad ogni carattere digitato: svuotare la riga a META' della
+        // digitazione non deve farla sparire sotto le dita dell'utente).
+        // Per una riga della lista unificata, il pannello la usa (con
+        // juce::MessageManager::callAsync, MAI in modo sincrono dentro
+        // questo stesso callback - altrimenti si distruggerebbe questa
+        // riga mentre e' ancora nello stack di chiamata che l'ha generata)
+        // per togliere la riga dalla lista; per una pendingRow (vedi
+        // createPendingRow()) la usa per scartarla senza mai aver allocato
+        // nulla.
+        std::function<void()> onRemoveRequested;
+
+        // Chiamata (stesso identico vincolo di asincronia di
+        // onRemoveRequested sopra) quando il campo nome viene confermato
+        // (Return/focus perso) con un testo NON vuoto - usata SOLO da
+        // createPendingRow() per sostituire la riga sospesa con quella vera
+        // della lista unificata non appena l'utente ha finito di scrivere
+        // il nome. Per una riga GIA' nella lista unificata non e' agganciata
+        // a nulla (nessun comportamento in piu').
+        std::function<void()> onCommittedNonEmpty;
+
+        // Porta subito il focus da tastiera sul campo nome canale e ne
+        // seleziona il contenuto - usata da createPendingRow().
+        void focusChannelNameField();
 
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
@@ -229,34 +370,41 @@ private:
 
         void commitFromFields();
         void updateHandleHover (juce::Point<int> position);
+        void notifyRemovedIfEmpty();
+        void notifyCommittedIfNonEmpty();
 
         CsoundAudioProcessor& processor;
         int index;
 
-        // Area "#N" a sinistra: non e' un juce::Label separato apposta,
-        // cosi' mouseDown/mouseDrag su ParamRow intercettano il click SOLO
-        // li' (gli altri controlli della riga, essendo figli, catturano
-        // gia' loro i propri eventi mouse). handleHovered (mouseMove/
-        // mouseExit) e' solo feedback visivo (evidenziazione + cursore),
-        // vedi paint().
+        // Striscia della maniglia (barra colorata a tutta altezza, lato
+        // sinistro) - mouseDown/mouseDrag intercettano il trascinamento
+        // SOLO li'. handleHovered (mouseMove/mouseExit) e' solo feedback
+        // visivo (puntini piu' chiari).
         juce::Rectangle<int> handleBounds;
         bool draggingFromHandle = false;
         bool handleHovered = false;
 
+        // Bottone "x" di rimozione, in alto a destra della card - visibile
+        // solo quando il canale ha gia' un nome, stessa condizione della
+        // maniglia stessa (vedi paint()/resized()).
+        juce::TextButton removeButton { "x" };
+
+        juce::Label typeLabel;
         juce::TextEditor channelNameEditor;
+
+        juce::Label minCaption, maxCaption, initCaption, expCaption, stepCaption;
         juce::TextEditor minEditor;
         juce::TextEditor maxEditor;
-        juce::TextEditor defaultEditor;
-        juce::TextEditor skewEditor;
-        juce::TextEditor incrementEditor;
+        juce::TextEditor defaultEditor;   // "Init" nel mockup
+        juce::TextEditor skewEditor;      // "Exp" nel mockup
+        juce::TextEditor incrementEditor; // "Step" nel mockup
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ParamRow)
     };
 
-    // Una riga per slot intero: maniglia di trascinamento "#N", nome canale
-    // (elastico), min/max/default (TextEditor, interi) - stesso schema di
-    // ParamRow ma senza skew/increment (gli interi usano sempre una mappatura
-    // lineare, vedi CsoundAudioProcessor::denormalizeIntParam).
+    // Una riga EDIT per slot intero ("KNOB" nel mockup) - stesso schema di
+    // ParamRow ma senza exp/step (gli interi usano sempre una mappatura
+    // lineare), barra maniglia viola.
     struct IntParamRow final : public juce::Component,
                                 private juce::TextEditor::Listener
     {
@@ -271,8 +419,11 @@ private:
 
         void refreshFromProcessor();
 
-        // Vedi il commento identico su ParamRow::onCopiedToClipboard sopra.
         std::function<void (const juce::String&)> onCopiedToClipboard;
+        std::function<void()> onRemoveRequested;
+        std::function<void()> onCommittedNonEmpty;
+
+        void focusChannelNameField();
 
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
@@ -281,6 +432,8 @@ private:
 
         void commitFromFields();
         void updateHandleHover (juce::Point<int> position);
+        void notifyRemovedIfEmpty();
+        void notifyCommittedIfNonEmpty();
 
         CsoundAudioProcessor& processor;
         int index;
@@ -288,8 +441,12 @@ private:
         juce::Rectangle<int> handleBounds;
         bool draggingFromHandle = false;
         bool handleHovered = false;
+        juce::TextButton removeButton { "x" };
 
+        juce::Label typeLabel;
         juce::TextEditor channelNameEditor;
+
+        juce::Label minCaption, maxCaption, initCaption;
         juce::TextEditor minEditor;
         juce::TextEditor maxEditor;
         juce::TextEditor defaultEditor;
@@ -297,9 +454,9 @@ private:
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (IntParamRow)
     };
 
-    // Una riga per slot booleano: maniglia di trascinamento "#N", nome
-    // canale (elastico) e un toggle per il default on/off - stesso schema
-    // di ParamRow ma senza min/max/skew/increment (non ha senso per un on/off).
+    // Una riga EDIT per slot booleano ("TOGGLE" nel mockup) - barra
+    // maniglia verde/teal, un solo campo (checkbox "On" con etichetta
+    // "INIT" sopra).
     struct BoolParamRow final : public juce::Component,
                                  private juce::TextEditor::Listener
     {
@@ -314,8 +471,11 @@ private:
 
         void refreshFromProcessor();
 
-        // Vedi il commento identico su ParamRow::onCopiedToClipboard sopra.
         std::function<void (const juce::String&)> onCopiedToClipboard;
+        std::function<void()> onRemoveRequested;
+        std::function<void()> onCommittedNonEmpty;
+
+        void focusChannelNameField();
 
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
@@ -324,6 +484,8 @@ private:
 
         void commitFromFields();
         void updateHandleHover (juce::Point<int> position);
+        void notifyRemovedIfEmpty();
+        void notifyCommittedIfNonEmpty();
 
         CsoundAudioProcessor& processor;
         int index;
@@ -331,17 +493,23 @@ private:
         juce::Rectangle<int> handleBounds;
         bool draggingFromHandle = false;
         bool handleHovered = false;
+        juce::TextButton removeButton { "x" };
 
+        juce::Label typeLabel;
         juce::TextEditor channelNameEditor;
-        juce::ToggleButton defaultToggle { "On/Off" };
+
+        juce::Label initCaption;
+        juce::ToggleButton defaultToggle { "On" };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BoolParamRow)
     };
 
-    // Una riga per slot a scelta multipla: maniglia di trascinamento "#N",
-    // nome canale (elastico), opzioni (testo libero separato da virgole -
-    // fino a CsoundAudioProcessor::maxChoiceOptions, le eccedenti vengono
-    // ignorate, le mancanti ricadono su "Option N") e indice di default.
+    // Una riga EDIT per slot a scelta multipla ("MENU" nel mockup) - barra
+    // maniglia arancione, una riga intera (OPTIONS) per il testo libero
+    // separato da virgole (fino a maxChoiceOptions), poi in fondo un
+    // ComboBox (DEFAULT) che mostra le etichette vere inserite in OPTIONS -
+    // ripopolato ad ogni modifica del testo (vedi refreshDefaultOptions()),
+    // cosi' si sceglie il default per NOME invece che per indice a mente.
     struct ChoiceParamRow final : public juce::Component,
                                    private juce::TextEditor::Listener
     {
@@ -356,8 +524,11 @@ private:
 
         void refreshFromProcessor();
 
-        // Vedi il commento identico su ParamRow::onCopiedToClipboard sopra.
         std::function<void (const juce::String&)> onCopiedToClipboard;
+        std::function<void()> onRemoveRequested;
+        std::function<void()> onCommittedNonEmpty;
+
+        void focusChannelNameField();
 
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
@@ -366,6 +537,15 @@ private:
 
         void commitFromFields();
         void updateHandleHover (juce::Point<int> position);
+        void notifyRemovedIfEmpty();
+        void notifyCommittedIfNonEmpty();
+
+        // Ricostruisce le voci di defaultIndexCombo dal testo CORRENTE di
+        // optionsEditor (chiamata ad ogni carattere digitato, da
+        // commitFromFields()) - preserva la selezione corrente se l'indice
+        // e' ancora valido nella nuova lista, altrimenti la riporta alla
+        // prima voce disponibile.
+        void refreshDefaultOptions();
 
         CsoundAudioProcessor& processor;
         int index;
@@ -373,319 +553,289 @@ private:
         juce::Rectangle<int> handleBounds;
         bool draggingFromHandle = false;
         bool handleHovered = false;
+        juce::TextButton removeButton { "x" };
 
+        juce::Label typeLabel;
         juce::TextEditor channelNameEditor;
+
+        juce::Label optionsCaption;
         juce::TextEditor optionsEditor;      // etichette separate da virgole
-        juce::TextEditor defaultIndexEditor; // indice 0-based, testo libero numerico
+
+        juce::Label defaultCaption;
+        juce::ComboBox defaultIndexCombo;    // popolato dalle etichette di optionsEditor
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChoiceParamRow)
     };
 
-    // Viewport di una tab di metadata: oltre alla normale vista scrollabile,
-    // notifica ogni scorrimento ORIZZONTALE (onHorizontalScrollChanged).
-    // Serve perche' l'intestazione delle colonne (headerNameLabel/
-    // headerMinLabel/ecc.) e' disegnata FUORI dal viewport apposta, per
-    // restare fissa durante lo scroll VERTICALE delle righe - ma da quando
-    // il contenuto ha una larghezza MINIMA (vedi minContentWidth sotto,
-    // introdotto su richiesta esplicita: il pannello non deve piu'
-    // schiacciare/nascondere le colonne quando ridimensionato piu' stretto
-    // del necessario, deve comparire una scrollbar orizzontale invece)
-    // puo' essere piu' largo del viewport visibile, quindi serve anche
-    // scorrere ORIZZONTALMENTE - e in quel caso l'intestazione deve
-    // spostarsi in sincrono, altrimenti smette di allinearsi alle colonne
-    // sotto. Vedi *ParamsPage::layoutHeaderForScroll().
-    struct ScrollSyncedViewport final : public juce::Viewport
-    {
-        std::function<void (int)> onHorizontalScrollChanged;
-
-        void visibleAreaChanged (const juce::Rectangle<int>& newVisibleArea) override
-        {
-            juce::Viewport::visibleAreaChanged (newVisibleArea);
-
-            if (onHorizontalScrollChanged)
-                onHorizontalScrollChanged (newVisibleArea.getX());
-        }
-    };
-
-    // Una "pagina" di tab: intestazione colonne (fissa in alto) + viewport
-    // scrollabile con SOLO le righe di un tipo di parametro. Le quattro
-    // istanze sotto (una per tab: Float, Int, Bool, Choice) isolano
-    // completamente i quattro elenchi, invece di impilarli in un'unica
-    // lista lunghissima dove non si distingueva piu' un tipo dall'altro.
-    struct FloatParamsPage final : public juce::Component
-    {
-        explicit FloatParamsPage (CsoundAudioProcessor& processorToEdit);
-        void resized() override;
-
-        // Richiamata da CsoundParameterMappingPanel::refreshAllFromProcessor()
-        // dopo un Load Session da file: rilegge ogni riga dallo stato appena
-        // ripristinato nel processor, invece di lasciare visibili i vecchi
-        // valori della sessione precedente.
-        void refreshAllFromProcessor();
-
-        // Agganciata riga per riga ad ogni ParamRow::onCopiedToClipboard nel
-        // costruttore (vedi .cpp) - CsoundParameterMappingPanel imposta
-        // questo per inoltrare al proprio onParameterCopiedToClipboard.
-        std::function<void (const juce::String&)> onParameterCopiedToClipboard;
-
-        // Larghezza minima del contenuto (handle + nome minimo + min/max/
-        // default/skew/increment + margini, stessa formula di
-        // CsoundParameterMappingPanel::preferredWidth) - sotto questa
-        // larghezza il viewport mostra una scrollbar orizzontale invece di
-        // schiacciare le colonne (vedi resized()).
-        static constexpr int minContentWidth = handleWidth + nameWidth + minMaxWidth * 2 + defaultWidth + curveWidth + 4 + 6 + 6 + 6 + 6 + 8;
-
-    private:
-        // Riposiziona le etichette di intestazione in base allo scroll
-        // orizzontale corrente del viewport (vedi ScrollSyncedViewport sopra)
-        // - fattorizzato qui per essere chiamato sia da resized() sia dal
-        // callback onHorizontalScrollChanged, invece di duplicare la stessa
-        // logica in due posti.
-        void layoutHeaderForScroll (int scrollX);
-
-        ScrollSyncedViewport viewport;
-        juce::Component rowsContainer;
-        juce::Label headerNameLabel, headerMinLabel, headerMaxLabel, headerDefaultLabel, headerSkewLabel, headerIncrementLabel;
-        std::array<std::unique_ptr<ParamRow>, (size_t) CsoundAudioProcessor::numChannelParams> rows;
-
-        // Base (a scrollX=0) dell'area di intestazione, calcolata in
-        // resized() e riusata da layoutHeaderForScroll() ad ogni scroll.
-        juce::Rectangle<int> headerAreaBase;
-
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FloatParamsPage)
-    };
-
-    struct IntParamsPage final : public juce::Component
-    {
-        explicit IntParamsPage (CsoundAudioProcessor& processorToEdit);
-        void resized() override;
-        void refreshAllFromProcessor();
-
-        std::function<void (const juce::String&)> onParameterCopiedToClipboard;
-
-        // Vedi il commento identico su FloatParamsPage::minContentWidth sopra.
-        static constexpr int minContentWidth = handleWidth + nameWidth + minMaxWidth * 2 + defaultWidth + 4 + 6 + 6 + 6 + 8;
-
-    private:
-        void layoutHeaderForScroll (int scrollX);
-
-        ScrollSyncedViewport viewport;
-        juce::Component rowsContainer;
-        juce::Label headerNameLabel, headerMinLabel, headerMaxLabel, headerDefaultLabel;
-        std::array<std::unique_ptr<IntParamRow>, (size_t) CsoundAudioProcessor::numIntParams> rows;
-        juce::Rectangle<int> headerAreaBase;
-
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (IntParamsPage)
-    };
-
-    struct BoolParamsPage final : public juce::Component
-    {
-        explicit BoolParamsPage (CsoundAudioProcessor& processorToEdit);
-        void resized() override;
-        void refreshAllFromProcessor();
-
-        std::function<void (const juce::String&)> onParameterCopiedToClipboard;
-
-        // Vedi il commento identico su FloatParamsPage::minContentWidth sopra.
-        static constexpr int minContentWidth = handleWidth + nameWidth + boolDefaultWidth + 4 + 6 + 8;
-
-    private:
-        void layoutHeaderForScroll (int scrollX);
-
-        ScrollSyncedViewport viewport;
-        juce::Component rowsContainer;
-        juce::Label headerNameLabel, headerDefaultLabel;
-        std::array<std::unique_ptr<BoolParamRow>, (size_t) CsoundAudioProcessor::numBoolParams> rows;
-        juce::Rectangle<int> headerAreaBase;
-
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BoolParamsPage)
-    };
-
-    struct ChoiceParamsPage final : public juce::Component
-    {
-        explicit ChoiceParamsPage (CsoundAudioProcessor& processorToEdit);
-        void resized() override;
-        void refreshAllFromProcessor();
-
-        std::function<void (const juce::String&)> onParameterCopiedToClipboard;
-
-        // Vedi il commento identico su FloatParamsPage::minContentWidth sopra.
-        static constexpr int minContentWidth = handleWidth + nameWidth + choiceOptionsWidth + choiceDefaultIndexWidth + 4 + 6 + 6 + 8;
-
-    private:
-        void layoutHeaderForScroll (int scrollX);
-
-        ScrollSyncedViewport viewport;
-        juce::Component rowsContainer;
-        juce::Label headerNameLabel, headerOptionsLabel, headerDefaultLabel;
-        std::array<std::unique_ptr<ChoiceParamRow>, (size_t) CsoundAudioProcessor::numChoiceParams> rows;
-        juce::Rectangle<int> headerAreaBase;
-
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChoiceParamsPage)
-    };
-
-    // Quinta tab, "UI"/Generic Editor: a differenza delle quattro sopra (che
-    // editano i METADATA per slot) mostra/automatizza i VALORI correnti dei
-    // parametri host - uno slider orizzontale per ogni Float/Int, un toggle
-    // per ogni Bool, un combo per ogni Choice, "esattamente come l'editor
-    // generico di JUCE" (juce::GenericAudioProcessorEditor), ma con due
-    // differenze volute rispetto a usare quella classe direttamente:
-    //   1) mostra SOLO gli slot con un canale Csound assegnato (channelName
-    //      non vuoto) - gli altri non sono "parametri validi" da esporre
-    //      qui, mostrarli tutti e 64 confondeva solamente;
-    //   2) ogni controllo e' legato al parametro apvts reale tramite le
-    //      classi di attachment "ufficiali" di JUCE (vedi GenericParamRow
-    //      sotto), non la logica privata/interna di GenericAudioProcessorEditor.
-    // Era in precedenza una finestra flottante separata (GenericEditorWindow
-    // in PluginEditor.h/.cpp): spostata qui come QUINTA tab del pannello
-    // Parameters (dopo Choice) su richiesta esplicita - una view a se stante
-    // separata dalle altre quattro non aveva piu' senso, essendo comunque
-    // un'altra vista sugli stessi 64 slot.
+    // Riga UI (vista a controllo reale, vedi mockup): una card con la stessa
+    // maniglia colorata/sfondo delle card Edit, etichetta tipo + nome canale
+    // in testa, poi il controllo VERO a tutta larghezza - uno slider
+    // orizzontale (con box VALUE a destra e min/max sotto) per Float/Int, un
+    // pill toggle per Bool, un combo a tutta larghezza per Choice - agganciato
+    // al parametro apvts VERO tramite le classi di attachment "ufficiali" di
+    // JUCE.
     struct GenericParamRow final : public juce::Component
     {
         enum class Kind { slider, toggle, choice };
 
+        // accent/typeLabelText: stessi colori/testo della card Edit
+        // corrispondente (kSliderAccent/"SLIDER FLOAT" ecc.), passati dal
+        // chiamante invece di essere ridotti qui - cosi' le due modalita'
+        // restano visivamente coerenti senza duplicare la tabella type->colore.
+        // treatAsInteger sceglie la formattazione del box VALUE (0 decimali
+        // per Int, 3 per Float) - l'unica differenza reale tra i due, dato che
+        // entrambi usano Kind::slider. getChannelNameFn rilegge il nome
+        // canale ATTUALE dal processor (invece di usare il solo "channelName"
+        // catturato alla costruzione, che puo' diventare obsoleto se l'utente
+        // rinomina il canale in modalita' Edit senza che questa riga venga
+        // ricreata) - serve alla maniglia di trascinamento e al menu "Copy"
+        // del tasto destro, esattamente come in ParamRow/IntParamRow/ecc.
+        // getConfigCommentFn rilegge il contenuto del commento di
+        // configurazione ATTUALE (es. "SLIDER FLOAT: Min=0; Max=10; ...",
+        // vedi makeFloatConfigComment() ecc. nel .cpp) - stesso principio di
+        // getChannelNameFn, usato dalla maniglia/dal menu "Copy" per
+        // anteporre un commento Csound classico (";...") al chnget,
+        // esattamente come le righe Edit.
         GenericParamRow (const juce::String& channelName, juce::RangedAudioParameter& parameter,
-                          Kind kind, const juce::StringArray& choiceLabels);
+                          Kind kind, const juce::StringArray& choiceLabels,
+                          juce::Colour accent, const juce::String& typeLabelText,
+                          std::function<juce::String()> getChannelNameFn,
+                          std::function<juce::String()> getConfigCommentFn,
+                          bool treatAsInteger = false);
 
         void resized() override;
+        void paint (juce::Graphics& g) override;
+        void mouseDown (const juce::MouseEvent& event) override;
+        void mouseDrag (const juce::MouseEvent& event) override;
+        void mouseMove (const juce::MouseEvent& event) override;
+        void mouseExit (const juce::MouseEvent& event) override;
+
+        // Stesso identico scopo di ParamRow::onCopiedToClipboard - riscontro
+        // visibile in consolle dopo una copia da tasto destro sulla maniglia.
+        std::function<void (const juce::String&)> onCopiedToClipboard;
 
     private:
-        // Larghezza FISSA (uguale per ogni riga, cosi' i controlli sotto
-        // restano tutti allineati alla stessa X - vedi resized()) per il
-        // nome canale: ridotta da 130 (lasciava troppo spazio vuoto prima
-        // dello slider/combo quando il nome e' corto, richiesto
-        // esplicitamente) - tutto il resto della riga va al controllo.
-        static constexpr int nameLabelWidth = 90;
+        // Rilegge il valore ATTUALE dallo slider e aggiorna il testo del box
+        // VALUE - MAI mentre l'utente ci sta scrivendo dentro (vedi
+        // valueReadout.hasKeyboardFocus() nel .cpp), altrimenti gli
+        // sovrascriverebbe il testo a meta' digitazione.
+        void updateValueReadout();
 
-        juce::Label nameLabel;
+        // Chiamata da valueReadout.onReturnKey/onFocusLost (commit SOLO li',
+        // non ad ogni carattere - digitare un numero carattere per carattere
+        // produce valori intermedi senza senso, es. "0." o "-") - analizza
+        // il testo, aggiorna lo slider (quindi il parametro apvts reale
+        // tramite sliderAttachment) e rilegge il valore clampato/formattato.
+        void commitValueFromField();
 
-        // TextBoxRight: casella di testo INTERNA di Slider, EDITABILE (di
-        // serie - Slider::isTextBoxEditable() e' true di default), cosi'
-        // il valore si puo' anche scrivere a mano, non solo trascinare -
-        // richiesto esplicitamente. I colori (testo bianco, sfondo scuro)
-        // sono impostati DIRETTAMENTE sull'istanza nel costruttore, che
-        // vincono comunque su qualunque LookAndFeel.
-        juce::Slider slider { juce::Slider::LinearHorizontal, juce::Slider::TextBoxRight };
+        void updateHandleHover (juce::Point<int> position);
+
+        const Kind kind;
+        const juce::Colour accentColour;
+        const bool isIntegerLike;
+        std::function<juce::String()> getChannelName;
+        std::function<juce::String()> getConfigComment;
+
+        juce::Label typeLabel;
+        juce::Label channelNameLabel;
+
+        juce::Slider slider { juce::Slider::LinearHorizontal, juce::Slider::NoTextBox };
+        juce::Label minLabel, maxLabel;
+        juce::TextEditor valueReadout;   // editabile da tastiera, non un semplice readout - niente didascalia sopra (riga compatta)
+
         juce::ToggleButton toggle;
         juce::ComboBox comboBox;
-        const Kind kind;
 
-        // Dichiarati DOPO i widget che referenziano: distrutti PRIMA di
-        // essi (ordine inverso di dichiarazione) - un attachment vivo che
-        // referenzia un widget gia' distrutto sarebbe un puntatore pendente.
+        // Dichiarati DOPO i widget che referenziano: distrutti PRIMA di essi.
         std::unique_ptr<juce::SliderParameterAttachment> sliderAttachment;
         std::unique_ptr<juce::ButtonParameterAttachment> buttonAttachment;
         std::unique_ptr<juce::ComboBoxParameterAttachment> comboAttachment;
 
+        // Striscia della maniglia (barra colorata a tutta altezza, lato
+        // sinistro) - stesso identico meccanismo di ParamRow: mouseDown/
+        // mouseDrag intercettano il trascinamento SOLO li', handleHovered e'
+        // solo feedback visivo (puntini piu' chiari in paintCardChrome()).
+        juce::Rectangle<int> handleBounds;
+        bool draggingFromHandle = false;
+        bool handleHovered = false;
+
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GenericParamRow)
     };
 
-    struct GenericEditorPage final : public juce::Component
+    // Interfaccia minima per poter commutare UI/Edit e conoscere l'altezza
+    // preferita di una riga qualunque (Float/Int/Bool/Choice) dal codice
+    // della lista unificata, senza dover conoscere il tipo concreto.
+    struct UnifiedRowInterface
     {
-        GenericEditorPage();
+        virtual ~UnifiedRowInterface() = default;
+        virtual void setEditMode (bool edit) = 0;
+        virtual void focusNameField() = 0;
 
-        void resized() override;
-
-        // Ricostruisce da zero l'elenco delle righe leggendo lo stato
-        // ATTUALE degli slot (getChannelParamSlot/getIntParamSlot/
-        // getBoolParamSlot/getChoiceParamSlot) - chiamata da showPage() ogni
-        // volta che questa tab diventa quella corrente, cosi' un canale
-        // rinominato/assegnato nelle altre tab si riflette qui subito,
-        // invece di restare congelato alla prima apertura. Se nessuno slot
-        // ha un canale assegnato, nasconde il viewport e mostra invece
-        // emptyStateLabel al centro - vedi il commento in testa alla classe.
-        void refreshRows (CsoundAudioProcessor& processor);
-
-    private:
-        static constexpr int genericRowHeight = 34;
-
-        // Vedi il commento su FloatParamsPage::minContentWidth - stessa idea,
-        // ma qui non c'e' un'intestazione separata da tenere allineata (ogni
-        // riga e' gia' autonoma: nome + un solo controllo), quindi basta
-        // impedire che il contenuto scenda sotto una larghezza leggibile.
-        // 90 = GenericParamRow::nameLabelWidth (privato li', duplicato qui
-        // come letterale per evitare di doverlo esporre solo per questo).
-        static constexpr int minContentWidth = 90 + 8 + 180;
-
-        juce::Viewport viewport;
-        juce::Component rowsContainer;
-        std::vector<std::unique_ptr<GenericParamRow>> rows;
-
-        // Mostrata SOLO quando rows e' vuoto (nessun parametro ancora
-        // configurato nelle tab Float/Int/Bool/Choice) - testo centrato che
-        // invita a configurare prima i parametri, invece di un pannello
-        // vuoto senza spiegazione.
-        juce::Label emptyStateLabel;
-
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GenericEditorPage)
+        // Altezza richiesta da questa riga per il dato editMode e la data
+        // larghezza DISPONIBILE per l'intera card (serve il secondo
+        // parametro perche' Slider/Knob possono aver bisogno di UNA riga di
+        // campi in piu' quando il pannello e' stretto - vedi
+        // computeWrappedFieldRows() - invece della scrollbar orizzontale).
+        // In UI e' sempre rowHeight (riga sottile, mai a capo).
+        virtual int getPreferredHeight (bool editMode, int availableWidth) const = 0;
     };
 
-    // Riferimento al processor, tenuto per poter richiamare
-    // GenericEditorPage::refreshRows() ogni volta che la tab "UI" diventa
-    // quella corrente (vedi showPage()) - una semplice reference, nessun
-    // problema di ordine di costruzione/distruzione.
+    struct FloatUnifiedRow final : public juce::Component, public UnifiedRowInterface
+    {
+        FloatUnifiedRow (CsoundAudioProcessor& processorToEdit, int slotIndex,
+                          std::function<void (const juce::String&)> onCopied,
+                          std::function<void()> onRemoved);
+        void resized() override;
+        void setEditMode (bool edit) override;
+        void focusNameField() override { editRow->focusChannelNameField(); }
+        int getPreferredHeight (bool edit, int availableWidth) const override
+        {
+            if (! edit)
+                return uiCardHeight;
+
+            const auto rows = computeWrappedFieldRows (fieldsAvailableWidth (availableWidth),
+                { cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldStepWidth },
+                cardFieldGap);
+            return cardHeightForFieldRows (rows);
+        }
+
+        std::unique_ptr<ParamRow> editRow;
+        std::unique_ptr<GenericParamRow> uiRow;
+
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FloatUnifiedRow)
+    };
+
+    struct IntUnifiedRow final : public juce::Component, public UnifiedRowInterface
+    {
+        IntUnifiedRow (CsoundAudioProcessor& processorToEdit, int slotIndex,
+                        std::function<void (const juce::String&)> onCopied,
+                        std::function<void()> onRemoved);
+        void resized() override;
+        void setEditMode (bool edit) override;
+        void focusNameField() override { editRow->focusChannelNameField(); }
+        int getPreferredHeight (bool edit, int availableWidth) const override
+        {
+            if (! edit)
+                return uiCardHeight;
+
+            const auto rows = computeWrappedFieldRows (fieldsAvailableWidth (availableWidth),
+                { cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldNarrowWidth }, cardFieldGap);
+            return cardHeightForFieldRows (rows);
+        }
+
+        std::unique_ptr<IntParamRow> editRow;
+        std::unique_ptr<GenericParamRow> uiRow;
+
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (IntUnifiedRow)
+    };
+
+    struct BoolUnifiedRow final : public juce::Component, public UnifiedRowInterface
+    {
+        BoolUnifiedRow (CsoundAudioProcessor& processorToEdit, int slotIndex,
+                         std::function<void (const juce::String&)> onCopied,
+                         std::function<void()> onRemoved);
+        void resized() override;
+        void setEditMode (bool edit) override;
+        void focusNameField() override { editRow->focusChannelNameField(); }
+        int getPreferredHeight (bool edit, int) const override { return edit ? cardHeightSingleRow : uiCardHeight; }
+
+        std::unique_ptr<BoolParamRow> editRow;
+        std::unique_ptr<GenericParamRow> uiRow;
+
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BoolUnifiedRow)
+    };
+
+    struct ChoiceUnifiedRow final : public juce::Component, public UnifiedRowInterface
+    {
+        ChoiceUnifiedRow (CsoundAudioProcessor& processorToEdit, int slotIndex,
+                           std::function<void (const juce::String&)> onCopied,
+                           std::function<void()> onRemoved);
+        void resized() override;
+        void setEditMode (bool edit) override;
+        void focusNameField() override { editRow->focusChannelNameField(); }
+        int getPreferredHeight (bool edit, int) const override { return edit ? cardHeightDoubleRow : uiCardHeight; }
+
+        std::unique_ptr<ChoiceParamRow> editRow;
+        std::unique_ptr<GenericParamRow> uiRow;
+
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChoiceUnifiedRow)
+    };
+
+    // Riferimento al processor - tenuto per rebuildUnifiedRows()/
+    // addNewParameter(), chiamate ben oltre il costruttore.
     CsoundAudioProcessor& processor;
 
     // Dichiarata PER PRIMA tra i membri sotto: i membri si distruggono
-    // nell'ordine INVERSO a quello di dichiarazione, quindi essendo la
-    // prima e' anche l'ULTIMA a essere distrutta - lookAndFeel resta valida
-    // per tutta la vita di tabs/pagine/righe, mai un puntatore a LookAndFeel
-    // pendente durante lo smontaggio dell'albero di componenti
-    // (setLookAndFeel(nullptr) nel distruttore stacca comunque subito il
-    // collegamento, per sicurezza).
+    // nell'ordine INVERSO a quello di dichiarazione, quindi essendo la prima
+    // e' anche l'ULTIMA a essere distrutta - lookAndFeel resta valida per
+    // tutta la vita delle righe/bottoni, mai un puntatore a LookAndFeel
+    // pendente durante lo smontaggio dell'albero di componenti.
     CsoundParameterPanelLookAndFeel lookAndFeel;
 
-    // Barra tab fatta a mano (4 TextButton + switch diretto di visibilita'
-    // tra le 4 pagine), al posto di juce::TabbedComponent/TabbedButtonBar:
-    // quest'ultimo ha un bug di layout (TabbedButtonBar::updateTabPositions,
-    // vedi juce_TabbedButtonBar.cpp) che ricalcola quali tab mostrare ogni
-    // volta che cambia quella corrente e, in certe condizioni di scala,
-    // nasconde (setVisible(false)) tutte le tab tranne quella appena
-    // selezionata - riproducibile anche dopo aver alzato setMinimumTabScale
-    // Factor quasi a zero. Niente di tutto questo con 4 bottoni gestiti
-    // interamente da noi: showPage()/updateTabButtonStyles() sono le uniche
-    // funzioni che decidono cosa e' visibile, nessuna euristica nascosta.
-    // Quinta tab "UI" (Generic Editor, vedi GenericEditorPage sopra): nome
-    // impostato a "genericEditorTab" nel .cpp, cosi' CsoundParameterPanelLook
-    // AndFeel::drawButtonText sa di doverci disegnare sopra anche l'icona -
-    // la STESSA "tune" del bottone Parameters nella toolbar.
-    juce::TextButton floatTabButton  { "Float" };
-    juce::TextButton intTabButton    { "Int" };
-    juce::TextButton boolTabButton   { "Bool" };
-    juce::TextButton choiceTabButton { "Choice" };
-    juce::TextButton genericEditorTabButton { "UI" };
+    // Bottone "Edit": SEMPRE visibile, commuta editMode per OGNI riga della
+    // lista (vedi toggleEditMode()) - nessuna tab da selezionare, un solo
+    // interruttore globale. Nome "editToggle" riconosciuto da
+    // CsoundParameterPanelLookAndFeel::drawButtonText per disegnarci sopra
+    // l'icona "tune".
+    juce::TextButton editToggleButton { "Edit" };
+    bool editMode = false;
+    void toggleEditMode();
 
-    int currentPageIndex = 0;
-    void showPage (int pageIndex);
-    void updateTabButtonStyles();
+    // Bottone "+"/Add: SEMPRE visibile, apre un menu Slider/Knob/Toggle/Menu
+    // (vedi showAddMenu()) che individua il primo slot libero del tipo
+    // corrispondente (0=Float/Slider, 1=Int/Knob, 2=Bool/Toggle,
+    // 3=Choice/Menu) e fa apparire una card "in sospeso" per quello slot -
+    // vedi createPendingRow() e il commento in testa alla classe sul flusso
+    // completo.
+    juce::TextButton addButton { "+" };
+    void showAddMenu();
 
-    // {bottone, indice di pagina} nell'ordine VISIVO sinistra->destra -
-    // unica fonte di verita' per quell'ordine, usata dal costruttore,
-    // updateTabButtonStyles() e resized() invece di tre elenchi scritti a
-    // mano da tenere sincronizzati.
-    std::array<std::pair<juce::TextButton*, int>, 5> getOrderedTabs();
+    // kind: 0=Float, 1=Int, 2=Bool, 3=Choice - indice semplice invece di un
+    // enum dedicato solo per questo, usato una volta sola qui.
+    void addNewParameter (int kind);
 
-    std::unique_ptr<FloatParamsPage> floatPage;
-    std::unique_ptr<IntParamsPage> intPage;
-    std::unique_ptr<BoolParamsPage> boolPage;
-    std::unique_ptr<ChoiceParamsPage> choicePage;
-    std::unique_ptr<GenericEditorPage> genericEditorPage;
+    // Crea la riga "in sospeso" (pendingRow sotto) per lo slot (kind,
+    // slotIndex) - vedi il commento in testa alla classe sul flusso
+    // completo (scarto se Invio con nome vuoto, promozione a riga vera
+    // altrimenti).
+    void createPendingRow (int kind, int slotIndex);
 
-    static constexpr int rowHeight = 30;
-    static constexpr int headerHeight = 24;
-    static constexpr int tabBarHeight = 28;
+    // Ricostruisce DA ZERO la lista unificata leggendo lo stato ATTUALE di
+    // tutti e 4 i pool di slot (solo quelli con channelName non vuoto -
+    // vedi il commento in testa alla classe) - chiamata dal costruttore,
+    // da refreshAllFromProcessor() (Load Session), dalla promozione di una
+    // pendingRow e, in modo ASINCRONO (juce::MessageManager::callAsync, mai
+    // sincrono - vedi il commento su ParamRow::onRemoveRequested) da ogni
+    // onRemoveRequested di ogni riga della lista.
+    void rebuildUnifiedRows();
 
-    // Spazio riservato SEMPRE (indipendentemente dal fatto che la scrollbar
-    // verticale del viewport sia davvero visibile in quel momento) sul lato
-    // destro di ogni pagina, per il contenuto (rowsContainer/intestazione
-    // colonne): viewport.getMaximumVisibleWidth() cambia dinamicamente a
-    // seconda che la scrollbar sia mostrata o no, e in certe sequenze di
-    // layout il contenuto veniva misurato PRIMA che la scrollbar comparisse,
-    // finendo per essere troppo largo e "infilarsi sotto" la scrollbar
-    // quando poi compariva (il bug "margine a destra/overlap con la
-    // scrollbar" segnalato). Riservare uno spazio fisso elimina il
-    // problema a prescindere dal timing.
+    juce::Viewport viewport;
+    juce::Component rowsContainer;
+
+    std::vector<std::unique_ptr<juce::Component>> unifiedRows;
+
+    // La riga "in sospeso" creata da createPendingRow() (vedi sopra) -
+    // SEPARATA da unifiedRows apposta: rappresenta uno slot che il
+    // processor NON ha ancora (o non ha piu', se scartata) come allocato
+    // in modo definitivo, quindi non deve mai passare per
+    // rebuildUnifiedRows() (che la ignorerebbe, essendo il suo slot vuoto
+    // finche' l'utente non scrive un nome). Sempre al massimo UNA alla
+    // volta (createPendingRow() scarta quella precedente se ce n'e' gia'
+    // una), mostrata in coda a unifiedRows nel viewport - vedi resized().
+    std::unique_ptr<juce::Component> pendingRow;
+
+    // Mostrata SOLO quando non c'e' NULLA da mostrare (unifiedRows vuoto e
+    // nessuna pendingRow) - invita a usare il bottone "+" invece di un
+    // pannello vuoto senza spiegazione.
+    juce::Label emptyStateLabel;
+
+    static constexpr int rowHeight = 30;    // solo fallback per righe senza UnifiedRowInterface (non dovrebbe mai accadere)
+    static constexpr int toolbarHeight = 38; // = diametro di "+"/"Edit" (bottoni circolari piu' grandi, richiesta esplicita)
+    static constexpr int toolbarButtonGap = 4; // tra "+" ed "Edit", invece del margine di 10px di prima (richiesta esplicita: "piu' ravvicinati")
+
+    // Spazio riservato SEMPRE sul lato destro del contenuto per la scrollbar
+    // verticale del viewport (vedi il commento storico sul perche' non si usa
+    // viewport.getMaximumVisibleWidth() direttamente).
     static constexpr int scrollbarGutter = 10;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CsoundParameterMappingPanel)

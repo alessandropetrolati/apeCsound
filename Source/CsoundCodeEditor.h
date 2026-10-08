@@ -51,13 +51,6 @@
       col mouse, si accetta con Invio, Tab, o un click (sempre sul
       suggerimento evidenziato); Esc, o la perdita del focus (es. un click
       fuori dall'editor), lo chiudono.
-
-    Accetta anche il drag and drop di uno slot dal pannello parametri
-    (CsoundParameterMappingPanel::ParamRow, vedi PluginEditor): rilasciando
-    uno slot con un canale assegnato sulla riga puntata dal mouse, viene
-    inserita una nuova riga "kNomeCanale chnget "Nome Canale"" (nome
-    variabile = "k" + nome canale senza spazi) PRIMA di quella riga - vedi
-    isInterestedInDragSource/itemDropped.
 */
 class CsoundCodeEditor final : public juce::CodeEditorComponent,
                                 public juce::DragAndDropTarget,

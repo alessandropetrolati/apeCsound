@@ -1113,8 +1113,8 @@ namespace
     // plugin). Scelto un tag "a frase" invece di XML attributes per essere
     // immediato da individuare anche solo guardando il file con un editor
     // di testo qualsiasi.
-    const juce::String kParamsTagOpen  = "<CsoundStudioParams>";
-    const juce::String kParamsTagClose = "</CsoundStudioParams>";
+    const juce::String kParamsTagOpen  = "<CsoundParams>";
+    const juce::String kParamsTagClose = "</CsoundParams>";
 }
 
 //==============================================================================

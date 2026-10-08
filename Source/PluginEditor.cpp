@@ -16,11 +16,25 @@ namespace
     juce::PropertiesFile& getCsdFileChooserSettings()
     {
         juce::PropertiesFile::Options options;
-        options.applicationName     = "CsoundStudio";
+        options.applicationName     = CharPointer_UTF8(ProjectInfo::projectName);;
         options.filenameSuffix      = "settings";
-        options.folderName          = "CsoundStudio";
         options.osxLibrarySubFolder = "Application Support";
 
+#if JUCE_LINUX || JUCE_BSD
+        // ~/.config/<Company>/<Project>/...   (allineato con le XDG spec)
+        options.folderName = "~/.config";
+
+#else
+        /*  macOS, Windows, iOS, ecc. (JUCE usa automaticamente
+            userApplicationDataDirectory per questi OS)
+        Android: il file finirà in
+            /data/user/0/<package>/files/<Company>/<Project>/<AppName> V2.settings
+         */
+        options.folderName = ProjectInfo::companyName
+                                + String("/")
+                                + ProjectInfo::projectName;
+#endif
+        
         static juce::PropertiesFile settings (options);
         return settings;
     }
@@ -141,10 +155,13 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     paramsButton.onClick = [this] { toggleParameterPanel(); };
     addAndMakeVisible (paramsButton);
 
-    // Sidebar + divisore nascosti finche' non si preme paramsButton -
-    // editor/consolle occupano tutta la larghezza finche' resta chiusa.
+    // Sidebar + divisore: aperti di default (showingParameterPanel = true),
+    // editor/consolle si restringono per farle spazio - vedi resized().
     addChildComponent (parameterPanel);
     addChildComponent (sidebarDivider);
+    parameterPanel.setVisible (showingParameterPanel);
+    sidebarDivider.setVisible (showingParameterPanel);
+    paramsButton.setButtonText (showingParameterPanel ? "Hide parameters" : "Parameters");
 
     sidebarDivider.getCurrentWidth = [this] { return sidebarWidth; };
     sidebarDivider.onDrag = [this] (int newWidth)
@@ -437,7 +454,7 @@ void CsoundAudioProcessorEditor::promptSaveSession (std::function<void()> onSave
     // Un .csd VERO, non un formato proprietario: vedi il commento su
     // CsoundAudioProcessor::saveSessionToFile in PluginProcessor.h - il
     // codice resta testo Csound puro, il mapping dei parametri va in
-    // appendice dentro <CsoundStudioParams>. Si riparte dall'ultima
+    // appendice dentro <CsoundParams>. Si riparte dall'ultima
     // cartella usata (getLastCsdDirectory), non sempre da Documents.
     const auto startingFile = getLastCsdDirectory().getChildFile ("Untitled.csd");
 
