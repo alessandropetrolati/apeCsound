@@ -20,12 +20,43 @@ namespace
     // MDI "refresh": un arco quasi completo con una freccia in punta - non
     // un play, perche' il motore Csound e' sempre in esecuzione, il bottone
     // si limita a rimpiazzare il .csd corrente con quello appena modificato.
+    // NON PIU' usata per Apply (vedi makeAudioEngineIconPath() sotto,
+    // richiesta esplicita: "qualcosa che ha a che fare con l'engine
+    // audio", un refresh generico andava bene per qualsiasi bottone) -
+    // lasciata qui comunque: nessun altro bottone la usa oggi, ma e' una
+    // forma pulita da riprendere in futuro.
     juce::Path makeReloadIconPath()
     {
         return juce::Drawable::parseSVGPath (
             "M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 "
             "18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 "
             "12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z");
+    }
+
+    // Icona per Apply: un'onda audio stilizzata (3 gobbe, come una
+    // waveform) invece del "refresh" generico sopra - richiesto
+    // esplicitamente ("qualcosa che ha a che fare con l'engine audio").
+    // NON una freccia "play"/triangolo: il motore Csound e' SEMPRE in
+    // esecuzione (vedi il commento su makeReloadIconPath sopra), un'icona
+    // di trasporto sarebbe fuorviante - Apply si limita a rimpiazzare il
+    // .csd in esecuzione con quello appena modificato. Costruita come
+    // un'area piena ottenuta ispessendo una linea ondulata (nessun path
+    // SVG a memoria, stessa convenzione di makeEqualizerIconPath/
+    // makeSaveIconPath sopra): drawButtonText riempie SEMPRE il Path
+    // restituito (g.fillPath), una linea sola (non chiusa) non basta.
+    juce::Path makeAudioEngineIconPath()
+    {
+        juce::Path wave;
+        wave.startNewSubPath (1.0f, 12.0f);
+        wave.cubicTo (4.0f, 12.0f, 4.0f, 3.0f, 7.5f, 3.0f);
+        wave.cubicTo (11.0f, 3.0f, 11.0f, 21.0f, 14.5f, 21.0f);
+        wave.cubicTo (18.0f, 21.0f, 18.0f, 3.0f, 21.5f, 3.0f);
+        wave.cubicTo (22.5f, 3.0f, 23.0f, 7.0f, 23.0f, 12.0f);
+
+        juce::Path filled;
+        juce::PathStrokeType (2.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded)
+            .createStrokedPath (filled, wave);
+        return filled;
     }
 
     // MDI "trash-can-outline".
@@ -105,7 +136,7 @@ namespace
     juce::Path getIconPathForButtonName (const juce::String& name)
     {
         if (name == "apply")
-            return makeReloadIconPath();
+            return makeAudioEngineIconPath();
 
         if (name == "clear")
             return makeTrashIconPath();

@@ -160,6 +160,42 @@ void CsoundCodeEditor::handleReturnKey()
 
 bool CsoundCodeEditor::keyPressed (const juce::KeyPress& key)
 {
+    // Cmd+Z / Cmd+Shift+Z: intercettati QUI, PRIMA di passare alla classe
+    // base, perche' CodeEditorComponent::keyPressed (tramite
+    // TextEditorKeyMapper::invokeKeyFunction) li consumerebbe da solo per
+    // il proprio undo/redo testuale interno (document.getUndoManager()),
+    // bypassando completamente la cronologia unica condivisa con il
+    // pannello Parametri (vedi sharedUndoManager/performUndo()/
+    // performRedo() in PluginEditor). Instradandoli qui verso
+    // onUndoRequested/onRedoRequested, editor di codice e pannello
+    // Parametri restano sempre sincronizzati con Cmd+Z tanto quanto con il
+    // menu hamburger.
+    // 'Z' MAIUSCOLA, non 'z': per convenzione JUCE, KeyPress::keyCode per i
+    // tasti-lettera e' SEMPRE il codice ASCII maiuscolo, indipendentemente
+    // da Shift (che e' nei modifiers, non nel keyCode) - BUG corretto qui
+    // (era 'z' minuscola, che non corrisponde MAI a un vero evento Cmd+Z/
+    // Cmd+Shift+Z): per questo lo shortcut da tastiera non funzionava piu'
+    // una volta che l'editor ha iniziato a intercettarlo qui PRIMA della
+    // classe base invece di lasciarlo passare al suo undo testuale interno
+    // (che usa internamente i codici giusti, da cui "prima funzionava").
+    if (key == juce::KeyPress ('Z', juce::ModifierKeys::commandModifier, 0))
+    {
+        if (onUndoRequested)
+        {
+            onUndoRequested();
+            return true;
+        }
+    }
+
+    if (key == juce::KeyPress ('Z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier, 0))
+    {
+        if (onRedoRequested)
+        {
+            onRedoRequested();
+            return true;
+        }
+    }
+
     // Esc e' un interruttore per il popup dei suggerimenti: se e' chiuso,
     // la prima pressione lo apre (invocazione manuale dell'autocompletamento
     // sulla parola al caret, anche se non e' ancora stata digitata una
@@ -277,7 +313,22 @@ void CsoundCodeEditor::mouseWheelMove (const juce::MouseEvent& event, const juce
 
         if (clampedLines != 0)
         {
-            scrollBy (-clampedLines);
+            // Non scrollBy(-clampedLines) diretto (BUG corretto: "scroll
+            // extra testo", cioe' overscroll oltre la fine del file) -
+            // CodeEditorComponent::scrollToLineInternal (JUCE) limita
+            // firstLineOnScreen SOLO a [0, numLines - 1], SENZA tener conto
+            // di quante righe stanno a schermo (getNumLinesOnScreen()):
+            // l'ULTIMA riga del file puo' quindi finire in cima
+            // all'editor, lasciando sotto uno spazio vuoto mai occupato da
+            // testo. Lo scroll "di serie" (passato allo ScrollBar) non
+            // soffre di questo perche' la ScrollBar stessa clampa la sua
+            // posizione corrente al range disponibile - qui bypassavamo
+            // quel clamp chiamando scrollBy()/scrollToLine() direttamente,
+            // quindi dobbiamo rifare noi lo stesso clamp "non oltre la
+            // fine" prima di applicarlo.
+            const int maxFirstLine = juce::jmax (0, getDocument().getNumLines() - getNumLinesOnScreen());
+            const int targetFirstLine = juce::jlimit (0, maxFirstLine, getFirstLineOnScreen() - clampedLines);
+            scrollToLine (targetFirstLine);
             return;
         }
     }

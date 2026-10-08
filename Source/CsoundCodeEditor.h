@@ -91,6 +91,16 @@ public:
         significa "nessun opcode selezionato, nascondi/svuota la barra". */
     std::function<void (const juce::String& syntax, const juce::String& description)> onOpcodeHelpChanged;
 
+    /** Cronologia undo/redo UNICA condivisa con il pannello Parametri (vedi
+        sharedUndoManager in PluginEditor): Cmd+Z/Cmd+Shift+Z vengono
+        intercettati in keyPressed() PRIMA che la classe base JUCE li
+        consumi per il proprio undo testuale interno, e instradati qui
+        invece che nella cronologia privata del documento. Se non
+        assegnati, il comportamento di default di CodeEditorComponent resta
+        inalterato (vedi il fallback in keyPressed()). */
+    std::function<void()> onUndoRequested;
+    std::function<void()> onRedoRequested;
+
 private:
     // juce::CodeDocument::Listener
     void codeDocumentTextInserted (const juce::String& newText, int insertIndex) override;

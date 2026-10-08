@@ -323,12 +323,12 @@ public:
     //     aspetta channel value 1..N: vedi il commento su
     //     pushChannelParametersToCsound nel .cpp.
     static constexpr int numChoiceParams = 16;
-    static constexpr int maxChoiceOptions = 8;
+    static constexpr int maxChoiceOptions = 16; // esteso da 8 a 16 (richiesta esplicita)
 
     struct ChoiceParamSlot
     {
         juce::String channelName; // vuoto = non assegnato
-        juce::StringArray optionLabels; // fino a maxChoiceOptions etichette; vuote = fallback "Option N" (vedi getChoiceOptionLabel)
+        juce::StringArray optionLabels; // fino a maxChoiceOptions etichette; vuote = fallback "<unassigned>" (richiesta esplicita, vedi getChoiceOptionLabel)
         int defaultIndex = 0;
     };
 
@@ -474,6 +474,20 @@ public:
     // loadSessionFromFile in PluginProcessor.cpp per il formato esatto.
     bool saveSessionToFile (const juce::File& file);
     bool loadSessionFromFile (const juce::File& file);
+
+    // "Initialize Session" del menu hamburger (richiesta esplicita: "pulisce
+    // tutto e carica il CSD hard coded") - stesso spirito di
+    // loadSessionFromFile, ma senza un file: svuota la mappatura dei 4 tipi
+    // di parametro (resetAllParameterSlots(), IDENTICO comportamento di
+    // "Remove Parameters") e sostituisce il codice con defaultCsdText()
+    // (lo stesso testo usato per il primissimo avvio del plugin, prima di
+    // qualunque sessione salvata/caricata - vedi il costruttore). NON
+    // tocca il documento dell'editor di codice (quello e' testo UI, vive
+    // solo in CsoundAudioProcessorEditor): il chiamante (vedi
+    // CsoundAudioProcessorEditor::performInitializeSession()) deve ancora
+    // rileggere getCsdText() e aggiornare document/parameterPanel, come fa
+    // gia' dopo loadSessionFromFile.
+    void initializeSession();
 
 private:
     /** Costruisce il juce::ValueTree (stato apvts + metadata dei 64 slot,

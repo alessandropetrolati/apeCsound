@@ -5,6 +5,57 @@
 
 namespace
 {
+    // Fa da ponte fra l'UndoManager INTERNO di juce::CodeDocument (che
+    // raggruppa le battute in transazioni per conto suo, vedi
+    // CodeEditorComponent::newTransaction()/il timer di pausa in
+    // digitazione) e lo sharedUndoManager di PluginEditor (richiesta
+    // esplicita: un'UNICA cronologia lineare fra editor di codice e
+    // pannello Parametri, vedi bridgeCodeEditIntoSharedUndo() in
+    // PluginEditor.cpp). Un'istanza rappresenta UNA transazione di
+    // CodeDocument (un "gruppo" di battute, non un singolo carattere).
+    //
+    // perform() viene richiamata la PRIMA volta nello stesso istante in cui
+    // viene creata (juce::UndoManager::perform() lo fa sempre, per
+    // "eseguire" l'azione appena spinta) - ma il testo e' GIA' stato
+    // scritto dalla digitazione normale un istante prima, quindi quella
+    // prima chiamata deve essere un no-op (firstPerform): solo un
+    // SUCCESSIVO Redo (dopo un Undo) deve davvero rifare redo() sul
+    // document.
+    //
+    // guardFlag: impostato a true per la durata della chiamata a undo()/
+    // redo() sul document - vedi il commento sulla guardia di rientranza
+    // in bridgeCodeEditIntoSharedUndo().
+    struct CodeEditTransactionProxy final : public juce::UndoableAction
+    {
+        CodeEditTransactionProxy (juce::CodeDocument& documentIn, bool& guardFlagIn)
+            : document (documentIn), guardFlag (guardFlagIn) {}
+
+        bool perform() override
+        {
+            if (! firstPerform)
+            {
+                const juce::ScopedValueSetter<bool> guard (guardFlag, true);
+                document.getUndoManager().redo();
+            }
+
+            firstPerform = false;
+            return true;
+        }
+
+        bool undo() override
+        {
+            const juce::ScopedValueSetter<bool> guard (guardFlag, true);
+            document.getUndoManager().undo();
+            return true;
+        }
+
+        juce::CodeDocument& document;
+        bool& guardFlag;
+        bool firstPerform = true;
+
+        JUCE_DECLARE_NON_COPYABLE (CodeEditTransactionProxy)
+    };
+
     // Ricorda l'ultima cartella usata per Save/Load CSD in un piccolo file
     // di preferenze utente su disco (juce::PropertiesFile) - NON e' lo
     // stato del plugin (niente a che fare con getStateInformation/
@@ -126,21 +177,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // prepareToPlay): questo bottone non "avvia" nulla, si limita a
     // rimpiazzare il .csd corrente con quello appena modificato nell'editor.
     applyButton.setName ("apply");
-    applyButton.onClick = [this]
-    {
-        // Pulisce la consolle ad ogni Apply: i messaggi/errori della
-        // compilazione precedente non hanno piu' senso una volta applicato
-        // il nuovo codice, e mischiati ai nuovi renderebbero il log
-        // confuso da leggere.
-        logConsole.clear();
-        appendToLog ("--- Applying edited .csd ---");
-        audioProcessor.compileAndStart (document.getAllContent());
-
-        // Dopo compileAndStart il testo applicato (audioProcessor.getCsdText())
-        // coincide di nuovo con quello dell'editor: il bordo rosso del
-        // bottone scompare - vedi updateApplyButtonDirtyState().
-        updateApplyButtonDirtyState();
-    };
+    applyButton.onClick = [this] { performApply(); };
     addAndMakeVisible (applyButton);
 
     clearConsoleButton.setName ("clear");
@@ -148,20 +185,29 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     clearConsoleButton.onClick = [this] { logConsole.clear(); };
     addAndMakeVisible (clearConsoleButton);
 
-    // Mostra/nasconde la sidebar per rinominare i canali Csound dei 64 slot
-    // apvts (float/int/bool/choice) e definirne range/skew/increment - vedi
-    // CsoundParameterEditor.h/.cpp e toggleParameterPanel().
-    paramsButton.setName ("params");
-    paramsButton.onClick = [this] { toggleParameterPanel(); };
-    addAndMakeVisible (paramsButton);
-
     // Sidebar + divisore: aperti di default (showingParameterPanel = true),
     // editor/consolle si restringono per farle spazio - vedi resized().
+    // Niente piu' un bottone dedicato "Parameters" nella toolbar (richiesta
+    // esplicita): l'azione di mostra/nasconde e' ora SOLO la voce spuntabile
+    // "Show Parameters" nel menu hamburger, vedi onToggleParametersRequested/
+    // isParametersPanelVisible impostate piu' sotto.
     addChildComponent (parameterPanel);
     addChildComponent (sidebarDivider);
     parameterPanel.setVisible (showingParameterPanel);
     sidebarDivider.setVisible (showingParameterPanel);
-    paramsButton.setButtonText (showingParameterPanel ? "Hide parameters" : "Parameters");
+
+    // Menu hamburger: riparentato QUI (richiesta esplicita: vive nella
+    // toolbar principale, non dentro il pannello) - vedi il commento su
+    // panelToolbarButtonDiameter in PluginEditor.h. setLookAndFeel()
+    // applica la LookAndFeel del pannello (la sua icona hamburger e'
+    // disegnata SOLO da quella, vedi CsoundParameterMappingPanel::
+    // getButtonLookAndFeel()), altrimenti erediterebbe CsoundLookAndFeel di
+    // questo editor che non la conosce. Il "+" NON e' piu' qui (richiesta
+    // esplicita): resta dentro la title bar del pannello Parametri stesso,
+    // dove il pannello lo aggiunge/posiziona da solo - vedi il commento in
+    // testa a parameterPanel.addButton in CsoundParameterEditor.h.
+    parameterPanel.getMenuButton().setLookAndFeel (&parameterPanel.getButtonLookAndFeel());
+    addAndMakeVisible (parameterPanel.getMenuButton());
 
     sidebarDivider.getCurrentWidth = [this] { return sidebarWidth; };
     sidebarDivider.onDrag = [this] (int newWidth)
@@ -170,13 +216,12 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
         resized();
     };
 
-    // Mostra/nasconde logConsole (+ consoleDivider), analogo a paramsButton/
+    // Mostra/nasconde logConsole (+ consoleDivider), analogo a
     // parameterPanel sopra - vedi toggleConsole(). Visibile di default
-    // (showingConsole = true), a differenza della sidebar.
-    consoleButton.setName ("console");
-    consoleButton.onClick = [this] { toggleConsole(); };
-    addAndMakeVisible (consoleButton);
-
+    // (showingConsole = true). Niente piu' un bottone dedicato nella
+    // toolbar (richiesta esplicita): stesso discorso di paramsButton
+    // sopra, l'azione e' ora SOLO la voce spuntabile "Show Console" nel
+    // menu hamburger.
     addAndMakeVisible (consoleDivider);
     consoleDivider.getCurrentHeight = [this] { return consoleHeight; };
     consoleDivider.onDrag = [this] (int newHeight)
@@ -195,15 +240,53 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     };
 
     // Save/Load Session su file (.csd), indipendenti dal progetto della
-    // DAW - vedi il commento su saveSessionButton/loadSessionButton in
-    // PluginEditor.h sul perche'.
-    saveSessionButton.setName ("saveSession");
-    saveSessionButton.onClick = [this] { promptSaveSession(); };
-    addAndMakeVisible (saveSessionButton);
+    // DAW - vedi il commento sul perche' in PluginEditor.h. Non piu' due
+    // bottoni dedicati nella toolbar (richiesta esplicita): le stesse
+    // funzioni sono ora richiamate dalle voci "Save as CSD..."/"Load CSD" del
+    // menu hamburger del pannello Parametri (vedi CsoundParameterMappingPanel::
+    // showPanelMenu()).
+    parameterPanel.onSaveSessionRequested = [this] { promptSaveSession(); };
+    parameterPanel.onLoadSessionRequested = [this] { promptLoadSession(); };
 
-    loadSessionButton.setName ("loadSession");
-    loadSessionButton.onClick = [this] { promptLoadSession(); };
-    addAndMakeVisible (loadSessionButton);
+    // "Initialize Session" del menu hamburger - vedi promptInitializeSession()
+    // in PluginEditor.h.
+    parameterPanel.onInitializeSessionRequested = [this] { promptInitializeSession(); };
+
+    // Sezione "View" del menu hamburger (Show Parameters/Show Console) -
+    // vedi il commento su onToggleParametersRequested/onToggleConsoleRequested/
+    // isParametersPanelVisible/isConsoleVisible in CsoundParameterEditor.h.
+    parameterPanel.onToggleParametersRequested = [this] { toggleParameterPanel(); };
+    parameterPanel.onToggleConsoleRequested    = [this] { toggleConsole(); };
+    parameterPanel.isParametersPanelVisible    = [this] { return showingParameterPanel; };
+    parameterPanel.isConsoleVisible            = [this] { return showingConsole; };
+
+    // Apre la sidebar Parametri se e' chiusa quando si aggiunge un nuovo
+    // parametro (vedi il commento su onEnsurePanelVisible in
+    // CsoundParameterEditor.h) - richiesta esplicita.
+    parameterPanel.onEnsurePanelVisible = [this]
+    {
+        if (! showingParameterPanel)
+            toggleParameterPanel();
+    };
+
+    // Undo/Redo dal menu hamburger: SENZA questo, le voci "Undo"/"Redo" del
+    // pannello richiamerebbero SOLO undoManager.undo()/redo() direttamente
+    // (fallback in CsoundParameterMappingPanel::undo()/redo()) - che da
+    // quando undoManager e' un RIFERIMENTO a sharedUndoManager (vedi
+    // CsoundParameterEditor.h) sarebbe comunque corretto, ma passare da
+    // performUndo()/performRedo() resta piu' chiaro ed e' lo stesso
+    // instradamento usato da Cmd+Z/Cmd+Shift+Z in keyPressed().
+    parameterPanel.onUndoRequested = [this] { performUndo(); };
+    parameterPanel.onRedoRequested = [this] { performRedo(); };
+
+    // Cmd+Z/Cmd+Shift+Z mentre l'editor di codice ha il focus: intercettati
+    // DENTRO CsoundCodeEditor::keyPressed PRIMA che la classe base JUCE li
+    // consumi da sola per il proprio undo testuale interno (vedi il
+    // commento esteso su performUndo()/performRedo() in PluginEditor.h) -
+    // instradati qui con le STESSE funzioni, cosi' editor di codice e
+    // pannello Parametri condividono davvero un'unica cronologia.
+    editor.onUndoRequested = [this] { performUndo(); };
+    editor.onRedoRequested = [this] { performRedo(); };
 
     // clearConsoleButton galleggia in overlap sopra l'angolo in alto a
     // destra di logConsole (vedi resized()): deve restare sempre sopra di
@@ -227,6 +310,16 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // nativo della finestra (host/wrapper Standalone), non una maniglia
     // disegnata da noi.
     setResizable (true, false);
+
+    // Limite MINIMO di ridimensionamento (vedi il commento su
+    // minWindowWidth/minWindowHeight in PluginEditor.h) - BUG corretto:
+    // senza questo, rimpicciolendo la finestra al massimo l'area
+    // dell'editor di codice collassava a 0 e juce::CodeEditorComponent::
+    // paint() crashava (jassert interna su una larghezza/altezza negativa).
+    // Nessun limite massimo sensato da imporre (la finestra puo' diventare
+    // grande quanto si vuole), quindi un valore arbitrariamente alto.
+    setResizeLimits (minWindowWidth, minWindowHeight, 8192, 8192);
+
     //setSize (960, 680);
     setSize (1024, 768);
 
@@ -251,6 +344,18 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
 CsoundAudioProcessorEditor::~CsoundAudioProcessorEditor()
 {
     document.removeListener (this);
+
+    // Scollega la LookAndFeel del pannello Parametri impostata nel
+    // costruttore sul burger (vedi il commento li') PRIMA che
+    // parameterPanel (quindi la sua LookAndFeel) venga distrutta insieme
+    // al resto dei membri di questo editor - per non lasciare, anche solo
+    // per un istante durante lo smontaggio, un puntatore a LookAndFeel
+    // pendente. Il "+" non serve piu' qui: e' un child DIRETTO del
+    // pannello, che gli applica la sua LookAndFeel per semplice eredita'
+    // nell'albero dei componenti (nessun setLookAndFeel esplicito da
+    // scollegare).
+    parameterPanel.getMenuButton().setLookAndFeel (nullptr);
+
     setLookAndFeel (nullptr);
     audioProcessor.removeListener (this);
 }
@@ -259,13 +364,17 @@ void CsoundAudioProcessorEditor::paint (juce::Graphics& g)
 {
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
 
-    // La toolbar e' una barra vera e propria: sfondo bianco (come gli altri
-    // pannelli) e una sottile linea di separazione in basso, non solo due
-    // bottoni appoggiati sullo sfondo generale.
-    g.setColour (juce::Colours::white);
+    // Toolbar scurita (richiesta esplicita) - stesso petrolio/teal scuro
+    // usato da logConsole (vedi 0xff10181f nel costruttore) invece del
+    // bianco di prima, cosi' la fascia superiore e' coerente con il resto
+    // dei toni scuri dell'app (consolle, pannello Parametri). I bottoni
+    // restano leggibili: sono tutti sfondi pieni accentati (teal/colorato)
+    // con testo bianco, non dipendono dal contrasto con lo sfondo della
+    // toolbar dietro di loro.
+    g.setColour (juce::Colour (0xff10181f));
     g.fillRect (toolbarBounds);
 
-    g.setColour (juce::Colour (0xffd7dee3));
+    g.setColour (juce::Colour (0xff2a3a44));
     g.drawLine ((float) toolbarBounds.getX(),     (float) toolbarBounds.getBottom() - 0.5f,
                 (float) toolbarBounds.getRight(), (float) toolbarBounds.getBottom() - 0.5f, 1.0f);
 
@@ -273,6 +382,117 @@ void CsoundAudioProcessorEditor::paint (juce::Graphics& g)
     // dropHighlightOverlay (componente figlio dedicato, vedi il commento in
     // PluginEditor.h sul perche') mostrato/nascosto da fileDragEnter/
     // fileDragExit e posizionato in resized().
+}
+
+bool CsoundAudioProcessorEditor::keyPressed (const juce::KeyPress& key)
+{
+    // Vedi il commento su questa dichiarazione in PluginEditor.h - risale
+    // qui SOLO se nessun componente focalizzato piu' in basso nell'albero
+    // (es. un campo nome o l'editor di codice) ha gia' consumato Cmd+Z per
+    // il proprio undo testuale interno.
+    //
+    // 'Z' MAIUSCOLA, non 'z' (BUG corretto, stesso errore nell'identico
+    // controllo in CsoundCodeEditor::keyPressed): per convenzione JUCE,
+    // KeyPress::keyCode per i tasti-lettera e' SEMPRE il codice ASCII
+    // maiuscolo, indipendentemente da Shift (che e' nei modifiers) - con la
+    // minuscola questo confronto non corrispondeva MAI a un vero evento
+    // Cmd+Z/Cmd+Shift+Z.
+    if (key == juce::KeyPress ('Z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier, 0))
+    {
+        performRedo();
+        return true;
+    }
+
+    if (key == juce::KeyPress ('Z', juce::ModifierKeys::commandModifier, 0))
+    {
+        performUndo();
+        return true;
+    }
+
+    // Esc toglie il focus da tastiera da QUALUNQUE componente lo abbia
+    // (campo nome di un parametro, editor di codice...) - richiesto
+    // esplicitamente. Stessa logica di bubbling di Cmd+Z sopra: se un campo
+    // focalizzato ha gia' un suo significato per Esc (es. CsoundCodeEditor
+    // chiude prima il popup di autocompletamento/la barra di help, vedi
+    // CsoundCodeEditor::keyPressed) lo consuma PRIMA che arrivi qui, quindi
+    // la prima pressione di Esc chiude quello, una seconda (nessun
+    // popup/help piu' aperto) arriva fino a qui e sposta via il focus.
+    if (key == juce::KeyPress::escapeKey)
+    {
+        juce::Component::unfocusAllComponents();
+        return true;
+    }
+
+    return false;
+}
+
+// Rifatto completamente (richiesta esplicita: "rivedi completamente le
+// funzioni Undo/Redo... una linearita' avanti e indietro tra l'editor e le
+// configurazioni dei Parametri") - niente piu' euristica basata sul focus
+// (lastMeaningfulFocusWasEditor/globalFocusChanged, rimossi): editor di
+// codice e pannello Parametri condividono ora UN'UNICA cronologia
+// (sharedUndoManager, vedi PluginEditor.h), quindi non c'e' piu' nulla da
+// "indovinare" su quale dei due storicamente abbia il focus - un solo
+// Cmd+Z/voce di menu annulla sempre il passo CRONOLOGICAMENTE piu' recente,
+// a prescindere che sia stata una modifica di testo o di un parametro.
+// L'editor di codice vi partecipa tramite CodeEditTransactionProxy (vedi
+// bridgeCodeEditIntoSharedUndo() sotto): CsoundCodeEditor::keyPressed
+// intercetta Cmd+Z/Cmd+Shift+Z PRIMA della classe base JUCE (che altrimenti
+// li consumerebbe da sola per il proprio undo testuale interno,
+// document.getUndoManager(), rendendoli per sempre invisibili a questa
+// funzione) e li instrada qui tramite onUndoRequested/onRedoRequested
+// (impostate nel costruttore sotto).
+void CsoundAudioProcessorEditor::performUndo()
+{
+    sharedUndoManager.undo();
+}
+
+void CsoundAudioProcessorEditor::performRedo()
+{
+    sharedUndoManager.redo();
+}
+
+void CsoundAudioProcessorEditor::bridgeCodeEditIntoSharedUndo()
+{
+    // Guardia di rientranza: CodeEditTransactionProxy::perform()/undo()
+    // (sotto) richiamano document.getUndoManager().redo()/undo(), che a
+    // loro volta fanno scattare DI NUOVO questo stesso listener (vedi
+    // CodeDocument::insert()/remove(): anche la riproduzione di un
+    // Undo/Redo passa dagli stessi codeDocumentTextInserted/Deleted) - senza
+    // questa guardia, un singolo Undo sullo sharedUndoManager finirebbe per
+    // spingerci sopra UN'ALTRA copia della stessa transazione appena
+    // annullata.
+    if (isApplyingCodeUndoRedo)
+        return;
+
+    // getNumActionsInCurrentTransaction() == 1: questa e' la PRIMA
+    // modifica di una transazione FRESCA di CodeDocument (juce::
+    // CodeEditorComponent ne chiude una da sola dopo una pausa nella
+    // digitazione, o esplicitamente per azioni come paste/undo/ecc. - vedi
+    // CodeEditorComponent::newTransaction()) - ne rispecchiamo UNA SOLA
+    // istanza proxy nello sharedUndoManager: un intero "gruppo" di
+    // battute diventa cosi' UN solo passo di Undo condiviso, non uno per
+    // carattere. Le modifiche successive nella STESSA transazione (count
+    // > 1) non aggiungono altro: sono gia' comprese nel proxy appena
+    // creato, perche' document.getUndoManager().undo() disfa l'INTERA
+    // transazione in un colpo.
+    //
+    // beginNewTransaction() QUI e' essenziale (BUG corretto: mancava) -
+    // senza, juce::UndoManager::perform() accoda il nuovo proxy alla
+    // transazione CORRENTE invece di aprirne una nuova, quindi raffiche di
+    // digitazione separate (e, se intercalate, anche azioni sui metadata
+    // del pannello Parametri) finivano per essere fuse in un unico passo di
+    // Undo - alcune diventavano cosi' annullabili solo "in blocco" insieme
+    // ad altre, altre risultavano irraggiungibili singolarmente. Ogni
+    // raffica di digitazione e' invece una transazione SUA, esattamente
+    // come ogni modifica ai metadata (vedi undoManager.beginNewTransaction()
+    // in CsoundParameterMappingPanel) - questo e' ciò che rende possibile
+    // la "linearita' avanti e indietro" richiesta tra editor e pannello.
+    if (document.getUndoManager().getNumActionsInCurrentTransaction() == 1)
+    {
+        sharedUndoManager.beginNewTransaction();
+        sharedUndoManager.perform (new CodeEditTransactionProxy (document, isApplyingCodeUndoRedo));
+    }
 }
 
 void CsoundAudioProcessorEditor::resized()
@@ -289,29 +509,25 @@ void CsoundAudioProcessorEditor::resized()
     // aggiunge lo spazio occupato dall'icona.
     const auto applyWidth = applyButton.getBestWidthForHeight (toolbar.getHeight())
                            + CsoundLookAndFeel::getIconAllowance (applyButton.getName());
-    const auto paramsWidth = paramsButton.getBestWidthForHeight (toolbar.getHeight())
-                            + CsoundLookAndFeel::getIconAllowance (paramsButton.getName());
-    const auto consoleWidth = consoleButton.getBestWidthForHeight (toolbar.getHeight())
-                             + CsoundLookAndFeel::getIconAllowance (consoleButton.getName());
-    const auto saveWidth = saveSessionButton.getBestWidthForHeight (toolbar.getHeight())
-                          + CsoundLookAndFeel::getIconAllowance (saveSessionButton.getName());
-    const auto loadWidth = loadSessionButton.getBestWidthForHeight (toolbar.getHeight())
-                          + CsoundLookAndFeel::getIconAllowance (loadSessionButton.getName());
 
-    // paramsButton/consoleButton sono ancorati a DESTRA nella toolbar
-    // (richiesta esplicita per paramsButton, consoleButton analogo), staccati
-    // dagli altri bottoni che restano ancorati a sinistra nel loro ordine
-    // originale - rimossi per primi cosi' la larghezza restante per gli
-    // altri non li considera piu' parte della sequenza da sinistra.
-    paramsButton.setBounds (toolbar.removeFromRight (paramsWidth));
-    toolbar.removeFromRight (8);
-    consoleButton.setBounds (toolbar.removeFromRight (consoleWidth));
+    // Burger del pannello Parametri: UNICO bottone ancorato a destra nella
+    // toolbar principale (richiesta esplicita: paramsButton/consoleButton
+    // sono stati rimossi, le loro azioni sono voci del menu hamburger). Il
+    // "+" NON vive piu' qui (richiesta esplicita, vedi il commento in testa
+    // a parameterPanel.addButton in CsoundParameterEditor.h): e' tornato
+    // dentro la title bar del pannello Parametri stesso, a sinistra, dove
+    // ora apre lo stesso menu "Parameters" prima annidato nel burger.
+    auto& panelMenuButton = parameterPanel.getMenuButton();
 
-    applyButton.setBounds (toolbar.removeFromLeft (applyWidth));
-    toolbar.removeFromLeft (8);
-    saveSessionButton.setBounds (toolbar.removeFromLeft (saveWidth));
-    toolbar.removeFromLeft (8);
-    loadSessionButton.setBounds (toolbar.removeFromLeft (loadWidth));
+    panelMenuButton.setBounds (toolbar.removeFromRight (panelToolbarButtonDiameter)
+                                       .withSizeKeepingCentre (panelToolbarButtonDiameter, panelToolbarButtonDiameter));
+
+    // withSizeKeepingCentre (...): stessa identica altezza fissa di +/burger
+    // sopra (panelToolbarButtonDiameter), invece dell'altezza "piatta" della
+    // sola area toolbar ridotta - richiesta esplicita ("il tasto Apply deve
+    // essere alto come + e burger").
+    applyButton.setBounds (toolbar.removeFromLeft (applyWidth)
+                                   .withSizeKeepingCentre (applyWidth, panelToolbarButtonDiameter));
 
     // Niente inset laterali: solo lo spazio verticale tra toolbar ed editor
     // resta. Sidebar ancorata A DESTRA, su tutta l'altezza rimanente (editor
@@ -366,8 +582,8 @@ void CsoundAudioProcessorEditor::resized()
         // un badge - toFront() nel costruttore lo tiene sempre sopra al
         // testo della consolle sotto.
         const auto consoleTopRight = bottomArea.getTopRight();
-        clearConsoleButton.setBounds (consoleTopRight.x - clearConsoleButtonMargin - clearConsoleButtonDiameter,
-                                      consoleTopRight.y + clearConsoleButtonMargin,
+        clearConsoleButton.setBounds (consoleTopRight.x - clearConsoleButtonMargin*2 - clearConsoleButtonDiameter,
+                                      consoleTopRight.y + clearConsoleButtonMargin*2,
                                       clearConsoleButtonDiameter, clearConsoleButtonDiameter);
         clearConsoleButton.setVisible (true);
     }
@@ -397,8 +613,6 @@ void CsoundAudioProcessorEditor::toggleParameterPanel()
     parameterPanel.setVisible (showingParameterPanel);
     sidebarDivider.setVisible (showingParameterPanel);
 
-    paramsButton.setButtonText (showingParameterPanel ? "Hide parameters" : "Parameters");
-
     resized();
     repaint();
 }
@@ -411,8 +625,6 @@ void CsoundAudioProcessorEditor::toggleConsole()
     // allargano per recuperare lo spazio (vedi resized()), nessun overlay.
     logConsole.setVisible (showingConsole);
     consoleDivider.setVisible (showingConsole);
-
-    consoleButton.setButtonText (showingConsole ? "Hide Console" : "Console");
 
     resized();
     repaint();
@@ -459,7 +671,7 @@ void CsoundAudioProcessorEditor::promptSaveSession (std::function<void()> onSave
     const auto startingFile = getLastCsdDirectory().getChildFile ("Untitled.csd");
 
     activeFileChooser = std::make_unique<juce::FileChooser> (
-        "Save CSD...", startingFile, "*.csd");
+        "Save as CSD...", startingFile, "*.csd");
 
     activeFileChooser->launchAsync (
         juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
@@ -618,11 +830,80 @@ void CsoundAudioProcessorEditor::performLoadSessionFile (const juce::File& file)
         markApplyPendingAfterLoad();
 
         appendToLog ("--- Session loaded from " + file.getFullPathName() + " ---");
+
+        // Richiesta esplicita: dopo un Load CSD confermato (Overwrite, o
+        // Save poi Overwrite) il codice appena caricato deve gia' essere in
+        // esecuzione, come se l'utente avesse premuto Apply subito dopo -
+        // performApply() sovrascrive subito dopo il bordo rosso forzato da
+        // markApplyPendingAfterLoad() qui sopra con "non modificato" (visto
+        // che compileAndStart compila esattamente questo stesso testo),
+        // esattamente l'effetto voluto: nessun bordo rosso residuo, il .csd
+        // caricato e' gia' quello in esecuzione.
+        performApply();
     }
     else
     {
         appendToLog ("--- Failed to load session (empty or unreadable file?) ---");
     }
+}
+
+void CsoundAudioProcessorEditor::promptInitializeSession()
+{
+    // Dialogo nativo a due vie (showNativeTwoButtonAlert, vedi
+    // NativeAlertMac.h/.mm - stesso usato da CsoundParameterMappingPanel::
+    // removeAllParameters()): "Cancel" primo/default (risponde a Invio,
+    // un'azione cosi' distruttiva non deve mai scattare per errore),
+    // "Initialize" secondo. A differenza di loadSessionFile() non c'e' un
+    // terzo bottone "Save": l'utente non ha scelto un file nuovo da cui
+    // aspettarsi una sostituzione, quindi se vuole conservare lo stato
+    // attuale deve esportarlo PRIMA a mano (Save as CSD...) - offrire
+    // "Save" anche qui aggiungerebbe un passaggio che non corrisponde a
+    // nessuna richiesta esplicita.
+    const int choice = showNativeTwoButtonAlert (
+        "Initialize session?",
+        "This will remove all parameters and replace the current code with the default template. "
+        "The code change can be undone afterwards; the parameter mapping cannot.",
+        "Cancel", "Initialize");
+
+    if (choice == 2)
+        performInitializeSession();
+}
+
+void CsoundAudioProcessorEditor::performInitializeSession()
+{
+    // Stesso ordine/commenti di performLoadSessionFile() sopra: il
+    // processor e' la fonte di verita' (initializeSession() azzera i 4
+    // tipi di slot e sostituisce getCsdText() con defaultCsdText()),
+    // document/parameterPanel vanno rilette esplicitamente DOPO.
+    audioProcessor.initializeSession();
+
+    document.newTransaction();
+    document.replaceAllContent (audioProcessor.getCsdText());
+    parameterPanel.refreshAllFromProcessor();
+
+    markApplyPendingAfterLoad();
+
+    appendToLog ("--- Session initialized (default template) ---");
+
+    // Stessa richiesta esplicita di performLoadSessionFile(): dopo la
+    // conferma, il codice di default deve essere gia' in esecuzione.
+    performApply();
+}
+
+void CsoundAudioProcessorEditor::performApply()
+{
+    // Pulisce la consolle ad ogni Apply: i messaggi/errori della
+    // compilazione precedente non hanno piu' senso una volta applicato il
+    // nuovo codice, e mischiati ai nuovi renderebbero il log confuso da
+    // leggere.
+    logConsole.clear();
+    appendToLog ("--- Applying edited .csd ---");
+    audioProcessor.compileAndStart (document.getAllContent());
+
+    // Dopo compileAndStart il testo applicato (audioProcessor.getCsdText())
+    // coincide di nuovo con quello dell'editor: il bordo rosso del bottone
+    // scompare - vedi updateApplyButtonDirtyState().
+    updateApplyButtonDirtyState();
 }
 
 void CsoundAudioProcessorEditor::OpcodeHelpBar::setHelpText (const juce::String& syntax, const juce::String& description)
@@ -702,7 +983,7 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::paint (juce::Graphics& g)
     {
         g.setColour (juce::Colour (0xff8a7a55));
         g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::italic)));
-        g.drawText ("Click an opcode, or type one, for inline help.", area, juce::Justification::centredLeft, true);
+        g.drawText ("Place the cursor on an opcode or type one to view inline help.", area, juce::Justification::centredLeft, true);
         return;
     }
 

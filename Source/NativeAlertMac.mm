@@ -40,4 +40,26 @@ extern "C" int showNativeThreeButtonAlertRaw (const char* title,
     return 0; // terzo bottone, oppure finestra chiusa senza scegliere
 }
 
+extern "C" int showNativeTwoButtonAlertRaw (const char* title,
+                                             const char* message,
+                                             const char* button1Text,
+                                             const char* button2Text)
+{
+    NSAlert* alert = [[NSAlert alloc] init];
+
+    alert.alertStyle = NSAlertStyleWarning;
+    alert.messageText = [NSString stringWithUTF8String: title];
+    alert.informativeText = [NSString stringWithUTF8String: message];
+
+    // Stesso ordine/convenzione di showNativeThreeButtonAlertRaw sopra: il
+    // PRIMO bottone aggiunto e' quello di default (piu' a destra,
+    // scattabile con Invio).
+    [alert addButtonWithTitle: [NSString stringWithUTF8String: button1Text]];
+    [alert addButtonWithTitle: [NSString stringWithUTF8String: button2Text]];
+
+    const NSModalResponse response = [alert runModal];
+
+    return response == NSAlertFirstButtonReturn ? 1 : 2;
+}
+
 #endif // defined(__APPLE__)

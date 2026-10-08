@@ -40,3 +40,26 @@ inline int showNativeThreeButtonAlert (const juce::String& title,
                                            button2Text.toRawUTF8(),
                                            button3Text.toRawUTF8());
 }
+
+// Stessa idea di showNativeThreeButtonAlertRaw sopra ma con SOLO due
+// pulsanti - per le normali conferme si'/no (es. "Remove Parameters?")
+// dove un terzo pulsante (anche vuoto) non avrebbe senso. button1Text e'
+// quello di default/predefinito (piu' a destra, scattabile con Invio):
+// per un'azione distruttiva conviene che sia quello "sicuro" (es.
+// "Cancel"), NON quello distruttivo. Ritorna 1 per button1Text, 2 per
+// button2Text o se la finestra viene chiusa senza scegliere.
+extern "C" int showNativeTwoButtonAlertRaw (const char* title,
+                                             const char* message,
+                                             const char* button1Text,
+                                             const char* button2Text);
+
+inline int showNativeTwoButtonAlert (const juce::String& title,
+                                      const juce::String& message,
+                                      const juce::String& button1Text,
+                                      const juce::String& button2Text)
+{
+    return showNativeTwoButtonAlertRaw (title.toRawUTF8(),
+                                         message.toRawUTF8(),
+                                         button1Text.toRawUTF8(),
+                                         button2Text.toRawUTF8());
+}

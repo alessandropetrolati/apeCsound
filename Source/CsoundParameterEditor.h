@@ -2,9 +2,11 @@
 
 #include <JuceHeader.h>
 #include <array>
+#include <set>
 #include <utility>
 #include <vector>
 #include "PluginProcessor.h"
+#include "CsoundActionSheet.h"
 
 /**
     LookAndFeel dedicata al pannello parametri (CsoundParameterMappingPanel):
@@ -105,25 +107,36 @@ public:
         della lista unificata (vedi ParamRow::onCommittedNonEmpty) - stesso
         slot, ma ora persistente/ricostruibile come ogni altra riga.
 
-    Un bottone "Edit" (sempre visibile, vedi editToggleButton) commuta OGNI
-    riga della lista tra due visualizzazioni, SENZA cambiare quali righe sono
-    presenti:
-      - modalita' UI (default): una card (vedi uiCardHeight) con etichetta
-        tipo + nome canale in testa e il controllo VERO (slider/toggle/combo,
-        agganciato al parametro apvts reale tramite GenericParamRow) a tutta
-        larghezza sotto - stessa maniglia colorata e sfondo delle card Edit,
-        ma senza campi editabili;
-      - modalita' Edit: una "card" piu' alta (vedi cardHeightSingleRow/
-        cardHeightDoubleRow) con, dall'alto in basso: etichetta tipo colorata
-        + bottone di rimozione ("SLIDER · CANALE" ecc. - vedi
-        ParamRow/IntParamRow/BoolParamRow/ChoiceParamRow), il campo nome
-        canale a tutta larghezza in grande, poi una riga di campi con
-        etichetta sopra ciascuno (MIN/MAX/INIT/EXP/STEP per Float, MIN/MAX/
-        INIT per Int, INIT+checkbox per Bool, DEFAULT per Choice) e, solo
-        per Choice, una seconda riga larga quanto la card per le opzioni
-        (OPZIONI, separate da virgola). La maniglia di trascinamento e' una
-        barra verticale colorata (diversa per tipo) sul lato sinistro della
-        card - vedi layoutCardSkeleton()/paintCardChrome().
+    Ogni riga della lista unificata ha una sua PROPRIA icona "edit" (angolo
+    in alto a destra della card, vedi editIconButton in ciascuno dei 4
+    *UnifiedRow sotto) che commuta SOLO quella riga tra due visualizzazioni -
+    non esiste piu' un interruttore globale che le mostri/nasconda tutte
+    insieme (richiesta esplicita: ogni parametro apre il SUO contenuto senza
+    toccare gli altri). Il bottone "+" in cima al pannello resta l'unico
+    controllo della toolbar, centrato da solo sulla larghezza del pannello:
+      - modalita' UI (default per ogni riga): una card (vedi uiCardHeight) con
+        etichetta tipo + nome canale in testa e il controllo VERO (slider/
+        toggle/combo, agganciato al parametro apvts reale tramite
+        GenericParamRow) a tutta larghezza sotto - stessa maniglia colorata e
+        sfondo delle card Edit, ma senza campi editabili;
+      - modalita' Edit (solo per la riga la cui icona e' stata premuta): una
+        "card" piu' alta (vedi cardHeightSingleRow/cardHeightDoubleRow) con,
+        dall'alto in basso: etichetta tipo colorata + bottone di rimozione
+        ("SLIDER · CANALE" ecc. - vedi ParamRow/IntParamRow/BoolParamRow/
+        ChoiceParamRow), il campo nome canale a tutta larghezza in grande,
+        poi una riga di campi con etichetta sopra ciascuno (MIN/MAX/INIT/EXP/
+        STEP per Float, MIN/MAX/INIT per Int, INIT+checkbox per Bool,
+        DEFAULT per Choice) e, solo per Choice, una seconda riga larga quanto
+        la card per le opzioni (OPZIONI, separate da virgola). La maniglia di
+        trascinamento e' una barra verticale colorata (diversa per tipo) sul
+        lato sinistro della card - vedi layoutCardSkeleton()/
+        paintCardChrome(). L'icona edit resta visibile in ENTRAMBE le
+        modalita' e SEMPRE nell'angolo in alto a DESTRA (richiesta
+        esplicita) cosi' si puo' tornare alla vista UI dalla stessa icona
+        che ha aperto quella Edit; il cerchio rosso "-" di rimozione, visibile
+        solo in modalita' Edit, e' invece nell'angolo in alto a SINISTRA
+        (vedi layoutCardSkeleton()), per non essere mai adiacente all'icona
+        edit.
 
     Ogni riga (in ENTRAMBE le modalita' - anche quella UI, vedi
     GenericParamRow::mouseDrag, ha la sua maniglia) e' anche una sorgente di
@@ -139,7 +152,8 @@ public:
 class CsoundParameterMappingPanel final : public juce::Component
 {
 public:
-    explicit CsoundParameterMappingPanel (CsoundAudioProcessor& processorToEdit);
+    explicit CsoundParameterMappingPanel (CsoundAudioProcessor& processorToEdit,
+                                           juce::UndoManager& sharedUndoManager);
     ~CsoundParameterMappingPanel() override;
 
     void resized() override;
@@ -151,6 +165,110 @@ public:
     // mostra subito il contenuto appena caricato invece dei vecchi valori
     // della sessione precedente.
     void refreshAllFromProcessor();
+
+    // Undo/Redo GENERALI per i METADATA (nome canale, min/max/default/skew/
+    // step, default bool, opzioni/default choice) e per aggiunta/rimozione
+    // di un parametro - NON per i VALORI dei parametri (quelli sono gestiti
+    // dalla DAW/host, vedi il commento su undoManager piu' sotto). Agiscono
+    // su undoManager, che e' un RIFERIMENTO alla STESSA sharedUndoManager di
+    // PluginEditor usata anche per l'editor di codice (vedi
+    // PluginEditor::performUndo()/performRedo()) - quindi chiamare undo()/
+    // redo() qui o chiamare sharedUndoManager.undo()/redo() direttamente da
+    // PluginEditor sono equivalenti: una SINGOLA cronologia, in ordine
+    // cronologico reale, condivisa tra editor e pannello Parametri
+    // ("linearita' avanti e indietro", richiesta esplicita).
+    //   - le modifiche ai METADATA in modalita' Edit e l'aggiunta/rimozione
+    //     di un parametro NON passano per apvts (sono struct custom nel
+    //     processor, non parametri) - per queste usiamo undoManager con una
+    //     nostra UndoableAction minimale (vedi LambdaUndoableAction nel
+    //     .cpp) costruita a mano ad ogni commit finale (Return/Esc/focus
+    //     perso/click), tramite il campo pushUndo di ciascuna riga Edit
+    //     (vedi piu' sotto) - mai catturando `this` della riga nelle due
+    //     lambda (puo' essere distrutta e ricostruita da
+    //     rebuildUnifiedRows() nel frattempo), solo processor/index/i
+    //     valori dello slot, con un refresh della lista fatto dal pannello
+    //     stesso dopo ogni perform()/undo().
+    //   - i controlli VERI in modalita' UI (slider/toggle/combo di
+    //     GenericParamRow) NON usano piu' juce::UndoManager (vedi il
+    //     commento sul costruttore di GenericParamRow): i loro 3 attachment
+    //     JUCE ricevono nullptr, perche' i VALORI sono gestiti dalla DAW.
+    bool undo();
+    bool redo();
+
+    // menuButton (vedi il membro privato piu' sotto) vive VISIVAMENTE nella
+    // toolbar PRINCIPALE di PluginEditor, ancorato a destra (richiesta
+    // esplicita) - PluginEditor lo riparenta con addAndMakeVisible() (JUCE
+    // sposta automaticamente un Component dal suo vecchio genitore al
+    // nuovo) e lo posiziona nel proprio resized(). L'OGGETTO (stile, nome,
+    // onClick -> showPanelMenu()) resta pero' di proprieta' di questo
+    // pannello, impostato come sempre nel costruttore - da cui questo
+    // accessor. Il "+" (addButton) invece NON viene piu' riparentato
+    // (richiesta esplicita: e' tornato dentro la title bar di QUESTO
+    // pannello, vedi il commento sulla sua dichiarazione piu' sotto) -
+    // nessun accessor pubblico per lui.
+    juce::Button& getMenuButton() { return menuButton; }
+
+    // Permette a PluginEditor di applicare la STESSA LookAndFeel di questo
+    // pannello al bottone sopra una volta riparentato - altrimenti
+    // erediterebbe quella di PluginEditor (CsoundLookAndFeel), che non sa
+    // disegnare la sua icona hamburger (nome "burgerMenu", riconosciuto
+    // SOLO da drawButtonText/drawButtonBackground di QUESTA LookAndFeel,
+    // vedi lookAndFeel piu' sotto).
+    juce::LookAndFeel& getButtonLookAndFeel() { return lookAndFeel; }
+
+    // Impostate da PluginEditor (uniche funzioni che sanno davvero
+    // scrivere/leggere un .csd su disco, vedi promptSaveSession()/
+    // promptLoadSession() in PluginEditor.h) - richiamate dalle voci "Save
+    // CSD"/"Load CSD" del menu hamburger (vedi showPanelMenu()). I vecchi
+    // bottoni "Save as CSD..."/"Load CSD" nella toolbar principale sono stati
+    // rimossi: questa e' ora l'UNICA via per queste due azioni.
+    std::function<void()> onSaveSessionRequested;
+    std::function<void()> onLoadSessionRequested;
+
+    // Impostata da PluginEditor (vedi promptInitializeSession()/
+    // performInitializeSession() in PluginEditor.h) - richiamata dalla
+    // voce "Initialize Session" del menu hamburger (richiesta esplicita:
+    // "pulisce tutto e carica il CSD hard coded") - vedi showPanelMenu().
+    // Stesso meccanismo di onSaveSessionRequested/onLoadSessionRequested
+    // sopra: questo pannello non sa nulla del documento dell'editor di
+    // codice, quindi non puo' implementarla da solo.
+    std::function<void()> onInitializeSessionRequested;
+
+    // Impostate da PluginEditor con performUndo()/performRedo() (vedi
+    // PluginEditor.h) - richiamate dalle voci "Undo"/"Redo" del menu
+    // hamburger (vedi showPanelMenu()) invece di undo()/redo() diretti,
+    // cosi' il percorso menu e quello Cmd+Z/Cmd+Shift+Z passano sempre dallo
+    // stesso punto. Dato che undoManager e' ora un riferimento alla STESSA
+    // sharedUndoManager usata da performUndo()/performRedo(), il risultato
+    // e' identico a chiamare undo()/redo() qui - ma mantenendo
+    // l'indirezione, PluginEditor resta l'unico posto che decide come
+    // instradare l'azione. Se non impostate (non dovrebbe succedere in
+    // pratica), la voce di menu ricade sul solo undo()/redo() di questo
+    // pannello.
+    std::function<void()> onUndoRequested;
+    std::function<void()> onRedoRequested;
+
+    // Impostate da PluginEditor - mostrano/nascondono rispettivamente la
+    // sidebar Parametri e la consolle (vedi toggleParameterPanel()/
+    // toggleConsole() in PluginEditor.h/.cpp). I vecchi bottoni dedicati
+    // "Parameters"/"Hide Console" nella toolbar principale sono stati
+    // rimossi (richiesta esplicita): queste azioni sono ora SOLO voci
+    // spuntabili nella sezione "View" del menu hamburger (vedi
+    // showPanelMenu()), spuntate quando il rispettivo elemento e' visibile
+    // (isParametersPanelVisible/isConsoleVisible).
+    std::function<void()> onToggleParametersRequested;
+    std::function<void()> onToggleConsoleRequested;
+    std::function<bool()> isParametersPanelVisible;
+    std::function<bool()> isConsoleVisible;
+
+    // Impostata da PluginEditor - apre la sidebar Parametri SE E SOLO SE e'
+    // attualmente chiusa (non la richiude se e' gia' aperta, a differenza
+    // di onToggleParametersRequested sopra) - richiamata da
+    // addNewParameter() PRIMA di creare la riga "in sospeso" del nuovo
+    // parametro, cosi' sia il bottone "+" sia la voce "Add parameter" del
+    // menu hamburger mostrano sempre la sidebar invece di aggiungere un
+    // parametro "a vuoto" in un pannello invisibile (richiesta esplicita).
+    std::function<void()> onEnsurePanelVisible;
 
     // Chiamata quando il tasto destro su una maniglia copia un chnget negli
     // appunti, quando un parametro viene creato/rimosso dal flusso "+", o
@@ -167,7 +285,7 @@ public:
     static constexpr int handleStripWidth = 34;
     static constexpr int cardPaddingH = 14;
     static constexpr int cardPaddingV = 12;
-    static constexpr int cardHeaderHeight = 20;
+    static constexpr int cardHeaderHeight = 38; // ingrandito ANCORA (richiesta esplicita: Remove/Copy/Edit "ancora piu' grandi... un poco piu' spaziati") - deve restare >= rowEditIconSize sotto, altrimenti jmin() in layoutRowIconButtons/layoutCardSkeleton tornerebbe a schiacciare le icone
     static constexpr int cardHeaderGap = 6;
     static constexpr int cardNameHeight = 30;
     static constexpr int cardNameGap = 10;
@@ -177,11 +295,21 @@ public:
     static constexpr int cardFieldRowGap = 10;
     static constexpr int cardGap = 8; // spazio verticale TRA le card, nella lista
 
-    // Larghezze dei singoli campi numerici nella riga sotto il nome -
-    // diverse per tipo, come nel mockup (lo "STEP" del Float e' piu' largo
-    // degli altri, deve contenere valori come "0.001").
+    // Title bar del pannello (richiesta esplicita: "Riabilita la Title bar
+    // in Parameters, con la label centrale") - vedi resized()/paint() nel
+    // .cpp. panelTitleBarButtonDiameter e' il diametro del "+" circolare a
+    // sinistra, leggermente piu' piccolo dell'altezza della barra per
+    // lasciare un margine sopra/sotto.
+    static constexpr int panelTitleBarHeight = 40;
+    static constexpr int panelTitleBarButtonDiameter = 30;
+    static constexpr int panelTitleBarPaddingH = 8;
+
+    // Larghezze dei singoli campi numerici nella riga sotto il nome - STEP
+    // (Float) usa la stessa larghezza "narrow" di Min/Max/Init/Exp
+    // (richiesta esplicita: prima era piu' largo per contenere valori come
+    // "0.001", ma doveva restare uniforme con gli altri campi).
     static constexpr int cardFieldNarrowWidth = 68;
-    static constexpr int cardFieldStepWidth = 92;
+    static constexpr int cardFieldStepWidth = cardFieldNarrowWidth; // stessa larghezza di Min/Max/ecc. (richiesta esplicita, prima era piu' largo)
     static constexpr int cardFieldGap = 14;
     static constexpr int cardBoolFieldWidth = 120;
     static constexpr int cardChoiceDefaultWidth = 160; // ComboBox: deve mostrare l'etichetta scelta, non solo un indice
@@ -227,7 +355,7 @@ public:
     // CsoundParameterPanelLookAndFeel::drawLinearSlider nel .cpp) - e'
     // quello, non l'altezza della riga, a dover risultare grande.
     static constexpr int uiCardPaddingV = 6;
-    static constexpr int uiCardHeaderHeight = 14;   // solo etichetta tipo, niente bottone rimozione
+    static constexpr int uiCardHeaderHeight = 38;   // solo etichetta tipo (niente bottone rimozione) - stessa altezza di cardHeaderHeight sopra, per fare spazio a editIconButton/copyButton ingranditi
     static constexpr int uiCardHeaderGap = 3;
     static constexpr int uiCardNameHeight = 18;     // nome canale, sola lettura - piu' basso del campo Edit
     static constexpr int uiCardNameGap = 3;
@@ -241,6 +369,19 @@ public:
     static constexpr int uiRangeLabelHeight = 10; // "0"/"127" sotto lo slider - piccola, non e' una didascalia di campo
     static constexpr int uiSliderTrackGap = 2;    // tra lo slider e le etichette min/max sotto
     static constexpr int uiTogglePillWidth = 100;
+
+    // Icone "edit"/"copy" proprie di OGNI riga (angolo in alto a destra
+    // della card, sia in modalita' UI sia Edit - vedi editIconButton/
+    // copyButton in ciascuno dei 4 *UnifiedRow piu' sotto) - senza sfondo
+    // pieno a riposo, visto che si ripetono su ogni card, a differenza del
+    // vecchio bottone "Edit" globale nella toolbar (rimosso). Ingrandite
+    // ulteriormente (richiesta esplicita, pensando a un uso touch/iOS: "i
+    // bottoni devono essere piu' grandi" - non il target 44pt delle linee
+    // guida Apple, che qui non ci sta per riga, ma un'area di tocco
+    // comunque nettamente piu' comoda di prima).
+    static constexpr int rowEditIconSize = 34;  // ingrandito ANCORA (richiesta esplicita) - Remove/Copy/Edit usano TUTTI questa stessa costante, quindi restano sempre della stessa dimensione fra loro
+    static constexpr int rowEditIconMargin = 4; // spazio tra l'icona e il bordo della card / il bottone di rimozione
+    static constexpr int rowIconButtonGap = 10; // ingrandito ANCORA (richiesta esplicita: "un poco piu' spaziati") - spazio TRA copyButton ed editIconButton (e, in modalita' Edit, tra removeButton e copyButton)
 
     // Larghezza "di comodo" iniziale della sidebar (vedi PluginEditor.h) -
     // la riga di campi piu' larga (Slider, con 5 campi fissi) SU UNA SOLA
@@ -306,7 +447,8 @@ private:
     // colorata della maniglia (con i puntini, se la riga ha gia' un nome) -
     // condiviso dai paint() di tutti e 4 i tipi.
     static void paintCardChrome (juce::Graphics& g, juce::Rectangle<int> bounds, juce::Colour accent,
-                                  juce::Rectangle<int> handleStrip, bool showHandleDots, bool handleHovered);
+                                  juce::Rectangle<int> handleStrip, bool showHandleDots, bool handleHovered,
+                                  bool isEditingCard);
 
     // Una riga EDIT per slot float ("SLIDER" nel mockup): barra colorata
     // (blu) a sinistra come maniglia di trascinamento, etichetta tipo +
@@ -348,6 +490,17 @@ private:
         // per togliere la riga dalla lista; per una pendingRow (vedi
         // createPendingRow()) la usa per scartarla senza mai aver allocato
         // nulla.
+        // Assegnata dal pannello (mai dal costruttore - stesso stile di
+        // onCopiedToClipboard) per collegare questa riga all'undoManager
+        // condiviso (vedi CsoundParameterMappingPanel::undo()/redo() per il
+        // quadro completo): primo argomento = lambda da eseguire ORA/al
+        // "redo", secondo = lambda da eseguire all'"undo" - entrambe le
+        // lambda, costruite dal chiamante (commitFromFields() e dintorni),
+        // NON devono mai catturare `this` di QUESTA riga (puo' essere
+        // distrutta da un rebuildUnifiedRows() nel frattempo), solo
+        // processor/index/valori per copia o riferimento stabile.
+        std::function<void (std::function<void()>, std::function<void()>)> pushUndo;
+
         std::function<void()> onRemoveRequested;
 
         // Chiamata (stesso identico vincolo di asincronia di
@@ -368,10 +521,32 @@ private:
         void textEditorFocusLost (juce::TextEditor&) override;
         void textEditorTextChanged (juce::TextEditor&) override;
 
+        // Esc deve comportarsi ESATTAMENTE come Return (richiesto
+        // esplicitamente): commit del campo (o scarto se il nome e' ancora
+        // vuoto - vedi onRemoveRequested) + perdita del focus, invece del
+        // comportamento di default di juce::TextEditor (che consuma Esc per
+        // conto suo senza notificare nessuno dei listener sopra - ecco
+        // perche' prima Esc non faceva nulla di visibile qui dentro).
+        void textEditorEscapeKeyPressed (juce::TextEditor&) override;
+
         void commitFromFields();
         void updateHandleHover (juce::Point<int> position);
         void notifyRemovedIfEmpty();
         void notifyCommittedIfNonEmpty();
+
+        // Spinge su pushUndo (se agganciata) l'azione accumulata da quando
+        // hasBeforeEditSlot e' diventato true (vedi textEditorTextChanged) -
+        // chiamata da TUTTI i commit finali (Return/Esc/focus perso), MAI
+        // da textEditorTextChanged stesso: un'azione di Undo per intera
+        // sessione di digitazione, non una per carattere.
+        void pushPendingUndoIfAny();
+
+        // Istantanea dello slot presa al PRIMO carattere digitato dopo
+        // l'ultimo commit finale (hasBeforeEditSlot passa a true solo
+        // allora, vedi textEditorTextChanged) - "prima" per Undo quando
+        // arriva il prossimo commit finale.
+        CsoundAudioProcessor::ChannelParamSlot beforeEditSlot;
+        bool hasBeforeEditSlot = false;
 
         CsoundAudioProcessor& processor;
         int index;
@@ -420,6 +595,17 @@ private:
         void refreshFromProcessor();
 
         std::function<void (const juce::String&)> onCopiedToClipboard;
+        // Assegnata dal pannello (mai dal costruttore - stesso stile di
+        // onCopiedToClipboard) per collegare questa riga all'undoManager
+        // condiviso (vedi CsoundParameterMappingPanel::undo()/redo() per il
+        // quadro completo): primo argomento = lambda da eseguire ORA/al
+        // "redo", secondo = lambda da eseguire all'"undo" - entrambe le
+        // lambda, costruite dal chiamante (commitFromFields() e dintorni),
+        // NON devono mai catturare `this` di QUESTA riga (puo' essere
+        // distrutta da un rebuildUnifiedRows() nel frattempo), solo
+        // processor/index/valori per copia o riferimento stabile.
+        std::function<void (std::function<void()>, std::function<void()>)> pushUndo;
+
         std::function<void()> onRemoveRequested;
         std::function<void()> onCommittedNonEmpty;
 
@@ -430,10 +616,22 @@ private:
         void textEditorFocusLost (juce::TextEditor&) override;
         void textEditorTextChanged (juce::TextEditor&) override;
 
+        // Esc deve comportarsi ESATTAMENTE come Return (richiesto
+        // esplicitamente): commit del campo (o scarto se il nome e' ancora
+        // vuoto - vedi onRemoveRequested) + perdita del focus, invece del
+        // comportamento di default di juce::TextEditor (che consuma Esc per
+        // conto suo senza notificare nessuno dei listener sopra - ecco
+        // perche' prima Esc non faceva nulla di visibile qui dentro).
+        void textEditorEscapeKeyPressed (juce::TextEditor&) override;
+
         void commitFromFields();
         void updateHandleHover (juce::Point<int> position);
         void notifyRemovedIfEmpty();
         void notifyCommittedIfNonEmpty();
+        void pushPendingUndoIfAny();
+
+        CsoundAudioProcessor::IntParamSlot beforeEditSlot;
+        bool hasBeforeEditSlot = false;
 
         CsoundAudioProcessor& processor;
         int index;
@@ -472,6 +670,17 @@ private:
         void refreshFromProcessor();
 
         std::function<void (const juce::String&)> onCopiedToClipboard;
+        // Assegnata dal pannello (mai dal costruttore - stesso stile di
+        // onCopiedToClipboard) per collegare questa riga all'undoManager
+        // condiviso (vedi CsoundParameterMappingPanel::undo()/redo() per il
+        // quadro completo): primo argomento = lambda da eseguire ORA/al
+        // "redo", secondo = lambda da eseguire all'"undo" - entrambe le
+        // lambda, costruite dal chiamante (commitFromFields() e dintorni),
+        // NON devono mai catturare `this` di QUESTA riga (puo' essere
+        // distrutta da un rebuildUnifiedRows() nel frattempo), solo
+        // processor/index/valori per copia o riferimento stabile.
+        std::function<void (std::function<void()>, std::function<void()>)> pushUndo;
+
         std::function<void()> onRemoveRequested;
         std::function<void()> onCommittedNonEmpty;
 
@@ -482,10 +691,22 @@ private:
         void textEditorFocusLost (juce::TextEditor&) override;
         void textEditorTextChanged (juce::TextEditor&) override;
 
+        // Esc deve comportarsi ESATTAMENTE come Return (richiesto
+        // esplicitamente): commit del campo (o scarto se il nome e' ancora
+        // vuoto - vedi onRemoveRequested) + perdita del focus, invece del
+        // comportamento di default di juce::TextEditor (che consuma Esc per
+        // conto suo senza notificare nessuno dei listener sopra - ecco
+        // perche' prima Esc non faceva nulla di visibile qui dentro).
+        void textEditorEscapeKeyPressed (juce::TextEditor&) override;
+
         void commitFromFields();
         void updateHandleHover (juce::Point<int> position);
         void notifyRemovedIfEmpty();
         void notifyCommittedIfNonEmpty();
+        void pushPendingUndoIfAny();
+
+        CsoundAudioProcessor::BoolParamSlot beforeEditSlot;
+        bool hasBeforeEditSlot = false;
 
         CsoundAudioProcessor& processor;
         int index;
@@ -525,6 +746,17 @@ private:
         void refreshFromProcessor();
 
         std::function<void (const juce::String&)> onCopiedToClipboard;
+        // Assegnata dal pannello (mai dal costruttore - stesso stile di
+        // onCopiedToClipboard) per collegare questa riga all'undoManager
+        // condiviso (vedi CsoundParameterMappingPanel::undo()/redo() per il
+        // quadro completo): primo argomento = lambda da eseguire ORA/al
+        // "redo", secondo = lambda da eseguire all'"undo" - entrambe le
+        // lambda, costruite dal chiamante (commitFromFields() e dintorni),
+        // NON devono mai catturare `this` di QUESTA riga (puo' essere
+        // distrutta da un rebuildUnifiedRows() nel frattempo), solo
+        // processor/index/valori per copia o riferimento stabile.
+        std::function<void (std::function<void()>, std::function<void()>)> pushUndo;
+
         std::function<void()> onRemoveRequested;
         std::function<void()> onCommittedNonEmpty;
 
@@ -534,6 +766,14 @@ private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
         void textEditorFocusLost (juce::TextEditor&) override;
         void textEditorTextChanged (juce::TextEditor&) override;
+
+        // Esc deve comportarsi ESATTAMENTE come Return (richiesto
+        // esplicitamente): commit del campo (o scarto se il nome e' ancora
+        // vuoto - vedi onRemoveRequested) + perdita del focus, invece del
+        // comportamento di default di juce::TextEditor (che consuma Esc per
+        // conto suo senza notificare nessuno dei listener sopra - ecco
+        // perche' prima Esc non faceva nulla di visibile qui dentro).
+        void textEditorEscapeKeyPressed (juce::TextEditor&) override;
 
         void commitFromFields();
         void updateHandleHover (juce::Point<int> position);
@@ -546,6 +786,11 @@ private:
         // e' ancora valido nella nuova lista, altrimenti la riporta alla
         // prima voce disponibile.
         void refreshDefaultOptions();
+
+        void pushPendingUndoIfAny();
+
+        CsoundAudioProcessor::ChoiceParamSlot beforeEditSlot;
+        bool hasBeforeEditSlot = false;
 
         CsoundAudioProcessor& processor;
         int index;
@@ -596,12 +841,46 @@ private:
         // getChannelNameFn, usato dalla maniglia/dal menu "Copy" per
         // anteporre un commento Csound classico (";...") al chnget,
         // esattamente come le righe Edit.
+        // NIENTE juce::UndoManager qui: i VALORI dei parametri sono
+        // gestiti dalla DAW/host (automazione, stato di sessione) e NON
+        // devono comparire nella cronologia Undo/Redo del plugin - per
+        // questo i 3 attachment sotto (SliderParameterAttachment/
+        // ButtonParameterAttachment/ComboBoxParameterAttachment) ricevono
+        // nullptr invece di un UndoManager (vedi il costruttore nel
+        // .cpp). L'unica cronologia Undo/Redo del plugin e' sharedUndoManager
+        // in PluginEditor, che copre editor di codice + metadata/mapping dei
+        // parametri in modalita' Edit (vedi pushUndo su ParamRow/ecc.), MAI
+        // i valori stessi.
+        // sliderToRealFn/realToSliderFn (SOLO per Kind::slider, ignorate
+        // altrimenti - passare {} per toggle/choice): il parametro apvts
+        // sottostante ha SEMPRE un range nativo FISSO (0..1 per i Float,
+        // 0..intHostRangeMax per gli Int, vedi ChannelHostParameter/
+        // IntHostParameter in PluginProcessor.h/.cpp) - min/max REALI
+        // configurati dall'utente vivono SOLO nello slot (ChannelParamSlot/
+        // IntParamSlot) e servono finora solo per il canale Csound
+        // (denormalizeChannelParam/denormalizeIntParam). BUG corretto qui:
+        // lo slider/i box min/max/valore di QUESTA riga mostravano il
+        // valore nativo grezzo dello slider (0..1 o 0..intHostRangeMax),
+        // MAI il range reale configurato - sliderToRealFn/realToSliderFn
+        // fanno da ponte, rilegendo lo slot AL VOLO ad ogni chiamata (cosi'
+        // restano sempre aggiornate se l'utente cambia Min/Max in modalita'
+        // Edit, vedi refreshRangeDisplay() chiamata da *UnifiedRow::
+        // setEditMode() quando si torna alla vista UI).
         GenericParamRow (const juce::String& channelName, juce::RangedAudioParameter& parameter,
                           Kind kind, const juce::StringArray& choiceLabels,
                           juce::Colour accent, const juce::String& typeLabelText,
                           std::function<juce::String()> getChannelNameFn,
                           std::function<juce::String()> getConfigCommentFn,
-                          bool treatAsInteger = false);
+                          bool treatAsInteger = false,
+                          std::function<double (double)> sliderToRealFn = {},
+                          std::function<double (double)> realToSliderFn = {});
+
+        // Rilegge lo slot (tramite sliderToReal/realToSlider) e riaggiorna
+        // minLabel/maxLabel/valueReadout - chiamata alla costruzione e da
+        // *UnifiedRow::setEditMode() quando si torna da Edit alla vista UI,
+        // cosi' un Min/Max appena modificato si vede SUBITO (vedi il
+        // commento sul costruttore sopra). No-op per toggle/choice.
+        void refreshRangeDisplay();
 
         void resized() override;
         void paint (juce::Graphics& g) override;
@@ -633,6 +912,8 @@ private:
         const Kind kind;
         const juce::Colour accentColour;
         const bool isIntegerLike;
+        std::function<double (double)> sliderToReal; // vedi il commento sul costruttore
+        std::function<double (double)> realToSlider;  // vedi il commento sul costruttore
         std::function<juce::String()> getChannelName;
         std::function<juce::String()> getConfigComment;
 
@@ -671,26 +952,46 @@ private:
         virtual void setEditMode (bool edit) = 0;
         virtual void focusNameField() = 0;
 
-        // Altezza richiesta da questa riga per il dato editMode e la data
-        // larghezza DISPONIBILE per l'intera card (serve il secondo
-        // parametro perche' Slider/Knob possono aver bisogno di UNA riga di
-        // campi in piu' quando il pannello e' stretto - vedi
-        // computeWrappedFieldRows() - invece della scrollbar orizzontale).
-        // In UI e' sempre rowHeight (riga sottile, mai a capo).
-        virtual int getPreferredHeight (bool editMode, int availableWidth) const = 0;
+        // Altezza richiesta da questa riga ORA, per la data larghezza
+        // DISPONIBILE per l'intera card (serve il parametro perche'
+        // Slider/Knob possono aver bisogno di UNA riga di campi in piu'
+        // quando il pannello e' stretto - vedi computeWrappedFieldRows() -
+        // invece della scrollbar orizzontale). Non prende piu' un editMode
+        // esterno: ogni riga tiene il proprio (vedi rowEditMode in ciascuna
+        // delle 4 implementazioni sotto), commutato dalla SUA editIconButton
+        // invece che da un interruttore globale di pannello.
+        virtual int getPreferredHeight (int availableWidth) const = 0;
     };
+
+    // Costruisce editIconButton/copyButton, comuni a tutte e 4 le
+    // *UnifiedRow sotto - nomi componente fissi ("editToggle"/"copyChnget")
+    // riconosciuti da CsoundParameterPanelLookAndFeel::drawButtonText per
+    // disegnarci sopra le rispettive icone, stile "piatto" (nessun riquadro
+    // pieno a riposo) visto che si ripetono su ogni card invece di essere
+    // un unico bottone di toolbar.
+    static void setupRowEditIconButton (juce::TextButton& button);
+    static void setupRowCopyButton (juce::TextButton& button);
+
+    // Posiziona copyButton ED editIconButton insieme, nell'angolo in alto a
+    // destra della card - copyButton SEMPRE immediatamente a sinistra di
+    // editIconButton (richiesta esplicita: "un bottone sulla sx di edit per
+    // il copy"), in ENTRAMBE le modalita' (sostituisce il vecchio
+    // layoutRowEditIconButton, che posizionava solo editIconButton).
+    static void layoutRowIconButtons (juce::Rectangle<int> fullBounds, bool rowEditMode,
+                                       juce::Component& copyButton, juce::Component& editButton);
 
     struct FloatUnifiedRow final : public juce::Component, public UnifiedRowInterface
     {
         FloatUnifiedRow (CsoundAudioProcessor& processorToEdit, int slotIndex,
                           std::function<void (const juce::String&)> onCopied,
-                          std::function<void()> onRemoved);
+                          std::function<void()> onRemoved,
+                          std::function<void()> onEditModeChanged);
         void resized() override;
         void setEditMode (bool edit) override;
         void focusNameField() override { editRow->focusChannelNameField(); }
-        int getPreferredHeight (bool edit, int availableWidth) const override
+        int getPreferredHeight (int availableWidth) const override
         {
-            if (! edit)
+            if (! rowEditMode)
                 return uiCardHeight;
 
             const auto rows = computeWrappedFieldRows (fieldsAvailableWidth (availableWidth),
@@ -701,6 +1002,15 @@ private:
 
         std::unique_ptr<ParamRow> editRow;
         std::unique_ptr<GenericParamRow> uiRow;
+        juce::TextButton editIconButton;
+        juce::TextButton copyButton;
+        bool rowEditMode = false;
+        std::function<void()> onEditModeChanged;
+
+        // Avvisa il pannello (vedi rowsInEditMode) ad OGNI chiamata di
+        // setEditMode(), sia dall'utente (click su editIconButton) sia dal
+        // pannello stesso (ripristino dopo un rebuildUnifiedRows()).
+        std::function<void (bool)> onEditModeToggled;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FloatUnifiedRow)
     };
@@ -709,13 +1019,14 @@ private:
     {
         IntUnifiedRow (CsoundAudioProcessor& processorToEdit, int slotIndex,
                         std::function<void (const juce::String&)> onCopied,
-                        std::function<void()> onRemoved);
+                        std::function<void()> onRemoved,
+                        std::function<void()> onEditModeChanged);
         void resized() override;
         void setEditMode (bool edit) override;
         void focusNameField() override { editRow->focusChannelNameField(); }
-        int getPreferredHeight (bool edit, int availableWidth) const override
+        int getPreferredHeight (int availableWidth) const override
         {
-            if (! edit)
+            if (! rowEditMode)
                 return uiCardHeight;
 
             const auto rows = computeWrappedFieldRows (fieldsAvailableWidth (availableWidth),
@@ -725,6 +1036,11 @@ private:
 
         std::unique_ptr<IntParamRow> editRow;
         std::unique_ptr<GenericParamRow> uiRow;
+        juce::TextButton editIconButton;
+        juce::TextButton copyButton;
+        bool rowEditMode = false;
+        std::function<void()> onEditModeChanged;
+        std::function<void (bool)> onEditModeToggled;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (IntUnifiedRow)
     };
@@ -733,14 +1049,20 @@ private:
     {
         BoolUnifiedRow (CsoundAudioProcessor& processorToEdit, int slotIndex,
                          std::function<void (const juce::String&)> onCopied,
-                         std::function<void()> onRemoved);
+                         std::function<void()> onRemoved,
+                         std::function<void()> onEditModeChanged);
         void resized() override;
         void setEditMode (bool edit) override;
         void focusNameField() override { editRow->focusChannelNameField(); }
-        int getPreferredHeight (bool edit, int) const override { return edit ? cardHeightSingleRow : uiCardHeight; }
+        int getPreferredHeight (int) const override { return rowEditMode ? cardHeightSingleRow : uiCardHeight; }
 
         std::unique_ptr<BoolParamRow> editRow;
         std::unique_ptr<GenericParamRow> uiRow;
+        juce::TextButton editIconButton;
+        juce::TextButton copyButton;
+        bool rowEditMode = false;
+        std::function<void()> onEditModeChanged;
+        std::function<void (bool)> onEditModeToggled;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BoolUnifiedRow)
     };
@@ -749,14 +1071,20 @@ private:
     {
         ChoiceUnifiedRow (CsoundAudioProcessor& processorToEdit, int slotIndex,
                            std::function<void (const juce::String&)> onCopied,
-                           std::function<void()> onRemoved);
+                           std::function<void()> onRemoved,
+                           std::function<void()> onEditModeChanged);
         void resized() override;
         void setEditMode (bool edit) override;
         void focusNameField() override { editRow->focusChannelNameField(); }
-        int getPreferredHeight (bool edit, int) const override { return edit ? cardHeightDoubleRow : uiCardHeight; }
+        int getPreferredHeight (int) const override { return rowEditMode ? cardHeightDoubleRow : uiCardHeight; }
 
         std::unique_ptr<ChoiceParamRow> editRow;
         std::unique_ptr<GenericParamRow> uiRow;
+        juce::TextButton editIconButton;
+        juce::TextButton copyButton;
+        bool rowEditMode = false;
+        std::function<void()> onEditModeChanged;
+        std::function<void (bool)> onEditModeToggled;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChoiceUnifiedRow)
     };
@@ -772,23 +1100,102 @@ private:
     // pendente durante lo smontaggio dell'albero di componenti.
     CsoundParameterPanelLookAndFeel lookAndFeel;
 
-    // Bottone "Edit": SEMPRE visibile, commuta editMode per OGNI riga della
-    // lista (vedi toggleEditMode()) - nessuna tab da selezionare, un solo
-    // interruttore globale. Nome "editToggle" riconosciuto da
-    // CsoundParameterPanelLookAndFeel::drawButtonText per disegnarci sopra
-    // l'icona "tune".
-    juce::TextButton editToggleButton { "Edit" };
-    bool editMode = false;
-    void toggleEditMode();
-
-    // Bottone "+"/Add: SEMPRE visibile, apre un menu Slider/Knob/Toggle/Menu
-    // (vedi showAddMenu()) che individua il primo slot libero del tipo
-    // corrispondente (0=Float/Slider, 1=Int/Knob, 2=Bool/Toggle,
-    // 3=Choice/Menu) e fa apparire una card "in sospeso" per quello slot -
-    // vedi createPendingRow() e il commento in testa alla classe sul flusso
-    // completo.
+    // Bottone multifunzione (richiesta esplicita: "il bottone + ... ormai e'
+    // multifunzionale") - vive ora DENTRO la title bar di QUESTO pannello,
+    // a SINISTRA (vedi titleLabel/resized() per il resto della barra), non
+    // piu' riparentato nella toolbar principale di PluginEditor. Nome
+    // "paramsMenu" (non piu' generico "circular" con icona "+" - vedi
+    // CsoundParameterPanelLookAndFeel::drawButtonText) perche' apre un
+    // intero menu (showAddMenu(), vedi sotto) con TUTTO cio' che prima era
+    // nel submenu "Parameters" del burger (Add Slider Float/Int/Toggle/
+    // Menu, Open/Close Config, Remove Parameters, Reset to INIT Values) -
+    // quel submenu e' stato rimosso dal burger (vedi showPanelMenu()) dato
+    // che ora si raggiunge direttamente da qui, con un tap in meno.
     juce::TextButton addButton { "+" };
     void showAddMenu();
+
+    // Etichetta centrale della title bar (richiesta esplicita: "con la
+    // label centrale") - vedi resized(): occupa l'INTERA larghezza della
+    // barra (non solo lo spazio tra addButton e il bordo destro), cosi' il
+    // testo resta visivamente centrato nel pannello a prescindere dalla
+    // presenza di addButton a sinistra, come un titolo di finestra/sheet
+    // standard.
+    juce::Label titleLabel;
+
+    // Calcolato in resized(), riusato da paint() per disegnare lo sfondo
+    // della title bar senza ripetere lo stesso calcolo di layout due volte.
+    juce::Rectangle<int> titleBarBounds;
+
+    // Costruisce le voci Slider Float/Slider Int/Toggle/Menu condivise sia
+    // da showAddMenu() (il "+") sia dalla voce "Add parameter" di
+    // showPanelMenu() sotto (richiesta esplicita: "identico allo shortcut
+    // '+'") - un'unica lista di item invece di duplicarla in due posti.
+    // Vettore di CsoundActionSheetItem (non piu' un juce::PopupMenu): ogni
+    // pagina del foglio ha un proprio spazio di ID indipendente (vedi
+    // CsoundActionSheet.h), quindi qui si usano semplicemente gli ID 1..4 -
+    // non serve piu' l'offset 10..13 di quando "Add parameter" era un
+    // addSubMenu() annidato dentro lo STESSO juce::PopupMenu di showPanelMenu().
+    std::vector<CsoundActionSheetItem> buildAddParameterItems();
+
+    // Bottone "menu" (icona hamburger - tre barre orizzontali, riconosciuta
+    // da drawButtonText via il nome "burgerMenu") a DESTRA della toolbar,
+    // simmetrico al "+" - apre Undo/Redo/Remove Parameters (richiesta
+    // esplicita, vedi showPanelMenu()).
+    juce::TextButton menuButton;
+    void showPanelMenu();
+
+    // "Remove Parameters" del menu sopra: azzera TUTTI gli slot dei 4
+    // tipi in un'unica transazione di Undo (come le altre operazioni del
+    // pannello - vedi il commento su undo()/redo()).
+    void removeAllParameters();
+
+    // "Reset to INIT Values" del menu sopra (richiesta
+    // esplicita): riporta il VALORE CORRENTE di ogni parametro assegnato al
+    // suo default/init configurato (slot.defaultValue/defaultIndex) tramite
+    // juce::RangedAudioParameter::setValueNotifyingHost() - a differenza di
+    // removeAllParameters() sopra, NON tocca le mappature/metadata (nome
+    // canale, min/max, opzioni...), solo il valore corrente. NESSUNA
+    // transazione di Undo: i VALORI sono gestiti dalla DAW/host (vedi il
+    // commento sul costruttore di GenericParamRow), quindi questa azione
+    // non deve comparire nella cronologia Undo/Redo del plugin, esattamente
+    // come un host che riporta i parametri al default non e' "annullabile"
+    // dal plugin stesso.
+    void resetAllParametersToInit();
+
+    // "Show/Hide Parameters Settings" del menu sopra (richiesta esplicita):
+    // apre/chiude la vista Edit (bottone occhio) di TUTTE le righe in un
+    // colpo, invece di doverlo fare riga per riga. Ogni UnifiedRowInterface::
+    // setEditMode() gia' aggiorna da solo rowsInEditMode (tramite
+    // onEditModeToggled, vedi wireEditModeTracking in rebuildUnifiedRows())
+    // e fa rifluire la lista (onEditModeChanged) - qui si chiama solo in
+    // sequenza su ogni riga, nessuna transazione di Undo (e' un cambio di
+    // VISTA, non di dato).
+    void setAllRowsEditMode (bool edit);
+
+    // RIFERIMENTO alla sharedUndoManager di PluginEditor (richiesto
+    // esplicitamente: "Undo unico" tra editor di codice e pannello
+    // Parametri, "linearita' avanti e indietro") - NON un'istanza propria:
+    // vedi il commento su undo()/redo() nella sezione public sopra per il
+    // quadro completo di chi la usa e come. Usato direttamente qui per le
+    // azioni costruite a mano sui metadata (vedi pushUndo); i controlli UI
+    // reali (GenericParamRow) NON lo ricevono piu' (vedi il commento sul
+    // costruttore di GenericParamRow - i valori sono gestiti dalla DAW).
+    juce::UndoManager& undoManager;
+
+    // Slot (kind, slotIndex) attualmente apert* in modalita' Edit - kind:
+    // 0=Float, 1=Int, 2=Bool, 3=Choice. rebuildUnifiedRows() distrugge e
+    // ricrea TUTTE le righe (serve per add/remove, che fanno
+    // apparire/scomparire righe), quindi lo stato "sono in modalita' Edit"
+    // di una riga, vivendo nell'oggetto riga stesso, andrebbe perso ad ogni
+    // singolo commit di un campo durante l'editing (ogni pushUndo rifa'
+    // scattare un rebuild) - l'utente tornerebbe alla vista UI da solo,
+    // mentre l'UNICO modo per tornarci deve essere il bottone Edit
+    // (richiesta esplicita). Questo set persiste quell'informazione FUORI
+    // dalle righe cosi' rebuildUnifiedRows() puo' ripristinarla dopo ogni
+    // ricostruzione; viene aggiornato dal callback onEditModeToggled di
+    // ciascuna riga (settato qui sotto) e ripulito degli slot ormai vuoti
+    // in testa a rebuildUnifiedRows().
+    std::set<std::pair<int, int>> rowsInEditMode;
 
     // kind: 0=Float, 1=Int, 2=Bool, 3=Choice - indice semplice invece di un
     // enum dedicato solo per questo, usato una volta sola qui.
@@ -830,8 +1237,6 @@ private:
     juce::Label emptyStateLabel;
 
     static constexpr int rowHeight = 30;    // solo fallback per righe senza UnifiedRowInterface (non dovrebbe mai accadere)
-    static constexpr int toolbarHeight = 38; // = diametro di "+"/"Edit" (bottoni circolari piu' grandi, richiesta esplicita)
-    static constexpr int toolbarButtonGap = 4; // tra "+" ed "Edit", invece del margine di 10px di prima (richiesta esplicita: "piu' ravvicinati")
 
     // Spazio riservato SEMPRE sul lato destro del contenuto per la scrollbar
     // verticale del viewport (vedi il commento storico sul perche' non si usa

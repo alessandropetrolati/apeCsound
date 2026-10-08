@@ -407,7 +407,9 @@ juce::String CsoundAudioProcessor::getChoiceOptionLabel (const ChoiceParamSlot& 
             return label;
     }
 
-    return "Option " + juce::String (optionIndex + 1);
+    // Richiesta esplicita: un'opzione che l'utente non ha rinominato deve
+    // mostrare "<unassigned>", non piu' un generico "Option N".
+    return "<unassigned>";
 }
 
 CsoundAudioProcessor::ChoiceParamSlot CsoundAudioProcessor::getChoiceParamSlot (int index) const
@@ -1492,6 +1494,14 @@ bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
     // che fallire l'intero caricamento.
     setCsdText (codeText);
     return true;
+}
+
+void CsoundAudioProcessor::initializeSession()
+{
+    // Stesso ordine di loadSessionFromFile sopra: azzera SEMPRE la
+    // mappatura prima di toccare il codice, incondizionatamente.
+    resetAllParameterSlots();
+    setCsdText (defaultCsdText());
 }
 
 bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)

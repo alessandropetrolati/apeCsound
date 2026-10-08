@@ -50,6 +50,10 @@
             file="Source/CsoundParameterEditor.cpp"/>
       <FILE id="cPrmB" name="CsoundParameterEditor.h" compile="0" resource="0"
             file="Source/CsoundParameterEditor.h"/>
+      <FILE id="cActA" name="CsoundActionSheet.cpp" compile="1" resource="0"
+            file="Source/CsoundActionSheet.cpp"/>
+      <FILE id="cActB" name="CsoundActionSheet.h" compile="0" resource="0"
+            file="Source/CsoundActionSheet.h"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
