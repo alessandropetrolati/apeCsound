@@ -184,6 +184,16 @@ public:
         virtual void csoundMessageReceived (const juce::String& message) {}
         virtual void csoundEngineStarted() {}
         virtual void csoundEngineStopped() {}
+
+        // Chiamato (sul message thread, in modo asincrono) dopo che
+        // setStateInformation ha ripristinato una sessione: l'editor, se
+        // aperto, deve rileggere codice/mappatura dal processor e mostrare
+        // l'eventuale avviso "file non trovato" (vedi isLinkedFileMissing()).
+        // Nessun dialogo modale puo' partire da setStateInformation: l'host
+        // puo' chiamarla senza UI, durante un bounce offline, o all'apertura
+        // di un progetto con molti plugin - per questo e' un avviso in
+        // editor, non una finestra.
+        virtual void sessionStateRestored() {}
     };
 
     // --- 16 "macro" parametri host (VST3/AU/Standalone) mappabili a canali
@@ -395,8 +405,22 @@ public:
 
     bool isEngineRunning() const noexcept { return ready.load(); }
 
+    // Il testo CODICE = SOLO il blocco <CsoundSynthesizer>...</CsoundSynthesizer>
+    // (richiesta esplicita: "filtrare tutto tranne <CsoundSynthesizer>"): e'
+    // cio' che l'editor mostra e che viene compilato. Tutto cio' che nel
+    // file sta PRIMA (es. una sezione <Cabbage>, commenti) o DOPO il blocco
+    // (escluso il nostro <CsoundParams>) viene conservato a parte, verbatim,
+    // e riscritto al suo posto da buildSessionTextFor() - vedi
+    // setCsdCodeFromFullText(). Csound ignora comunque le sezioni che non
+    // riconosce, quindi compilare il solo blocco e' equivalente.
     juce::String getCsdText() const;
     void setCsdText (const juce::String& text);
+
+    // Divide un testo .csd completo (gia' SENZA <CsoundParams>) in
+    // preambolo / blocco <CsoundSynthesizer> / coda e imposta csdText al
+    // solo blocco, conservando preambolo e coda (vedi getCsdText). Se il
+    // tag non c'e', tutto il testo e' "codice" e le due parti restano vuote.
+    void setCsdCodeFromFullText (const juce::String& fullCode);
 
     // --- Bridge dei control channel, per collegare gli widget della GUI ---
     void   setControlChannel (const juce::String& channelName, double value);
@@ -444,14 +468,119 @@ public:
     const juce::String getProgramName (int) override       { return {}; }
     void changeProgramName (int, const juce::String&) override {}
 
-    // Persistenza dello stato: testo del .csd, stato nativo di apvts (i 64
-    // valori normalizzati 0..1 - gia' gestito in automatico dall'host in
-    // VST3/AU, ma lo salviamo comunque anche qui perche' la Standalone si
-    // appoggia solo a getStateInformation/setStateInformation) e i
-    // metadata per-slot (nome canale/range/skew/increment) che apvts non conosce.
-    // In Fase 3 qui andra' aggiunto anche il layout della GUI (widget).
+    // Persistenza dello stato nel progetto dell'host - NUOVA logica
+    // (richiesta esplicita, in sostituzione del vecchio blob con codice +
+    // struttura + apvts tutto dentro): lo stato contiene
+    //
+    //   <PluginState csd="FFTFreeze/FFTFreeze.csd" csdIsRelative="1"
+    //                hash="sha256..." gitCommit="abc1234">
+    //     <EmbeddedCsd> ...copia completa della SESSIONE .csd... </EmbeddedCsd>
+    //     <P channel="Frame1" type="f" value="2"/>
+    //     ...
+    //   </PluginState>
+    //
+    //   - csd: path del file .csd collegato, RELATIVO alla cartella base
+    //     (getBaseFolder(), ~/Documents/apeCsound) se il file sta li'
+    //     dentro, altrimenti assoluto (csdIsRelative="0") come fallback;
+    //     vuoto se la sessione non e' collegata a nessun file.
+    //   - hash: SHA-256 del testo incorporato (= cio' che saveSessionToFile
+    //     scriverebbe in quel momento). Solo informativo/diagnostico: al
+    //     ripristino NON si confronta nulla (vedi sotto).
+    //   - gitCommit: solo informativo (lettura best-effort di .git/HEAD
+    //     risalendo dalla cartella del file, senza lanciare processi).
+    //   - EmbeddedCsd: copia di SCORTA di cio' che il progetto suonava
+    //     quando e' stato salvato - usata SOLO se il file non c'e' piu'.
+    //   - P: i VALORI correnti dei parametri assegnati, per NOME CANALE (non
+    //     per indice di slot) in unita' reali, cosi' sopravvivono a un
+    //     riordino degli slot nel file.
+    //
+    // La STRUTTURA dei parametri (min/max/default/skew/step/opzioni) NON e'
+    // piu' nello stato: vive SOLO dentro il tag <CsoundParams> del .csd
+    // (su disco, o nella copia incorporata), vedi saveSessionToFile/
+    // buildSessionText().
+    //
+    // Modello (semplificato, richiesta esplicita: "e' troppo articolato"):
+    // IL FILE E' LA VERITA'. Ripristino (setStateInformation), SENZA MAI un
+    // dialogo modale:
+    //   file esiste                    -> si carica il file da disco, sempre
+    //   file mancante                  -> copia incorporata + avviso in editor
+    //                                     ("file non trovato", Save As)
+    //   nessun path (istanza nuova)    -> template di default
+    // L'esito e' esposto con isLinkedFileMissing() e notificato con
+    // Listener::sessionStateRestored(). Un vecchio stato APE_CSOUND_STATE
+    // (versioni precedenti) viene ancora letto, come sessione non collegata.
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+
+    // --- Sessione collegata a un file .csd -----------------------------
+    // Cartella base FISSA per i path relativi: ~/Documents/apeCsound su
+    // macOS (userDocumentsDirectory), la Documents dell'app su iOS (stessa
+    // chiamata JUCE, dentro la sandbox - un App Group richiederebbe un
+    // entitlement da aggiungere al progetto). Creata se manca.
+    static juce::File getBaseFolder();
+
+    // File .csd a cui la sessione e' collegata (Save sovrascrive QUESTO,
+    // vedi CsoundAudioProcessorEditor::performSaveLinked) - juce::File{}
+    // = non collegata (istanza nuova, Initialize Session, vecchio stato).
+    // Impostato da saveSessionToFile/loadSessionFromFile/setStateInformation,
+    // o esplicitamente da setLinkedCsdFile ("Relink" dall'avviso).
+    juce::File getLinkedCsdFile() const;
+    void setLinkedCsdFile (const juce::File& file);
+    bool isSessionLinked() const { return getLinkedCsdFile() != juce::File{}; }
+
+    // Path come viene scritto nello stato (relativo alla base se possibile)
+    // - per i messaggi in consolle/avviso.
+    juce::String getLinkedCsdDisplayPath() const;
+
+    // Testo COMPLETO della sessione come lo scriverebbe saveSessionToFile:
+    // codice (getCsdText()) + "\n\n<CsoundParams>" + struttura + "</CsoundParams>".
+    // E' anche cio' che viene incorporato nello stato e di cui si calcola
+    // l'hash. Non const per lo stesso motivo di buildParamsStructureTree.
+    juce::String buildSessionText();
+
+    // Stessa cosa, ma con un codice passato dal chiamante al posto di
+    // getCsdText(): l'editor la usa con il testo ATTUALE del document (anche
+    // non ancora applicato) per confrontarlo col file su disco.
+    juce::String buildSessionTextFor (const juce::String& codeText);
+
+    // Hash della sessione (buildSessionText()) com'era subito DOPO l'ultimo
+    // Save/Load/ripristino riuscito - la "baseline" rispetto a cui l'editor
+    // decide se la sessione e' stata modificata (codice o struttura dei
+    // parametri). Le modifiche ESTERNE al file si rilevano invece con la
+    // data di modifica (hasLinkedFileChangedOnDisk), non col contenuto.
+    juce::String getSessionBaselineHash() const;
+
+    // Carica una sessione da TESTO (stesso formato di un file .csd salvato
+    // da questo plugin, o un .csd "normale"/Cabbage) - corpo ex
+    // loadSessionFromFile, che ora legge il file e delega qui. NON tocca il
+    // collegamento al file.
+    bool loadSessionFromText (const juce::String& fullText);
+
+    // SHA-256 esadecimale di un testo (juce::SHA256) - usato per hash nello
+    // stato e per il confronto disco/progetto.
+    static juce::String computeTextHash (const juce::String& text);
+
+    // Legge un .csd da disco normalizzando i fine riga a "\n" (CRLF/CR ->
+    // LF): e' la forma in cui il testo vive in memoria, viene hashato e
+    // viene riscritto da saveSessionToFile - cosi' un file scritto da
+    // Windows/altri editor non risulta "diverso" solo per i fine riga.
+    // Usarla OVUNQUE si legge un .csd per confrontarlo (performSaveLinked).
+    static juce::String readSessionFile (const juce::File& file);
+
+    // true se l'ultimo ripristino ha trovato un path ma NON il file: e' in
+    // uso la copia incorporata, e l'editor mostra l'unico avviso previsto
+    // ("file non trovato" + Save As, che ricrea il file e azzera questo
+    // flag tramite saveSessionToFile). Azzerato anche da Load/Initialize.
+    bool isLinkedFileMissing() const;
+
+    // true se il file collegato risulta modificato DA FUORI dopo l'ultimo
+    // Save/Load/ripristino: confronto della DATA DI MODIFICA del file (non
+    // del contenuto - BUG corretto: l'hash del contenuto risentiva di fine
+    // riga/codifica e poteva differire anche senza alcuna modifica esterna,
+    // facendo chiedere "sovrascrivere?" a ogni Save). E' la stessa tecnica
+    // di qualunque editor di testo. performSaveLinked lo usa per l'unica
+    // conferma rimasta prima di sovrascrivere.
+    bool hasLinkedFileChangedOnDisk() const;
 
     // Persistenza ESPLICITA su file, indipendente dal progetto della DAW
     // (getStateInformation/setStateInformation sopra restano l'unico modo
@@ -472,7 +601,14 @@ public:
     // un .csd legittimo anche per chi non ha questo plugin, semplicemente
     // senza il mapping dei parametri. Vedi saveSessionToFile/
     // loadSessionFromFile in PluginProcessor.cpp per il formato esatto.
-    bool saveSessionToFile (const juce::File& file);
+    // codeText: il codice da scrivere. L'editor passa il testo ATTUALE del
+    // suo document (anche se non ancora applicato con Apply) - BUG corretto:
+    // prima si scriveva getCsdText(), cioe' l'ultimo codice COMPILATO, quindi
+    // dopo un Save con modifiche non applicate il file non conteneva le
+    // modifiche e l'indicatore restava "unsaved changes". Il testo in
+    // esecuzione (getCsdText()) NON viene toccato: Apply resta l'unico modo
+    // per compilare.
+    bool saveSessionToFile (const juce::File& file, const juce::String& codeText);
     bool loadSessionFromFile (const juce::File& file);
 
     // "Initialize Session" del menu hamburger (richiesta esplicita: "pulisce
@@ -490,28 +626,42 @@ public:
     void initializeSession();
 
 private:
-    /** Costruisce il juce::ValueTree (stato apvts + metadata dei 64 slot,
-        piu' il testo del .csd SOLO se includeCsdText) condiviso da
-        getStateInformation (includeCsdText=true: li' e' l'unico posto dove
-        il codice vive) e saveSessionToFile (includeCsdText=false: nel file
-        il codice e' GIA' scritto in chiaro prima del tag d'appendice,
-        ripeterlo anche nell'XML sarebbe solo rumore ridondante). */
-    // Non const: juce::AudioProcessorValueTreeState::copyState() (chiamato
-    // dentro) non e' const in JUCE (prende un lock interno), anche se
-    // logicamente questo metodo non modifica lo stato del processor.
-    juce::ValueTree buildStateTree (bool includeCsdText = true);
+    /** Costruisce il juce::ValueTree con la SOLA STRUTTURA dei parametri
+        (metadata dei 64 slot: nome canale/range/skew/increment/default/
+        opzioni) - e' cio' che finisce nel tag <CsoundParams> del .csd (vedi
+        buildSessionText()). Niente apvts ne' testo del codice: i VALORI
+        vivono nello stato del progetto per nome canale (getStateInformation),
+        il codice e' scritto in chiaro prima del tag. */
+    juce::ValueTree buildParamsStructureTree();
 
-    /** Applica un juce::ValueTree prodotto da buildStateTree allo stato
-        corrente (apvts, metadata dei 64 slot), condiviso da
-        setStateInformation e loadSessionFromFile. csdTextToRestore e' il
-        testo del .csd da usare - passato esplicitamente dal chiamante
-        (invece di leggerlo da state.getProperty("csd",...)) cosi'
-        loadSessionFromFile puo' usare il testo LETTERALE che precede il tag
-        <CsoundParams> nel file, che resta la fonte di verita' per il
-        codice anche se qualcuno modifica il .csd a mano senza toccare il
-        tag. Ricompila subito se il motore e' gia' in esecuzione (stesso
-        schema di setStateInformation - vedi il commento li' sul perche'). */
+    /** Applica un juce::ValueTree prodotto da buildParamsStructureTree (o da
+        una versione precedente del plugin, che includeva anche un figlio
+        PARAMETERS di apvts: se c'e' viene ancora applicato, per compatibilita')
+        ai 64 slot, e imposta il testo del codice. csdTextToRestore e' il
+        testo LETTERALE che precede il tag <CsoundParams>, che resta la fonte
+        di verita' per il codice anche se qualcuno modifica il .csd a mano
+        senza toccare il tag. Ricompila subito se il motore e' gia' in
+        esecuzione (vedi scheduleRecompileAfterRestore). */
     void restoreStateFromTree (const juce::ValueTree& state, const juce::String& csdTextToRestore);
+
+    // Coda della logica di ripristino: segna pendingStateRestore e, se il
+    // motore e' gia' in esecuzione, ricompila subito (via callAsync) il
+    // testo appena ripristinato - vedi il commento esteso nel .cpp.
+    void scheduleRecompileAfterRestore (const juce::String& restoredCsd);
+
+    // Lettura best-effort del commit HEAD di git risalendo da startDir fino
+    // a trovare una cartella .git (HEAD -> ref -> refs/heads/x, o
+    // packed-refs) - SENZA lanciare processi. Stringa vuota se non e' un
+    // repository o qualcosa non si legge. Solo informativo.
+    static juce::String readGitHeadCommit (const juce::File& startDir);
+
+    // Applica i valori per nome canale letti da <P channel type value/>:
+    // va chiamata DOPO che la struttura (slot) e' stata ripristinata.
+    void applyChannelValues (const juce::XmlElement& pluginStateXml);
+
+    // Ripristino di uno stato nel VECCHIO formato (APE_CSOUND_STATE con
+    // codice + struttura + apvts): sessione non collegata, nessun avviso.
+    void restoreLegacyState (const juce::ValueTree& state);
 
     // Svuota TUTTI gli slot Float/Int/Bool/Choice (channelName tornato
     // vuoto = non assegnato, come un plugin appena istanziato) - chiamata
@@ -625,7 +775,27 @@ private:
     int    hostBlockSize  = 512;
 
     juce::String csdText;
+    // Testo del file PRIMA e DOPO il blocco <CsoundSynthesizer> (es. una
+    // sezione <Cabbage>), conservato verbatim e riscritto da
+    // buildSessionTextFor() - vedi setCsdCodeFromFullText(). Stesso lock
+    // di csdText.
+    juce::String csdPreamble, csdPostamble;
     mutable juce::CriticalSection csdTextLock;
+
+    // Sessione collegata a un file - vedi getLinkedCsdFile() e il commento
+    // su getStateInformation(). Tutti protetti da sessionLock perche'
+    // setStateInformation puo' arrivare da un thread qualsiasi dell'host
+    // mentre l'editor legge dal message thread.
+    juce::File linkedCsdFile;
+    juce::Time linkedFileModTimeAtLoad;       // vedi hasLinkedFileChangedOnDisk()
+    juce::String sessionBaselineHash;         // vedi getSessionBaselineHash()
+    bool linkedFileMissing = false;           // vedi isLinkedFileMissing()
+    mutable juce::CriticalSection sessionLock;
+
+    // Ricalcola sessionBaselineHash dallo stato ATTUALE (da chiamare dopo
+    // ogni load/ripristino riuscito, FUORI da sessionLock: buildSessionText
+    // prende i lock degli slot).
+    void updateSessionBaselineHash();
 
     // Buffer circolare dei messaggi della console: riempito in handleMessage
     // a prescindere dal fatto che un editor sia aperto o no, cosi' quando la

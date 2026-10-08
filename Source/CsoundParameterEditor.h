@@ -218,12 +218,28 @@ public:
 
     // Impostate da PluginEditor (uniche funzioni che sanno davvero
     // scrivere/leggere un .csd su disco, vedi promptSaveSession()/
-    // promptLoadSession() in PluginEditor.h) - richiamate dalle voci "Save
-    // CSD"/"Load CSD" del menu hamburger (vedi showPanelMenu()). I vecchi
-    // bottoni "Save as CSD..."/"Load CSD" nella toolbar principale sono stati
+    // promptLoadSession() in PluginEditor.h) - richiamate dalle voci "Save"
+    // /"Load..." del menu hamburger (vedi showPanelMenu()). I vecchi
+    // bottoni "Save as..."/"Load" nella toolbar principale sono stati
     // rimossi: questa e' ora l'UNICA via per queste due azioni.
     std::function<void()> onSaveSessionRequested;
     std::function<void()> onLoadSessionRequested;
+
+    // "Save" (richiesta esplicita, accanto a Save As/Load): sovrascrive il
+    // file .csd COLLEGATO alla sessione senza chiedere il path - vedi
+    // CsoundAudioProcessorEditor::performSaveLinked() (che ricade su Save
+    // As se la sessione non e' collegata a nessun file).
+    std::function<void()> onSaveLinkedRequested;
+
+    // Chiamata alla fine di OGNI rebuildUnifiedRows() (aggiunta/rimozione
+    // di un parametro, commit di un metadata, undo/redo, refresh dopo Load/
+    // ripristino): PluginEditor la usa per ricontrollare se la sessione
+    // (codice nell'editor + struttura dei parametri) differisce ancora dal
+    // file .csd collegato su disco e aggiornare la barra di avviso
+    // (richiesta esplicita: "quando aggiungo o rimuovo un parametro o
+    // modifico qualcosa sul codice, voglio vedere la segnalazione
+    // dell'incongruenza col file su disco").
+    std::function<void()> onMappingChanged;
 
     // Impostata da PluginEditor (vedi promptInitializeSession()/
     // performInitializeSession() in PluginEditor.h) - richiamata dalla

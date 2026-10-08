@@ -966,28 +966,43 @@ void CsoundAudioProcessor::setCsdText (const juce::String& text)
     csdText = text;
 }
 
-//==============================================================================
-juce::ValueTree CsoundAudioProcessor::buildStateTree (bool includeCsdText)
+void CsoundAudioProcessor::setCsdCodeFromFullText (const juce::String& fullCode)
 {
-    juce::ValueTree state ("CSOUND_STUDIO_STATE");
+    static const juce::String kSynthOpen  = "<CsoundSynthesizer>";
+    static const juce::String kSynthClose = "</CsoundSynthesizer>";
 
-    // includeCsdText=false per saveSessionToFile: nel file il codice e'
-    // GIA' scritto per intero, in chiaro, PRIMA del tag d'appendice (vedi
-    // il commento in PluginProcessor.h) - ripeterlo anche qui dentro, come
-    // proprieta' XML con ogni ritorno a capo escappato in &#10;, sarebbe
-    // solo rumore ridondante e illeggibile, segnalato esplicitamente.
-    // getStateInformation invece lo tiene (includeCsdText=true, default):
-    // li' e' l'UNICO posto dove il codice vive, non c'e' nessun testo in
-    // chiaro altrove nel blob binario che l'host salva.
-    if (includeCsdText)
-        state.setProperty ("csd", getCsdText(), nullptr);
+    const auto openAt = fullCode.indexOf (kSynthOpen);
+    const auto closeAt = openAt >= 0 ? fullCode.indexOf (openAt, kSynthClose) : -1;
 
-    // Stato nativo di apvts (i 64 valori normalizzati 0..1): in VST3/AU
-    // l'host li salva/ripristina gia' da solo tramite il proprio
-    // meccanismo nativo, ma lo salviamo comunque anche qui perche' la
-    // Standalone non ha un host che lo faccia per noi - si appoggia solo a
-    // questo getStateInformation/setStateInformation.
-    state.appendChild (apvts.copyState(), nullptr);
+    const juce::ScopedLock sl (csdTextLock);
+
+    if (openAt < 0 || closeAt < 0)
+    {
+        // Nessun blocco riconoscibile (o troncato): niente da filtrare,
+        // tutto il testo e' codice - come prima di questa modifica.
+        csdPreamble.clear();
+        csdPostamble.clear();
+        csdText = fullCode;
+        return;
+    }
+
+    const auto blockEnd = closeAt + kSynthClose.length();
+    csdPreamble  = fullCode.substring (0, openAt);
+    csdText      = fullCode.substring (openAt, blockEnd);
+    csdPostamble = fullCode.substring (blockEnd);
+}
+
+//==============================================================================
+juce::ValueTree CsoundAudioProcessor::buildParamsStructureTree()
+{
+    // SOLO la struttura (metadata per-slot): niente testo del codice (nel
+    // .csd e' scritto in chiaro prima del tag <CsoundParams>) e niente stato
+    // apvts (i VALORI vivono nello stato del progetto, per nome canale -
+    // vedi getStateInformation). Il nome radice resta quello storico
+    // APE_CSOUND_STATE cosi' i .csd salvati dalle versioni precedenti
+    // (che dentro avevano anche un figlio PARAMETERS) restano leggibili da
+    // restoreStateFromTree, e viceversa.
+    juce::ValueTree state ("APE_CSOUND_STATE");
 
     // Metadata per-slot (nome canale/range/skew/increment) che apvts non
     // conosce - vedi il commento su ChannelParamSlot in PluginProcessor.h
@@ -1089,23 +1104,6 @@ juce::ValueTree CsoundAudioProcessor::buildStateTree (bool includeCsdText)
     return state;
 }
 
-void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
-{
-    if (auto xml = buildStateTree().createXml())
-        copyXmlToBinary (*xml, destData);
-}
-
-void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
-{
-    if (auto xml = getXmlFromBinary (data, sizeInBytes))
-    {
-        auto state = juce::ValueTree::fromXml (*xml);
-
-        if (state.isValid())
-            restoreStateFromTree (state, state.getProperty ("csd", getCsdText()).toString());
-    }
-}
-
 namespace
 {
     // Tag d'appendice che racchiude il mapping dei 64 parametri dentro un
@@ -1115,8 +1113,430 @@ namespace
     // plugin). Scelto un tag "a frase" invece di XML attributes per essere
     // immediato da individuare anche solo guardando il file con un editor
     // di testo qualsiasi.
-    const juce::String kParamsTagOpen  = "<CsoundParams>";
-    const juce::String kParamsTagClose = "</CsoundParams>";
+    const juce::String kParamsTagOpen  = "<apeCsoundParams>";
+    const juce::String kParamsTagClose = "</apeCsoundParams>";
+
+    // Nomi degli elementi/attributi dello stato del progetto (NUOVO formato,
+    // vedi il commento su getStateInformation in PluginProcessor.h).
+    const char* const kStateRoot       = "PluginState";
+    const char* const kStateEmbedded   = "EmbeddedCsd";
+    const char* const kStateParam      = "P";
+    const char* const kLegacyStateRoot = "APE_CSOUND_STATE";
+}
+
+//==============================================================================
+// Sessione collegata a un file / stato del progetto - vedi il commento esteso
+// su getStateInformation in PluginProcessor.h.
+juce::File CsoundAudioProcessor::getBaseFolder()
+{
+    auto folder = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+                      .getChildFile ("apeCsound");
+
+    // createDirectory() e' idempotente: se esiste gia' non fa nulla. Se
+    // fallisse (permessi), si ritorna comunque il path: i path relativi
+    // semplicemente non risolveranno, e il fallback assoluto resta valido.
+    folder.createDirectory();
+    return folder;
+}
+
+juce::File CsoundAudioProcessor::getLinkedCsdFile() const
+{
+    const juce::ScopedLock sl (sessionLock);
+    return linkedCsdFile;
+}
+
+void CsoundAudioProcessor::setLinkedCsdFile (const juce::File& file)
+{
+    const juce::ScopedLock sl (sessionLock);
+    linkedCsdFile = file;
+}
+
+juce::String CsoundAudioProcessor::getLinkedCsdDisplayPath() const
+{
+    const auto file = getLinkedCsdFile();
+
+    if (file == juce::File{})
+        return {};
+
+    const auto base = getBaseFolder();
+    return file.isAChildOf (base) ? file.getRelativePathFrom (base) : file.getFullPathName();
+}
+
+juce::String CsoundAudioProcessor::readSessionFile (const juce::File& file)
+{
+    return file.loadFileAsString().replace ("\r\n", "\n").replace ("\r", "\n");
+}
+
+juce::String CsoundAudioProcessor::computeTextHash (const juce::String& text)
+{
+    // UTF-8 del testo cosi' com'e': stesso risultato di un `shasum -a 256`
+    // sul file, se il file e' stato scritto da saveSessionToFile.
+    return juce::SHA256 (text.toRawUTF8(), text.getNumBytesAsUTF8()).toHexString();
+}
+
+juce::String CsoundAudioProcessor::readGitHeadCommit (const juce::File& startDir)
+{
+    // Risale le cartelle fino a trovare .git (directory, o file "gitdir:"
+    // di un worktree - in quel caso si segue il puntatore). Tutto in
+    // lettura di file, nessun processo esterno: e' solo un'informazione.
+    for (auto dir = startDir; dir != juce::File{} && dir.exists(); dir = dir.getParentDirectory())
+    {
+        auto gitEntry = dir.getChildFile (".git");
+
+        if (! gitEntry.exists())
+        {
+            if (dir.getParentDirectory() == dir)
+                break;
+            continue;
+        }
+
+        auto gitDir = gitEntry;
+
+        if (gitEntry.existsAsFile())
+        {
+            const auto pointer = gitEntry.loadFileAsString().trim();
+            if (! pointer.startsWith ("gitdir:"))
+                return {};
+            gitDir = dir.getChildFile (pointer.fromFirstOccurrenceOf ("gitdir:", false, false).trim());
+        }
+
+        const auto head = gitDir.getChildFile ("HEAD").loadFileAsString().trim();
+
+        if (head.isEmpty())
+            return {};
+
+        if (! head.startsWith ("ref:"))
+            return head; // HEAD "detached": e' gia' l'hash
+
+        const auto ref = head.fromFirstOccurrenceOf ("ref:", false, false).trim();
+        const auto refFile = gitDir.getChildFile (ref);
+
+        if (refFile.existsAsFile())
+            return refFile.loadFileAsString().trim();
+
+        // Ref "impacchettata" (dopo un gc): una riga "<hash> <ref>" in packed-refs.
+        for (auto& line : juce::StringArray::fromLines (gitDir.getChildFile ("packed-refs").loadFileAsString()))
+            if (line.endsWith (" " + ref))
+                return line.upToFirstOccurrenceOf (" ", false, false).trim();
+
+        return {};
+    }
+
+    return {};
+}
+
+juce::String CsoundAudioProcessor::buildSessionText()
+{
+    return buildSessionTextFor (getCsdText());
+}
+
+juce::String CsoundAudioProcessor::buildSessionTextFor (const juce::String& codeText)
+{
+    auto xml = buildParamsStructureTree().createXml();
+
+    // Il codice vero e proprio resta testo Csound PURO in testa - quello
+    // che Csound/un editor di testo si aspettano di trovare. La STRUTTURA
+    // dei parametri (nome canale/range/skew/increment/default/opzioni per
+    // slot) va in appendice, dopo una riga vuota, dentro il tag dedicato -
+    // mai mescolata dentro il codice stesso.
+    // Preambolo/coda (es. <Cabbage>) rimessi al loro posto attorno al
+    // blocco <CsoundSynthesizer> - vedi setCsdCodeFromFullText().
+    juce::String preamble, postamble;
+    {
+        const juce::ScopedLock sl (csdTextLock);
+        preamble  = csdPreamble;
+        postamble = csdPostamble;
+    }
+
+    juce::String text;
+    text << preamble << codeText << postamble << "\n\n"
+         << kParamsTagOpen << "\n"
+         << (xml != nullptr ? xml->toString() : juce::String()) << "\n"
+         << kParamsTagClose << "\n";
+    return text;
+}
+
+juce::String CsoundAudioProcessor::getSessionBaselineHash() const
+{
+    const juce::ScopedLock sl (sessionLock);
+    return sessionBaselineHash;
+}
+
+void CsoundAudioProcessor::updateSessionBaselineHash()
+{
+    const auto hash = computeTextHash (buildSessionText());
+    const juce::ScopedLock sl (sessionLock);
+    sessionBaselineHash = hash;
+}
+
+bool CsoundAudioProcessor::isLinkedFileMissing() const
+{
+    const juce::ScopedLock sl (sessionLock);
+    return linkedFileMissing;
+}
+
+bool CsoundAudioProcessor::hasLinkedFileChangedOnDisk() const
+{
+    juce::File file;
+    juce::Time modTimeAtLoad;
+    {
+        const juce::ScopedLock sl (sessionLock);
+        file = linkedCsdFile;
+        modTimeAtLoad = linkedFileModTimeAtLoad;
+    }
+
+    if (file == juce::File{} || ! file.existsAsFile() || modTimeAtLoad == juce::Time())
+        return false;
+
+    return file.getLastModificationTime() != modTimeAtLoad;
+}
+
+void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+{
+    // Vedi il commento esteso in PluginProcessor.h per il formato.
+    // juce::XmlElement costruito a mano (non un ValueTree): il testo
+    // incorporato va in un elemento di TESTO figlio (addTextElement), che
+    // un ValueTree non sa rappresentare.
+    const auto sessionText = buildSessionText();
+    const auto linked = getLinkedCsdFile();
+    const auto base = getBaseFolder();
+
+    juce::XmlElement root (kStateRoot);
+
+    if (linked != juce::File{})
+    {
+        const bool relative = linked.isAChildOf (base);
+        root.setAttribute ("csd", relative ? linked.getRelativePathFrom (base) : linked.getFullPathName());
+        root.setAttribute ("csdIsRelative", relative ? 1 : 0);
+        root.setAttribute ("gitCommit", readGitHeadCommit (linked.getParentDirectory()));
+    }
+    else
+    {
+        root.setAttribute ("csd", "");
+        root.setAttribute ("csdIsRelative", 0);
+    }
+
+    root.setAttribute ("hash", computeTextHash (sessionText));
+
+    auto* embedded = root.createNewChildElement (kStateEmbedded);
+    embedded->addTextElement (sessionText);
+
+    // VALORI correnti per nome canale, in unita' reali (non normalizzati):
+    // cosi' un riordino degli slot nel .csd, o un cambio di range, non
+    // sposta i valori su un parametro sbagliato. type: f/i/b/c = Float/
+    // Int/Bool/Choice, per rimappare al pool giusto al ripristino.
+    auto addParam = [&root] (const juce::String& channel, const char* type, double value)
+    {
+        auto* p = root.createNewChildElement (kStateParam);
+        p->setAttribute ("channel", channel);
+        p->setAttribute ("type", type);
+        p->setAttribute ("value", value);
+    };
+
+    for (int i = 0; i < numChannelParams; ++i)
+    {
+        const auto slot = getChannelParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+        if (auto* raw = apvts.getRawParameterValue (getChannelParamID (i)))
+            addParam (slot.channelName, "f", (double) denormalizeChannelParam (slot, raw->load()));
+    }
+
+    for (int i = 0; i < numIntParams; ++i)
+    {
+        const auto slot = getIntParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+        if (auto* raw = apvts.getRawParameterValue (getIntParamID (i)))
+            addParam (slot.channelName, "i", (double) denormalizeIntParam (slot, raw->load() / (float) intHostRangeMax));
+    }
+
+    for (int i = 0; i < numBoolParams; ++i)
+    {
+        const auto slot = getBoolParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+        if (auto* raw = apvts.getRawParameterValue (getBoolParamID (i)))
+            addParam (slot.channelName, "b", raw->load() >= 0.5f ? 1.0 : 0.0);
+    }
+
+    for (int i = 0; i < numChoiceParams; ++i)
+    {
+        const auto slot = getChoiceParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+        if (auto* raw = apvts.getRawParameterValue (getChoiceParamID (i)))
+            addParam (slot.channelName, "c", (double) juce::roundToInt (raw->load()));
+    }
+
+    copyXmlToBinary (root, destData);
+}
+
+void CsoundAudioProcessor::applyChannelValues (const juce::XmlElement& pluginStateXml)
+{
+    // Cerca lo slot assegnato con quel nome canale nel pool del tipo
+    // indicato e imposta il valore (normalizzato 0..1 per setValueNotifyingHost,
+    // vedi il commento su normalizeChannelParam/normalizeIntParam).
+    for (auto* p : pluginStateXml.getChildWithTagNameIterator (kStateParam))
+    {
+        const auto channel = p->getStringAttribute ("channel");
+        const auto type    = p->getStringAttribute ("type");
+        const double value = p->getDoubleAttribute ("value");
+
+        if (channel.isEmpty())
+            continue;
+
+        juce::RangedAudioParameter* param = nullptr;
+        float normalized = 0.0f;
+
+        if (type == "f")
+        {
+            for (int i = 0; i < numChannelParams && param == nullptr; ++i)
+            {
+                const auto slot = getChannelParamSlot (i);
+                if (slot.channelName == channel)
+                {
+                    param = apvts.getParameter (getChannelParamID (i));
+                    normalized = normalizeChannelParam (slot, value);
+                }
+            }
+        }
+        else if (type == "i")
+        {
+            for (int i = 0; i < numIntParams && param == nullptr; ++i)
+            {
+                const auto slot = getIntParamSlot (i);
+                if (slot.channelName == channel)
+                {
+                    param = apvts.getParameter (getIntParamID (i));
+                    normalized = normalizeIntParam (slot, value);
+                }
+            }
+        }
+        else if (type == "b")
+        {
+            for (int i = 0; i < numBoolParams && param == nullptr; ++i)
+            {
+                if (getBoolParamSlot (i).channelName == channel)
+                {
+                    param = apvts.getParameter (getBoolParamID (i));
+                    normalized = value >= 0.5 ? 1.0f : 0.0f;
+                }
+            }
+        }
+        else if (type == "c")
+        {
+            for (int i = 0; i < numChoiceParams && param == nullptr; ++i)
+            {
+                if (getChoiceParamSlot (i).channelName == channel)
+                {
+                    param = apvts.getParameter (getChoiceParamID (i));
+                    normalized = maxChoiceOptions > 1
+                        ? juce::jlimit (0.0f, 1.0f, (float) value / (float) (maxChoiceOptions - 1))
+                        : 0.0f;
+                }
+            }
+        }
+
+        if (param != nullptr)
+            param->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, normalized));
+    }
+}
+
+void CsoundAudioProcessor::restoreLegacyState (const juce::ValueTree& state)
+{
+    // Vecchio formato: codice + struttura + apvts tutto nel blob. Sessione
+    // NON collegata (nessun path nel vecchio stato), nessun avviso.
+    const auto restoredCsd = state.getProperty ("csd", getCsdText()).toString();
+    restoreStateFromTree (state, restoredCsd);
+
+    {
+        const juce::ScopedLock sl (sessionLock);
+        linkedCsdFile = juce::File();
+        linkedFileModTimeAtLoad = juce::Time();
+        linkedFileMissing = false;
+    }
+
+    updateSessionBaselineHash();
+    scheduleRecompileAfterRestore (restoredCsd);
+}
+
+void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+{
+    auto xml = getXmlFromBinary (data, sizeInBytes);
+
+    if (xml == nullptr)
+        return;
+
+    if (xml->hasTagName (kLegacyStateRoot))
+    {
+        if (auto state = juce::ValueTree::fromXml (*xml); state.isValid())
+            restoreLegacyState (state);
+
+        juce::MessageManager::callAsync ([this]
+        {
+            listeners.call ([] (Listener& l) { l.sessionStateRestored(); });
+        });
+        return;
+    }
+
+    if (! xml->hasTagName (kStateRoot))
+        return;
+
+    // --- 1. Risolve il file collegato ---------------------------------
+    const auto csdPath = xml->getStringAttribute ("csd");
+    const bool isRelative = xml->getIntAttribute ("csdIsRelative", 1) != 0;
+
+    juce::File linked;
+    if (csdPath.isNotEmpty())
+        linked = isRelative ? getBaseFolder().getChildFile (csdPath) : juce::File (csdPath);
+
+    // --- 2. Il file e' la verita': se c'e' si carica quello, SEMPRE.
+    //        La copia incorporata serve solo se il file manca. -----------
+    juce::String textToLoad;
+    juce::Time modTimeAtLoad;
+    bool missing = false;
+
+    if (linked != juce::File{} && linked.existsAsFile())
+    {
+        textToLoad = readSessionFile (linked);
+        modTimeAtLoad = linked.getLastModificationTime();
+    }
+    else
+    {
+        if (auto* embedded = xml->getChildByName (kStateEmbedded))
+            textToLoad = embedded->getAllSubText();
+
+        missing = linked != juce::File{};
+    }
+
+    // --- 3. Carica (struttura + codice), poi i valori per nome canale ---
+    if (textToLoad.isNotEmpty())
+        loadSessionFromText (textToLoad);
+
+    applyChannelValues (*xml);
+
+    {
+        const juce::ScopedLock sl (sessionLock);
+        linkedCsdFile = linked;
+        linkedFileModTimeAtLoad = modTimeAtLoad;
+        linkedFileMissing = missing;
+    }
+
+    updateSessionBaselineHash();
+
+    // loadSessionFromText non ricompila da solo (e' usato anche da Load
+    // CSD, dove e' l'editor a chiamare Apply): qui invece, come nel vecchio
+    // setStateInformation, va schedulata la ricompilazione del testo
+    // appena ripristinato.
+    scheduleRecompileAfterRestore (getCsdText());
+
+    // L'editor (se aperto) rilegge tutto e mostra l'eventuale avviso.
+    // callAsync: setStateInformation puo' arrivare da un thread dell'host.
+    juce::MessageManager::callAsync ([this]
+    {
+        listeners.call ([] (Listener& l) { l.sessionStateRestored(); });
+    });
 }
 
 //==============================================================================
@@ -1394,29 +1814,28 @@ namespace
     }
 }
 
-bool CsoundAudioProcessor::saveSessionToFile (const juce::File& file)
+bool CsoundAudioProcessor::saveSessionToFile (const juce::File& file, const juce::String& codeText)
 {
-    // includeCsdText=false: il codice e' GIA' scritto per intero, in
-    // chiaro, qui sotto PRIMA del tag - non va ripetuto anche dentro l'XML
-    // (sarebbe un'intera copia del codice con ogni ritorno a capo
-    // escappato in &#10;, illeggibile e ridondante, segnalato esplicitamente).
-    auto xml = buildStateTree (false).createXml();
+    // Formato: vedi buildSessionTextFor() (codice in chiaro + <CsoundParams>
+    // con la sola STRUTTURA). codeText e' il testo dell'editor (vedi il
+    // commento nel .h), non necessariamente quello in esecuzione.
+    const auto text = buildSessionTextFor (codeText);
 
-    if (xml == nullptr)
+    // lineEndings = "\n" ESPLICITO (BUG corretto): il default di
+    // juce::File::replaceWithText e' "\r\n", che riscriveva il file con fine
+    // riga diversi dal testo appena hashato - rileggendolo, l'hash non
+    // coincideva mai e performSaveLinked chiedeva "modificato da fuori,
+    // sovrascrivere?" a OGNI Save. Lettura simmetrica: readSessionFile().
+    if (! file.replaceWithText (text, false, false, "\n"))
         return false;
 
-    // Il codice vero e proprio resta testo Csound PURO in testa al file -
-    // quello che Csound/un editor di testo si aspettano di trovare. Il
-    // mapping dei parametri (nome canale/range/skew/increment/default per slot, piu'
-    // una copia dello stato apvts) va in appendice, dopo una riga vuota,
-    // dentro il tag dedicato - mai mescolato dentro il codice stesso.
-    juce::String fileContents;
-    fileContents << getCsdText() << "\n\n"
-                 << kParamsTagOpen << "\n"
-                 << xml->toString() << "\n"
-                 << kParamsTagClose << "\n";
-
-    return file.replaceWithText (fileContents);
+    const auto hash = computeTextHash (text);
+    const juce::ScopedLock sl (sessionLock);
+    linkedCsdFile = file;
+    linkedFileModTimeAtLoad = file.getLastModificationTime(); // appena scritto da noi
+    sessionBaselineHash = hash; // appena scritto: sessione e file coincidono
+    linkedFileMissing = false;
+    return true;
 }
 
 void CsoundAudioProcessor::resetAllParameterSlots()
@@ -1433,8 +1852,27 @@ void CsoundAudioProcessor::resetAllParameterSlots()
 
 bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
 {
-    const auto fullText = file.loadFileAsString();
+    const auto fullText = readSessionFile (file);
 
+    if (fullText.isEmpty() || ! loadSessionFromText (fullText))
+        return false;
+
+    // Collega la sessione al file appena letto: da ora "Save" sovrascrive
+    // questo file (vedi CsoundAudioProcessorEditor::performSaveLinked) e
+    // lo stato del progetto ne salva il path.
+    {
+        const juce::ScopedLock sl (sessionLock);
+        linkedCsdFile = file;
+        linkedFileModTimeAtLoad = file.getLastModificationTime();
+        linkedFileMissing = false;
+    }
+
+    updateSessionBaselineHash();
+    return true;
+}
+
+bool CsoundAudioProcessor::loadSessionFromText (const juce::String& fullText)
+{
     if (fullText.isEmpty())
         return false;
 
@@ -1450,7 +1888,7 @@ bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
         // Nessun tag d'appendice: e' un .csd "normale", magari scritto a
         // mano o esportato da un'altra sessione - carichiamo comunque il
         // codice (molto meglio che fallire del tutto).
-        setCsdText (fullText);
+        setCsdCodeFromFullText (fullText);
 
         // Se contiene un <Cabbage>, non e' mai stato salvato da questo
         // plugin ma e' probabilmente un .csd Cabbage scritto a mano/da
@@ -1473,7 +1911,7 @@ bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
     {
         // Tag apertura presente ma non la chiusura (file troncato/
         // corrotto): carichiamo almeno il codice.
-        setCsdText (codeText);
+        setCsdCodeFromFullText (codeText);
         return true;
     }
 
@@ -1492,7 +1930,7 @@ bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
 
     // XML d'appendice malformato: ancora meglio caricare il codice da solo
     // che fallire l'intero caricamento.
-    setCsdText (codeText);
+    setCsdCodeFromFullText (codeText);
     return true;
 }
 
@@ -1501,7 +1939,18 @@ void CsoundAudioProcessor::initializeSession()
     // Stesso ordine di loadSessionFromFile sopra: azzera SEMPRE la
     // mappatura prima di toccare il codice, incondizionatamente.
     resetAllParameterSlots();
-    setCsdText (defaultCsdText());
+    setCsdCodeFromFullText (defaultCsdText());
+
+    // Sessione nuova = NON collegata a nessun file: il prossimo "Save" si
+    // comporta come "Save As" (vedi performSaveLinked nell'editor).
+    {
+        const juce::ScopedLock sl (sessionLock);
+        linkedCsdFile = juce::File();
+        linkedFileModTimeAtLoad = juce::Time();
+        linkedFileMissing = false;
+    }
+
+    updateSessionBaselineHash();
 }
 
 bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
@@ -1843,8 +2292,7 @@ bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
 
 void CsoundAudioProcessor::restoreStateFromTree (const juce::ValueTree& state, const juce::String& csdTextToRestore)
 {
-    const auto restoredCsd = csdTextToRestore;
-    setCsdText (restoredCsd);
+    setCsdCodeFromFullText (csdTextToRestore);
 
         if (auto apvtsState = state.getChildWithName ("PARAMETERS"); apvtsState.isValid())
             apvts.replaceState (apvtsState);
@@ -1944,32 +2392,42 @@ void CsoundAudioProcessor::restoreStateFromTree (const juce::ValueTree& state, c
             }
         }
 
-        // Segnala che c'e' un ripristino in sospeso: se prepareToPlay non e'
-        // ancora stato chiamato sara' lui a compilare questo testo (vedi
-        // CsoundAudioProcessor::prepareToPlay).
-        pendingStateRestore = true;
+        // NIENTE ricompilazione qui (a differenza della versione precedente):
+        // questa funzione serve sia a setStateInformation (che DEVE
+        // ricompilare, vedi scheduleRecompileAfterRestore chiamata li') sia
+        // a loadSessionFromText per Load CSD/"Usa versione su disco", dove e'
+        // l'editor a chiamare Apply subito dopo - farlo anche qui
+        // compilerebbe due volte lo stesso testo.
+}
 
-        // Ma se il motore e' GIA' in esecuzione, prepareToPlay e' gia'
-        // passato - quasi certamente con il .csd di default, perche' questo
-        // e' esattamente il caso in cui l'host chiama setStateInformation
-        // DOPO prepareToPlay. In quel caso non possiamo aspettare: bisogna
-        // ricompilare subito con il testo appena ripristinato, altrimenti
-        // il plugin continuerebbe a suonare il .csd sbagliato.
-        //
-        // compileAndStart richiede di girare sul message thread (vedi il suo
-        // jassert) mentre setStateInformation puo' essere chiamata da host
-        // diversi su thread diversi: per sicurezza la richiamiamo sempre
-        // tramite MessageManager::callAsync, anche quando si e' gia' sul
-        // thread dei messaggi (callAsync gestisce correttamente anche quel
-        // caso).
-        if (isEngineRunning())
+void CsoundAudioProcessor::scheduleRecompileAfterRestore (const juce::String& restoredCsd)
+{
+    // Segnala che c'e' un ripristino in sospeso: se prepareToPlay non e'
+    // ancora stato chiamato sara' lui a compilare questo testo (vedi
+    // CsoundAudioProcessor::prepareToPlay).
+    pendingStateRestore = true;
+
+    // Ma se il motore e' GIA' in esecuzione, prepareToPlay e' gia'
+    // passato - quasi certamente con il .csd di default, perche' questo
+    // e' esattamente il caso in cui l'host chiama setStateInformation
+    // DOPO prepareToPlay. In quel caso non possiamo aspettare: bisogna
+    // ricompilare subito con il testo appena ripristinato, altrimenti
+    // il plugin continuerebbe a suonare il .csd sbagliato.
+    //
+    // compileAndStart richiede di girare sul message thread (vedi il suo
+    // jassert) mentre setStateInformation puo' essere chiamata da host
+    // diversi su thread diversi: per sicurezza la richiamiamo sempre
+    // tramite MessageManager::callAsync, anche quando si e' gia' sul
+    // thread dei messaggi (callAsync gestisce correttamente anche quel
+    // caso).
+    if (isEngineRunning())
+    {
+        juce::MessageManager::callAsync ([this, restoredCsd]
         {
-            juce::MessageManager::callAsync ([this, restoredCsd]
-            {
-                pendingStateRestore = false;
-                compileAndStart (restoredCsd);
-            });
-        }
+            pendingStateRestore = false;
+            compileAndStart (restoredCsd);
+        });
+    }
 }
 
 //==============================================================================

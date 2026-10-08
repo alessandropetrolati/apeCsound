@@ -21,11 +21,16 @@
     limita a rimpiazzare il .csd attualmente in esecuzione con quello appena
     modificato nell'editor - non "avvia" nulla che non sia gia' partito.
 
-    Il testo del .csd e' persistito in getStateInformation/setStateInformation
-    (CsoundAudioProcessor), quindi una DAW che salva e ricarica il progetto
-    ritrova lo stesso codice; CsoundAudioProcessor::prepareToPlay lo compila
-    e avvia automaticamente, cosi' l'audio funziona di nuovo senza dover
-    premere "Apply" a mano dopo un reload.
+    Lo stato nel progetto della DAW (getStateInformation/setStateInformation
+    in CsoundAudioProcessor) contiene il PATH del .csd collegato, una copia
+    incorporata della sessione in esecuzione, il suo hash e i valori dei
+    parametri per nome canale - la STRUTTURA dei parametri vive invece nel
+    tag <CsoundParams> del .csd stesso. Al ripristino il processor decide da
+    solo (file su disco se identico, altrimenti la copia incorporata) senza
+    mai un dialogo: l'eventuale differenza/assenza del file e' segnalata da
+    una barra NON bloccante in questo editor (vedi SessionWarningBar).
+    CsoundAudioProcessor::prepareToPlay compila e avvia automaticamente,
+    cosi' l'audio funziona di nuovo senza dover premere "Apply" a mano.
 
     La logica di binding dei widget (GUI designer, eventualmente da
     rivalutare in futuro) andra' agganciata a
@@ -98,6 +103,95 @@ private:
     void csoundEngineStarted() override;
     void csoundEngineStopped() override;
 
+    // L'host ha ripristinato una sessione (setStateInformation) mentre
+    // questo editor e' aperto: rilegge codice/mappatura dal processor,
+    // azzera l'undo (e' un "caricamento documento", vedi
+    // refreshSessionFromProcessor) e aggiorna la barra di avviso.
+    void sessionStateRestored() override;
+
+    // Rilegge document/parameterPanel dallo stato ATTUALE del processor
+    // (dopo un ripristino dall'host) e azzera ENTRAMBE le cronologie di
+    // undo (quella interna del document e sharedUndoManager - le voci
+    // CodeEditTransactionProxy nella seconda puntano a transazioni della
+    // prima, quindi vanno svuotate insieme): un ripristino e' un
+    // "caricamento documento", non un passo annullabile.
+    void refreshSessionFromProcessor();
+
+    // Modello SEMPLIFICATO (richiesta esplicita: "e' troppo articolato e
+    // confuso"): il file e' la verita', l'utente vede DUE cose sole.
+    //
+    //  1. sessionFileLabel nella toolbar: nome del file collegato + "•" se
+    //     la sessione (testo ATTUALE dell'editor + struttura dei parametri)
+    //     differisce dall'ultimo Save/Load - come in qualunque editor. In
+    //     rosso se il file non esiste piu'. Solo informativo (si salva con la voce Save del menu). Ricalcolato a
+    //     ogni modifica del document e a ogni rebuild del pannello
+    //     (onMappingChanged): un SHA-256 di pochi KB per battuta e'
+    //     trascurabile. Sessione non collegata: "Untitled •".
+    //
+    //  2. SessionWarningBar sotto la toolbar, UNICO caso: al ripristino il
+    //     file collegato non c'era piu' (CsoundAudioProcessor::
+    //     isLinkedFileMissing) e si sta suonando la copia incorporata nel
+    //     progetto - "Save As..." lo ricrea dove si vuole. Nessun dialogo
+    //     modale da setStateInformation (l'host puo' chiamarla senza UI).
+    // Disegnato a mano (non una juce::Label): due righe - nome del file in
+    // evidenza sopra, dettagli (path + stato) piccoli e attenuati sotto -
+    // tra due sottili linee verticali di separazione (richiesta esplicita:
+    // "dai dignita' al nome del file... linee minimal di separazione...
+    // dettagli nella riga sottostante come il path"). SOLO informativo
+    // (richiesta esplicita: il salvataggio e' SOLO la voce Save del menu):
+    // non intercetta il mouse, cosi' un click non ruba nemmeno il focus da
+    // tastiera all'editor di codice (BUG corretto: con il focus perso,
+    // Cmd+Z finiva all'host invece che alla nostra cronologia di undo).
+    struct SessionFileLabel final : public juce::Component
+    {
+        SessionFileLabel() { setInterceptsMouseClicks (false, false); }
+        void paint (juce::Graphics& g) override;
+
+        juce::String fileName;   // "Untitled" se non collegata
+        juce::String detailText; // path relativo/assoluto + stato
+        bool dirty = false;      // "•" accanto al nome
+        bool missing = false;    // file non trovato: nome in rosso
+    };
+
+    struct SessionWarningBar final : public juce::Component
+    {
+        SessionWarningBar();
+        void paint (juce::Graphics& g) override;
+        void resized() override;
+
+        juce::Label messageLabel;
+        juce::TextButton relocateButton { "Relocate..." }; // il file esiste altrove: lo si indica e viene CARICATO (il file e' la verita')
+        juce::TextButton saveAsButton   { "Save As..." }; // il file non esiste piu': lo si ricrea dalla copia incorporata
+    };
+
+    // "Relocate...": FileChooser sul .csd nella sua nuova posizione, poi lo
+    // stesso percorso di Load CSD (performLoadSessionFile: carica, collega,
+    // applica) - coerente col modello "il file e' la verita'". Niente
+    // dialogo Save/Overwrite/Cancel: l'utente ha appena scelto
+    // esplicitamente di passare a quel file.
+    void promptRelocateSession();
+
+    // true se la sessione com'e' ADESSO (testo dell'editor + struttura dei
+    // parametri) differisce dall'ultimo Save/Load, o non e' collegata a
+    // nessun file. Unica fonte sia per il "•" nella toolbar sia per
+    // decidere se Load CSD deve chiedere "Save/Overwrite/Cancel".
+    bool isSessionDirty() const;
+
+    // Aggiorna etichetta (nome/pallino/colore) e visibilita' della barra.
+    void updateSessionStatus();
+
+    // "Save" del menu hamburger (richiesta esplicita, accanto a "Save as..."
+    // /"Load..."): sovrascrive il file COLLEGATO (vedi
+    // CsoundAudioProcessor::getLinkedCsdFile) senza chiedere il path; se la
+    // sessione non e' collegata si comporta come Save As. Se il file su disco
+    // e' cambiato da quando e' stato letto/scritto (hash diverso da
+    // hasLinkedFileChangedOnDisk - es. modificato da un altro editor o da un
+    // git pull), chiede conferma PRIMA di sovrascrivere.
+    // onSaved (opzionale): continuazione eseguita SOLO se il file e' stato
+    // scritto davvero - usata dal dialogo "Unsaved changes" di Load CSD
+    // ("Save" = salva come farebbe il menu, POI carica).
+    void performSaveLinked (std::function<void()> onSaved = nullptr);
+
     // juce::CodeDocument::Listener: CsoundCodeEditor (vedi "editor" sotto)
     // ha GIA' un proprio listener privato sullo stesso document (per l'help
     // inline) - juce::CodeDocument supporta piu' listener indipendenti sullo
@@ -105,8 +199,8 @@ private:
     // ad aggiornare il bordo rosso di Apply (updateApplyButtonDirtyState),
     // fa anche da punto di ingresso per bridgeCodeEditIntoSharedUndo()
     // sotto - vedi li' per il perche'.
-    void codeDocumentTextInserted (const juce::String&, int) override { updateApplyButtonDirtyState(); bridgeCodeEditIntoSharedUndo(); }
-    void codeDocumentTextDeleted (int, int) override                  { updateApplyButtonDirtyState(); bridgeCodeEditIntoSharedUndo(); }
+    void codeDocumentTextInserted (const juce::String&, int) override { updateApplyButtonDirtyState(); bridgeCodeEditIntoSharedUndo(); updateSessionStatus(); }
+    void codeDocumentTextDeleted (int, int) override                  { updateApplyButtonDirtyState(); bridgeCodeEditIntoSharedUndo(); updateSessionStatus(); }
 
     // Rispecchia (quando serve, vedi l'implementazione nel .cpp) la
     // transazione CORRENTE dell'UndoManager interno di "document" come
@@ -168,6 +262,14 @@ private:
 
     OpcodeHelpBar opcodeHelpBar;
     static constexpr int opcodeHelpBarHeight = 26;
+
+    // Vedi SessionWarningBar sopra: visibile SOLO quando c'e' qualcosa da
+    // segnalare, altrimenti non occupa spazio (vedi resized()).
+    SessionWarningBar sessionWarningBar;
+    static constexpr int sessionWarningBarHeight = 34;
+
+    // Nella toolbar, tra Apply e il burger - vedi SessionFileLabel.
+    SessionFileLabel sessionFileLabel;
 
     juce::TextEditor logConsole;
 
@@ -325,10 +427,10 @@ private:
     // fatto perdere anche il codice: vedi CsoundAudioProcessor::
     // saveSessionToFile/loadSessionFromFile.
     //
-    // I vecchi bottoni "Save as CSD..."/"Load CSD" nella toolbar sono stati
+    // I vecchi bottoni "Save as..."/"Load..." nella toolbar sono stati
     // RIMOSSI (richiesta esplicita): promptSaveSession()/promptLoadSession()
     // sotto restano le uniche funzioni che sanno fare il lavoro vero, ma
-    // sono ora richiamate dalle voci "Save as CSD..."/"Load CSD" del menu
+    // sono ora richiamate dalle voci "Save as..."/"Load..." del menu
     // hamburger del pannello Parametri (vedi parameterPanel.
     // onSaveSessionRequested/onLoadSessionRequested, impostate nel
     // costruttore).
@@ -343,7 +445,7 @@ private:
     // onSaved, se presente, scatta SOLO se il salvataggio va davvero a buon
     // fine (file scritto) - usato da confirmDiscardCurrentStateThenLoad()
     // sotto per incatenare "salva, poi procedi col Load" quando l'utente
-    // sceglie "Save" nel dialogo di conferma. Il bottone "Save as CSD..." nella
+    // sceglie "Save" nel dialogo di conferma. Il bottone "Save as..." nella
     // toolbar chiama semplicemente promptSaveSession() senza argomenti (il
     // default nullptr), nessun comportamento diverso per lui.
     void promptSaveSession (std::function<void()> onSaved = nullptr);
@@ -351,7 +453,7 @@ private:
 
     // juce::FileDragAndDropTarget: drag and drop di un .csd dal Finder/
     // Explorer DIRETTAMENTE sull'editor, stessa destinazione finale di
-    // "Load CSD..." - vedi loadSessionFile() sotto, che fattorizza la
+    // "Load..." - vedi loadSessionFile() sotto, che fattorizza la
     // logica di successo comune a entrambi i percorsi (FileChooser e
     // drag and drop) invece di duplicarla. Interfaccia DIVERSA da
     // juce::DragAndDropTarget (quella che CsoundCodeEditor implementa per

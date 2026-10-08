@@ -56,65 +56,16 @@ namespace
         JUCE_DECLARE_NON_COPYABLE (CodeEditTransactionProxy)
     };
 
-    // Ricorda l'ultima cartella usata per Save/Load CSD in un piccolo file
-    // di preferenze utente su disco (juce::PropertiesFile) - NON e' lo
-    // stato del plugin (niente a che fare con getStateInformation/
-    // setStateInformation o col progetto della DAW): e' una preferenza
-    // dell'applicazione, condivisa da tutte le istanze del plugin/
-    // standalone e persistente anche chiudendo e riaprendo l'host, esattamente
-    // come l'utente si aspetta da un "ricorda l'ultima cartella" di un
-    // qualunque altro programma.
-    juce::PropertiesFile& getCsdFileChooserSettings()
+    // Cartella di partenza di TUTTI i file chooser (Save As/Load/Relocate):
+    // SEMPRE la cartella base della sessione, ~/Documents/apeCsound (vedi
+    // CsoundAudioProcessor::getBaseFolder) - richiesta esplicita: "devono
+    // puntare alla cartella Documents/apeCsound, come alla prima
+    // apertura". Niente piu' "ricorda l'ultima cartella usata" (il vecchio
+    // juce::PropertiesFile e' stato rimosso): salvando li' dentro il path
+    // nello stato del progetto resta relativo, quindi portabile.
+    juce::File getCsdChooserStartDirectory()
     {
-        juce::PropertiesFile::Options options;
-        options.applicationName     = CharPointer_UTF8(ProjectInfo::projectName);;
-        options.filenameSuffix      = "settings";
-        options.osxLibrarySubFolder = "Application Support";
-
-#if JUCE_LINUX || JUCE_BSD
-        // ~/.config/<Company>/<Project>/...   (allineato con le XDG spec)
-        options.folderName = "~/.config";
-
-#else
-        /*  macOS, Windows, iOS, ecc. (JUCE usa automaticamente
-            userApplicationDataDirectory per questi OS)
-        Android: il file finirà in
-            /data/user/0/<package>/files/<Company>/<Project>/<AppName> V2.settings
-         */
-        options.folderName = ProjectInfo::companyName
-                                + String("/")
-                                + ProjectInfo::projectName;
-#endif
-        
-        static juce::PropertiesFile settings (options);
-        return settings;
-    }
-
-    const juce::String kLastCsdDirectoryKey = "lastCsdDirectory";
-
-    juce::File getLastCsdDirectory()
-    {
-        const auto savedPath = getCsdFileChooserSettings().getValue (kLastCsdDirectoryKey);
-
-        if (savedPath.isNotEmpty())
-        {
-            const juce::File savedDir (savedPath);
-
-            if (savedDir.isDirectory())
-                return savedDir;
-        }
-
-        // Prima volta (o cartella salvata non piu' valida, es. un disco
-        // esterno scollegato): stesso punto di partenza "ragionevole" di
-        // prima.
-        return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
-    }
-
-    void setLastCsdDirectory (const juce::File& directory)
-    {
-        auto& settings = getCsdFileChooserSettings();
-        settings.setValue (kLastCsdDirectoryKey, directory.getFullPathName());
-        settings.saveIfNeeded();
+        return CsoundAudioProcessor::getBaseFolder();
     }
 }
 
@@ -170,6 +121,19 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
         opcodeHelpBar.setHelpText (syntax, description);
     };
     addAndMakeVisible (opcodeHelpBar);
+
+    // Etichetta file + barra "file non trovato" (vedi SessionFileLabel/
+    // SessionWarningBar in PluginEditor.h). La barra e' addChildComponent:
+    // NON visibile finche' updateSessionStatus() non ha nulla da segnalare.
+    // L'host puo' aver gia' ripristinato lo stato PRIMA che questo editor
+    // esistesse (ordine tipico all'apertura di un progetto): per questo si
+    // aggiorna anche qui alla costruzione, non solo in sessionStateRestored().
+    addAndMakeVisible (sessionFileLabel);
+
+    sessionWarningBar.relocateButton.onClick = [this] { promptRelocateSession(); };
+    sessionWarningBar.saveAsButton.onClick   = [this] { promptSaveSession(); };
+    addChildComponent (sessionWarningBar);
+    updateSessionStatus();
 
     // Il nome del Component e' come CsoundLookAndFeel sceglie quale icona
     // disegnare (vedi getIconPathForButtonName) - non ha altro effetto.
@@ -242,11 +206,17 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // Save/Load Session su file (.csd), indipendenti dal progetto della
     // DAW - vedi il commento sul perche' in PluginEditor.h. Non piu' due
     // bottoni dedicati nella toolbar (richiesta esplicita): le stesse
-    // funzioni sono ora richiamate dalle voci "Save as CSD..."/"Load CSD" del
+    // funzioni sono ora richiamate dalle voci "Save as..."/"Load..." del
     // menu hamburger del pannello Parametri (vedi CsoundParameterMappingPanel::
     // showPanelMenu()).
     parameterPanel.onSaveSessionRequested = [this] { promptSaveSession(); };
     parameterPanel.onLoadSessionRequested = [this] { promptLoadSession(); };
+    parameterPanel.onSaveLinkedRequested  = [this] { performSaveLinked(); };
+
+    // Ogni cambio di STRUTTURA dei parametri (add/remove/metadata/undo/redo)
+    // ricontrolla la barra "modifiche non salvate" - vedi onMappingChanged in
+    // CsoundParameterEditor.h e SessionWarningBar in PluginEditor.h.
+    parameterPanel.onMappingChanged = [this] { updateSessionStatus(); };
 
     // "Initialize Session" del menu hamburger - vedi promptInitializeSession()
     // in PluginEditor.h.
@@ -409,6 +379,10 @@ bool CsoundAudioProcessorEditor::keyPressed (const juce::KeyPress& key)
         return true;
     }
 
+    // NIENTE Cmd+S qui (rimosso, richiesta esplicita): collide con il Save
+    // del progetto della DAW. Il salvataggio del .csd e' SOLO la voce "Save"
+    // del menu hamburger.
+
     // Esc toglie il focus da tastiera da QUALUNQUE componente lo abbia
     // (campo nome di un parametro, editor di codice...) - richiesto
     // esplicitamente. Stessa logica di bubbling di Cmd+Z sopra: se un campo
@@ -528,6 +502,20 @@ void CsoundAudioProcessorEditor::resized()
     // essere alto come + e burger").
     applyButton.setBounds (toolbar.removeFromLeft (applyWidth)
                                    .withSizeKeepingCentre (applyWidth, panelToolbarButtonDiameter));
+
+    // Nome del file collegato (+ "•" se modificato) nello spazio che resta
+    // tra Apply e il burger - vedi SessionFileLabel in PluginEditor.h.
+    // Stessa altezza di Apply/burger (panelToolbarButtonDiameter), cosi' le
+    // due righe (nome + dettagli) hanno spazio e le linee di separazione
+    // sono alte quanto i bottoni accanto.
+    sessionFileLabel.setBounds (toolbar.reduced (12, 0)
+                                       .withSizeKeepingCentre (juce::jmax (0, toolbar.getWidth() - 24), panelToolbarButtonDiameter));
+
+    // Barra "file non trovato" (vedi SessionWarningBar in PluginEditor.h):
+    // a tutta larghezza subito sotto la toolbar, SOLO quando visibile -
+    // altrimenti non sottrae spazio a editor/sidebar/consolle.
+    if (sessionWarningBar.isVisible())
+        sessionWarningBar.setBounds (area.removeFromTop (sessionWarningBarHeight));
 
     // Niente inset laterali: solo lo spazio verticale tra toolbar ed editor
     // resta. Sidebar ancorata A DESTRA, su tutta l'altezza rimanente (editor
@@ -666,12 +654,15 @@ void CsoundAudioProcessorEditor::promptSaveSession (std::function<void()> onSave
     // Un .csd VERO, non un formato proprietario: vedi il commento su
     // CsoundAudioProcessor::saveSessionToFile in PluginProcessor.h - il
     // codice resta testo Csound puro, il mapping dei parametri va in
-    // appendice dentro <CsoundParams>. Si riparte dall'ultima
-    // cartella usata (getLastCsdDirectory), non sempre da Documents.
-    const auto startingFile = getLastCsdDirectory().getChildFile ("Untitled.csd");
+    // appendice dentro <CsoundParams>. Cartella di partenza: SEMPRE
+    // ~/Documents/apeCsound (vedi getCsdChooserStartDirectory); come nome
+    // si propone quello del file collegato, se c'e', altrimenti Untitled.csd.
+    const auto linked = audioProcessor.getLinkedCsdFile();
+    const auto startingFile = getCsdChooserStartDirectory().getChildFile (
+        linked != juce::File{} ? linked.getFileName() : juce::String ("Untitled.csd"));
 
     activeFileChooser = std::make_unique<juce::FileChooser> (
-        "Save as CSD...", startingFile, "*.csd");
+        "Save as...", startingFile, "*.csd");
 
     activeFileChooser->launchAsync (
         juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
@@ -686,12 +677,19 @@ void CsoundAudioProcessorEditor::promptSaveSession (std::function<void()> onSave
             if (! file.hasFileExtension ("csd"))
                 file = file.withFileExtension ("csd");
 
-            const bool ok = audioProcessor.saveSessionToFile (file);
+            const bool ok = audioProcessor.saveSessionToFile (file, document.getAllContent());
 
             if (ok)
-                setLastCsdDirectory (file.getParentDirectory());
+            {
 
-            appendToLog (ok ? ("--- Session saved to " + file.getFullPathName() + " ---")
+                // saveSessionToFile ha collegato la sessione al file e
+                // azzerato l'eventuale avviso (file mancante/diverso): la
+                // barra, se era visibile, sparisce.
+                updateSessionStatus();
+            }
+
+            appendToLog (ok ? ("--- Session saved to " + file.getFullPathName()
+                               + " (linked as " + audioProcessor.getLinkedCsdDisplayPath() + ") ---")
                              : "--- Failed to save session (file not writable?) ---");
 
             // Scatta SOLO se il file e' stato scritto davvero - usato da
@@ -705,10 +703,10 @@ void CsoundAudioProcessorEditor::promptSaveSession (std::function<void()> onSave
 
 void CsoundAudioProcessorEditor::promptLoadSession()
 {
-    const auto startingDir = getLastCsdDirectory();
+    const auto startingDir = getCsdChooserStartDirectory();
 
     activeFileChooser = std::make_unique<juce::FileChooser> (
-        "Load CSD...", startingDir, "*.csd");
+        "Load...", startingDir, "*.csd");
 
     activeFileChooser->launchAsync (
         juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
@@ -752,13 +750,20 @@ void CsoundAudioProcessorEditor::filesDropped (const juce::StringArray& files, i
 
 void CsoundAudioProcessorEditor::loadSessionFile (const juce::File& file)
 {
-    // Il codice nell'editor (+ la mappatura parametri nella sidebar) e' uno
-    // STATO che esiste solo qui finche' non viene scritto su un .csd - il
-    // progetto della DAW lo salva gia' (getStateInformation), ma caricare
-    // un nuovo file lo sostituirebbe comunque, perdendolo per sempre se non
-    // e' mai stato esportato prima. Chiediamo quindi SEMPRE cosa fare,
-    // incondizionatamente (nessun tentativo di indovinare se "conviene"
-    // chiederlo - vedi il commento in PluginEditor.h sul perche').
+    // Sessione collegata a un file e SENZA modifiche dall'ultimo Save/Load
+    // (stesso controllo dell'indicatore "•" nella toolbar, vedi
+    // isSessionDirty): non c'e' nulla da perdere, si carica subito - BUG
+    // corretto: prima si chiedeva SEMPRE, anche con il file appena salvato.
+    if (! isSessionDirty())
+    {
+        performLoadSessionFile (file);
+        return;
+    }
+
+    // Altrimenti il codice nell'editor (+ la mappatura parametri) e' uno
+    // STATO che esiste solo qui: il progetto della DAW lo salva gia'
+    // (getStateInformation), ma caricare un nuovo file lo sostituirebbe
+    // comunque. Chiediamo cosa fare.
     //
     // showNativeThreeButtonAlert (vedi NativeAlertMac.h/.mm): dialogo NSAlert
     // DAVVERO nativo del sistema operativo, richiesto esplicitamente al
@@ -771,28 +776,37 @@ void CsoundAudioProcessorEditor::loadSessionFile (const juce::File& file)
     // thread finche' l'utente non sceglie - va bene, siamo gia' su
     // quel thread, mai sul thread audio): 1 = Save, 2 = Overwrite,
     // 0 = Cancel o finestra chiusa.
-    const int result = showNativeThreeButtonAlert (
-        "Unsaved changes",
-        "The current inline code (and parameter mapping) is not saved to a .csd file "
-        "and will be lost if you continue.",
-        "Save", "Overwrite", "Cancel");
+    const auto linked = audioProcessor.getLinkedCsdFile();
+    const juce::String message = linked != juce::File{}
+        ? "The current session has unsaved changes to " + linked.getFileName()
+        : "The current inline code is not saved to a .csd file "
+          "and will be lost if you continue.";
 
-    if (result == 1) // Save: esporta PRIMA, poi procede col Load solo se riuscito
-    {
-        promptSaveSession ([this, file] { performLoadSessionFile (file); });
-    }
-    else if (result == 2) // Overwrite: procede subito, scartando lo stato attuale
-    {
+    // Bottoni (riformulati, richiesta esplicita - "Save/Overwrite/Cancel"
+    // era fuorviante: "Overwrite" sembrava riferito al FILE): "Save" ha la
+    // doppia funzione del comando Save del menu (performSaveLinked: scrive
+    // sul file collegato se c'e', altrimenti apre Save As...) e POI carica;
+    // "Don't Save" scarta le modifiche e carica; "Cancel" non fa nulla.
+    // 1 = Save, 2 = Don't Save, 0 = Cancel o finestra chiusa.
+    const int result = showNativeThreeButtonAlert ("Unsaved changes", message,
+                                                   "Save", "Don't Save", "Cancel");
+
+    if (result == 1)
+        performSaveLinked ([this, file] { performLoadSessionFile (file); });
+    else if (result == 2)
         performLoadSessionFile (file);
-    }
-    // result == 0 (Cancel, o finestra chiusa): non fa nulla.
 }
 
 void CsoundAudioProcessorEditor::performLoadSessionFile (const juce::File& file)
 {
+    // Nessuna copia/importazione nella cartella base (scelta esplicita): un
+    // .csd fuori da ~/Documents/apeCsound resta dov'e', collegato con
+    // path ASSOLUTO. Se poi il file non si trova piu' (altra macchina, file
+    // spostato), il progetto suona comunque la copia incorporata e
+    // l'editor mostra la barra "file non trovato" con Save As... - vedi
+    // SessionWarningBar in PluginEditor.h.
     if (audioProcessor.loadSessionFromFile (file))
     {
-        setLastCsdDirectory (file.getParentDirectory());
 
         // L'editor di codice e il pannello parametri hanno il proprio
         // stato locale (document/righe), costruito a partire dal
@@ -829,7 +843,12 @@ void CsoundAudioProcessorEditor::performLoadSessionFile (const juce::File& file)
         // PluginEditor.h sul perche'.
         markApplyPendingAfterLoad();
 
-        appendToLog ("--- Session loaded from " + file.getFullPathName() + " ---");
+        // loadSessionFromFile ha collegato la sessione al file (Save
+        // sovrascrivera' questo) e azzerato un eventuale avviso precedente.
+        updateSessionStatus();
+
+        appendToLog ("--- Session loaded from " + file.getFullPathName()
+                     + " (linked as " + audioProcessor.getLinkedCsdDisplayPath() + ") ---");
 
         // Richiesta esplicita: dopo un Load CSD confermato (Overwrite, o
         // Save poi Overwrite) il codice appena caricato deve gia' essere in
@@ -885,9 +904,249 @@ void CsoundAudioProcessorEditor::performInitializeSession()
 
     appendToLog ("--- Session initialized (default template) ---");
 
+    // initializeSession() ha scollegato la sessione da qualunque file: un
+    // eventuale avviso "file mancante/diverso" non ha piu' senso.
+    updateSessionStatus();
+
     // Stessa richiesta esplicita di performLoadSessionFile(): dopo la
     // conferma, il codice di default deve essere gia' in esecuzione.
     performApply();
+}
+
+//==============================================================================
+// Sessione collegata a un file - modello semplificato "il file e' la verita'",
+// vedi SessionFileLabel/SessionWarningBar in PluginEditor.h.
+void CsoundAudioProcessorEditor::SessionFileLabel::paint (juce::Graphics& g)
+{
+    auto area = getLocalBounds().toFloat();
+
+    // Due sottili linee verticali di separazione (minimal, richiesta
+    // esplicita - niente cornice piena): stesso grigio-petrolio della riga
+    // sotto la toolbar, cosi' "appartengono" alla barra invece di
+    // sembrare un bottone.
+    g.setColour (juce::Colour (0xff2a3a44));
+    g.drawLine (area.getX() + 0.5f, area.getY() + 4.0f, area.getX() + 0.5f, area.getBottom() - 4.0f, 1.0f);
+    g.drawLine (area.getRight() - 0.5f, area.getY() + 4.0f, area.getRight() - 0.5f, area.getBottom() - 4.0f, 1.0f);
+
+    auto inner = area.reduced (14.0f, 2.0f);
+    auto nameRow   = inner.removeFromTop (inner.getHeight() * 0.58f);
+    auto detailRow = inner;
+
+    // Nome: in evidenza (grassetto), rosso se il file manca, bianco se ci
+    // sono modifiche da salvare, attenuato se tutto e' salvato. "•" dopo il
+    // nome quando dirty (U+2022 via charToString: un letterale UTF-8 farebbe
+    // scattare il jassert di juce::String(const char*)).
+    const auto nameColour = missing ? juce::Colour (0xffff6b6b)
+                          : dirty   ? juce::Colour (0xffe8eef1)
+                                    : juce::Colour (0xffa9b7bf);
+
+    g.setColour (nameColour);
+    g.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
+    g.drawFittedText (dirty ? fileName + " " + juce::String::charToString (0x2022) : fileName,
+                      nameRow.toNearestInt(), juce::Justification::centred, 1);
+
+    // Dettagli: piccoli e attenuati, una riga sola.
+    g.setColour (juce::Colour (0xff6f8089));
+    g.setFont (juce::Font (juce::FontOptions (10.5f)));
+    g.drawFittedText (detailText, detailRow.toNearestInt(), juce::Justification::centred, 1);
+}
+
+CsoundAudioProcessorEditor::SessionWarningBar::SessionWarningBar()
+{
+    messageLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
+    messageLabel.setColour (juce::Label::textColourId, juce::Colour (0xff3a2a00));
+    messageLabel.setJustificationType (juce::Justification::centredLeft);
+    messageLabel.setMinimumHorizontalScale (0.8f);
+    addAndMakeVisible (messageLabel);
+    addAndMakeVisible (relocateButton);
+    addAndMakeVisible (saveAsButton);
+}
+
+void CsoundAudioProcessorEditor::SessionWarningBar::paint (juce::Graphics& g)
+{
+    // Giallo "avviso" tenue, con una riga di separazione sotto.
+    g.fillAll (juce::Colour (0xfffff3c4));
+    g.setColour (juce::Colour (0xffe0c56a));
+    g.drawLine (0.0f, (float) getHeight() - 0.5f, (float) getWidth(), (float) getHeight() - 0.5f, 1.0f);
+}
+
+void CsoundAudioProcessorEditor::SessionWarningBar::resized()
+{
+    auto area = getLocalBounds().reduced (10, 5);
+    saveAsButton.setBounds (area.removeFromRight (saveAsButton.getBestWidthForHeight (area.getHeight()) + 12));
+    area.removeFromRight (6);
+    relocateButton.setBounds (area.removeFromRight (relocateButton.getBestWidthForHeight (area.getHeight()) + 12));
+    area.removeFromRight (10);
+    messageLabel.setBounds (area);
+}
+
+void CsoundAudioProcessorEditor::promptRelocateSession()
+{
+    const auto startingDir = getCsdChooserStartDirectory();
+
+    activeFileChooser = std::make_unique<juce::FileChooser> (
+        "Relocate CSD...", startingDir, "*.csd");
+
+    activeFileChooser->launchAsync (
+        juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+        [this] (const juce::FileChooser& chooser)
+        {
+            const auto file = chooser.getResult();
+
+            if (file != juce::File{})
+                performLoadSessionFile (file); // carica + collega + applica; azzera "file mancante"
+        });
+}
+
+bool CsoundAudioProcessorEditor::isSessionDirty() const
+{
+    // "Modificato" = la sessione com'e' ADESSO nell'editor (testo anche non
+    // applicato + struttura dei parametri) differisce dall'ultimo Save/Load.
+    // Senza file collegato e' sempre "da salvare".
+    if (! audioProcessor.isSessionLinked())
+        return true;
+
+    // File collegato NON trovato (barra "file not found" visibile): il
+    // contenuto in uso e' la copia incorporata nel progetto e NESSUN file su
+    // disco lo contiene - e' da salvare per definizione, anche se identico
+    // alla baseline. Senza questo, Load CSD lo considerava "pulito" e lo
+    // sostituiva senza chiedere (BUG corretto).
+    if (audioProcessor.isLinkedFileMissing())
+        return true;
+
+    const auto currentHash = CsoundAudioProcessor::computeTextHash (
+        audioProcessor.buildSessionTextFor (document.getAllContent()));
+    return currentHash != audioProcessor.getSessionBaselineHash();
+}
+
+void CsoundAudioProcessorEditor::updateSessionStatus()
+{
+    const auto linked  = audioProcessor.getLinkedCsdFile();
+    const bool isLinked = linked != juce::File{};
+    const bool missing  = audioProcessor.isLinkedFileMissing();
+    const bool dirty    = isSessionDirty();
+
+    // Riga sotto il nome: dove sta il file (relativo alla cartella base se
+    // possibile, con la cartella base indicata con "~/Documents/apeCsound")
+    // e lo stato in parole - cosi' il "•" ha sempre una spiegazione accanto.
+    juce::String detail;
+
+    if (! isLinked)
+    {
+        detail = "Not saved to a file yet - Save As... to create one";
+    }
+    else
+    {
+        const auto base = CsoundAudioProcessor::getBaseFolder();
+        const auto folder = linked.getParentDirectory();
+        juce::String where = linked.isAChildOf (base)
+            ? "apeCsound/" + folder.getRelativePathFrom (base).replaceCharacter ('\\', '/')
+            : folder.getFullPathName();
+
+        if (where.endsWith ("/."))
+            where = where.dropLastCharacters (2);
+
+        const juce::String state = missing ? "file not found"
+                                 : dirty   ? "unsaved changes"
+                                           : "saved";
+
+        detail = where + "   -   " + state;
+    }
+
+    sessionFileLabel.fileName   = isLinked ? linked.getFileName() : juce::String ("Untitled");
+    sessionFileLabel.detailText = detail;
+    sessionFileLabel.dirty      = dirty;
+    sessionFileLabel.missing    = missing;
+    sessionFileLabel.repaint();
+
+    sessionWarningBar.messageLabel.setText (
+        "CSD file not found: " + audioProcessor.getLinkedCsdDisplayPath()
+        + ". The copy embedded in the project is in use: relocate the file, or save it as a new one.",
+        juce::dontSendNotification);
+
+    if (missing != sessionWarningBar.isVisible())
+    {
+        sessionWarningBar.setVisible (missing);
+        resized();
+    }
+}
+
+
+void CsoundAudioProcessorEditor::performSaveLinked (std::function<void()> onSaved)
+{
+    const auto linked = audioProcessor.getLinkedCsdFile();
+
+    if (linked == juce::File{} || audioProcessor.isLinkedFileMissing())
+    {
+        // Sessione non collegata (istanza nuova, Initialize Session, vecchio
+        // stato) OPPURE collegata a un file che non si trova piu' (barra
+        // "file not found"): "Save" equivale a "Save As" - non si scrive
+        // alla cieca su un path che non esiste piu'. onSaved passa al suo
+        // callback, che scatta solo se il file viene davvero scritto.
+        promptSaveSession (std::move (onSaved));
+        return;
+    }
+
+    // Il file su disco e' cambiato da quando lo abbiamo letto/scritto
+    // (un altro editor, un git pull...)? Confronto della DATA DI MODIFICA
+    // (vedi hasLinkedFileChangedOnDisk) - MAI una sovrascrittura silenziosa
+    // in quel caso. Le modifiche fatte QUI (codice/parametri) non c'entrano:
+    // quelle sono proprio cio' che si sta per salvare.
+    if (audioProcessor.hasLinkedFileChangedOnDisk())
+    {
+        const int choice = showNativeTwoButtonAlert (
+            "File changed on disk",
+            linked.getFileName() + " has been modified outside this session since it was loaded. "
+            "Overwrite it with the current session?",
+            "Cancel", "Overwrite");
+
+        if (choice != 2)
+            return;
+    }
+
+    const bool ok = audioProcessor.saveSessionToFile (linked, document.getAllContent());
+
+    if (ok)
+        updateSessionStatus();
+
+    appendToLog (ok ? ("--- Session saved to " + linked.getFullPathName() + " ---")
+                     : "--- Failed to save session (file not writable?) ---");
+
+    // Continuazione (es. "Save" nel dialogo di Load CSD, che poi carica il
+    // nuovo file): SOLO se il salvataggio e' riuscito, come in promptSaveSession.
+    if (ok && onSaved)
+        onSaved();
+}
+
+void CsoundAudioProcessorEditor::refreshSessionFromProcessor()
+{
+    // Caricamento "documento": niente newTransaction()/undo come per Load
+    // CSD - si azzera TUTTO (vedi il commento in PluginEditor.h sul perche'
+    // le due cronologie vanno svuotate insieme). Il listener del document
+    // (bridgeCodeEditIntoSharedUndo) NON deve rispecchiare questo
+    // replaceAllContent in sharedUndoManager: lo si spegne per la durata
+    // della sostituzione, come fa gia' CodeEditTransactionProxy.
+    {
+        const juce::ScopedValueSetter<bool> guard (isApplyingCodeUndoRedo, true);
+        document.replaceAllContent (audioProcessor.getCsdText());
+    }
+
+    document.clearUndoHistory();
+    sharedUndoManager.clearUndoHistory();
+
+    parameterPanel.refreshAllFromProcessor();
+    updateApplyButtonDirtyState();
+    updateSessionStatus();
+}
+
+void CsoundAudioProcessorEditor::sessionStateRestored()
+{
+    // Gia' sul message thread (vedi callAsync in setStateInformation).
+    refreshSessionFromProcessor();
+
+    const auto path = audioProcessor.getLinkedCsdDisplayPath();
+    appendToLog (path.isNotEmpty() ? ("--- Session restored (linked to " + path + ") ---")
+                                   : "--- Session restored ---");
 }
 
 void CsoundAudioProcessorEditor::performApply()

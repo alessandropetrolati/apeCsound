@@ -2673,26 +2673,36 @@ void CsoundParameterMappingPanel::showPanelMenu()
     }
 
     // Load/Save CSD: richiamano le stesse funzioni dei vecchi bottoni
-    // "Load CSD"/"Save as CSD..." nella toolbar PRINCIPALE di PluginEditor, ora
+    // "Load..."/"Save as..." nella toolbar PRINCIPALE di PluginEditor, ora
     // rimossi (richiesta esplicita) - PluginEditor imposta queste due
     // callback nel proprio costruttore (vedi onSaveSessionRequested/
     // onLoadSessionRequested in CsoundParameterEditor.h). Separatore PRIMA
-    // di "Load CSD" (richiesta esplicita, BUG corretto: prima era dopo),
+    // di "Load..." (richiesta esplicita, BUG corretto: prima era dopo),
     // a separare la sezione "View" sopra da quella file qui sotto.
     items.push_back (CsoundActionSheetItem::separator());
+    
+    // "Save": sovrascrive il file collegato (vedi onSaveLinkedRequested nel
+    // .h) - prima di "Save as...", che invece chiede sempre il path.
     {
         CsoundActionSheetItem item;
-        item.id = 106; item.text = "Load CSD"; item.enabled = onLoadSessionRequested != nullptr;
-        item.icon = CsoundActionSheetIcon::load;
+        item.id = 112; item.text = "Save"; item.enabled = onSaveLinkedRequested != nullptr;
+        item.icon = CsoundActionSheetIcon::save;
         items.push_back (item);
     }
     {
         CsoundActionSheetItem item;
-        item.id = 105; item.text = "Save as CSD..."; item.enabled = onSaveSessionRequested != nullptr;
+        item.id = 105; item.text = "Save as..."; item.enabled = onSaveSessionRequested != nullptr;
         item.icon = CsoundActionSheetIcon::save;
         items.push_back (item);
     }
 
+    {
+        CsoundActionSheetItem item;
+        item.id = 106; item.text = "Load..."; item.enabled = onLoadSessionRequested != nullptr;
+        item.icon = CsoundActionSheetIcon::load;
+        items.push_back (item);
+    }
+    
     // "Initialize Session" (richiesta esplicita: "pulisce tutto e carica
     // il CSD hard coded") - stesso trattamento di Save/Load CSD sopra,
     // PluginEditor imposta onInitializeSessionRequested nel proprio
@@ -2755,6 +2765,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 105: if (safeThis->onSaveSessionRequested) safeThis->onSaveSessionRequested(); break;
             case 106: if (safeThis->onLoadSessionRequested) safeThis->onLoadSessionRequested(); break;
             case 111: if (safeThis->onInitializeSessionRequested) safeThis->onInitializeSessionRequested(); break;
+            case 112: if (safeThis->onSaveLinkedRequested) safeThis->onSaveLinkedRequested(); break;
             default: break;
         }
     });
@@ -3389,6 +3400,13 @@ void CsoundParameterMappingPanel::rebuildUnifiedRows()
     emptyStateLabel.setVisible (empty);
 
     resized();
+
+    // Ogni modifica alla STRUTTURA (aggiunta/rimozione/metadata, undo/redo
+    // compresi, e i refresh dopo Load/ripristino) passa da qui: e' il punto
+    // unico da cui PluginEditor puo' ricontrollare se la sessione differisce
+    // dal file su disco - vedi onMappingChanged nel .h.
+    if (onMappingChanged)
+        onMappingChanged();
 }
 
 void CsoundParameterMappingPanel::refreshAllFromProcessor()
