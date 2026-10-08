@@ -349,7 +349,7 @@ void CsoundAudioProcessorEditor::resized()
         // un badge - toFront() nel costruttore lo tiene sempre sopra al
         // testo della consolle sotto.
         const auto consoleTopRight = bottomArea.getTopRight();
-        clearConsoleButton.setBounds (consoleTopRight.x - clearConsoleButtonMargin*2 - clearConsoleButtonDiameter,
+        clearConsoleButton.setBounds (consoleTopRight.x - clearConsoleButtonMargin - clearConsoleButtonDiameter,
                                       consoleTopRight.y + clearConsoleButtonMargin,
                                       clearConsoleButtonDiameter, clearConsoleButtonDiameter);
         clearConsoleButton.setVisible (true);
@@ -439,7 +439,7 @@ void CsoundAudioProcessorEditor::promptSaveSession (std::function<void()> onSave
     // codice resta testo Csound puro, il mapping dei parametri va in
     // appendice dentro <CsoundStudioParams>. Si riparte dall'ultima
     // cartella usata (getLastCsdDirectory), non sempre da Documents.
-    const auto startingFile = getLastCsdDirectory().getChildFile ("CsoundStudio Session.csd");
+    const auto startingFile = getLastCsdDirectory().getChildFile ("Untitled.csd");
 
     activeFileChooser = std::make_unique<juce::FileChooser> (
         "Save CSD...", startingFile, "*.csd");
