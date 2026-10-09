@@ -38,6 +38,10 @@
             file="Source/CsoundCodeEditor.cpp"/>
       <FILE id="cCEdB" name="CsoundCodeEditor.h" compile="0" resource="0"
             file="Source/CsoundCodeEditor.h"/>
+      <FILE id="sScfH" name="SecurityScopedFile.h" compile="0" resource="0"
+            file="Source/SecurityScopedFile.h"/>
+      <FILE id="sScfM" name="SecurityScopedFile.mm" compile="1" resource="0"
+            file="Source/SecurityScopedFile.mm"/>
       <FILE id="cOpcH" name="CsoundOpcodeHelp.h" compile="0" resource="0"
             file="Source/CsoundOpcodeHelp.h"/>
       <FILE id="cOpcD" name="CsoundOpcodeHelpData.h" compile="0" resource="0"
@@ -115,6 +119,45 @@
                   UIFileSharingEnabled="1" UISupportsDocumentBrowser="1" iosBackgroundAudio="1"
                   iosAppGroups="1" iosAppGroupsId="group.it.apesoft.apeCsound"
                   microphonePermissionNeeded="1" microphonePermissionsText="apeCsound needs the microphone for live audio input."
+                  customPList="&lt;plist version=&quot;1.0&quot;&gt;
+&lt;dict&gt;
+  &lt;key&gt;LSSupportsOpeningDocumentsInPlace&lt;/key&gt;
+  &lt;true/&gt;
+  &lt;key&gt;CFBundleDocumentTypes&lt;/key&gt;
+  &lt;array&gt;
+    &lt;dict&gt;
+      &lt;key&gt;CFBundleTypeName&lt;/key&gt;
+      &lt;string&gt;Csound Unified Document&lt;/string&gt;
+      &lt;key&gt;LSHandlerRank&lt;/key&gt;
+      &lt;string&gt;Alternate&lt;/string&gt;
+      &lt;key&gt;LSItemContentTypes&lt;/key&gt;
+      &lt;array&gt;
+        &lt;string&gt;it.apesoft.csd&lt;/string&gt;
+      &lt;/array&gt;
+    &lt;/dict&gt;
+  &lt;/array&gt;
+  &lt;key&gt;UTExportedTypeDeclarations&lt;/key&gt;
+  &lt;array&gt;
+    &lt;dict&gt;
+      &lt;key&gt;UTTypeIdentifier&lt;/key&gt;
+      &lt;string&gt;it.apesoft.csd&lt;/string&gt;
+      &lt;key&gt;UTTypeDescription&lt;/key&gt;
+      &lt;string&gt;Csound Unified Document&lt;/string&gt;
+      &lt;key&gt;UTTypeConformsTo&lt;/key&gt;
+      &lt;array&gt;
+        &lt;string&gt;public.plain-text&lt;/string&gt;
+      &lt;/array&gt;
+      &lt;key&gt;UTTypeTagSpecification&lt;/key&gt;
+      &lt;dict&gt;
+        &lt;key&gt;public.filename-extension&lt;/key&gt;
+        &lt;array&gt;
+          &lt;string&gt;csd&lt;/string&gt;
+        &lt;/array&gt;
+      &lt;/dict&gt;
+    &lt;/dict&gt;
+  &lt;/array&gt;
+&lt;/dict&gt;
+&lt;/plist&gt;"
                   externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate" extraFrameworks="Accelerate">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" iosDeploymentTarget="17.0"

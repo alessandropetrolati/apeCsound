@@ -2821,7 +2821,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
     // con un indirizzo spazzatura.
     juce::Component::SafePointer<CsoundParameterMappingPanel> safeThis (this);
 
-    CsoundActionSheet::show (*getTopLevelComponent(), "", std::move (items), [safeThis] (int result)
+    CsoundActionSheet::show (*this, "", std::move (items), [safeThis] (int result)
     {
         if (safeThis == nullptr)
             return;
@@ -2864,7 +2864,7 @@ void CsoundParameterMappingPanel::removeAllParameters()
     {
         if (safeThis != nullptr && choice == 2)
             safeThis->performRemoveAllParameters();
-    });
+    }, this);
 }
 
 void CsoundParameterMappingPanel::performRemoveAllParameters()
@@ -3043,7 +3043,7 @@ void CsoundParameterMappingPanel::showAddMenu()
     // SafePointer: vedi il commento identico su showPanelMenu() sopra.
     juce::Component::SafePointer<CsoundParameterMappingPanel> safeThis (this);
 
-    CsoundActionSheet::show (*getTopLevelComponent(), "", std::move (items), [safeThis] (int result)
+    CsoundActionSheet::show (*this, "", std::move (items), [safeThis] (int result)
     {
         if (safeThis == nullptr)
             return;

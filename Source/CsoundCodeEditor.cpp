@@ -322,14 +322,10 @@ void CsoundCodeEditor::showContextMenu()
     add (ctxIndent,  "Indent", CsoundActionSheetIcon::indent);
     add (ctxComment, areSelectedLinesCommented() ? "Uncomment" : "Comment", CsoundActionSheetIcon::comment);
 
-    auto* host = getTopLevelComponent();
-
-    if (host == nullptr)
-        return;
-
     juce::Component::SafePointer<CsoundCodeEditor> safeThis (this);
 
-    CsoundActionSheet::show (*host, "", std::move (items), [safeThis] (int result)
+    // show() risale da qui all'AudioProcessorEditor (vedi CsoundActionSheet::show).
+    CsoundActionSheet::show (*this, "", std::move (items), [safeThis] (int result)
     {
         if (safeThis == nullptr)
             return;
@@ -350,7 +346,9 @@ void CsoundCodeEditor::showContextMenu()
             default: break;
         }
 
-        ed.grabKeyboardFocus();
+       #if ! JUCE_IOS
+        ed.grabKeyboardFocus(); // su iOS farebbe comparire la tastiera a schermo dopo ogni voce
+       #endif
     });
 }
 

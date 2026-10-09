@@ -12,13 +12,20 @@
 // juce_gui_basics e Cocoa/UIKit): il confine e' const char* + un puntatore
 // a funzione C con contesto opaco; qui sopra ci mettiamo una std::function.
 
-#include <juce_core/juce_core.h>
+#include <JuceHeader.h>
 #include <functional>
 #include <memory>
 
+// nativeView: UIView* (iOS) del componente chiamante, da cui risalire al
+// view controller su cui presentare l'UIAlertController. Indispensabile
+// nell'estensione AUv3: li' [UIApplication sharedApplication] non e'
+// disponibile e senza un view controller il dialogo non compariva (il
+// callback tornava 0 = annullato, e il Load sembrava non fare nulla).
+// Ignorato su macOS.
 extern "C" void showNativeAlertRaw (const char* title, const char* message,
                                     const char* button1Text, const char* button2Text, const char* button3Text, // button3Text nullptr = due bottoni
-                                    void (*callback) (int result, void* context), void* context);
+                                    void (*callback) (int result, void* context), void* context,
+                                    void* nativeView);
 
 namespace NativeAlertDetail
 {
@@ -33,22 +40,35 @@ namespace NativeAlertDetail
     }
 }
 
+namespace NativeAlertDetail
+{
+    inline void* nativeViewOf (juce::Component* parent)
+    {
+        if (parent != nullptr)
+            if (auto* peer = parent->getPeer())
+                return peer->getNativeHandle();
+
+        return nullptr;
+    }
+}
+
 inline void showNativeThreeButtonAlertAsync (const juce::String& title, const juce::String& message,
                                              const juce::String& button1Text, const juce::String& button2Text,
-                                             const juce::String& button3Text, std::function<void (int)> onResult)
+                                             const juce::String& button3Text, std::function<void (int)> onResult,
+                                             juce::Component* parent = nullptr)
 {
     auto* ctx = new NativeAlertDetail::Context { std::move (onResult) };
     showNativeAlertRaw (title.toRawUTF8(), message.toRawUTF8(),
                         button1Text.toRawUTF8(), button2Text.toRawUTF8(), button3Text.toRawUTF8(),
-                        NativeAlertDetail::trampoline, ctx);
+                        NativeAlertDetail::trampoline, ctx, NativeAlertDetail::nativeViewOf (parent));
 }
 
 inline void showNativeTwoButtonAlertAsync (const juce::String& title, const juce::String& message,
                                            const juce::String& button1Text, const juce::String& button2Text,
-                                           std::function<void (int)> onResult)
+                                           std::function<void (int)> onResult, juce::Component* parent = nullptr)
 {
     auto* ctx = new NativeAlertDetail::Context { std::move (onResult) };
     showNativeAlertRaw (title.toRawUTF8(), message.toRawUTF8(),
                         button1Text.toRawUTF8(), button2Text.toRawUTF8(), nullptr,
-                        NativeAlertDetail::trampoline, ctx);
+                        NativeAlertDetail::trampoline, ctx, NativeAlertDetail::nativeViewOf (parent));
 }

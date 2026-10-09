@@ -27,6 +27,7 @@
 #include "csound_misc.h"
 #include "CsoundDynamicLib.h"
 #include "CsoundOpcodeHelp.h"
+#include "SecurityScopedFile.h"
 
 class CsoundAudioProcessor; // vedi ChannelHostParameter sotto
 
@@ -565,6 +566,22 @@ public:
     // o esplicitamente da setLinkedCsdFile ("Relink" dall'avviso).
     juce::File getLinkedCsdFile() const;
     void setLinkedCsdFile (const juce::File& file);
+
+    // iOS: bookmark "security-scoped" del file scelto con il document picker
+    // (vedi SecurityScopedFile.h). Da impostare PRIMA di qualunque lettura/
+    // scrittura di quel file (l'editor lo fa nel callback del FileChooser);
+    // ogni operazione su file del processor apre l'accesso con
+    // accessFile(). Salvato nello stato del progetto ("csdBookmark") e
+    // rinnovato quando il sistema lo segnala come stale. No-op su macOS.
+    void setFileBookmark (const juce::File& file, const juce::MemoryBlock& bookmark);
+
+    // URL restituita dal FileChooser (con il bookmark agganciato da JUCE):
+    // usata COSI' COM'E' per createInputStream/createOutputStream, come fa
+    // NP2 (PresetService::importPreset/exportPreset). Estrae anche il
+    // bookmark per la persistenza (setFileBookmark).
+    void setFileURL (const juce::File& file, const juce::URL& url);
+    std::unique_ptr<SecurityScopedFile::ScopedAccess> accessFile (const juce::File& file) const;
+    juce::URL makeFileURL (const juce::File& file) const; // URL con bookmark per createInput/OutputStream
     bool isSessionLinked() const { return getLinkedCsdFile() != juce::File{}; }
 
     // Path come viene scritto nello stato (relativo alla base se possibile)
@@ -604,7 +621,7 @@ public:
     // viene riscritto da saveSessionToFile - cosi' un file scritto da
     // Windows/altri editor non risulta "diverso" solo per i fine riga.
     // Usarla OVUNQUE si legge un .csd per confrontarlo (performSaveLinked).
-    static juce::String readSessionFile (const juce::File& file);
+    juce::String readSessionFile (const juce::File& file); // non piu' static ne' const: passa da accessFile() (bookmark iOS) e scrive diagnostica in console
 
     // true se l'ultimo ripristino ha trovato un path ma NON il file: e' in
     // uso la copia incorporata, e l'editor mostra l'unico avviso previsto
@@ -1032,6 +1049,9 @@ private:
     // setStateInformation puo' arrivare da un thread qualsiasi dell'host
     // mentre l'editor legge dal message thread.
     juce::File linkedCsdFile;
+    juce::File bookmarkedFile;                // file a cui si riferisce fileBookmark (iOS)
+    juce::URL  chooserUrl;                    // URL del picker per bookmarkedFile (iOS), se disponibile in questa sessione
+    mutable juce::MemoryBlock fileBookmark;   // mutable: accessFile() const lo rinnova se stale
     juce::Time linkedFileModTimeAtLoad;       // vedi hasLinkedFileChangedOnDisk()
     juce::String sessionBaselineHash;         // vedi getSessionBaselineHash()
     bool linkedFileMissing = false;           // vedi isLinkedFileMissing()

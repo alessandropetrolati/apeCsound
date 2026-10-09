@@ -537,9 +537,27 @@ void CsoundActionSheet::show (juce::Component& host, const juce::String& title,
 {
     // Si autogestisce come juce::PopupMenu::showMenuAsync: creato sull'heap,
     // si rimuove e si distrugge da solo alla chiusura (vedi dismiss()).
+    // Il foglio vive DENTRO l'editor del plugin (AudioProcessorEditor), non
+    // nel top-level component: nei wrapper AU/AUv3 il top-level e' un
+    // contenitore del wrapper JUCE (o la view dell'host) che viene
+    // riportato in primo piano/rilayoutato dall'host, e il foglio finiva
+    // dietro all'editor pur restando "modale" (UI irresponsiva, menu
+    // invisibile). Si risale da `host` (qualunque componente del plugin)
+    // all'editor; se non c'e' (es. Standalone) si usa il top-level.
+    juce::Component* target = host.findParentComponentOfClass<juce::AudioProcessorEditor>();
+
+    if (target == nullptr)
+        target = dynamic_cast<juce::AudioProcessorEditor*> (&host);
+
+    if (target == nullptr)
+        target = host.getTopLevelComponent();
+
+    if (target == nullptr)
+        target = &host;
+
     auto* sheet = new CsoundActionSheet (title, std::move (items), std::move (onSelected));
-    host.addAndMakeVisible (sheet);
-    sheet->setBounds (host.getLocalBounds());
+    target->addAndMakeVisible (sheet);
+    sheet->setBounds (target->getLocalBounds());
     sheet->toFront (false);
     sheet->animateIn();
 }

@@ -13,7 +13,8 @@
 
 extern "C" void showNativeAlertRaw (const char* title, const char* message,
                                     const char* button1Text, const char* button2Text, const char* button3Text,
-                                    void (*callback) (int result, void* context), void* context)
+                                    void (*callback) (int result, void* context), void* context,
+                                    void* nativeView)
 {
    #if TARGET_OS_IPHONE
     UIAlertController* alert = [UIAlertController alertControllerWithTitle: [NSString stringWithUTF8String: title]
@@ -40,15 +41,32 @@ extern "C" void showNativeAlertRaw (const char* title, const char* message,
             alert.preferredAction = action; // = Invio su tastiera esterna
     }
 
-    // View controller in primo piano: la finestra chiave dell'app (o
-    // dell'host AUv3), scendendo lungo i presentati.
+    // View controller su cui presentare: si risale dalla UIView del plugin
+    // lungo la catena dei responder (funziona anche nell'estensione AUv3,
+    // dove UIApplication non e' disponibile). Fallback: finestra chiave.
     UIViewController* root = nil;
 
-    for (UIWindow* w in [UIApplication sharedApplication].windows)
-        if (w.isKeyWindow) { root = w.rootViewController; break; }
+    if (nativeView != nullptr)
+    {
+        UIResponder* responder = (UIView*) nativeView;
+
+        while (responder != nil && ! [responder isKindOfClass: [UIViewController class]])
+            responder = [responder nextResponder];
+
+        root = (UIViewController*) responder;
+    }
 
     if (root == nil)
-        root = [UIApplication sharedApplication].windows.firstObject.rootViewController;
+    {
+        Class appClass = NSClassFromString (@"UIApplication");
+        id app = appClass != nil ? [appClass performSelector: @selector (sharedApplication)] : nil;
+
+        for (UIWindow* w in [app windows])
+            if (w.isKeyWindow) { root = w.rootViewController; break; }
+
+        if (root == nil)
+            root = [[app windows] firstObject].rootViewController;
+    }
 
     while (root.presentedViewController != nil)
         root = root.presentedViewController;
@@ -75,6 +93,7 @@ extern "C" void showNativeAlertRaw (const char* title, const char* message,
     if (button3Text != nullptr)
         [alert addButtonWithTitle: [NSString stringWithUTF8String: button3Text]];
 
+    (void) nativeView;
     const NSModalResponse response = [alert runModal];
 
     int result = 0;

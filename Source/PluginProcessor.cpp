@@ -1422,7 +1422,103 @@ juce::String CsoundAudioProcessor::getLinkedCsdDisplayPath() const
 
 juce::String CsoundAudioProcessor::readSessionFile (const juce::File& file)
 {
-    return file.loadFileAsString().replace ("\r\n", "\n").replace ("\r", "\n");
+    // Lettura tramite juce::URL + bookmark (vedi SecurityScopedFile::
+    // makeURLWithBookmark): su iOS JUCE apre/chiude l'accesso security-
+    // scoped da solo. Senza bookmark e' una normale lettura del file.
+    juce::String text;
+    {
+        auto url = makeFileURL (file);
+
+        if (auto in = url.createInputStream (juce::URL::InputStreamOptions (juce::URL::ParameterHandling::inAddress)
+                                                 .withConnectionTimeoutMs (2000)))
+        {
+            text = in->readEntireStreamAsString();
+
+            if (text.isEmpty())
+                handleMessage ("Load: " + url.toString (false) + " read as empty (not downloaded from iCloud yet?)");
+        }
+        else
+        {
+            handleMessage ("Load: could not open an input stream for " + url.toString (false) + ", trying direct file access");
+            const auto access = accessFile (file);
+            text = access->resolvedFile.loadFileAsString();
+
+            if (text.isEmpty())
+                handleMessage ("Load: direct read of " + access->resolvedFile.getFullPathName() + " is empty"
+                               + (access->active ? "" : " (security-scoped access not granted)"));
+        }
+    }
+
+    return text.replace ("\r\n", "\n").replace ("\r", "\n");
+}
+
+juce::URL CsoundAudioProcessor::makeFileURL (const juce::File& file) const
+{
+    juce::MemoryBlock bookmark;
+    {
+        const juce::ScopedLock sl (sessionLock);
+
+        if (file != juce::File{} && file == bookmarkedFile)
+        {
+            // Stessa sessione del picker: la SUA URL, intatta (schema NP2).
+            if (! chooserUrl.isEmpty())
+                return chooserUrl;
+
+            bookmark = fileBookmark;
+        }
+    }
+
+    return SecurityScopedFile::makeURLWithBookmark (file, bookmark);
+}
+
+void CsoundAudioProcessor::setFileBookmark (const juce::File& file, const juce::MemoryBlock& bookmark)
+{
+    const juce::ScopedLock sl (sessionLock);
+
+    if (bookmarkedFile != file)
+        chooserUrl = {}; // la URL del picker vale solo per il suo file
+
+    bookmarkedFile = file;
+    fileBookmark   = bookmark;
+}
+
+void CsoundAudioProcessor::setFileURL (const juce::File& file, const juce::URL& url)
+{
+    auto copy = url;
+    const auto bookmark = SecurityScopedFile::bookmarkFromChooserURL (copy);
+
+    const juce::ScopedLock sl (sessionLock);
+    bookmarkedFile = file;
+    fileBookmark   = bookmark;
+    chooserUrl     = url;
+}
+
+std::unique_ptr<SecurityScopedFile::ScopedAccess> CsoundAudioProcessor::accessFile (const juce::File& file) const
+{
+    juce::MemoryBlock bookmark;
+    {
+        const juce::ScopedLock sl (sessionLock);
+
+        if (file != juce::File{} && file == bookmarkedFile)
+            bookmark = fileBookmark;
+    }
+
+    auto access = std::make_unique<SecurityScopedFile::ScopedAccess> (bookmark, file);
+
+    // Bookmark da rinnovare (file spostato/rinominato dall'utente): il
+    // path risolto e' quello buono da ora in poi.
+    if (access->active && access->stale)
+    {
+        auto fresh = SecurityScopedFile::makeBookmark (access->resolvedFile);
+
+        if (fresh.getSize() > 0)
+        {
+            const juce::ScopedLock sl (sessionLock);
+            fileBookmark = fresh;
+        }
+    }
+
+    return access;
 }
 
 juce::String CsoundAudioProcessor::computeTextHash (const juce::String& text)
@@ -1654,7 +1750,13 @@ bool CsoundAudioProcessor::hasLinkedFileChangedOnDisk() const
         modTimeAtLoad = linkedFileModTimeAtLoad;
     }
 
-    if (file == juce::File{} || ! file.existsAsFile())
+    if (file == juce::File{})
+        return false;
+
+    const auto access = accessFile (file);
+    const auto& real = access->resolvedFile;
+
+    if (! real.existsAsFile())
         return false;
 
     // Data sconosciuta (es. il file mancava al ripristino ed e' ricomparso):
@@ -1662,7 +1764,7 @@ bool CsoundAudioProcessor::hasLinkedFileChangedOnDisk() const
     if (modTimeAtLoad == juce::Time())
         return true;
 
-    return file.getLastModificationTime() != modTimeAtLoad;
+    return real.getLastModificationTime() != modTimeAtLoad;
 }
 
 void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
@@ -1681,6 +1783,13 @@ void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     {
         const bool relative = linked.isAChildOf (base);
         root.setAttribute ("csd", relative ? linked.getRelativePathFrom (base) : linked.getFullPathName());
+
+        // iOS: bookmark security-scoped del file (vedi SecurityScopedFile.h).
+        {
+            const juce::ScopedLock sl (sessionLock);
+            if (fileBookmark.getSize() > 0 && bookmarkedFile == linked)
+                root.setAttribute ("csdBookmark", fileBookmark.toBase64Encoding());
+        }
         root.setAttribute ("csdIsRelative", relative ? 1 : 0);
     }
     else
@@ -1869,8 +1978,37 @@ void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInByte
     // incorporata andava persa al salvataggio successivo del progetto). Un
     // file vuoto o illeggibile e' trattato come mancante: copia incorporata
     // + barra di avviso.
+    // iOS: bookmark salvato -> accesso al file fuori dalla sandbox (e path
+    // aggiornato se l'utente lo ha spostato).
+    {
+        juce::MemoryBlock bm;
+        if (bm.fromBase64Encoding (xml->getStringAttribute ("csdBookmark")) && bm.getSize() > 0 && linked != juce::File{})
+        {
+            setFileBookmark (linked, bm);
+            const auto access = accessFile (linked);
+
+            if (access->active && access->resolvedFile != linked)
+            {
+                // Spostato/rinominato: da ora il path e' quello nuovo.
+                juce::MemoryBlock current;
+                {
+                    const juce::ScopedLock sl (sessionLock);
+                    current = fileBookmark;
+                }
+                setFileBookmark (access->resolvedFile, current);
+                linked = access->resolvedFile;
+            }
+        }
+    }
+
     juce::String diskText;
-    if (linked != juce::File{} && linked.existsAsFile())
+    bool linkedExists = false;
+    if (linked != juce::File{})
+    {
+        const auto access = accessFile (linked);
+        linkedExists = access->resolvedFile.existsAsFile();
+    }
+    if (linkedExists)
         diskText = readSessionFile (linked);
 
     const bool fileExists = diskText.trim().isNotEmpty();
@@ -1898,10 +2036,15 @@ void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInByte
 
     if (useDisk)
     {
+        juce::Time modTime;
+        {
+            const auto access = accessFile (linked);
+            modTime = access->resolvedFile.getLastModificationTime();
+        }
         {
             const juce::ScopedLock sl (sessionLock);
             linkedCsdFile = linked;
-            linkedFileModTimeAtLoad = linked.getLastModificationTime();
+            linkedFileModTimeAtLoad = modTime;
             linkedFileMissing = false;
             restoredDirty = false;
         }
@@ -2248,13 +2391,75 @@ bool CsoundAudioProcessor::saveSessionToFile (const juce::File& file, const juce
     // riga diversi dal testo appena hashato - rileggendolo, l'hash non
     // coincideva mai e performSaveLinked chiedeva "modificato da fuori,
     // sovrascrivere?" a OGNI Save. Lettura simmetrica: readSessionFile().
-    if (! file.replaceWithText (text, false, false, "\n"))
-        return false;
+    // Scrittura tramite juce::URL::createOutputStream() (stesso schema di
+    // NP2 per i file scelti dal document picker): su iOS JUCE apre e chiude
+    // l'accesso security-scoped intorno alla scrittura usando il bookmark
+    // agganciato alla URL. NON File::replaceWithText: quella passa da un
+    // TemporaryFile nella STESSA cartella e poi lo rinomina sopra il target,
+    // ma l'accesso vale per il solo file, non per la sua cartella (iCloud
+    // Drive, provider esterni) e il Save falliva. Lo stream di JUCE e' un
+    // FileOutputStream in APPEND: va troncato prima di scrivere.
+    // Fine riga "\n" come prima (vedi readSessionFile, simmetrica).
+    {
+        const auto normalised = text.replace ("\r\n", "\n").replace ("\r", "\n");
+        auto url = makeFileURL (file);
+        auto out = url.createOutputStream();
+
+        if (out == nullptr)
+        {
+            handleMessage ("Save: could not open an output stream for " + url.toString (false));
+            return false;
+        }
+
+        if (auto* fileOut = dynamic_cast<juce::FileOutputStream*> (out.get()))
+        {
+            if (! fileOut->openedOk())
+            {
+                handleMessage ("Save: cannot open for writing: " + fileOut->getFile().getFullPathName()
+                               + " (" + fileOut->getStatus().getErrorMessage() + ")");
+                return false;
+            }
+
+            fileOut->setPosition (0);
+            fileOut->truncate();
+        }
+
+        if (! out->write (normalised.toRawUTF8(), normalised.getNumBytesAsUTF8()))
+        {
+            handleMessage ("Save: write failed on " + url.toString (false));
+            return false;
+        }
+
+        out->flush();
+        out.reset(); // chiude (e su iOS rilascia l'accesso) PRIMA di leggere data/hash
+    }
+
+    const auto access = accessFile (file);
+    const auto& real = access->resolvedFile;
+
+    const auto modTime = real.getLastModificationTime(); // appena scritto da noi
+
+    // Nuovo file dentro la sandbox/App Group (nessun bookmark dal picker):
+    // se ne crea uno comunque, cosi' la logica e' uniforme su iOS.
+    {
+        bool hasBookmark;
+        {
+            const juce::ScopedLock sl (sessionLock);
+            hasBookmark = fileBookmark.getSize() > 0 && bookmarkedFile == file;
+        }
+
+        if (! hasBookmark)
+        {
+            const auto bm = SecurityScopedFile::makeBookmark (real);
+            if (bm.getSize() > 0)
+                setFileBookmark (file, bm);
+        }
+    }
 
     const auto hash = computeTextHash (text);
     const juce::ScopedLock sl (sessionLock);
     linkedCsdFile = file;
-    linkedFileModTimeAtLoad = file.getLastModificationTime(); // appena scritto da noi
+    linkedFileModTimeAtLoad = modTime;
     sessionBaselineHash = hash; // appena scritto: sessione e file coincidono
     linkedFileMissing = false;
     restoredDirty = false;
@@ -2280,13 +2485,32 @@ bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
     if (fullText.isEmpty() || ! loadSessionFromText (fullText))
         return false;
 
+    juce::Time modTime;
+    {
+        const auto access = accessFile (file);
+        modTime = access->resolvedFile.getLastModificationTime();
+
+        bool hasBookmark;
+        {
+            const juce::ScopedLock sl (sessionLock);
+            hasBookmark = fileBookmark.getSize() > 0 && bookmarkedFile == file;
+        }
+
+        if (! hasBookmark)
+        {
+            const auto bm = SecurityScopedFile::makeBookmark (access->resolvedFile);
+            if (bm.getSize() > 0)
+                setFileBookmark (file, bm);
+        }
+    }
+
     // Collega la sessione al file appena letto: da ora "Save" sovrascrive
     // questo file (vedi CsoundAudioProcessorEditor::performSaveLinked) e
     // lo stato del progetto ne salva il path.
     {
         const juce::ScopedLock sl (sessionLock);
         linkedCsdFile = file;
-        linkedFileModTimeAtLoad = file.getLastModificationTime();
+        linkedFileModTimeAtLoad = modTime;
         linkedFileMissing = false;
         restoredDirty = false;
     }

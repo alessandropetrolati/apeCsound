@@ -521,22 +521,9 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     //setSize (960, 680);
     setSize (1024, 768);
 
-    // Tentiamo di dare il focus da tastiera all'editor di codice non appena
-    // la finestra del plugin e' pronta, cosi' digitare funziona subito
-    // senza bisogno di un primo click. Farlo qui nel costruttore in modo
-    // SINCRONO (grabKeyboardFocus() diretto) ha causato un crash in alcune
-    // DAW: a questo punto del costruttore il componente non ha ancora
-    // necessariamente un peer nativo valido. Rimandarlo con
-    // MessageManager::callAsync lo esegue al giro successivo del message
-    // loop, quando la finestra esiste di sicuro; il SafePointer evita un
-    // crash se nel frattempo l'editor fosse gia' stato distrutto (es. la
-    // DAW chiude la finestra del plugin prima che il callback scatti).
-    juce::Component::SafePointer<CsoundCodeEditor> safeEditor (&editor);
-    juce::MessageManager::callAsync ([safeEditor]
-    {
-        if (safeEditor != nullptr)
-            safeEditor->grabKeyboardFocus();
-    });
+    // Nessun focus da tastiera automatico all'apertura (richiesta esplicita,
+    // su tutte le piattaforme): su iOS farebbe comparire subito la tastiera
+    // a schermo, su desktop il focus arriva con il primo clic sull'editor.
 }
 
 CsoundAudioProcessorEditor::~CsoundAudioProcessorEditor()
@@ -907,21 +894,20 @@ void CsoundAudioProcessorEditor::promptSaveSession (std::function<void()> onSave
     const auto startingFile = getCsdChooserStartDirectory().getChildFile (
         linked != juce::File{} ? linked.getFileName() : juce::String ("Untitled.csd"));
 
-    activeFileChooser = std::make_unique<juce::FileChooser> (
-        "Save as...", startingFile, "*.csd");
-
-    activeFileChooser->launchAsync (
-        juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
-            | juce::FileBrowserComponent::warnAboutOverwriting,
-        [this, onSaved] (const juce::FileChooser& chooser)
+    chooseCsdFile ("Save as...", startingFile, true,
+        [this, onSaved] (const juce::File& chosen)
         {
-            auto file = chooser.getResult();
+            auto file = chosen;
 
             if (file == juce::File{})
                 return; // annullato dall'utente - onSaved NON scatta
 
+           #if ! JUCE_IOS
+            // Non su iOS: il file scelto dal picker e' l'unico a cui abbiamo
+            // accesso (bookmark); cambiargli nome lo renderebbe inaccessibile.
             if (! file.hasFileExtension ("csd"))
                 file = file.withFileExtension ("csd");
+           #endif
 
             const bool ok = audioProcessor.saveSessionToFile (file, document.getAllContent());
 
@@ -947,19 +933,66 @@ void CsoundAudioProcessorEditor::promptSaveSession (std::function<void()> onSave
         });
 }
 
+void CsoundAudioProcessorEditor::chooseCsdFile (const juce::String& title, const juce::File& initialFile, bool saveMode,
+                                                 std::function<void (const juce::File&)> onResult)
+{
+    // Dialogo NATIVO di sistema (NSOpenPanel/NSSavePanel su macOS,
+    // UIDocumentPickerViewController su iOS) con QUESTO editor come
+    // parentComponent (ultimo argomento). Indispensabile su iOS: in
+    // un'estensione AUv3 JUCE non puo' aprire una finestra top-level
+    // (sandbox) e, senza parent, il picker finiva fuori dalla gerarchia
+    // dell'host - "in background" - lasciando la UI del plugin bloccata in
+    // attesa. Con il parent, JUCE lo presenta come page sheet dal view
+    // controller della view del plugin (vedi displayNativeWindowModally in
+    // juce_NativeModalWrapperComponent_ios.h), dentro l'host.
+    activeFileChooser = std::make_unique<juce::FileChooser> (title, initialFile, "*.csd",
+                                                            true,   // dialogo nativo
+                                                            false,  // i pacchetti non sono cartelle
+                                                            this);  // parent: l'editor del plugin
+
+    const int flags = saveMode
+        ? (juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
+           | juce::FileBrowserComponent::warnAboutOverwriting)
+        : (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles);
+
+    const auto proposedName = initialFile.isDirectory() ? juce::String ("Untitled.csd") : initialFile.getFileName();
+
+    activeFileChooser->launchAsync (flags, [this, onResult, saveMode, proposedName] (const juce::FileChooser& chooser)
+    {
+        auto file = chooser.getResult();
+        auto url  = chooser.getURLResult();
+
+        // iOS, Save: in alcuni casi (es. radice di iCloud Drive) il document
+        // picker restituisce la CARTELLA di destinazione invece del file
+        // esportato (visto in console: "cannot open for writing: .../
+        // com~apple~CloudDocs (Is a directory)"). Il file e' la cartella +
+        // il nome proposto; la URL figlia eredita l'accesso della cartella
+        // (stesso schema di NP2: fc.getURLResult().getChildURL (fileName)).
+        if (saveMode && file != juce::File{} && file.isDirectory())
+        {
+            file = file.getChildFile (proposedName);
+            url  = url.getChildURL (proposedName);
+        }
+
+        // iOS: la URL del picker porta il bookmark security-scoped del file
+        // scelto (anche fuori dalla sandbox: iCloud Drive, altri provider).
+        // Va consegnata al processor PRIMA di leggere/scrivere quel file -
+        // vedi SecurityScopedFile.h e CsoundAudioProcessor::makeFileURL.
+        if (file != juce::File{})
+            audioProcessor.setFileURL (file, url);
+
+        if (onResult)
+            onResult (file);
+    });
+}
+
 void CsoundAudioProcessorEditor::promptLoadSession()
 {
     const auto startingDir = getCsdChooserStartDirectory();
 
-    activeFileChooser = std::make_unique<juce::FileChooser> (
-        "Load...", startingDir, "*.csd");
-
-    activeFileChooser->launchAsync (
-        juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
-        [this] (const juce::FileChooser& chooser)
+    chooseCsdFile ("Load...", startingDir, false,
+        [this] (const juce::File& file)
         {
-            auto file = chooser.getResult();
-
             if (file != juce::File{}) // non annullato dall'utente
                 loadSessionFile (file);
         });
@@ -1046,7 +1079,7 @@ void CsoundAudioProcessorEditor::loadSessionFile (const juce::File& file)
             safeThis->performSaveLinked ([safeThis, file] { if (safeThis != nullptr) safeThis->performLoadSessionFile (file); });
         else if (result == 2)
             safeThis->performLoadSessionFile (file);
-    });
+    }, this);
 }
 
 void CsoundAudioProcessorEditor::performLoadSessionFile (const juce::File& file)
@@ -1059,7 +1092,15 @@ void CsoundAudioProcessorEditor::performLoadSessionFile (const juce::File& file)
     // SessionWarningBar in PluginEditor.h.
     // Annullabile come un solo passo (testo + struttura + collegamento):
     // vedi replaceSessionUndoably.
-    if (replaceSessionUndoably ([this, file] { return audioProcessor.loadSessionFromFile (file); }))
+    if (! replaceSessionUndoably ([this, file] { return audioProcessor.loadSessionFromFile (file); }))
+    {
+        // Diagnostica (es. iOS: file non leggibile/non ancora scaricato da
+        // iCloud, o senza <CsoundSynthesizer>): prima falliva in silenzio.
+        appendToLog ("--- Failed to load " + file.getFullPathName()
+                     + " (unreadable, empty, or no <CsoundSynthesizer> block) ---");
+        return;
+    }
+
     {
         // replaceSessionUndoably ha gia' riletto editor e pannello dal
         // processor (il reset dei 4 tipi di slot in loadSessionFromFile fa
@@ -1093,10 +1134,6 @@ void CsoundAudioProcessorEditor::performLoadSessionFile (const juce::File& file)
         // caricato e' gia' quello in esecuzione.
         performApply();
     }
-    else
-    {
-        appendToLog ("--- Failed to load session (empty or unreadable file?) ---");
-    }
 }
 
 void CsoundAudioProcessorEditor::promptInitializeSession()
@@ -1122,7 +1159,7 @@ void CsoundAudioProcessorEditor::promptInitializeSession()
     {
         if (safeThis != nullptr && choice == 2)
             safeThis->performInitializeSession();
-    });
+    }, this);
 }
 
 void CsoundAudioProcessorEditor::performInitializeSession()
@@ -1259,15 +1296,9 @@ void CsoundAudioProcessorEditor::promptRelocateSession()
 {
     const auto startingDir = getCsdChooserStartDirectory();
 
-    activeFileChooser = std::make_unique<juce::FileChooser> (
-        "Relocate CSD...", startingDir, "*.csd");
-
-    activeFileChooser->launchAsync (
-        juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
-        [this] (const juce::FileChooser& chooser)
+    chooseCsdFile ("Relocate CSD...", startingDir, false,
+        [this] (const juce::File& file)
         {
-            const auto file = chooser.getResult();
-
             if (file == juce::File{})
                 return;
 
@@ -1290,7 +1321,7 @@ void CsoundAudioProcessorEditor::promptRelocateSession()
                 {
                     if (safeThis != nullptr && choice == 2)
                         safeThis->performLoadSessionFile (file);
-                });
+                }, this);
                 return;
             }
 
@@ -1454,7 +1485,7 @@ void CsoundAudioProcessorEditor::performSaveLinked (std::function<void()> onSave
         {
             if (safeThis != nullptr && choice == 2)
                 safeThis->writeLinkedSessionFile (linked, onSaved);
-        });
+        }, this);
         return;
     }
 
@@ -2333,7 +2364,9 @@ void CsoundAudioProcessorEditor::closeFindBar()
     findButton.setToggleState (false, juce::dontSendNotification);
     editor.clearSearch();
     resized();
-    editor.grabKeyboardFocus();
+   #if ! JUCE_IOS
+    editor.grabKeyboardFocus(); // su iOS farebbe comparire la tastiera a schermo
+   #endif
 }
 
 void CsoundAudioProcessorEditor::updateFindQuery()

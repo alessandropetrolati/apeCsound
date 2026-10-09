@@ -639,6 +639,12 @@ private:
     // contemporaneamente dalla stessa UI.
     std::unique_ptr<juce::FileChooser> activeFileChooser;
 
+    // Unico punto di scelta di un file .csd: dialogo nativo juce::FileChooser
+    // con l'editor come parent (obbligatorio in AUv3, vedi il .cpp). Il
+    // callback riceve juce::File{} se annullato.
+    void chooseCsdFile (const juce::String& title, const juce::File& initialFile, bool saveMode,
+                        std::function<void (const juce::File&)> onResult);
+
     // onSaved, se presente, scatta SOLO se il salvataggio va davvero a buon
     // fine (file scritto) - usato da confirmDiscardCurrentStateThenLoad()
     // sotto per incatenare "salva, poi procedi col Load" quando l'utente
