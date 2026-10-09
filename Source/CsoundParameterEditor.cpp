@@ -38,7 +38,8 @@ namespace
     const juce::Colour kCardBgEditing { 0xff232d39 }; // sfondo di una card in modalita' Edit - piu' chiaro di kCardBg, cosi' il cambio di modalita' si vede subito anche senza leggere i campi
     const juce::Colour kFieldBg      { 0xff202a33 };
     const juce::Colour kFieldOutline { 0xff3a4550 };
-    const juce::Colour kAccent       { 0xff17a2b8 }; // stesso accento teal del resto dell'app
+    const juce::Colour kAccent       { 0xff4aa3b8 }; // teal chiaro della toolbar (mockup R2)
+    const juce::Colour kOnAccent     { 0xff0b1116 }; // icone/testo sui bottoni teal
     const juce::Colour kDanger       { 0xffb33a3a }; // bottone di rimozione riga
     const juce::Colour kText         { 0xffe8eef1 };
     const juce::Colour kTextMuted    { 0xff8a9aa5 };
@@ -229,7 +230,7 @@ CsoundParameterPanelLookAndFeel::CsoundParameterPanelLookAndFeel()
     setColour (juce::PopupMenu::backgroundColourId,            kFieldBg);
     setColour (juce::PopupMenu::textColourId,                  kText);
     setColour (juce::PopupMenu::highlightedBackgroundColourId, kAccent);
-    setColour (juce::PopupMenu::highlightedTextColourId,       juce::Colours::white);
+    setColour (juce::PopupMenu::highlightedTextColourId,       kOnAccent);
 
     setColour (juce::Label::textColourId, kText);
 
@@ -540,7 +541,7 @@ void CsoundParameterPanelLookAndFeel::drawButtonText (juce::Graphics& g, juce::T
     if (button.getName() == "editToggle")
     {
         const bool editing = button.getToggleState();
-        g.setColour (editing ? juce::Colours::white : kTextMuted);
+        g.setColour (editing ? kOnAccent : kTextMuted);
 
         auto bounds = button.getLocalBounds().toFloat();
         auto icon = editing ? makeEyeOffIconPath() : makeEyeIconPath();
@@ -609,7 +610,10 @@ void CsoundParameterPanelLookAndFeel::drawButtonText (juce::Graphics& g, juce::T
             bars.addRoundedRectangle (centre.x - barWidth * 0.5f, centre.y + (float) i * gap - thickness * 0.5f,
                                         barWidth, thickness, thickness * 0.3f);
 
-        g.setColour (juce::Colours::white);
+        // Colore dell'icona dal bottone (PluginEditor lo imposta scuro sul
+        // teal chiaro della toolbar), bianco se non impostato.
+        g.setColour (button.isColourSpecified (juce::TextButton::textColourOffId)
+                         ? button.findColour (juce::TextButton::textColourOffId) : kOnAccent);
         g.fillPath (bars);
         return;
     }
@@ -649,7 +653,7 @@ void CsoundParameterPanelLookAndFeel::drawButtonText (juce::Graphics& g, juce::T
             p.addEllipse (left + barWidth * knobPos[i] - knobRadius, y - knobRadius, knobRadius * 2.0f, knobRadius * 2.0f);
         }
 
-        g.setColour (juce::Colours::white);
+        g.setColour (kOnAccent);
         g.fillPath (p);
         return;
     }
@@ -668,7 +672,7 @@ void CsoundParameterPanelLookAndFeel::drawButtonText (juce::Graphics& g, juce::T
         plus.addRoundedRectangle (centre.x - plusSize * 0.5f, centre.y - thickness * 0.5f, plusSize, thickness, thickness * 0.3f);
         plus.addRoundedRectangle (centre.x - thickness * 0.5f, centre.y - plusSize * 0.5f, thickness, plusSize, thickness * 0.3f);
 
-        g.setColour (juce::Colours::white);
+        g.setColour (kOnAccent);
         g.fillPath (plus);
         return;
     }
@@ -1714,7 +1718,7 @@ CsoundParameterMappingPanel::ChoiceParamRow::ChoiceParamRow (CsoundAudioProcesso
     defaultIndexCombo.setColour (juce::PopupMenu::backgroundColourId,            kFieldBg);
     defaultIndexCombo.setColour (juce::PopupMenu::textColourId,                  kText);
     defaultIndexCombo.setColour (juce::PopupMenu::highlightedBackgroundColourId, kMenuAccent);
-    defaultIndexCombo.setColour (juce::PopupMenu::highlightedTextColourId,       juce::Colours::white);
+    defaultIndexCombo.setColour (juce::PopupMenu::highlightedTextColourId,       kOnAccent);
     defaultIndexCombo.setTextWhenNoChoicesAvailable ("(no options yet)");
     defaultIndexCombo.setTextWhenNothingSelected ("(no options yet)");
     defaultIndexCombo.onChange = [this]
@@ -2089,7 +2093,7 @@ CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
             comboBox.setColour (juce::PopupMenu::backgroundColourId,            kFieldBg);
             comboBox.setColour (juce::PopupMenu::textColourId,                  kText);
             comboBox.setColour (juce::PopupMenu::highlightedBackgroundColourId, accentColour);
-            comboBox.setColour (juce::PopupMenu::highlightedTextColourId,       juce::Colours::white);
+            comboBox.setColour (juce::PopupMenu::highlightedTextColourId,       kOnAccent);
             addAndMakeVisible (comboBox);
             comboAttachment = std::make_unique<juce::ComboBoxParameterAttachment> (parameter, comboBox, nullptr);
             break;
@@ -2577,7 +2581,7 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     addButton.setName ("paramsMenu");
     addButton.getProperties().set ("circular", true);
     addButton.setColour (juce::TextButton::buttonColourId, kAccent);
-    addButton.setTooltip ("Add / configure parameters");
+    //addButton.setTooltip ("Add / configure parameters");
     addButton.onClick = [this] { showAddMenu(); };
     addAndMakeVisible (addButton);
 
@@ -2600,7 +2604,7 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     menuButton.setName ("burgerMenu");
     menuButton.getProperties().set ("circular", true);
     menuButton.setColour (juce::TextButton::buttonColourId, kAccent);
-    menuButton.setTooltip ("Undo / Redo / Save / Load / Show Parameters / Show Console");
+    //menuButton.setTooltip ("Undo / Redo / Save / Load / Show Parameters / Show Console");
     menuButton.onClick = [this] { showPanelMenu(); };
 
     viewport.setViewedComponent (&rowsContainer, false);
@@ -2751,9 +2755,24 @@ void CsoundParameterMappingPanel::showPanelMenu()
         items.push_back (item);
     }
 
-    // "About" in fondo al menu, nella sua sezione (richiesta esplicita):
-    // apre la vista informazioni di PluginEditor (vedi onAboutRequested nel .h).
+    // Sezione help: sintassi moderna nella barra di help (spunta) e
+    // manuale Csound online, poi "About" (vedi i callback nel .h).
     items.push_back (CsoundActionSheetItem::separator());
+    {
+        CsoundActionSheetItem item;
+        item.id = 114; item.text = "Modern Syntax in Help";
+        item.enabled = onToggleModernSyntaxRequested != nullptr;
+        item.ticked = isModernSyntaxEnabled != nullptr && isModernSyntaxEnabled();
+        item.icon = CsoundActionSheetIcon::codeBraces;
+        items.push_back (item);
+    }
+    {
+        CsoundActionSheetItem item;
+        item.id = 115; item.text = "Csound Manual (online)";
+        item.enabled = onOpenManualRequested != nullptr;
+        item.icon = CsoundActionSheetIcon::book;
+        items.push_back (item);
+    }
     {
         CsoundActionSheetItem item;
         item.id = 113; item.text = "About";//About " + juce::String (ProjectInfo::projectName);
@@ -2790,6 +2809,8 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 111: if (safeThis->onInitializeSessionRequested) safeThis->onInitializeSessionRequested(); break;
             case 112: if (safeThis->onSaveLinkedRequested) safeThis->onSaveLinkedRequested(); break;
             case 113: if (safeThis->onAboutRequested) safeThis->onAboutRequested(); break;
+            case 114: if (safeThis->onToggleModernSyntaxRequested) safeThis->onToggleModernSyntaxRequested(); break;
+            case 115: if (safeThis->onOpenManualRequested) safeThis->onOpenManualRequested(); break;
             default: break;
         }
     });

@@ -1,11 +1,13 @@
 #include "CsoundLookAndFeel.h"
+#include <cmath>
 
 namespace
 {
     const juce::Colour kBackground { 0xfff3f6f8 }; // sfondo generale, grigio-azzurro molto chiaro
     const juce::Colour kPanel      { 0xffffffff }; // pannelli/editor di testo
-    const juce::Colour kAccent     { 0xff17a2b8 }; // teal "cool" - accento dei controlli
-    const juce::Colour kAccentDark { 0xff11808f };
+    const juce::Colour kAccent     { 0xff4aa3b8 }; // teal chiaro della toolbar (mockup R2)
+    const juce::Colour kAccentDark { 0xff3a8799 };
+    const juce::Colour kOnAccent   { 0xff0b1116 }; // testo/icone sui bottoni teal
     const juce::Colour kText       { 0xff1f2933 };
     const juce::Colour kTextMuted  { 0xff6b7a85 };
     const juce::Colour kOutline    { 0xffd7dee3 };
@@ -184,8 +186,8 @@ CsoundLookAndFeel::CsoundLookAndFeel()
 
     setColour (juce::TextButton::buttonColourId,   kAccent);
     setColour (juce::TextButton::buttonOnColourId, kAccentDark);
-    setColour (juce::TextButton::textColourOffId,  juce::Colours::white);
-    setColour (juce::TextButton::textColourOnId,   juce::Colours::white);
+    setColour (juce::TextButton::textColourOffId,  kOnAccent);
+    setColour (juce::TextButton::textColourOnId,   kOnAccent);
 
     setColour (juce::TextEditor::backgroundColourId,      kPanel);
     setColour (juce::TextEditor::textColourId,            kText);
@@ -234,6 +236,16 @@ void CsoundLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& b
     else
         g.fillRect (bounds); // angoli a 90 gradi per tutti gli ALTRI widget
 
+    // Bottoni "a capsula" con testo (es. Apply nella toolbar): la stessa
+    // forma dei circolari, ma con icona + testo come un TextButton normale
+    // (vedi drawButtonText). Anello rosso invece del rettangolo per
+    // "pendingChanges".
+    if (circular && (bool) button.getProperties().getWithDefault ("pendingChanges", false))
+    {
+        g.setColour (juce::Colour (0xffff5a5a));
+        g.drawRoundedRectangle (bounds.reduced (1.0f), bounds.getHeight() * 0.5f - 1.0f, 2.0f);
+    }
+
     // Bordo rosso tutto intorno al bottone quando il chiamante lo segnala
     // con una proprieta' dinamica (Component::getProperties(), un semplice
     // NamedValueSet - non serve una nuova API di LookAndFeel solo per
@@ -266,7 +278,7 @@ void CsoundLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& but
     // testo (il bottone e' troppo piccolo per ospitarne, e clearConsoleButton
     // in PluginEditor ha comunque testo vuoto) - vedi il commento identico
     // su drawButtonBackground sopra.
-    if ((bool) button.getProperties().getWithDefault ("circular", false))
+    if ((bool) button.getProperties().getWithDefault ("circular", false) && button.getButtonText().isEmpty())
     {
         if (! icon.isEmpty())
         {
@@ -281,7 +293,8 @@ void CsoundLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& but
         return;
     }
 
-    auto bounds = button.getLocalBounds().toFloat().reduced (10.0f, 0.0f);
+    const bool pill = (bool) button.getProperties().getWithDefault ("circular", false);
+    auto bounds = button.getLocalBounds().toFloat().reduced (pill ? 16.0f : 10.0f, 0.0f);
 
     if (! icon.isEmpty())
     {
@@ -302,4 +315,49 @@ void CsoundLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton& but
 int CsoundLookAndFeel::getIconAllowance (const juce::String& buttonName)
 {
     return getIconPathForButtonName (buttonName).isEmpty() ? 0 : 23; // 16px icona + 7px spaziatura
+}
+
+//==============================================================================
+juce::TextLayout CsoundLookAndFeel::layoutTooltipText (const juce::String& text, juce::Colour colour) const
+{
+    juce::AttributedString attributed;
+    attributed.setJustification (juce::Justification::centredLeft);
+    attributed.append (text, juce::Font (juce::FontOptions (kTooltipFontSize)), colour);
+
+    juce::TextLayout layout;
+    layout.createLayout (attributed, (float) (kTooltipMaxWidth - 2 * kTooltipPadX));
+    return layout;
+}
+
+juce::Rectangle<int> CsoundLookAndFeel::getTooltipBounds (const juce::String& tipText, juce::Point<int> screenPos,
+                                                           juce::Rectangle<int> parentArea)
+{
+    const auto layout = layoutTooltipText (tipText, juce::Colours::white);
+    const int w = (int) std::ceil (layout.getWidth())  + 2 * kTooltipPadX;
+    const int h = (int) std::ceil (layout.getHeight()) + 2 * kTooltipPadY;
+
+    // Sotto e leggermente a destra del puntatore; sopra se non c'e' spazio
+    // (stessa logica del default JUCE, con margini piu' generosi).
+    return juce::Rectangle<int> (screenPos.x > parentArea.getCentreX() ? screenPos.x - (w + 10) : screenPos.x + 14,
+                                 screenPos.y > parentArea.getCentreY() ? screenPos.y - (h + 8)  : screenPos.y + 18,
+                                 w, h)
+            .constrainedWithin (parentArea);
+}
+
+void CsoundLookAndFeel::drawTooltip (juce::Graphics& g, const juce::String& text, int width, int height)
+{
+    // Scheda bianca squadrata con bordo grigio sottile e testo nero
+    // (richiesta esplicita: non arrotondata, fondo bianco, testo nero) -
+    // massima leggibilita' sia sulle zone chiare sia su quelle scure.
+    const juce::Colour bg     { 0xffffffff };
+    const juce::Colour border { 0xffb9c2c8 };
+    const juce::Colour fg     { 0xff000000 };
+
+    g.setColour (bg);
+    g.fillRect (0, 0, width, height);
+    g.setColour (border);
+    g.drawRect (0, 0, width, height, 1);
+
+    layoutTooltipText (text, fg).draw (g, juce::Rectangle<float> (0.0f, 0.0f, (float) width, (float) height)
+                                              .reduced ((float) kTooltipPadX, (float) kTooltipPadY));
 }

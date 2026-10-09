@@ -23,7 +23,9 @@ enum class CsoundActionSheetIcon
     eyeOpen, eyeClosed,
     trash, resetDefault,
     newDocument,
-    info
+    info,
+    book,        // manuale online
+    codeBraces   // sintassi moderna "f(x)"
 };
 
 /**
@@ -198,7 +200,7 @@ private:
     static constexpr float sheetCornerRadius   = 14.0f;
     static constexpr int rowHorizontalPadding  = 16;
     static constexpr int iconAreaWidth         = 26; // spazio riservato all'icona (vedi CsoundActionSheetItem::icon), SEMPRE, anche se none (allineamento uniforme tra righe)
-    static constexpr int maxSheetHeightPercent = 65; // rispetto all'altezza dell'overlay (= host)
+    static constexpr int maxSheetHeightPercent = 92; // rispetto all'altezza dell'overlay (= host): il menu principale (11 voci + 4 separatori = 538 px) deve starci senza scrollbar in una finestra normale
 
     // Dimensioni del popup CENTRATO (richiesta esplicita: "ragionevolmente
     // ampio senza esagerare", non piu' un bottom sheet a tutta larghezza) -

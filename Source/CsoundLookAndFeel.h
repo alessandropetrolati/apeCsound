@@ -25,4 +25,17 @@ public:
         (Component::setName, es. "run"/"clear") occupa oltre al solo testo -
         usato per calcolare dimensioni proporzionate nel layout della toolbar. */
     static int getIconAllowance (const juce::String& buttonName);
+
+    /** Tooltip: scheda bianca squadrata con bordo grigio sottile e testo
+        nero 13.5 px, a capo automatico entro kTooltipMaxWidth. */
+    juce::Rectangle<int> getTooltipBounds (const juce::String& tipText, juce::Point<int> screenPos,
+                                           juce::Rectangle<int> parentArea) override;
+    void drawTooltip (juce::Graphics& g, const juce::String& text, int width, int height) override;
+
+private:
+    static constexpr int   kTooltipMaxWidth = 340;
+    static constexpr float kTooltipFontSize = 13.5f;
+    static constexpr int   kTooltipPadX = 10, kTooltipPadY = 7;
+
+    juce::TextLayout layoutTooltipText (const juce::String& text, juce::Colour colour) const;
 };

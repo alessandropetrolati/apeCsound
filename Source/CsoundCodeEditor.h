@@ -87,10 +87,25 @@ public:
         mano in CsoundOpcodeHelpData. */
     void setOpcodeSignatures (const juce::Array<CsoundLiveOpcodeInfo>& signatures);
 
+    /** Sintassi "moderna" (funzionale, con annotazione di tipo di Csound 7)
+        nella barra di help: "ares oscil xamp, xcps" diventa
+        "ares:a = oscil(xamp, xcps)". Vale per tutte le fonti (manuale,
+        motore, UDO). Riaggiorna subito la barra. */
+    void setModernSyntaxHelp (bool shouldUseModernSyntax);
+    bool isModernSyntaxHelp() const noexcept { return modernSyntaxHelp; }
+
+    /** Conversione di una riga di sintassi del manuale nella forma
+        funzionale (pubblica e statica per poterla testare). Righe senza
+        la struttura "[outs] opcode [ins]" restano invariate. */
+    static juce::String toModernSyntax (const juce::String& manualLine, const juce::String& opcodeName);
+
     /** Chiamato (sul message thread) ogni volta che il testo di help da
-        mostrare nella barra dedicata cambia: entrambe le stringhe vuote
-        significa "nessun opcode selezionato, nascondi/svuota la barra". */
-    std::function<void (const juce::String& syntax, const juce::String& description)> onOpcodeHelpChanged;
+        mostrare nella barra dedicata cambia: tutte le stringhe vuote
+        significa "nessun opcode selezionato, nascondi/svuota la barra".
+        category e' la categoria del manuale ("Signal Generators:Basic
+        Oscillators"), "User-defined opcode" per le UDO del .csd corrente,
+        vuota se sconosciuta (opcode riportato solo dal motore). */
+    std::function<void (const juce::String& syntax, const juce::String& description, const juce::String& category)> onOpcodeHelpChanged;
 
     /** Cronologia undo/redo UNICA condivisa con il pannello Parametri (vedi
         sharedUndoManager in PluginEditor): Cmd+Z/Cmd+Shift+Z vengono
@@ -213,6 +228,24 @@ private:
     static juce::String wordEndingAt (const juce::String& lineText, int indexInLine);
     static juce::String wordAroundCaret (const juce::String& lineText, int indexInLine);
     static juce::String formatSignatureLine (const CsoundLiveOpcodeInfo& info);
+
+    // UDO ("opcode Nome, outtypes, intypes") definite nel documento
+    // corrente, rilette (solo quando il testo e' cambiato) al prossimo
+    // aggiornamento dell'help: cosi' anche gli opcode dell'utente hanno
+    // una riga nella barra e compaiono nell'autocompletamento.
+    struct UserOpcode
+    {
+        juce::String name, outTypes, inTypes;
+        int line = 0;
+    };
+
+    void rescanUserOpcodesIfNeeded();
+    const UserOpcode* findUserOpcode (const juce::String& word) const;
+
+    juce::Array<UserOpcode> userOpcodes;
+    bool userOpcodesDirty = true;
+
+    bool modernSyntaxHelp = false;
 
     SuggestionPopup suggestionPopup;
 

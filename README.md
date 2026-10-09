@@ -11,7 +11,7 @@ Developed by **Alessandro Petrolati** — [apeSoft](https://www.apesoft.it).
 ### Code editor
 - Csound syntax highlighting.
 - Structure-aware auto-indent for `instr/endin`, `opcode/endop`, `if/elseif/else/endif` and `while/until … do/od`.
-- Opcode autocompletion and an inline help bar (syntax and description). Both are built from the opcode list of the running Csound engine.
+- Opcode autocompletion and an inline help bar: syntax with the manual's argument names, one-line description and category for every opcode of the Csound Reference Manual (generated from CsoundQt's `opcodes.xml`, GNU FDL — see `scripts/generate_opcode_help.py`), plus the user-defined opcodes of the current file and, for anything else, the type signature reported by the running engine. **Modern Syntax in Help** (main menu) shows every synopsis in Csound 7 functional form with type annotations (`ares:a = oscil(xamp, xcps)`); **Csound Manual (online)** opens the Csound 7 reference manual in the browser.
 - **Apply** recompiles the edited code without restarting the host. The button is outlined in red while the editor differs from the running code.
 - Console with Csound's messages and errors.
 
@@ -55,8 +55,8 @@ Csound is **not linked at build time**. The plugin loads `CsoundLib64.framework`
 
 1. **Clone the repository**
    ```sh
-   git clone https://github.com/alessandropetrolati/Csound.git
-   cd Csound
+   git clone https://github.com/alessandropetrolati/apeCsound.git
+   cd apeCsound
    ```
 
 2. **Provide Csound 7.** Place `CsoundLib64.framework` in a folder named `Csound` at the repository root:

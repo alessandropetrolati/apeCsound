@@ -1,5 +1,4 @@
 #include "CsoundCodeEditor.h"
-#include "CsoundOpcodePurposeData.h"
 #include <cmath>
 
 CsoundCodeEditor::CsoundCodeEditor (juce::CodeDocument& doc, juce::CodeTokeniser* tok)
@@ -10,8 +9,8 @@ CsoundCodeEditor::CsoundCodeEditor (juce::CodeDocument& doc, juce::CodeTokeniser
     codeDocument.addListener (this);
 
     // Autocompletamento disponibile da subito, prima ancora che il motore
-    // Csound sia mai partito: seed con la tabella scritta a mano, che poi
-    // setOpcodeSignatures() sostituisce/amplia con l'elenco reale.
+    // Csound sia mai partito: seed con la tabella del manuale, che poi
+    // setOpcodeSignatures() amplia con l'elenco reale del motore.
     for (auto& entry : CsoundOpcodeHelpData::table)
         allOpcodeNames.addIfNotAlreadyThere (juce::String (entry.name));
     allOpcodeNames.sort (true);
@@ -486,7 +485,7 @@ void CsoundCodeEditor::paintOverChildren (juce::Graphics& g)
 
     const auto y = (dragHighlightLine - getFirstLineOnScreen()) * getLineHeight();
 
-    g.setColour (juce::Colour (0xff17a2b8).withAlpha (0.25f));
+    g.setColour (juce::Colour (0xff4aa3b8).withAlpha (0.25f));
     g.fillRect (0, y, getWidth(), getLineHeight());
 }
 
@@ -509,6 +508,8 @@ void CsoundCodeEditor::resized()
 // redo, inserimento programmatico.
 void CsoundCodeEditor::codeDocumentTextInserted (const juce::String& newText, int insertIndex)
 {
+    userOpcodesDirty = true;
+
     // Ricerca attiva: le occorrenze seguono il testo (anche durante un
     // re-indent, un undo o una sostituzione - tranne replaceAll, che
     // ricalcola una volta sola alla fine).
@@ -540,6 +541,8 @@ void CsoundCodeEditor::codeDocumentTextInserted (const juce::String& newText, in
 
 void CsoundCodeEditor::codeDocumentTextDeleted (int /*startIndex*/, int /*endIndex*/)
 {
+    userOpcodesDirty = true;
+
     if (searchQuery.isNotEmpty() && ! suspendSearchRefresh)
         refreshSearchMatches();
 
@@ -608,12 +611,10 @@ void CsoundCodeEditor::setOpcodeSignatures (const juce::Array<CsoundLiveOpcodeIn
             allOpcodeNames.add (info.name);
     }
 
-    // Se per qualche motivo il motore non ha ancora riportato nulla (non
-    // dovrebbe succedere dopo csoundEngineStarted, ma meglio non restare
-    // con l'autocompletamento vuoto), ripiega sulla tabella scritta a mano.
-    if (allOpcodeNames.isEmpty())
-        for (auto& entry : CsoundOpcodeHelpData::table)
-            allOpcodeNames.addIfNotAlreadyThere (juce::String (entry.name));
+    // Gli opcode del manuale restano sempre completabili anche se il motore
+    // collegato non li riporta (o non ha ancora riportato nulla).
+    for (auto& entry : CsoundOpcodeHelpData::table)
+        allOpcodeNames.addIfNotAlreadyThere (juce::String (entry.name));
 
     allOpcodeNames.sort (true);
 }
@@ -706,9 +707,20 @@ namespace
 
         for (int i = 0; i < types.length(); ++i)
         {
-            names.add (typeCharPrefix (types[i]) + juce::String (i + 1));
+            const auto c = types[i];
 
-            if (isOptionalTypeChar (types[i]))
+            // "k[]" (array, es. nelle UDO) -> il nome precedente diventa "k1[]"
+            if (c == '[' || c == ']')
+            {
+                if (c == '[' && ! names.isEmpty())
+                    names.set (names.size() - 1, names[names.size() - 1] + "[]");
+
+                continue;
+            }
+
+            names.add (typeCharPrefix (c) + juce::String (names.size() + 1));
+
+            if (isOptionalTypeChar (c))
                 outHasOptional = true;
         }
 
@@ -843,8 +855,15 @@ juce::String CsoundCodeEditor::formatSignatureLine (const CsoundLiveOpcodeInfo& 
             // parentesi quadra, come fa il manuale (es. "[, ifn, iphs]").
             juce::StringArray required, optional;
 
-            for (int i = 0; i < info.inTypes.length(); ++i)
-                (isOptionalTypeChar (info.inTypes[i]) ? optional : required).add (inNames[i]);
+            for (int i = 0, n = 0; i < info.inTypes.length(); ++i)
+            {
+                const auto c = info.inTypes[i];
+
+                if (c == '[' || c == ']')
+                    continue;
+
+                (isOptionalTypeChar (c) ? optional : required).add (inNames[n++]);
+            }
 
             line << " ";
 
@@ -878,10 +897,13 @@ void CsoundCodeEditor::updateOpcodeHelp()
 
     const auto lowerFull = fullWord.toLowerCase();
 
+    rescanUserOpcodesIfNeeded();
+
     // 1) Il caret e' su (dentro o alla fine di) un opcode conosciuto -
     //    che ci sia arrivato digitando, cliccando, o con le freccie -
     //    mostra l'help completo nella barra dedicata.
-    const bool isKnownOpcode = liveSignatureLines.find (lowerFull) != liveSignatureLines.end()
+    const bool isKnownOpcode = findUserOpcode (fullWord) != nullptr
+                             || liveSignatureLines.find (lowerFull) != liveSignatureLines.end()
                              || CsoundOpcodeHelpData::find (fullWord) != nullptr;
 
     if (isKnownOpcode)
@@ -898,6 +920,11 @@ void CsoundCodeEditor::updateOpcodeHelp()
     //    prefisso (fino a 8, ordine alfabetico).
     if (prefixWord.length() == fullWord.length() && prefixWord.length() >= 2)
     {
+        // Prima le UDO del file (poche e "vicine" a chi scrive), poi il resto.
+        for (auto& udo : userOpcodes)
+            if (udo.name.startsWithIgnoreCase (prefixWord) && ! udo.name.equalsIgnoreCase (prefixWord))
+                currentSuggestions.addIfNotAlreadyThere (udo.name);
+
         for (auto& name : allOpcodeNames)
         {
             if (name.startsWithIgnoreCase (prefixWord) && ! name.equalsIgnoreCase (prefixWord))
@@ -921,55 +948,202 @@ void CsoundCodeEditor::updateOpcodeHelp()
 
 void CsoundCodeEditor::pushSignatureHelp (const juce::String& word)
 {
-    juce::String syntax, description;
+    juce::String syntax, description, category;
 
-    if (const auto* curated = CsoundOpcodeHelpData::find (word))
+    if (const auto* udo = findUserOpcode (word))
     {
-        // Sintassi "umana" e descrizione in prosa, entrambe verificate contro
-        // il file XML sorgente dell'opcode nel manuale: il caso migliore.
-        // Alcuni opcode polimorfici hanno piu' righe di sintassi che
-        // differiscono SOLO nel tipo dell'outlet (es. linen: "ares linen
-        // xamp, irise, idur, idec" / "kres linen kamp, irise, idur, idec"):
-        // unirle tutte con "|" era ridondante (si leggeva due volte quasi
-        // la stessa firma), ma troncare alla prima riga perdeva
-        // informazione reale (si sa solo che esiste la a-rate, non che
-        // esiste anche la k-rate). combineOutletVariants() qui sotto
-        // unisce i tipi di outlet in un unico token non ambiguo ("xres" se
-        // sono esattamente a/k, altrimenti "ares/kres/ires" con lo slash)
-        // mantenendo un'unica lista di argomenti.
-        syntax = combineOutletVariants (curated->syntax, curated->name);
-        description = curated->description;
+        // UDO del documento corrente: firma ricostruita dalla riga
+        // "opcode Nome, outtypes, intypes" (nomi di argomento generici,
+        // come per gli opcode riportati solo dal motore).
+        syntax = formatSignatureLine ({ udo->name, udo->outTypes, udo->inTypes });
+        description = "User-defined opcode, declared at line " + juce::String (udo->line + 1) + " of this file.";
+        category = "User-defined opcode";
+    }
+    else if (const auto* manual = CsoundOpcodeHelpData::find (word))
+    {
+        // Sintassi del manuale (nomi di argomento reali), descrizione
+        // "refpurpose" e categoria: il caso migliore. Le varianti che
+        // differiscono solo nell'outlet (ares/kres) vengono fuse in una
+        // riga da combineOutletVariants(); altrimenti resta la prima.
+        syntax = combineOutletVariants (manual->syntax, manual->name);
+        description = manual->description;
+        category = manual->category;
     }
     else
     {
-        // Nessuna sintassi "umana" per questo opcode: la riga di sintassi
-        // resta la firma di tipo grezza letta dal motore (sempre corretta
-        // perche' non e' scritta a mano, e per definizione copre anche le
-        // varianti che io non ho trascritto a mano dal manuale). Per la
-        // descrizione, se l'opcode compare nell'indice del Csound
-        // Reference Manual (vedi CsoundOpcodePurposeData, trascritto dalla
-        // riga "refpurpose" del manuale - lo stesso testo che CsoundQt
-        // mostra come help rapido) usiamo quella riga, univoca per ogni
-        // opcode; altrimenti la descrizione resta vuota.
-        // formatSignatureLine include gia' il nome dell'opcode: se e'
-        // polimorfico (es. oscil esiste sia a a-rate sia a k-rate) ogni
-        // variante e' una riga separata - stessa combinazione per-outlet
-        // usata sopra, invece di "|" ridondanti o di troncare alla prima.
+        // Opcode non presente nel manuale (es. plugin di terze parti): la
+        // riga di sintassi e' la firma di tipo letta dal motore (sempre
+        // corretta nei tipi, ma con nomi di argomento generici) e non c'e'
+        // descrizione.
         const auto it = liveSignatureLines.find (word.toLowerCase());
 
         if (it != liveSignatureLines.end() && ! it->second.isEmpty())
             syntax = combineOutletVariants (it->second.joinIntoString ("\n"), word);
         else
             syntax = word;
-
-        if (const auto* purpose = CsoundOpcodePurposeDataNS::find (word))
-            description = purpose;
     }
+
+    // Costrutti del linguaggio (instr/endin, opcode/endop, if/then, goto,
+    // xin/xout, intestazione) non hanno una forma funzionale: restano come
+    // nel manuale anche con la sintassi moderna attiva.
+    static const juce::StringArray noFunctionalForm { "xin", "xout", "goto", "igoto", "kgoto", "tigoto",
+                                                      "cigoto", "ckgoto", "cggoto", "cngoto", "cnkgoto", "rigoto",
+                                                      "reinit", "rireturn", "timout", "loop_lt", "loop_le",
+                                                      "loop_gt", "loop_ge" };
+
+    if (modernSyntaxHelp && ! category.startsWith ("Orchestra Syntax") && ! noFunctionalForm.contains (word))
+        syntax = toModernSyntax (syntax, word);
 
     helpBarHasContent = true;
 
     if (onOpcodeHelpChanged)
-        onOpcodeHelpChanged (syntax, description);
+        onOpcodeHelpChanged (syntax, description, category);
+}
+
+void CsoundCodeEditor::setModernSyntaxHelp (bool shouldUseModernSyntax)
+{
+    if (modernSyntaxHelp == shouldUseModernSyntax)
+        return;
+
+    modernSyntaxHelp = shouldUseModernSyntax;
+    updateOpcodeHelp();
+}
+
+juce::String CsoundCodeEditor::toModernSyntax (const juce::String& manualLine, const juce::String& opcodeName)
+{
+    // "outs opcode ins" -> "outs:T = opcode(ins)" (Csound 7: assegnazione
+    // funzionale con annotazione di tipo sulle variabili di uscita).
+    // Righe gia' in forma di assegnazione o senza il nome dell'opcode
+    // come token a se' (instr, if/then, "0dbfs = iarg"...) restano come sono.
+    const auto line = manualLine.trim();
+
+    if (line.isEmpty() || line.containsChar ('=') || line.containsChar ('('))
+        return manualLine;
+
+    const auto words = juce::StringArray::fromTokens (line, " ", "");
+    int opcodeIdx = -1;
+
+    for (int w = 0; w < words.size(); ++w)
+    {
+        if (words[w].equalsIgnoreCase (opcodeName))
+        {
+            opcodeIdx = w;
+            break;
+        }
+    }
+
+    if (opcodeIdx < 0)
+        return manualLine;
+
+    juce::String outs, ins;
+
+    for (int w = 0; w < opcodeIdx; ++w)
+        outs << (w > 0 ? " " : "") << words[w];
+
+    for (int w = opcodeIdx + 1; w < words.size(); ++w)
+        ins << (w > opcodeIdx + 1 ? " " : "") << words[w];
+
+    // Annotazione di tipo per ogni variabile di uscita: "ares" -> "ares:a",
+    // "gkres" -> "gkres:k", "kval[]" -> "kval:k[]", "xres" (a oppure k)
+    // -> "xres:a/k". Token non riconoscibili (es. "[, a2 [...]]") restano
+    // invariati.
+    auto annotate = [] (const juce::String& token) -> juce::String
+    {
+        auto t = token.trim();
+        bool isArray = false;
+
+        if (t.endsWith ("[]"))
+        {
+            isArray = true;
+            t = t.dropLastCharacters (2);
+        }
+
+        if (t.isEmpty() || ! t.containsOnly ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"))
+            return token;
+
+        auto rate = t.startsWith ("g") && t.length() > 1 ? t[1] : t[0];
+        juce::String rateText;
+
+        switch (rate)
+        {
+            case 'a': case 'k': case 'i': case 'S': case 'f': case 'w':
+                rateText = juce::String::charToString (rate);
+                break;
+            case 'x':
+                rateText = "a/k";
+                break;
+            default:
+                return token;
+        }
+
+        return t + ":" + rateText + (isArray ? "[]" : "");
+    };
+
+    juce::String result;
+
+    if (outs.isNotEmpty())
+    {
+        juce::StringArray outTokens;
+        outTokens.addTokens (outs, ",", "");
+
+        for (int i = 0; i < outTokens.size(); ++i)
+            result << (i > 0 ? ", " : "") << annotate (outTokens[i]);
+
+        result << " = ";
+    }
+
+    result << words[opcodeIdx] << "(" << ins.trim() << ")";
+    return result;
+}
+
+void CsoundCodeEditor::rescanUserOpcodesIfNeeded()
+{
+    if (! userOpcodesDirty)
+        return;
+
+    userOpcodesDirty = false;
+    userOpcodes.clearQuick();
+
+    auto& doc = getDocument();
+    const int numLines = doc.getNumLines();
+
+    for (int i = 0; i < numLines; ++i)
+    {
+        const auto trimmed = stripCommentAndTrim (doc.getLine (i));
+
+        if (! trimmed.startsWith ("opcode"))
+            continue;
+
+        // "opcode Nome, outtypes, intypes" - outtypes/intypes possono
+        // essere 0 (nessun argomento) o mancare del tutto in codice
+        // ancora incompleto.
+        auto rest = trimmed.substring (6).trim();
+
+        if (rest.isEmpty() || ! (juce::CharacterFunctions::isLetterOrDigit (rest[0]) || rest[0] == '_'))
+            continue;
+
+        juce::StringArray parts;
+        parts.addTokens (rest, ",", "");
+        parts.trim();
+
+        UserOpcode udo;
+        udo.name = parts[0];
+        udo.outTypes = parts.size() > 1 && parts[1] != "0" ? parts[1] : juce::String();
+        udo.inTypes  = parts.size() > 2 && parts[2] != "0" ? parts[2] : juce::String();
+        udo.line = i;
+
+        if (udo.name.isNotEmpty() && findUserOpcode (udo.name) == nullptr)
+            userOpcodes.add (udo);
+    }
+}
+
+const CsoundCodeEditor::UserOpcode* CsoundCodeEditor::findUserOpcode (const juce::String& word) const
+{
+    for (auto& udo : userOpcodes)
+        if (udo.name == word)
+            return &udo;
+
+    return nullptr;
 }
 
 void CsoundCodeEditor::clearOpcodeHelp()
@@ -981,7 +1155,7 @@ void CsoundCodeEditor::clearOpcodeHelp()
         helpBarHasContent = false;
 
         if (onOpcodeHelpChanged)
-            onOpcodeHelpChanged ({}, {});
+            onOpcodeHelpChanged ({}, {}, {});
     }
 }
 

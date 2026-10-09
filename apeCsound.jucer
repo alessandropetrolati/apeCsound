@@ -40,8 +40,8 @@
             file="Source/CsoundCodeEditor.h"/>
       <FILE id="cOpcH" name="CsoundOpcodeHelp.h" compile="0" resource="0"
             file="Source/CsoundOpcodeHelp.h"/>
-      <FILE id="cOpcP" name="CsoundOpcodePurposeData.h" compile="0" resource="0"
-            file="Source/CsoundOpcodePurposeData.h"/>
+      <FILE id="cOpcD" name="CsoundOpcodeHelpData.h" compile="0" resource="0"
+            file="Source/CsoundOpcodeHelpData.h"/>
       <FILE id="cLafA" name="CsoundLookAndFeel.cpp" compile="1" resource="0"
             file="Source/CsoundLookAndFeel.cpp"/>
       <FILE id="cLafB" name="CsoundLookAndFeel.h" compile="0" resource="0"

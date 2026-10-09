@@ -12,7 +12,7 @@ namespace
     const juce::Colour kText         { 0xffe8eef1 };
     const juce::Colour kTextDisabled { 0xff5b6b74 };
     const juce::Colour kTextMuted    { 0xff8a9aa5 };
-    const juce::Colour kAccent       { 0xff17a2b8 };
+    const juce::Colour kAccent       { 0xff4aa3b8 };
 
     // Icone disegnate a mano con la stessa tecnica usata altrove in questo
     // codebase per le icone "a linea" (es. makeAudioEngineIconPath in
@@ -332,6 +332,50 @@ namespace
         return filled;
     }
 
+    // Libro aperto: due pagine con il dorso al centro.
+    juce::Path makeBookPath()
+    {
+        juce::Path outline;
+        outline.startNewSubPath (3.0f, 5.0f);
+        outline.lineTo (9.0f, 5.0f);
+        outline.quadraticTo (11.0f, 5.0f, 12.0f, 7.0f);
+        outline.quadraticTo (13.0f, 5.0f, 15.0f, 5.0f);
+        outline.lineTo (21.0f, 5.0f);
+        outline.lineTo (21.0f, 18.0f);
+        outline.lineTo (15.0f, 18.0f);
+        outline.quadraticTo (13.0f, 18.0f, 12.0f, 20.0f);
+        outline.quadraticTo (11.0f, 18.0f, 9.0f, 18.0f);
+        outline.lineTo (3.0f, 18.0f);
+        outline.closeSubPath();
+        auto filled = strokeOpenPath (outline, 1.6f);
+
+        juce::Path spine;
+        spine.startNewSubPath (12.0f, 7.0f);
+        spine.lineTo (12.0f, 20.0f);
+        filled.addPath (strokeOpenPath (spine, 1.4f));
+        return filled;
+    }
+
+    // Parentesi tonde con "=" a sinistra: la forma funzionale "a = f(x)".
+    juce::Path makeCodeBracesPath()
+    {
+        juce::Path left;
+        left.startNewSubPath (11.5f, 4.5f);
+        left.quadraticTo (7.5f, 12.0f, 11.5f, 19.5f);
+        auto filled = strokeOpenPath (left, 1.8f);
+
+        juce::Path right;
+        right.startNewSubPath (16.5f, 4.5f);
+        right.quadraticTo (20.5f, 12.0f, 16.5f, 19.5f);
+        filled.addPath (strokeOpenPath (right, 1.8f));
+
+        juce::Path eq;
+        eq.startNewSubPath (2.5f, 10.0f); eq.lineTo (6.5f, 10.0f);
+        eq.startNewSubPath (2.5f, 14.0f); eq.lineTo (6.5f, 14.0f);
+        filled.addPath (strokeOpenPath (eq, 1.8f));
+        return filled;
+    }
+
     juce::Path makeSheetIconPath (CsoundActionSheetIcon icon)
     {
         switch (icon)
@@ -352,6 +396,8 @@ namespace
             case CsoundActionSheetIcon::resetDefault:  return makeResetDefaultPath();
             case CsoundActionSheetIcon::newDocument:   return makeNewDocumentPath();
             case CsoundActionSheetIcon::info:          return makeInfoPath();
+            case CsoundActionSheetIcon::book:          return makeBookPath();
+            case CsoundActionSheetIcon::codeBraces:    return makeCodeBracesPath();
             case CsoundActionSheetIcon::none:
             default:                                   return {};
         }

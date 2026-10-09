@@ -2231,7 +2231,8 @@ bool CsoundAudioProcessor::importCsoundQtParameters (const juce::String& csdText
     };
 
     auto addFloat = [this, &floatIndex, &skippedFloat] (const juce::String& channel,
-                                                       double minV, double maxV, double defV, double step)
+                                                       double minV, double maxV, double defV, double step,
+                                                       bool exponential = false)
     {
         if (floatIndex >= numChannelParams)
         {
@@ -2249,7 +2250,44 @@ bool CsoundAudioProcessor::importCsoundQtParameters (const juce::String& csdText
         slot.defaultValue = (float) juce::jlimit (minV, maxV, defV);
         slot.skew         = 1.0f;
         slot.increment    = (float) (step > 0.0 ? step : 0.001);
+
+        // <mode>exp</mode> di slider/knob: CsoundQt mappa la corsa in modo
+        // esponenziale (il centro corsa vale sqrt(min*max), possibile solo
+        // con estremi positivi). Lo skew di JUCE/Cabbage non e' la stessa
+        // curva, ma con lo skew "dal punto medio" (stessa formula di
+        // juce::Slider::setSkewFactorFromMidPoint) il centro coincide.
+        if (exponential && minV > 0.0 && maxV > minV)
+        {
+            const double mid = std::sqrt (minV * maxV);
+            slot.skew = (float) (std::log (0.5) / std::log ((mid - minV) / (maxV - minV)));
+        }
+
         setChannelParamSlot (floatIndex++, slot);
+    };
+
+    // Checkbox e bottoni "value": in CsoundQt mandano pressedValue (default
+    // 1) quando attivi e 0 altrimenti. Con pressedValue 1 e' un Bool; con
+    // un altro valore serve un Float a due posizioni {0, pressedValue}.
+    auto addSwitch = [this, &boolIndex, &skippedBool, &addFloat] (const juce::String& channel,
+                                                                  bool on, double pressedValue)
+    {
+        if (! juce::approximatelyEqual (pressedValue, 1.0) && ! juce::approximatelyEqual (pressedValue, 0.0))
+        {
+            addFloat (channel, juce::jmin (0.0, pressedValue), juce::jmax (0.0, pressedValue),
+                      on ? pressedValue : 0.0, std::abs (pressedValue));
+            return;
+        }
+
+        if (boolIndex >= numBoolParams)
+        {
+            ++skippedBool;
+            return;
+        }
+
+        BoolParamSlot slot;
+        slot.channelName  = channel;
+        slot.defaultValue = on;
+        setBoolParamSlot (boolIndex++, slot);
     };
 
     // Ricorsivo: i bsbObject sono figli diretti di <bsbPanel>, ma cercarli a
@@ -2270,8 +2308,18 @@ bool CsoundAudioProcessor::importCsoundQtParameters (const juce::String& csdText
             if (type == "BSBVSlider" || type == "BSBHSlider" || type == "BSBSlider" || type == "BSBKnob")
             {
                 if (claim (channel))
+                {
+                    // resolution: -1 (slider, "nessuna") o 0.01 (knob);
+                    // knob in integerMode -> passo 1.
+                    double step = number (*obj, "resolution", -1.0);
+
+                    if (type == "BSBKnob" && text (*obj, "integerMode") == "true")
+                        step = 1.0;
+
                     addFloat (channel, number (*obj, "minimum", 0.0), number (*obj, "maximum", 1.0),
-                              number (*obj, "value", 0.0), 0.001);
+                              number (*obj, "value", 0.0), step > 0.0 ? step : 0.001,
+                              text (*obj, "mode") == "exp");
+                }
             }
             else if (type == "BSBSpinBox" || type == "BSBScrollNumber")
             {
@@ -2323,19 +2371,24 @@ bool CsoundAudioProcessor::importCsoundQtParameters (const juce::String& csdText
             }
             else if (type == "BSBCheckBox")
             {
-                if (! claim (channel))
-                    continue;
+                if (claim (channel))
+                    addSwitch (channel, text (*obj, "selected") == "true", number (*obj, "pressedValue", 1.0));
+            }
+            else if (type == "BSBButton")
+            {
+                // Solo i bottoni di tipo "value"/"pictvalue" scrivono un
+                // valore sul canale (pressedValue premuto, 0 rilasciato;
+                // con latch e' un interruttore). Quelli "event"/"pictevent"
+                // lanciano eventi di score e "pict" e' solo un'immagine:
+                // nessun parametro. I canali riservati "_Browse*" aprono
+                // un file dialog: nessun parametro.
+                const auto buttonType = text (*obj, "type");
 
-                if (boolIndex >= numBoolParams)
+                if ((buttonType == "value" || buttonType == "pictvalue")
+                     && ! channel.startsWith ("_") && claim (channel))
                 {
-                    ++skippedBool;
-                    continue;
+                    addSwitch (channel, text (*obj, "latched") == "true", number (*obj, "pressedValue", 1.0));
                 }
-
-                BoolParamSlot slot;
-                slot.channelName  = channel;
-                slot.defaultValue = text (*obj, "selected") == "true";
-                setBoolParamSlot (boolIndex++, slot);
             }
             else if (type == "BSBDropdown")
             {
@@ -2360,8 +2413,8 @@ bool CsoundAudioProcessor::importCsoundQtParameters (const juce::String& csdText
                                                   text (*obj, "selectedIndex").getIntValue());
                 setChoiceParamSlot (choiceIndex++, slot);
             }
-            // Altri tipi (BSBLabel, BSBDisplay, BSBButton, BSBGraph, ...):
-            // nessun parametro.
+            // Altri tipi (BSBLabel, BSBDisplay, BSBLineEdit, BSBGraph,
+            // BSBScope, BSBConsole...): nessun parametro.
         }
     };
 
@@ -3109,7 +3162,7 @@ juce::String CsoundAudioProcessor::defaultCsdText()
 <CsInstruments>
 
 ; NOTE: "sr" is overridden by the DAW's sample rate.
-; NOTE: "ksmps" is respected as declared and must be a multiple of "sr".
+; NOTE: "ksmps" is respected as declared.
 ; NOTE: "nchnls" is currently fixed to stereo.
 
 sr     = 44100

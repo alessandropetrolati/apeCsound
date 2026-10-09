@@ -156,10 +156,11 @@ private:
         SessionFileLabel() { setInterceptsMouseClicks (false, false); }
         void paint (juce::Graphics& g) override;
 
-        juce::String fileName;   // "Untitled" se non collegata
-        juce::String detailText; // path relativo/assoluto + stato
-        bool dirty = false;      // "•" accanto al nome
-        bool missing = false;    // file non trovato: nome in rosso
+        juce::String fileName;     // "Untitled" se non collegata
+        juce::String locationText; // cartella (relativa alla base se possibile)
+        juce::String stateText;    // "saved" / "unsaved changes" / "file not found"
+        bool dirty = false;        // pallino ambra
+        bool missing = false;      // pallino e stato in rosso
     };
 
     // Vista "About" (richiesta esplicita: informazioni sull'autore, link ai
@@ -356,10 +357,10 @@ private:
     struct OpcodeHelpBar final : public juce::Component
     {
         void paint (juce::Graphics& g) override;
-        void setHelpText (const juce::String& syntax, const juce::String& description);
+        void setHelpText (const juce::String& syntax, const juce::String& description, const juce::String& category);
 
     private:
-        juce::String syntaxText, descriptionText;
+        juce::String syntaxText, descriptionText, categoryText;
     };
 
     // This reference is provided as a quick way for your editor to
@@ -545,7 +546,7 @@ private:
     // quindi questo diametro/gap ora riguarda SOLO il burger - vedi anche
     // applyButton sopra, che usa lo stesso diametro per restare alla sua
     // altezza.
-    static constexpr int panelToolbarButtonDiameter = 38; // ingrandito ANCORA (richiesta esplicita: "ingrandiscili per favorire uso su iOS")
+    static constexpr int panelToolbarButtonDiameter = 40; // ingrandito ANCORA (richiesta esplicita: "ingrandiscili per favorire uso su iOS")
 
     // Non piu' nella toolbar (richiesta esplicita): un piccolo bottone
     // CIRCOLARE (proprieta' dinamica "circular", vedi CsoundLookAndFeel::
@@ -716,7 +717,7 @@ private:
     // un click diretto sul bottone Apply.
     void performApply();
 
-    static constexpr int toolbarHeight = 44;
+    static constexpr int toolbarHeight = 56;
 
     // Dimensione MINIMA della finestra (vedi setResizeLimits() nel
     // costruttore) - BUG corretto: senza limiti, rimpicciolendo la finestra

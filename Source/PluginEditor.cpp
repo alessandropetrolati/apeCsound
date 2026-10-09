@@ -101,6 +101,48 @@ namespace
         folder.createDirectory();
         return folder;
     }
+
+    // Preferenze dell'UTENTE (non del progetto): poche opzioni di
+    // visualizzazione valide per ogni istanza del plugin, es. la sintassi
+    // moderna nella barra di help. ~/Library/Application Support/apeCsound/
+    // apeCsound.settings su macOS. Niente di cio' che riguarda la sessione
+    // (path, codice, parametri) va qui: quello sta nello stato del progetto.
+    juce::PropertiesFile& getUserSettings()
+    {
+        static std::unique_ptr<juce::PropertiesFile> settings = []
+        {
+            juce::PropertiesFile::Options options;
+            options.applicationName     = ProjectInfo::projectName;
+            options.filenameSuffix      = "settings";
+            options.folderName          = ProjectInfo::projectName;
+            options.osxLibrarySubFolder = "Application Support";
+            options.storageFormat       = juce::PropertiesFile::storeAsXML;
+            return std::make_unique<juce::PropertiesFile> (options);
+        }();
+
+        return *settings;
+    }
+
+    const char* const kModernSyntaxHelpKey = "modernSyntaxHelp";
+
+    // Palette della toolbar (dal mockup "R2 - Capsula centrale"): fondo
+    // quasi nero, bottoni teal chiaro con icona/testo scuri, capsula
+    // centrale scura con bordo sottile.
+    const juce::Colour kToolbarBg        { 0xff161b21 };
+    const juce::Colour kToolbarLine      { 0xff2a333d };
+    const juce::Colour kToolbarAccent    { 0xff4aa3b8 };
+    const juce::Colour kToolbarOnAccent  { 0xff0b1116 };
+    const juce::Colour kCapsuleBg        { 0xff222a33 };
+    const juce::Colour kCapsuleBorder    { 0xff313c47 };
+    const juce::Colour kCapsuleName      { 0xffe6edf2 };
+    const juce::Colour kCapsulePath      { 0xff8a9caa };
+    const juce::Colour kCapsuleState     { 0xff8fd0df };
+    const juce::Colour kCapsuleDirty     { 0xfff0b429 };
+    const juce::Colour kCapsuleMissing   { 0xffff6b6b };
+
+    // Manuale di riferimento Csound 7 (csound.com/manual e' la versione 7.x;
+    // csound.com/docs/manual e' ancora la 6.x).
+    const char* const kCsoundManualUrl = "https://csound.com/manual/";
 }
 
 //==============================================================================
@@ -168,9 +210,9 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
 
     // La barra di help sotto l'editor viene riempita (o svuotata)
     // direttamente da CsoundCodeEditor, in base a dove si trova il caret.
-    editor.onOpcodeHelpChanged = [this] (const juce::String& syntax, const juce::String& description)
+    editor.onOpcodeHelpChanged = [this] (const juce::String& syntax, const juce::String& description, const juce::String& category)
     {
-        opcodeHelpBar.setHelpText (syntax, description);
+        opcodeHelpBar.setHelpText (syntax, description, category);
     };
     addAndMakeVisible (opcodeHelpBar);
 
@@ -196,7 +238,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // (toggle state -> buttonOnColourId).
     findButton.setName ("find");
     findButton.getProperties().set ("circular", true);
-    findButton.setTooltip ("Find / Replace in the code editor");
+    //findButton.setTooltip ("Find / Replace in the code editor");
     findButton.onClick = [this] { toggleFindBar(); };
     addAndMakeVisible (findButton);
     addChildComponent (findBar);
@@ -227,8 +269,20 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // prepareToPlay): questo bottone non "avvia" nulla, si limita a
     // rimpiazzare il .csd corrente con quello appena modificato nell'editor.
     applyButton.setName ("apply");
+    applyButton.getProperties().set ("circular", true); // capsula (vedi CsoundLookAndFeel)
     applyButton.onClick = [this] { performApply(); };
-    applyButton.setTooltip ("Apply: recompile and run the code in the editor (outlined in red when the editor differs from the running code)");
+
+    // Stile toolbar: teal chiaro con icona/testo scuri (vedi kToolbarAccent).
+    for (juce::Button* b : { static_cast<juce::Button*> (&applyButton),
+                             static_cast<juce::Button*> (&findButton),
+                             static_cast<juce::Button*> (&parameterPanel.getMenuButton()) })
+    {
+        b->setColour (juce::TextButton::buttonColourId,   kToolbarAccent);
+        b->setColour (juce::TextButton::buttonOnColourId, kToolbarAccent.darker (0.2f));
+        b->setColour (juce::TextButton::textColourOffId,  kToolbarOnAccent);
+        b->setColour (juce::TextButton::textColourOnId,   kToolbarOnAccent);
+    }
+    applyButton.setTooltip ("Apply: recompile and run Csound code (red outline indicates unsaved changes to the running code).");
     addAndMakeVisible (applyButton);
 
     // Bozza non applicata ripresa dal processor: bordo rosso subito.
@@ -303,6 +357,19 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.onLoadSessionRequested = [this] { promptLoadSession(); };
     parameterPanel.onSaveLinkedRequested  = [this] { performSaveLinked(); };
     parameterPanel.onAboutRequested       = [this] { aboutView.show(); };
+
+    // Sintassi moderna nella barra di help: preferenza utente persistente
+    // (vedi getUserSettings()), applicata all'editor subito e a ogni toggle.
+    editor.setModernSyntaxHelp (getUserSettings().getBoolValue (kModernSyntaxHelpKey, false));
+    parameterPanel.isModernSyntaxEnabled = [this] { return editor.isModernSyntaxHelp(); };
+    parameterPanel.onToggleModernSyntaxRequested = [this]
+    {
+        const bool enable = ! editor.isModernSyntaxHelp();
+        editor.setModernSyntaxHelp (enable);
+        getUserSettings().setValue (kModernSyntaxHelpKey, enable);
+        getUserSettings().saveIfNeeded();
+    };
+    parameterPanel.onOpenManualRequested = [] { juce::URL (kCsoundManualUrl).launchInDefaultBrowser(); };
 
     // Ogni cambio di STRUTTURA dei parametri (add/remove/metadata/undo/redo)
     // ricontrolla la barra "modifiche non salvate" - vedi onMappingChanged in
@@ -432,10 +499,10 @@ void CsoundAudioProcessorEditor::paint (juce::Graphics& g)
     // restano leggibili: sono tutti sfondi pieni accentati (teal/colorato)
     // con testo bianco, non dipendono dal contrasto con lo sfondo della
     // toolbar dietro di loro.
-    g.setColour (juce::Colour (0xff10181f));
+    g.setColour (kToolbarBg);
     g.fillRect (toolbarBounds);
 
-    g.setColour (juce::Colour (0xff2a3a44));
+    g.setColour (kToolbarLine);
     g.drawLine ((float) toolbarBounds.getX(),     (float) toolbarBounds.getBottom() - 0.5f,
                 (float) toolbarBounds.getRight(), (float) toolbarBounds.getBottom() - 0.5f, 1.0f);
 
@@ -570,14 +637,15 @@ void CsoundAudioProcessorEditor::resized()
 
     toolbarBounds = area.removeFromTop (toolbarHeight);
 
-    auto toolbar = toolbarBounds.reduced (12, 7);
+    auto toolbar = toolbarBounds.reduced (12, 8);
 
     // Dimensioni proporzionate al contenuto (testo + icona), non larghezze
     // fisse arbitrarie: TextButton::getBestWidthForHeight misura il testo
     // con il font reale della LookAndFeel, CsoundLookAndFeel::getIconAllowance
     // aggiunge lo spazio occupato dall'icona.
     const auto applyWidth = applyButton.getBestWidthForHeight (toolbar.getHeight())
-                           + CsoundLookAndFeel::getIconAllowance (applyButton.getName());
+                           + CsoundLookAndFeel::getIconAllowance (applyButton.getName())
+                           + 12; // margini interni piu' ampi della capsula (vedi drawButtonText)
 
     // Burger del pannello Parametri: UNICO bottone ancorato a destra nella
     // toolbar principale (richiesta esplicita: paramsButton/consoleButton
@@ -610,8 +678,8 @@ void CsoundAudioProcessorEditor::resized()
     // Stessa altezza di Apply/burger (panelToolbarButtonDiameter), cosi' le
     // due righe (nome + dettagli) hanno spazio e le linee di separazione
     // sono alte quanto i bottoni accanto.
-    sessionFileLabel.setBounds (toolbar.reduced (12, 0)
-                                       .withSizeKeepingCentre (juce::jmax (0, toolbar.getWidth() - 24), panelToolbarButtonDiameter));
+    sessionFileLabel.setBounds (toolbar.reduced (14, 0)
+                                       .withSizeKeepingCentre (juce::jmax (0, toolbar.getWidth() - 28), panelToolbarButtonDiameter));
 
     // Barra "file non trovato" (vedi SessionWarningBar in PluginEditor.h):
     // a tutta larghezza subito sotto la toolbar, SOLO quando visibile -
@@ -1003,37 +1071,77 @@ void CsoundAudioProcessorEditor::performInitializeSession()
 // vedi SessionFileLabel/SessionWarningBar in PluginEditor.h.
 void CsoundAudioProcessorEditor::SessionFileLabel::paint (juce::Graphics& g)
 {
+    // Capsula scura con bordo sottile (mockup "R2 - Capsula centrale"), su
+    // due righe (richiesta esplicita): sopra "[pallino] Nome.csd", un po'
+    // alzato; sotto "cartella   stato", piccolo e attenuato. Tutto centrato.
     auto area = getLocalBounds().toFloat();
+    const float radius = area.getHeight() * 0.5f;
 
-    // Due sottili linee verticali di separazione (minimal, richiesta
-    // esplicita - niente cornice piena): stesso grigio-petrolio della riga
-    // sotto la toolbar, cosi' "appartengono" alla barra invece di
-    // sembrare un bottone.
-    g.setColour (juce::Colour (0xff2a3a44));
-    g.drawLine (area.getX() + 0.5f, area.getY() + 4.0f, area.getX() + 0.5f, area.getBottom() - 4.0f, 1.0f);
-    g.drawLine (area.getRight() - 0.5f, area.getY() + 4.0f, area.getRight() - 0.5f, area.getBottom() - 4.0f, 1.0f);
+    g.setColour (kCapsuleBg);
+    g.fillRoundedRectangle (area, radius);
+    g.setColour (kCapsuleBorder);
+    g.drawRoundedRectangle (area.reduced (0.5f), radius - 0.5f, 1.0f);
 
-    auto inner = area.reduced (14.0f, 2.0f);
-    auto nameRow   = inner.removeFromTop (inner.getHeight() * 0.58f);
-    auto detailRow = inner;
+    const auto dotColour   = missing ? kCapsuleMissing : dirty ? kCapsuleDirty : kToolbarAccent;
+    const auto stateColour = missing ? kCapsuleMissing : dirty ? kCapsuleDirty : kCapsuleState;
 
-    // Nome: in evidenza (grassetto), rosso se il file manca, bianco se ci
-    // sono modifiche da salvare, attenuato se tutto e' salvato. "•" dopo il
-    // nome quando dirty (U+2022 via charToString: un letterale UTF-8 farebbe
-    // scattare il jassert di juce::String(const char*)).
-    const auto nameColour = missing ? juce::Colour (0xffff6b6b)
-                          : dirty   ? juce::Colour (0xffe8eef1)
-                                    : juce::Colour (0xffa9b7bf);
+    const auto nameFont   = juce::Font (juce::FontOptions (14.0f, juce::Font::bold));
+    const auto detailFont = juce::Font (juce::FontOptions (11.0f));
 
-    g.setColour (nameColour);
-    g.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
-    g.drawFittedText (dirty ? fileName + " " + juce::String::charToString (0x2022) : fileName,
-                      nameRow.toNearestInt(), juce::Justification::centred, 1);
+    auto textWidth = [] (const juce::Font& f, const juce::String& t)
+    {
+        if (t.isEmpty())
+            return 0.0f;
 
-    // Dettagli: piccoli e attenuati, una riga sola.
-    g.setColour (juce::Colour (0xff6f8089));
-    g.setFont (juce::Font (juce::FontOptions (10.5f)));
-    g.drawFittedText (detailText, detailRow.toNearestInt(), juce::Justification::centred, 1);
+        juce::GlyphArrangement ga;
+        ga.addLineOfText (f, t, 0.0f, 0.0f);
+        return ga.getBoundingBox (0, -1, true).getWidth();
+    };
+
+    const float maxTotal = area.getWidth() - 2.0f * radius;
+    auto inner = area.reduced (radius, 0.0f);
+
+    // Riga 1 (spostata leggermente in alto): pallino + nome, e a destra
+    // del nome lo stato ("saved" / "unsaved changes" / "file not found").
+    {
+        const float dotSize = 7.0f, gapDot = 8.0f, gapState = 12.0f;
+        const float wState = textWidth (detailFont, stateText);
+        const float wName  = juce::jmin (textWidth (nameFont, fileName),
+                                         maxTotal - dotSize - gapDot - (wState > 0.0f ? gapState + wState : 0.0f));
+        const float total  = dotSize + gapDot + wName + (wState > 0.0f ? gapState + wState : 0.0f);
+        float x = area.getCentreX() - total * 0.5f;
+
+        auto row = inner.withHeight (area.getHeight() * 0.5f).translated (0.0f, 1.5f);
+
+        g.setColour (dotColour);
+        g.fillEllipse (x, row.getCentreY() - dotSize * 0.5f, dotSize, dotSize);
+        x += dotSize + gapDot;
+
+        g.setColour (missing ? kCapsuleMissing : kCapsuleName);
+        g.setFont (nameFont);
+        g.drawFittedText (fileName, juce::Rectangle<float> (x, row.getY(), wName + 2.0f, row.getHeight()).toNearestInt(),
+                          juce::Justification::centredLeft, 1, 1.0f);
+        x += wName + gapState;
+
+        if (wState > 0.0f)
+        {
+            g.setColour (stateColour);
+            g.setFont (detailFont);
+            g.drawText (stateText, juce::Rectangle<float> (x, row.getY(), wState + 2.0f, row.getHeight()),
+                        juce::Justification::centredLeft, false);
+        }
+    }
+
+    // Riga 2: la cartella su TUTTA la larghezza disponibile della capsula,
+    // centrata; se non ci sta viene accorciata con "...".
+    if (locationText.isNotEmpty())
+    {
+        auto row = inner.withHeight (area.getHeight() * 0.5f).withY (area.getCentreY() - 2.0f);
+
+        g.setColour (kCapsulePath);
+        g.setFont (detailFont);
+        g.drawFittedText (locationText, row.toNearestInt(), juce::Justification::centred, 1, 1.0f);
+    }
 }
 
 CsoundAudioProcessorEditor::SessionWarningBar::SessionWarningBar()
@@ -1184,32 +1292,31 @@ void CsoundAudioProcessorEditor::updateSessionStatus()
     // Riga sotto il nome: dove sta il file (relativo alla cartella base se
     // possibile, con la cartella base indicata con "~/Documents/apeCsound")
     // e lo stato in parole - cosi' il "•" ha sempre una spiegazione accanto.
-    juce::String detail;
+    juce::String where, state;
 
     if (! isLinked)
     {
-        detail = "Not saved to a file yet - Save As... to create one";
+        state = "not saved yet";
     }
     else
     {
         const auto base = CsoundAudioProcessor::getBaseFolder();
         const auto folder = linked.getParentDirectory();
-        juce::String where = linked.isAChildOf (base)
+        where = linked.isAChildOf (base)
             ? "apeCsound/" + folder.getRelativePathFrom (base).replaceCharacter ('\\', '/')
             : folder.getFullPathName();
 
         if (where.endsWith ("/."))
             where = where.dropLastCharacters (2);
 
-        const juce::String state = missing ? "file not found"
-                                 : dirty   ? "unsaved changes"
-                                           : "saved";
-
-        detail = where + "   -   " + state;
+        state = missing ? "file not found"
+              : dirty   ? "unsaved changes"
+                        : "saved";
     }
 
-    sessionFileLabel.fileName   = isLinked ? linked.getFileName() : juce::String ("Untitled");
-    sessionFileLabel.detailText = detail;
+    sessionFileLabel.fileName     = isLinked ? linked.getFileName() : juce::String ("Untitled");
+    sessionFileLabel.locationText = where;
+    sessionFileLabel.stateText    = state;
     sessionFileLabel.dirty      = dirty;
     sessionFileLabel.missing    = missing;
     sessionFileLabel.repaint();
@@ -1327,10 +1434,11 @@ void CsoundAudioProcessorEditor::performApply()
     updateApplyButtonDirtyState();
 }
 
-void CsoundAudioProcessorEditor::OpcodeHelpBar::setHelpText (const juce::String& syntax, const juce::String& description)
+void CsoundAudioProcessorEditor::OpcodeHelpBar::setHelpText (const juce::String& syntax, const juce::String& description, const juce::String& category)
 {
     syntaxText = syntax;
     descriptionText = description;
+    categoryText = category;
     repaint();
 }
 
@@ -1424,6 +1532,30 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::paint (juce::Graphics& g)
 
     area.removeFromLeft (10);
 
+    // Categoria del manuale come etichetta a destra (es. "Signal
+    // Generators: Basic Oscillators"), come nell'indice di CsoundQt. Solo
+    // se c'e' spazio: la descrizione ha la precedenza.
+    if (categoryText.isNotEmpty())
+    {
+        const auto tagFont = juce::Font (juce::FontOptions (11.0f));
+        const auto tagText = categoryText.replace (":", ": ");
+
+        juce::GlyphArrangement tagGlyphs;
+        tagGlyphs.addLineOfText (tagFont, tagText, 0.0f, 0.0f);
+        const int tagWidth = (int) std::ceil (tagGlyphs.getBoundingBox (0, -1, true).getWidth()) + 12;
+
+        if (tagWidth < area.getWidth() / 2)
+        {
+            auto tagArea = area.removeFromRight (tagWidth).reduced (0, 5);
+            g.setColour (juce::Colour (0xffe9dfbf));
+            g.fillRoundedRectangle (tagArea.toFloat(), 4.0f);
+            g.setColour (juce::Colour (0xff6b5b3a));
+            g.setFont (tagFont);
+            g.drawText (tagText, tagArea, juce::Justification::centred, true);
+            area.removeFromRight (8);
+        }
+    }
+
     g.setFont (juce::Font (juce::FontOptions (13.0f)));
     g.setColour (juce::Colour (0xff3a3a3a));
     g.drawFittedText (descriptionText, area, juce::Justification::centredLeft, 1);
@@ -1481,7 +1613,7 @@ namespace
     const juce::Colour kAboutBorder     { 0xff2a3540 };
     const juce::Colour kAboutText       { 0xffe8eef1 };
     const juce::Colour kAboutTextMuted  { 0xff8a9aa5 };
-    const juce::Colour kAboutAccent     { 0xff17a2b8 };
+    const juce::Colour kAboutAccent     { 0xff4aa3b8 };
     const juce::Colour kAboutRowBg      { 0xff1c2730 };
     const juce::Colour kAboutRowHover   { 0xff243441 };
 
@@ -1629,9 +1761,13 @@ void CsoundAudioProcessorEditor::AboutView::Card::paint (juce::Graphics& g)
     // Piede.
     g.setColour (kAboutTextMuted);
     g.setFont (juce::Font (juce::FontOptions (11.5f)));
-    g.drawFittedText ("Powered by Csound  " + uc (0x00B7) + "  Built with JUCE", 0, 412, w, 16, juce::Justification::centred, 1);
+    g.drawFittedText ("Powered by Csound  " + uc (0x00B7) + "  Built with JUCE", 0, 398, w, 16, juce::Justification::centred, 1);
+    g.setFont (juce::Font (juce::FontOptions (10.5f)));
+    g.drawFittedText ("Opcode help text from the Csound Reference Manual\n(GNU FDL), via CsoundQt's opcode database",
+                      0, 425, w, 14, juce::Justification::centred, 1);
+    g.setFont (juce::Font (juce::FontOptions (11.5f)));
     g.drawFittedText (uc (0x00A9) + " " + juce::String (juce::Time::getCurrentTime().getYear()) + " apeSoft",
-                      0, 430, w, 16, juce::Justification::centred, 1);
+                      0, 450, w, 16, juce::Justification::centred, 1);
 }
 
 void CsoundAudioProcessorEditor::AboutView::Card::mouseUp (const juce::MouseEvent& e)
@@ -1710,7 +1846,7 @@ namespace
     const juce::Colour kFindFieldLine  { 0xff3a4550 };
     const juce::Colour kFindText       { 0xffe8eef1 };
     const juce::Colour kFindMuted      { 0xff8a9aa5 };
-    const juce::Colour kFindAccent     { 0xff17a2b8 };
+    const juce::Colour kFindAccent     { 0xff4aa3b8 };
 
     void styleFindField (juce::TextEditor& field, const juce::String& placeholder)
     {
@@ -1732,7 +1868,7 @@ namespace
         button.setColour (juce::TextButton::buttonColourId,   kFindFieldBg);
         button.setColour (juce::TextButton::buttonOnColourId, kFindAccent);
         button.setColour (juce::TextButton::textColourOffId,  kFindText);
-        button.setColour (juce::TextButton::textColourOnId,   juce::Colours::white);
+        button.setColour (juce::TextButton::textColourOnId,   juce::Colour (0xff0b1116));
         button.setTooltip (tooltip);
         button.setClickingTogglesState (toggle);
         // Clic sui bottoni senza togliere il focus da tastiera al campo di
@@ -1744,8 +1880,8 @@ namespace
 
 CsoundAudioProcessorEditor::FindReplaceBar::FindReplaceBar()
 {
-    styleFindField (findField, "Find");
-    styleFindField (replaceField, "Replace with");
+    styleFindField (findField, "" /*"Find"*/);
+    styleFindField (replaceField, "" /*"Replace with"*/);
     addAndMakeVisible (findField);
     addAndMakeVisible (replaceField);
 
@@ -1759,17 +1895,17 @@ CsoundAudioProcessorEditor::FindReplaceBar::FindReplaceBar()
     nextButton.setButtonText (juce::String::charToString (0x2193)); // freccia giu'
     closeButton.setButtonText (juce::String::charToString (0x00D7)); // x
 
-    styleFindButton (prevButton,       "Previous match");
-    styleFindButton (nextButton,       "Next match (Return in the Find field)");
+    styleFindButton (prevButton,       "" /*"Previous match"*/);
+    styleFindButton (nextButton,       "" /*"Next match (Return in the Find field)"*/);
     styleFindButton (matchCaseButton,  "Match case: distinguish uppercase and lowercase letters", true);
     styleFindButton (wholeWordButton,  "Whole word: match only complete words (not inside longer names)", true);
-    styleFindButton (replaceButton,    "Replace the current match and go to the next one (Return in the Replace field)");
-    styleFindButton (replaceAllButton, "Replace all matches - one undo step");
-    styleFindButton (closeButton,      "Close Find / Replace (Esc)");
+    styleFindButton (replaceButton,    "" /*"Replace the current match and go to the next one (Return in the Replace field)"*/);
+    styleFindButton (replaceAllButton, "" /*"Replace all matches - one undo step"*/);
+    styleFindButton (closeButton,      "" /*"Close Find / Replace (Esc)"*/);
 
-    findField.setTooltip ("Text to find - matches are highlighted in the code editor");
-    replaceField.setTooltip ("Replacement text");
-    countLabel.setTooltip ("Current match / total matches");
+    //findField.setTooltip ("Text to find - matches are highlighted in the code editor");
+    //replaceField.setTooltip ("Replacement text");
+    //countLabel.setTooltip ("Current match / total matches");
 
     for (auto* b : { &prevButton, &nextButton, &matchCaseButton, &wholeWordButton,
                      &replaceButton, &replaceAllButton, &closeButton })

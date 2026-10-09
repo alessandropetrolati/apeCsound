@@ -843,19 +843,24 @@ private:
     // tag verificati sul codice di CsoundQt (getWidgetXmlText() di ciascun
     // widget e WidgetLayout::newXmlWidget, ramo develop):
     //   BSBVSlider / BSBHSlider / BSBSlider / BSBKnob -> 1 slot Float
-    //     objectName, minimum, maximum, value; skew 1, step 0.001 fissi
+    //     objectName, minimum, maximum, value, resolution (-1 = nessuna ->
+    //     0.001; knob integerMode -> 1), mode "exp" -> skew dal punto medio
     //   BSBSpinBox / BSBScrollNumber                  -> 1 slot Float
     //     objectName, minimum, maximum, value, resolution (= step); skew 1
+    //     (range di default +-1e12 limitato a +-10000)
     //   BSBController (xy pad / meter)                -> fino a 2 slot Float
     //     X: objectName,  xMin, xMax, xValue
     //     Y: objectName2, yMin, yMax, yValue          (skew 1, step 0.001)
     //     un asse con nome canale vuoto viene saltato
     //   BSBCheckBox                                    -> 1 slot Bool
-    //     objectName, selected ("true"/"false")
+    //     objectName, selected, pressedValue (se != 1 -> Float {0, v})
+    //   BSBButton type "value"/"pictvalue"             -> 1 slot Bool
+    //     objectName, latched, pressedValue (come la checkbox); i bottoni
+    //     "event"/"pictevent"/"pict" e i canali "_Browse*" sono ignorati
     //   BSBDropdown                                    -> 1 slot Choice
     //     objectName, bsbDropdownItemList/bsbDropdownItem/name (max 16),
-    //     selectedIndex
-    // Gli altri tipi (label, display, button, graph, scope...) sono ignorati.
+    //     selectedIndex (CsoundQt manda l'INDICE sul canale, non "value")
+    // Gli altri tipi (label, display, line edit, graph, scope...) sono ignorati.
     // Un nome canale gia' usato da un widget precedente viene saltato (in
     // CsoundQt piu' widget possono condividere un canale, qui creerebbero
     // due parametri DAW in conflitto sullo stesso chnget). Ritorna false se

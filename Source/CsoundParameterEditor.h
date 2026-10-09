@@ -243,6 +243,13 @@ public:
     // mostra la vista informazioni (vedi AboutView in PluginEditor.h).
     std::function<void()> onAboutRequested;
 
+    // "Modern syntax in help" (spunta) e "Csound Manual (online)": entrambe
+    // impostate da PluginEditor. isModernSyntaxEnabled serve solo a
+    // disegnare la spunta nel menu.
+    std::function<void()> onToggleModernSyntaxRequested;
+    std::function<bool()> isModernSyntaxEnabled;
+    std::function<void()> onOpenManualRequested;
+
     // Chiamata alla fine di OGNI rebuildUnifiedRows() (aggiunta/rimozione
     // di un parametro, commit di un metadata, undo/redo, refresh dopo Load/
     // ripristino): PluginEditor la usa per ricontrollare se la sessione
