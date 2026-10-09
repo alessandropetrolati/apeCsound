@@ -200,6 +200,7 @@ CsoundLookAndFeel::CsoundLookAndFeel()
     setColour (juce::CodeEditorComponent::lineNumberBackgroundId,   juce::Colour (0xffeef2f5));
     setColour (juce::CodeEditorComponent::lineNumberTextId,         kTextMuted);
     setColour (juce::CodeEditorComponent::highlightColourId,        kAccent.withAlpha (0.2f));
+    setColour (juce::CaretComponent::caretColourId,                 kAccent); // caret di CodeView
 
     setColour (juce::ScrollBar::thumbColourId, kAccent.withAlpha (0.55f));
     setColour (juce::Label::textColourId,      kText);

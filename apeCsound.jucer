@@ -38,6 +38,14 @@
             file="Source/CsoundCodeEditor.cpp"/>
       <FILE id="cCEdB" name="CsoundCodeEditor.h" compile="0" resource="0"
             file="Source/CsoundCodeEditor.h"/>
+      <FILE id="cCVwA" name="CsoundCodeView.cpp" compile="1" resource="0"
+            file="Source/CsoundCodeView.cpp"/>
+      <FILE id="cCVwB" name="CsoundCodeView.h" compile="0" resource="0"
+            file="Source/CsoundCodeView.h"/>
+      <FILE id="iKbdA" name="IOSKeyboard.mm" compile="1" resource="0"
+            file="Source/IOSKeyboard.mm"/>
+      <FILE id="iKbdB" name="IOSKeyboard.h" compile="0" resource="0"
+            file="Source/IOSKeyboard.h"/>
       <FILE id="sScfH" name="SecurityScopedFile.h" compile="0" resource="0"
             file="Source/SecurityScopedFile.h"/>
       <FILE id="sScfM" name="SecurityScopedFile.mm" compile="1" resource="0"

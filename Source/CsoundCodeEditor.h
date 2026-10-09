@@ -5,9 +5,11 @@
 #include <functional>
 #include <vector>
 #include "CsoundOpcodeHelp.h"
+#include "CsoundCodeView.h"
 
 /**
-    juce::CodeEditorComponent specializzato per Csound: aggiunge auto-indent
+    CodeView (editor di codice nostro, vedi CsoundCodeView.h) specializzato
+    per Csound: aggiunge auto-indent
     "intelligente" stile Xcode / VS Code, basato sulla struttura del
     linguaggio (non solo sulla whitespace della riga precedente):
 
@@ -53,10 +55,9 @@
       suggerimento evidenziato); Esc, o la perdita del focus (es. un click
       fuori dall'editor), lo chiudono.
 */
-class CsoundCodeEditor final : public juce::CodeEditorComponent,
+class CsoundCodeEditor final : public CodeView,
                                 public juce::DragAndDropTarget,
-                                private juce::CodeDocument::Listener,
-                                private juce::Timer
+                                private juce::CodeDocument::Listener
 {
 public:
     CsoundCodeEditor (juce::CodeDocument& document, juce::CodeTokeniser* tokeniser);
@@ -65,10 +66,8 @@ public:
     void handleReturnKey() override;
     bool keyPressed (const juce::KeyPress& key) override;
     void resized() override;
-    void mouseDown (const juce::MouseEvent& event) override;
-    void mouseUp (const juce::MouseEvent& event) override;
-    void mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel) override;
     void focusLost (juce::Component::FocusChangeType cause) override;
+    void caretPositionMoved() override;
 
     // juce::DragAndDropTarget - vedi il commento in testa alla classe.
     bool isInterestedInDragSource (const SourceDetails& dragSourceDetails) override;
@@ -182,11 +181,10 @@ private:
     // (cronologia condivisa, vedi onUndoRequested), "Indent" (re-indenta
     // le righe selezionate, o quella del caret, con la logica di Invio) e
     // "Comment"/"Uncomment" (aggiunge o toglie ";" in testa alle righe).
-    // Si apre con il tasto destro/ctrl-clic e, per iOS dove non esistono,
-    // con una pressione prolungata (kLongPressMs) senza trascinare.
-    void showContextMenu();
-    void timerCallback() override;
-    void mouseDrag (const juce::MouseEvent& event) override;
+    // CodeView lo richiama per il tasto destro/ctrl-clic e, col touch, al
+    // rilascio dopo una selezione (pressione prolungata/maniglie) o al tap
+    // sulla selezione.
+    void showContextMenu (juce::Point<int> localPos) override;
 
     // Intervallo di righe coperto dalla selezione (o la riga del caret):
     // una riga finale "toccata" solo con il caret in colonna 0 e' esclusa.
@@ -196,14 +194,6 @@ private:
     bool areSelectedLinesCommented() const;
 
     enum ContextMenuItem { ctxCut = 1, ctxCopy, ctxPaste, ctxDelete, ctxSelectAll, ctxUndo, ctxRedo, ctxIndent, ctxComment };
-
-    static constexpr int kLongPressMs = 550;
-    juce::Point<int> longPressStart;
-    bool longPressFired = false;
-
-    // Resto frazionario dell'ultimo scroll a rotellina/gesture, accumulato
-    // tra un evento e il successivo - vedi mouseWheelMove().
-    float wheelScrollRemainder = 0.0f;
 
     // Riga evidenziata mentre si trascina uno slot sopra l'editor (-1 =
     // nessun drag in corso) - solo feedback visivo, vedi itemDragMove/

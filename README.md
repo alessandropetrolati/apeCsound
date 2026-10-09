@@ -14,6 +14,7 @@ Developed by **Alessandro Petrolati** — [apeSoft](https://www.apesoft.it).
 - Opcode autocompletion and an inline help bar: syntax with the manual's argument names, one-line description and category for every opcode of the Csound Reference Manual (generated from CsoundQt's `opcodes.xml`, GNU FDL — see `scripts/generate_opcode_help.py`), plus the user-defined opcodes of the current file and, for anything else, the type signature reported by the running engine. **Modern Syntax in Help** (main menu) shows every synopsis in Csound 7 functional form with type annotations (`ares:a = oscil(xamp, xcps)`); **Csound Manual (online)** opens the Csound 7 reference manual in the browser.
 - **Apply** recompiles the edited code without restarting the host. The button is outlined in red while the editor differs from the running code.
 - Console with Csound's messages and errors.
+- The editor itself is a custom JUCE component (`CodeView`, `Source/CsoundCodeView.*`) rather than `juce::CodeEditorComponent`: one implementation for macOS, Windows, Linux and iOS with smooth pixel scrolling (mouse wheel, trackpad, one-finger pan with inertia), line numbers, current-line highlight, double/triple click selection, and on touch screens tap to place the caret, long press to select with handles and a magnifier, and the app's own menu on release.
 
 ### DAW parameters
 ## Audio channels
@@ -100,7 +101,8 @@ Csound is **linked statically**: `libCsoundLib64.a` + `libsndfile.a` + `libsampl
 Source/
   PluginProcessor.*        Csound engine, parameters, session and project state
   PluginEditor.*           Main window: toolbar, editor, console, menus, About view
-  CsoundCodeEditor.*       Code editor (auto-indent, autocompletion, help bar)
+  CsoundCodeView.*         CodeView: custom code editor component (layout, scrolling, mouse/touch, keyboard)
+  CsoundCodeEditor.*       Csound layer over CodeView (auto-indent, autocompletion, help bar)
   CsoundTokeniser.*        Syntax highlighting
   CsoundParameterEditor.*  Parameters panel
   CsoundActionSheet.*      Touch-friendly menus

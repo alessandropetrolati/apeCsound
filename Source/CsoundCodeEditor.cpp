@@ -1,10 +1,11 @@
 #include "CsoundCodeEditor.h"
 #include "CsoundActionSheet.h"
+#include "IOSKeyboard.h"
 #include <cmath>
 #include <limits>
 
 CsoundCodeEditor::CsoundCodeEditor (juce::CodeDocument& doc, juce::CodeTokeniser* tok)
-    : juce::CodeEditorComponent (doc, tok),
+    : CodeView (doc, tok),
       codeDocument (doc)
 {
     setTabSize (indentSpaces, true); // Tab = 4 spazi, mai caratteri tab reali.
@@ -156,7 +157,7 @@ void CsoundCodeEditor::handleReturnKey()
 
     const auto newIndent = juce::String::repeatedString (" ", indentSpaces * depth);
 
-    CodeEditorComponent::insertTextAtCaret ("\n" + newIndent);
+    CodeView::insertTextAtCaret ("\n" + newIndent);
 }
 
 bool CsoundCodeEditor::keyPressed (const juce::KeyPress& key)
@@ -247,7 +248,7 @@ bool CsoundCodeEditor::keyPressed (const juce::KeyPress& key)
         }
     }
 
-    const bool handled = CodeEditorComponent::keyPressed (key);
+    const bool handled = CodeView::keyPressed (key);
 
     // Qualunque altro tasto (freccie, Home/End, Page Up/Down...) puo' aver
     // spostato il caret senza passare da codeDocumentTextInserted/Deleted:
@@ -258,48 +259,10 @@ bool CsoundCodeEditor::keyPressed (const juce::KeyPress& key)
     return handled;
 }
 
-void CsoundCodeEditor::mouseDown (const juce::MouseEvent& event)
-{
-    longPressFired = false;
-    stopTimer();
-
-    // Tasto destro / ctrl-clic: il nostro menu al posto del PopupMenu di
-    // JUCE (che la classe base aprirebbe da sola in mouseDown).
-    if (event.mods.isPopupMenu())
-    {
-        showContextMenu();
-        return;
-    }
-
-    CodeEditorComponent::mouseDown (event);
-    updateOpcodeHelp();
-
-    // Pressione prolungata (touch/iOS): parte un timer; un trascinamento o
-    // il rilascio prima della scadenza lo annullano.
-    longPressStart = event.getPosition();
-    startTimer (kLongPressMs);
-}
-
-void CsoundCodeEditor::mouseDrag (const juce::MouseEvent& event)
-{
-    if (isTimerRunning() && event.getPosition().getDistanceFrom (longPressStart) > 8)
-        stopTimer();
-
-    if (! longPressFired)
-        CodeEditorComponent::mouseDrag (event);
-}
-
-void CsoundCodeEditor::timerCallback()
-{
-    stopTimer();
-    longPressFired = true;
-    showContextMenu();
-}
-
-void CsoundCodeEditor::showContextMenu()
+void CsoundCodeEditor::showContextMenu (juce::Point<int>)
 {
     const bool hasSelection = getHighlightedRegion().getLength() > 0;
-    const bool canPaste = juce::SystemClipboard::getTextFromClipboard().isNotEmpty();
+    const bool canPaste = IOSKeyboard::clipboardHasText(); // non legge gli appunti (avviso iOS 16+)
 
     std::vector<CsoundActionSheetItem> items;
 
@@ -337,7 +300,7 @@ void CsoundCodeEditor::showContextMenu()
             case ctxCut:       ed.cutToClipboard(); break;
             case ctxCopy:      ed.copyToClipboard(); break;
             case ctxPaste:     ed.pasteFromClipboard(); break;
-            case ctxDelete:    ed.insertTextAtCaret ({}); break;
+            case ctxDelete:    ed.deleteSelection(); break;
             case ctxSelectAll: ed.selectAll(); break;
             case ctxUndo:      if (ed.onUndoRequested) ed.onUndoRequested(); else ed.undo(); break;
             case ctxRedo:      if (ed.onRedoRequested) ed.onRedoRequested(); else ed.redo(); break;
@@ -352,95 +315,9 @@ void CsoundCodeEditor::showContextMenu()
     });
 }
 
-void CsoundCodeEditor::mouseUp (const juce::MouseEvent& event)
-{
-    stopTimer();
-
-    if (longPressFired)
-    {
-        longPressFired = false;
-        return;
-    }
-
-    CodeEditorComponent::mouseUp (event);
-    updateOpcodeHelp();
-}
-
-void CsoundCodeEditor::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)
-{
-    // Lo scroll di default di juce::CodeEditorComponent passa la mano a
-    // juce::ScrollBar::mouseWheelMove, che moltiplica wheel.deltaY per un
-    // fattore 10 FISSO e lo applica senza alcun limite. Con un trackpad,
-    // durante lo slancio di uno swipe (la fase "inertial" gestita dal
-    // sistema - una sequenza di eventi con deltaY che il sistema stesso fa
-    // salire e scendere da solo) il risultato e' un salto di decine o
-    // centinaia di righe per singolo evento: su un file lungo diventa
-    // impossibile fermarsi dove si vuole, esattamente il problema lamentato
-    // (la stessa sensazione "accelerata" dell'editor di Cabbage).
-    //
-    // Qui scaliamo deltaY in modo lineare ma con un fattore molto piu'
-    // contenuto, e soprattutto limitiamo (jlimit) il numero massimo di
-    // righe per singolo evento: la velocita' percepita resta quindi
-    // prevedibile e limitata, indipendentemente da quanto e' lungo il file
-    // o da quanto forte e' lo swipe. wheelScrollRemainder accumula la parte
-    // frazionaria (e l'eventuale eccesso tagliato dal limite) tra un evento
-    // e il successivo, cosi' uno scroll lento e preciso resta fluido (non
-    // si "perde" nulla sotto la soglia di una riga) e uno scroll rapido
-    // viene spalmato su piu' eventi invece di saltare in un colpo solo.
-    //
-    // IMPORTANTE (il vero motivo per cui restava "incontrollabile" anche
-    // con questo limite): senza un tetto anche su wheelScrollRemainder,
-    // durante uno swipe forte su trackpad macOS (che manda MOLTI eventi in
-    // rapida sequenza, ciascuno gia' con un deltaY grande per conto suo)
-    // l'accumulo entrava piu' velocemente di quanto il limite per evento
-    // riuscisse a scaricarlo: il "debito" di righe cresceva senza fondo e
-    // continuava a scaricarsi per secondi anche DOPO che l'utente aveva
-    // fermato il gesto, durante la sola fase di decelerazione inerziale -
-    // la sensazione di "accelerazione fuori controllo" lamentata. Il
-    // jlimit sul remainder sotto impedisce che quel debito superi mai un
-    // singolo scatto (maxLinesPerEvent): lo scroll si ferma non appena si
-    // ferma il gesto, non dopo.
-    if (! juce::approximatelyEqual (wheel.deltaY, 0.0f))
-    {
-        constexpr float linesPerNotch     = 1.2f;
-        constexpr int   maxLinesPerEvent  = 3;
-
-        wheelScrollRemainder = juce::jlimit (-(float) maxLinesPerEvent, (float) maxLinesPerEvent,
-                                              wheelScrollRemainder + wheel.deltaY * linesPerNotch);
-
-        const int wholeLines = (int) wheelScrollRemainder; // troncato verso zero
-        const int clampedLines = juce::jlimit (-maxLinesPerEvent, maxLinesPerEvent, wholeLines);
-
-        wheelScrollRemainder -= (float) clampedLines;
-
-        if (clampedLines != 0)
-        {
-            // Non scrollBy(-clampedLines) diretto (BUG corretto: "scroll
-            // extra testo", cioe' overscroll oltre la fine del file) -
-            // CodeEditorComponent::scrollToLineInternal (JUCE) limita
-            // firstLineOnScreen SOLO a [0, numLines - 1], SENZA tener conto
-            // di quante righe stanno a schermo (getNumLinesOnScreen()):
-            // l'ULTIMA riga del file puo' quindi finire in cima
-            // all'editor, lasciando sotto uno spazio vuoto mai occupato da
-            // testo. Lo scroll "di serie" (passato allo ScrollBar) non
-            // soffre di questo perche' la ScrollBar stessa clampa la sua
-            // posizione corrente al range disponibile - qui bypassavamo
-            // quel clamp chiamando scrollBy()/scrollToLine() direttamente,
-            // quindi dobbiamo rifare noi lo stesso clamp "non oltre la
-            // fine" prima di applicarlo.
-            const int maxFirstLine = juce::jmax (0, getDocument().getNumLines() - getNumLinesOnScreen());
-            const int targetFirstLine = juce::jlimit (0, maxFirstLine, getFirstLineOnScreen() - clampedLines);
-            scrollToLine (targetFirstLine);
-            return;
-        }
-    }
-
-    CodeEditorComponent::mouseWheelMove (event, wheel);
-}
-
 void CsoundCodeEditor::focusLost (juce::Component::FocusChangeType cause)
 {
-    CodeEditorComponent::focusLost (cause);
+    CodeView::focusLost (cause);
 
     // Un click fuori dall'editor (o fuori dalla finestra del plugin) fa
     // perdere il focus da tastiera: e' il segnale piu' affidabile per
@@ -449,6 +326,14 @@ void CsoundCodeEditor::focusLost (juce::Component::FocusChangeType cause)
     // e' un popup "flottante" che infastidisce, puo' restare a mostrare
     // l'ultimo opcode selezionato.
     hideSuggestions();
+}
+
+void CsoundCodeEditor::caretPositionMoved()
+{
+    // Click, tap, trascinamento o freccie: l'help della barra segue il
+    // caret (prima era fatto in mouseDown/mouseUp, ora e' CodeView a
+    // gestire mouse e touch e a notificare qui).
+    updateOpcodeHelp();
 }
 
 //==============================================================================
@@ -586,15 +471,16 @@ void CsoundCodeEditor::paintOverChildren (juce::Graphics& g)
     if (dragHighlightLine < 0)
         return;
 
-    const auto y = (dragHighlightLine - getFirstLineOnScreen()) * getLineHeight();
+    // Scroll a pixel (CodeView): la Y viene dalla geometria reale della riga.
+    const auto y = getCharacterBounds (juce::CodeDocument::Position (codeDocument, dragHighlightLine, 0)).getY();
 
     g.setColour (juce::Colour (0xff4aa3b8).withAlpha (0.25f));
-    g.fillRect (0, y, getWidth(), getLineHeight());
+    g.fillRect (getGutterWidth(), y, getWidth() - getGutterWidth(), getLineHeight());
 }
 
 void CsoundCodeEditor::resized()
 {
-    CodeEditorComponent::resized();
+    CodeView::resized();
 
     // La posizione del popup e' calcolata rispetto al caret al momento in
     // cui viene mostrato: dopo un resize (es. l'utente ridimensiona la
