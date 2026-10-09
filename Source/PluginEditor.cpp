@@ -371,6 +371,51 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     };
     parameterPanel.onOpenManualRequested = [] { juce::URL (kCsoundManualUrl).launchInDefaultBrowser(); };
 
+    // Clic sulla capsula del file: Save / Save as... (stesse azioni del
+    // menu principale, vedi performSaveLinked/promptSaveSession).
+    sessionFileLabel.onClick = [this]
+    {
+        std::vector<CsoundActionSheetItem> items;
+        {
+            CsoundActionSheetItem item;
+            item.id = 1; item.text = "Save"; item.icon = CsoundActionSheetIcon::save;
+            items.push_back (item);
+        }
+        {
+            CsoundActionSheetItem item;
+            item.id = 2; item.text = "Save as..."; item.icon = CsoundActionSheetIcon::save;
+            items.push_back (item);
+        }
+        {
+            CsoundActionSheetItem item;
+            item.id = 3; item.text = "Load..."; item.icon = CsoundActionSheetIcon::load;
+            items.push_back (item);
+        }
+        items.push_back (CsoundActionSheetItem::separator());
+        {
+            CsoundActionSheetItem item;
+            item.id = 4; item.text = "Initialize Session"; item.icon = CsoundActionSheetIcon::newDocument;
+            items.push_back (item);
+        }
+
+        juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
+
+        CsoundActionSheet::show (*this, "", std::move (items), [safeThis] (int result)
+        {
+            if (safeThis == nullptr)
+                return;
+
+            switch (result)
+            {
+                case 1: safeThis->performSaveLinked();      break;
+                case 2: safeThis->promptSaveSession();      break;
+                case 3: safeThis->promptLoadSession();      break;
+                case 4: safeThis->promptInitializeSession(); break;
+                default: break;
+            }
+        });
+    };
+
     // Ogni cambio di STRUTTURA dei parametri (add/remove/metadata/undo/redo)
     // ricontrolla la barra "modifiche non salvate" - vedi onMappingChanged in
     // CsoundParameterEditor.h e SessionWarningBar in PluginEditor.h.
@@ -1077,9 +1122,9 @@ void CsoundAudioProcessorEditor::SessionFileLabel::paint (juce::Graphics& g)
     auto area = getLocalBounds().toFloat();
     const float radius = area.getHeight() * 0.5f;
 
-    g.setColour (kCapsuleBg);
+    g.setColour (hovered ? kCapsuleBg.brighter (0.12f) : kCapsuleBg);
     g.fillRoundedRectangle (area, radius);
-    g.setColour (kCapsuleBorder);
+    g.setColour (hovered ? kCapsuleBorder.brighter (0.25f) : kCapsuleBorder);
     g.drawRoundedRectangle (area.reduced (0.5f), radius - 0.5f, 1.0f);
 
     const auto dotColour   = missing ? kCapsuleMissing : dirty ? kCapsuleDirty : kToolbarAccent;

@@ -153,8 +153,16 @@ private:
     // Cmd+Z finiva all'host invece che alla nostra cronologia di undo).
     struct SessionFileLabel final : public juce::Component
     {
-        SessionFileLabel() { setInterceptsMouseClicks (false, false); }
+        SessionFileLabel() { setMouseCursor (juce::MouseCursor::PointingHandCursor); }
         void paint (juce::Graphics& g) override;
+        void mouseUp (const juce::MouseEvent& e) override { if (onClick && contains (e.getPosition())) onClick(); }
+        void mouseEnter (const juce::MouseEvent&) override { hovered = true;  repaint(); }
+        void mouseExit  (const juce::MouseEvent&) override { hovered = false; repaint(); }
+
+        // Clic sulla capsula: menu Save / Save as... (richiesta esplicita;
+        // impostato da PluginEditor).
+        std::function<void()> onClick;
+        bool hovered = false;
 
         juce::String fileName;     // "Untitled" se non collegata
         juce::String locationText; // cartella (relativa alla base se possibile)

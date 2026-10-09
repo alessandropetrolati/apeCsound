@@ -1,5 +1,7 @@
 #include "CsoundCodeEditor.h"
+#include "CsoundActionSheet.h"
 #include <cmath>
+#include <limits>
 
 CsoundCodeEditor::CsoundCodeEditor (juce::CodeDocument& doc, juce::CodeTokeniser* tok)
     : juce::CodeEditorComponent (doc, tok),
@@ -253,12 +255,110 @@ bool CsoundCodeEditor::keyPressed (const juce::KeyPress& key)
 
 void CsoundCodeEditor::mouseDown (const juce::MouseEvent& event)
 {
+    longPressFired = false;
+    stopTimer();
+
+    // Tasto destro / ctrl-clic: il nostro menu al posto del PopupMenu di
+    // JUCE (che la classe base aprirebbe da sola in mouseDown).
+    if (event.mods.isPopupMenu())
+    {
+        showContextMenu();
+        return;
+    }
+
     CodeEditorComponent::mouseDown (event);
     updateOpcodeHelp();
+
+    // Pressione prolungata (touch/iOS): parte un timer; un trascinamento o
+    // il rilascio prima della scadenza lo annullano.
+    longPressStart = event.getPosition();
+    startTimer (kLongPressMs);
+}
+
+void CsoundCodeEditor::mouseDrag (const juce::MouseEvent& event)
+{
+    if (isTimerRunning() && event.getPosition().getDistanceFrom (longPressStart) > 8)
+        stopTimer();
+
+    if (! longPressFired)
+        CodeEditorComponent::mouseDrag (event);
+}
+
+void CsoundCodeEditor::timerCallback()
+{
+    stopTimer();
+    longPressFired = true;
+    showContextMenu();
+}
+
+void CsoundCodeEditor::showContextMenu()
+{
+    const bool hasSelection = getHighlightedRegion().getLength() > 0;
+    const bool canPaste = juce::SystemClipboard::getTextFromClipboard().isNotEmpty();
+
+    std::vector<CsoundActionSheetItem> items;
+
+    auto add = [&items] (int id, const juce::String& text, CsoundActionSheetIcon icon, bool enabled = true)
+    {
+        CsoundActionSheetItem item;
+        item.id = id; item.text = text; item.icon = icon; item.enabled = enabled;
+        items.push_back (item);
+    };
+
+    add (ctxCut,       "Cut",        CsoundActionSheetIcon::cut,       hasSelection);
+    add (ctxCopy,      "Copy",       CsoundActionSheetIcon::copy,      hasSelection);
+    add (ctxPaste,     "Paste",      CsoundActionSheetIcon::paste,     canPaste);
+    add (ctxDelete,    "Delete",     CsoundActionSheetIcon::trash,     hasSelection);
+    add (ctxSelectAll, "Select All", CsoundActionSheetIcon::selectAll);
+    items.push_back (CsoundActionSheetItem::separator());
+    add (ctxUndo, "Undo", CsoundActionSheetIcon::undo, onUndoRequested != nullptr || getDocument().getUndoManager().canUndo());
+    add (ctxRedo, "Redo", CsoundActionSheetIcon::redo, onRedoRequested != nullptr || getDocument().getUndoManager().canRedo());
+    items.push_back (CsoundActionSheetItem::separator());
+    add (ctxIndent,  "Indent", CsoundActionSheetIcon::indent);
+    add (ctxComment, areSelectedLinesCommented() ? "Uncomment" : "Comment", CsoundActionSheetIcon::comment);
+
+    auto* host = getTopLevelComponent();
+
+    if (host == nullptr)
+        return;
+
+    juce::Component::SafePointer<CsoundCodeEditor> safeThis (this);
+
+    CsoundActionSheet::show (*host, "", std::move (items), [safeThis] (int result)
+    {
+        if (safeThis == nullptr)
+            return;
+
+        auto& ed = *safeThis;
+
+        switch (result)
+        {
+            case ctxCut:       ed.cutToClipboard(); break;
+            case ctxCopy:      ed.copyToClipboard(); break;
+            case ctxPaste:     ed.pasteFromClipboard(); break;
+            case ctxDelete:    ed.insertTextAtCaret ({}); break;
+            case ctxSelectAll: ed.selectAll(); break;
+            case ctxUndo:      if (ed.onUndoRequested) ed.onUndoRequested(); else ed.undo(); break;
+            case ctxRedo:      if (ed.onRedoRequested) ed.onRedoRequested(); else ed.redo(); break;
+            case ctxIndent:    ed.indentSelectedLines(); break;
+            case ctxComment:   ed.toggleCommentOnSelectedLines(); break;
+            default: break;
+        }
+
+        ed.grabKeyboardFocus();
+    });
 }
 
 void CsoundCodeEditor::mouseUp (const juce::MouseEvent& event)
 {
+    stopTimer();
+
+    if (longPressFired)
+    {
+        longPressFired = false;
+        return;
+    }
+
     CodeEditorComponent::mouseUp (event);
     updateOpcodeHelp();
 }
@@ -590,6 +690,131 @@ void CsoundCodeEditor::reindentLine (int lineIndex)
 
     const juce::CodeDocument::Position newCaretPos (doc, lineStartOffset + newIndent.length() + caretOffsetFromContent);
     moveCaretTo (newCaretPos, false);
+}
+
+//==============================================================================
+// Menu contestuale: Indent / Comment ---------------------------------------
+juce::Range<int> CsoundCodeEditor::getSelectedLineRange() const
+{
+    const auto start = getSelectionStart();
+    const auto end   = getSelectionEnd();
+
+    int firstLine = start.getLineNumber();
+    int lastLine  = end.getLineNumber();
+
+    if (lastLine > firstLine && end.getIndexInLine() == 0)
+        --lastLine;
+
+    return { firstLine, lastLine + 1 };
+}
+
+void CsoundCodeEditor::indentSelectedLines()
+{
+    const auto lines = getSelectedLineRange();
+    auto& doc = getDocument();
+
+    doc.newTransaction();
+
+    // Dalla prima all'ultima: ogni riga dipende solo da quelle PRIMA di se'
+    // (indentDepthBeforeLine), gia' sistemate quando tocca a lei.
+    for (int line = lines.getStart(); line < lines.getEnd() && line < doc.getNumLines(); ++line)
+        reindentLine (line);
+
+    doc.newTransaction();
+}
+
+bool CsoundCodeEditor::areSelectedLinesCommented() const
+{
+    const auto lines = getSelectedLineRange();
+    auto& doc = getDocument();
+    bool anyContent = false;
+
+    for (int line = lines.getStart(); line < lines.getEnd() && line < doc.getNumLines(); ++line)
+    {
+        const auto text = doc.getLine (line).trim();
+
+        if (text.isEmpty())
+            continue;
+
+        anyContent = true;
+
+        if (! text.startsWith (";"))
+            return false;
+    }
+
+    return anyContent;
+}
+
+void CsoundCodeEditor::toggleCommentOnSelectedLines()
+{
+    const auto lines = getSelectedLineRange();
+    auto& doc = getDocument();
+    const bool uncomment = areSelectedLinesCommented();
+
+    // Commento: ";" inserito alla colonna di indentazione minima del blocco,
+    // cosi' il codice resta allineato e si puo' togliere in modo pulito.
+    int minIndent = std::numeric_limits<int>::max();
+
+    for (int line = lines.getStart(); line < lines.getEnd() && line < doc.getNumLines(); ++line)
+    {
+        const auto text = doc.getLine (line);
+
+        if (text.trim().isEmpty())
+            continue;
+
+        int ws = 0;
+        while (ws < text.length() && (text[ws] == ' ' || text[ws] == '\t'))
+            ++ws;
+
+        minIndent = juce::jmin (minIndent, ws);
+    }
+
+    if (minIndent == std::numeric_limits<int>::max())
+        return; // solo righe vuote
+
+    doc.newTransaction();
+    isReindenting = true; // niente re-indent automatico mentre si inserisce
+
+    // Dall'ultima alla prima: gli offset delle righe precedenti non cambiano.
+    for (int line = lines.getEnd() - 1; line >= lines.getStart(); --line)
+    {
+        if (line >= doc.getNumLines())
+            continue;
+
+        const auto text = doc.getLine (line);
+
+        if (text.trim().isEmpty())
+            continue;
+
+        const int lineStart = juce::CodeDocument::Position (doc, line, 0).getPosition();
+
+        if (uncomment)
+        {
+            int ws = 0;
+            while (ws < text.length() && (text[ws] == ' ' || text[ws] == '\t'))
+                ++ws;
+
+            if (ws < text.length() && text[ws] == ';')
+            {
+                const int removeLen = (ws + 1 < text.length() && text[ws + 1] == ' ') ? 2 : 1;
+                doc.deleteSection (lineStart + ws, lineStart + ws + removeLen);
+            }
+        }
+        else
+        {
+            doc.insertText (lineStart + minIndent, "; ");
+        }
+    }
+
+    isReindenting = false;
+    doc.newTransaction();
+
+    // Selezione estesa alle righe intere appena toccate, cosi' un secondo
+    // toggle agisce sullo stesso blocco.
+    const juce::CodeDocument::Position selStart (doc, lines.getStart(), 0);
+    const juce::CodeDocument::Position selEnd   (doc, juce::jmin (lines.getEnd(), doc.getNumLines()), 0);
+    moveCaretTo (selStart, false);
+    moveCaretTo (selEnd, true);
 }
 
 //==============================================================================

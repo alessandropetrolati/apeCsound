@@ -55,7 +55,8 @@
 */
 class CsoundCodeEditor final : public juce::CodeEditorComponent,
                                 public juce::DragAndDropTarget,
-                                private juce::CodeDocument::Listener
+                                private juce::CodeDocument::Listener,
+                                private juce::Timer
 {
 public:
     CsoundCodeEditor (juce::CodeDocument& document, juce::CodeTokeniser* tokeniser);
@@ -174,6 +175,31 @@ private:
 
     int indentDepthBeforeLine (int lineIndex) const;
     void reindentLine (int lineIndex);
+
+    // Menu contestuale: NON il juce::PopupMenu di CodeEditorComponent ma lo
+    // stesso CsoundActionSheet degli altri menu dell'app (richiesta
+    // esplicita), con Cut/Copy/Paste/Delete/Select All, Undo/Redo
+    // (cronologia condivisa, vedi onUndoRequested), "Indent" (re-indenta
+    // le righe selezionate, o quella del caret, con la logica di Invio) e
+    // "Comment"/"Uncomment" (aggiunge o toglie ";" in testa alle righe).
+    // Si apre con il tasto destro/ctrl-clic e, per iOS dove non esistono,
+    // con una pressione prolungata (kLongPressMs) senza trascinare.
+    void showContextMenu();
+    void timerCallback() override;
+    void mouseDrag (const juce::MouseEvent& event) override;
+
+    // Intervallo di righe coperto dalla selezione (o la riga del caret):
+    // una riga finale "toccata" solo con il caret in colonna 0 e' esclusa.
+    juce::Range<int> getSelectedLineRange() const;
+    void indentSelectedLines();
+    void toggleCommentOnSelectedLines();
+    bool areSelectedLinesCommented() const;
+
+    enum ContextMenuItem { ctxCut = 1, ctxCopy, ctxPaste, ctxDelete, ctxSelectAll, ctxUndo, ctxRedo, ctxIndent, ctxComment };
+
+    static constexpr int kLongPressMs = 550;
+    juce::Point<int> longPressStart;
+    bool longPressFired = false;
 
     // Resto frazionario dell'ultimo scroll a rotellina/gesture, accumulato
     // tra un evento e il successivo - vedi mouseWheelMove().

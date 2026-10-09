@@ -376,6 +376,97 @@ namespace
         return filled;
     }
 
+    // Forbici stilizzate: due anelli in basso e due lame incrociate.
+    juce::Path makeCutPath()
+    {
+        juce::Path rings;
+        rings.addEllipse (3.5f, 14.5f, 6.0f, 6.0f);
+        rings.addEllipse (14.5f, 14.5f, 6.0f, 6.0f);
+        auto filled = strokeOpenPath (rings, 1.6f);
+
+        juce::Path blades;
+        blades.startNewSubPath (8.0f, 15.5f);  blades.lineTo (19.0f, 3.5f);
+        blades.startNewSubPath (16.0f, 15.5f); blades.lineTo (5.0f, 3.5f);
+        filled.addPath (strokeOpenPath (blades, 1.8f));
+        return filled;
+    }
+
+    // Due rettangoli sovrapposti.
+    juce::Path makeCopyPath()
+    {
+        juce::Path back;
+        back.addRoundedRectangle (4.0f, 3.0f, 11.0f, 13.0f, 2.0f);
+        auto filled = strokeOpenPath (back, 1.6f);
+
+        juce::Path front;
+        front.addRoundedRectangle (9.0f, 8.0f, 11.0f, 13.0f, 2.0f);
+        filled.addPath (strokeOpenPath (front, 1.6f));
+        return filled;
+    }
+
+    // Blocco appunti con clip in alto.
+    juce::Path makePastePath()
+    {
+        juce::Path board;
+        board.addRoundedRectangle (5.0f, 5.0f, 14.0f, 16.0f, 2.0f);
+        auto filled = strokeOpenPath (board, 1.6f);
+
+        juce::Path clip;
+        clip.addRoundedRectangle (9.0f, 3.0f, 6.0f, 4.0f, 1.0f);
+        filled.addPath (clip);
+        return filled;
+    }
+
+    // Rettangolo tratteggiato: "seleziona tutto".
+    juce::Path makeSelectAllPath()
+    {
+        juce::Path filled;
+        const float x0 = 4.0f, y0 = 4.0f, x1 = 20.0f, y1 = 20.0f, dash = 3.0f, t = 1.6f;
+
+        for (float x = x0; x < x1; x += dash * 2.0f)
+        {
+            filled.addRectangle (x, y0, juce::jmin (dash, x1 - x), t);
+            filled.addRectangle (x, y1 - t, juce::jmin (dash, x1 - x), t);
+        }
+
+        for (float y = y0; y < y1; y += dash * 2.0f)
+        {
+            filled.addRectangle (x0, y, t, juce::jmin (dash, y1 - y));
+            filled.addRectangle (x1 - t, y, t, juce::jmin (dash, y1 - y));
+        }
+
+        return filled;
+    }
+
+    // Righe di testo rientrate con una freccia a sinistra.
+    juce::Path makeIndentPath()
+    {
+        juce::Path filled;
+        filled.addRoundedRectangle (4.0f, 4.5f, 16.0f, 1.8f, 0.9f);
+        filled.addRoundedRectangle (11.0f, 9.0f, 9.0f, 1.8f, 0.9f);
+        filled.addRoundedRectangle (11.0f, 13.5f, 9.0f, 1.8f, 0.9f);
+        filled.addRoundedRectangle (4.0f, 18.0f, 16.0f, 1.8f, 0.9f);
+
+        juce::Path arrow;
+        arrow.addTriangle (4.0f, 9.0f, 8.5f, 12.2f, 4.0f, 15.4f);
+        filled.addPath (arrow);
+        return filled;
+    }
+
+    // ";" grande: il commento di Csound.
+    juce::Path makeCommentPath()
+    {
+        juce::Path filled;
+        filled.addEllipse (10.0f, 6.0f, 4.0f, 4.0f);
+        filled.addEllipse (10.0f, 13.0f, 4.0f, 4.0f);
+
+        juce::Path tail;
+        tail.startNewSubPath (13.0f, 16.5f);
+        tail.quadraticTo (12.5f, 19.5f, 10.0f, 20.5f);
+        filled.addPath (strokeOpenPath (tail, 1.6f));
+        return filled;
+    }
+
     juce::Path makeSheetIconPath (CsoundActionSheetIcon icon)
     {
         switch (icon)
@@ -398,6 +489,12 @@ namespace
             case CsoundActionSheetIcon::info:          return makeInfoPath();
             case CsoundActionSheetIcon::book:          return makeBookPath();
             case CsoundActionSheetIcon::codeBraces:    return makeCodeBracesPath();
+            case CsoundActionSheetIcon::cut:           return makeCutPath();
+            case CsoundActionSheetIcon::copy:          return makeCopyPath();
+            case CsoundActionSheetIcon::paste:         return makePastePath();
+            case CsoundActionSheetIcon::selectAll:     return makeSelectAllPath();
+            case CsoundActionSheetIcon::indent:        return makeIndentPath();
+            case CsoundActionSheetIcon::comment:       return makeCommentPath();
             case CsoundActionSheetIcon::none:
             default:                                   return {};
         }

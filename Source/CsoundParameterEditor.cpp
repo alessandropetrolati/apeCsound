@@ -2693,44 +2693,48 @@ void CsoundParameterMappingPanel::showPanelMenu()
     // onLoadSessionRequested in CsoundParameterEditor.h). Separatore PRIMA
     // di "Load..." (richiesta esplicita, BUG corretto: prima era dopo),
     // a separare la sezione "View" sopra da quella file qui sotto.
-    items.push_back (CsoundActionSheetItem::separator());
-    
-    // "Save": sovrascrive il file collegato (vedi onSaveLinkedRequested nel
-    // .h) - prima di "Save as...", che invece chiede sempre il path.
-    {
-        CsoundActionSheetItem item;
-        item.id = 112; item.text = "Save"; item.enabled = onSaveLinkedRequested != nullptr;
-        item.icon = CsoundActionSheetIcon::save;
-        items.push_back (item);
-    }
-    {
-        CsoundActionSheetItem item;
-        item.id = 105; item.text = "Save as..."; item.enabled = onSaveSessionRequested != nullptr;
-        item.icon = CsoundActionSheetIcon::save;
-        items.push_back (item);
-    }
+    // Save / Save as... / Load... / Initialize Session: SPOSTATE nel menu
+    // che si apre cliccando la capsula del file nella toolbar (richiesta
+    // esplicita, vedi sessionFileLabel.onClick in PluginEditor.cpp). Il
+    // codice resta qui commentato, nel caso si voglia riportarle indietro.
+    // items.push_back (CsoundActionSheetItem::separator());
+    // 
+    // // "Save": sovrascrive il file collegato (vedi onSaveLinkedRequested nel
+    // // .h) - prima di "Save as...", che invece chiede sempre il path.
+    // {
+    //     CsoundActionSheetItem item;
+    //     item.id = 112; item.text = "Save"; item.enabled = onSaveLinkedRequested != nullptr;
+    //     item.icon = CsoundActionSheetIcon::save;
+    //     items.push_back (item);
+    // }
+    // {
+    //     CsoundActionSheetItem item;
+    //     item.id = 105; item.text = "Save as..."; item.enabled = onSaveSessionRequested != nullptr;
+    //     item.icon = CsoundActionSheetIcon::save;
+    //     items.push_back (item);
+    // }
 
-    {
-        CsoundActionSheetItem item;
-        item.id = 106; item.text = "Load..."; item.enabled = onLoadSessionRequested != nullptr;
-        item.icon = CsoundActionSheetIcon::load;
-        items.push_back (item);
-    }
-    
-    items.push_back (CsoundActionSheetItem::separator());
-    
-    // "Initialize Session" (richiesta esplicita: "pulisce tutto e carica
-    // il CSD hard coded") - stesso trattamento di Save/Load CSD sopra,
-    // PluginEditor imposta onInitializeSessionRequested nel proprio
-    // costruttore (vedi promptInitializeSession()/
-    // performInitializeSession() in PluginEditor.h/.cpp, che a loro volta
-    // richiamano CsoundAudioProcessor::initializeSession()).
-    {
-        CsoundActionSheetItem item;
-        item.id = 111; item.text = "Initialize Session"; item.enabled = onInitializeSessionRequested != nullptr;
-        item.icon = CsoundActionSheetIcon::newDocument;
-        items.push_back (item);
-    }
+    // {
+    //     CsoundActionSheetItem item;
+    //     item.id = 106; item.text = "Load..."; item.enabled = onLoadSessionRequested != nullptr;
+    //     item.icon = CsoundActionSheetIcon::load;
+    //     items.push_back (item);
+    // }
+    // 
+    // items.push_back (CsoundActionSheetItem::separator());
+    // 
+    // // "Initialize Session" (richiesta esplicita: "pulisce tutto e carica
+    // // il CSD hard coded") - stesso trattamento di Save/Load CSD sopra,
+    // // PluginEditor imposta onInitializeSessionRequested nel proprio
+    // // costruttore (vedi promptInitializeSession()/
+    // // performInitializeSession() in PluginEditor.h/.cpp, che a loro volta
+    // // richiamano CsoundAudioProcessor::initializeSession()).
+    // {
+    //     CsoundActionSheetItem item;
+    //     item.id = 111; item.text = "Initialize Session"; item.enabled = onInitializeSessionRequested != nullptr;
+    //     item.icon = CsoundActionSheetIcon::newDocument;
+    //     items.push_back (item);
+    // }
 
     // Undo/Redo: stessa cronologia condivisa usata da Cmd+Z/Cmd+Shift+Z da
     // tastiera - qui pero' invocati da un CLICK, non da una scorciatoia:
@@ -2773,6 +2777,8 @@ void CsoundParameterMappingPanel::showPanelMenu()
         item.icon = CsoundActionSheetIcon::book;
         items.push_back (item);
     }
+
+    items.push_back (CsoundActionSheetItem::separator());
     {
         CsoundActionSheetItem item;
         item.id = 113; item.text = "About";//About " + juce::String (ProjectInfo::projectName);
