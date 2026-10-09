@@ -449,6 +449,10 @@ private:
     // Dimensione del font di editor e consolle (Config > Larger/Smaller
     // Text), salvata nelle preferenze utente.
     void applyEditorFontSize (int points);
+
+    // Palette chiara/scura dell'editor di codice (Config > Dark Editor),
+    // salvata nelle preferenze utente.
+    void applyEditorTheme (bool dark);
     static constexpr int opcodeHelpBarHeight = 26;
 
     // Vedi SessionWarningBar sopra: visibile SOLO quando c'e' qualcosa da
@@ -773,7 +777,7 @@ private:
     // chiede conferma PRIMA, visto che l'azione sostituisce TUTTO (codice +
     // mapping parametri) senza che l'utente abbia scelto un file nuovo da
     // cui aspettarselo.
-    void promptInitializeSession();
+    void promptInitializeSession (bool useTemplate = true);
 
     // Esegue davvero l'inizializzazione, chiamata SOLO da
     // promptInitializeSession() sopra dopo la conferma: CsoundAudioProcessor::
@@ -783,7 +787,7 @@ private:
     // esattamente come fa performLoadSessionFile() dopo un Load CSD -
     // stessa UX, nessuna sorpresa: dopo la conferma il codice di default e'
     // gia' in esecuzione, nessun bordo rosso residuo.
-    void performInitializeSession();
+    void performInitializeSession (bool useTemplate = true);
 
     // Corpo del vecchio applyButton.onClick, estratto in un metodo a se'
     // (richiesta esplicita) cosi' da poter essere richiamato ANCHE da

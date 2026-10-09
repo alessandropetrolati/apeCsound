@@ -196,3 +196,30 @@ juce::CodeEditorComponent::ColourScheme CsoundTokeniser::getDefaultColourScheme(
 
     return scheme;
 }
+
+juce::CodeEditorComponent::ColourScheme CsoundTokeniser::getDarkColourScheme()
+{
+    struct TokenColour { const char* name; juce::uint32 colour; };
+
+    // Palette per sfondo SCURO (Config > Dark Editor): stesso ordine
+    // dell'enum TokenType, toni chiari e saturi stile Xcode/VS Code "dark".
+    static const TokenColour types[] =
+    {
+        { "Default",      0xffe6edf3 }, // testo generale: quasi bianco
+        { "Comment",      0xff7ec699 }, // verde chiaro
+        { "Keyword",      0xffd7a0e8 }, // viola chiaro (instr, if, endin...)
+        { "Opcode",       0xff6cb6ff }, // azzurro (poscil, outs...)
+        { "Identifier",   0xffe6edf3 }, // come il default
+        { "Number",       0xffb8c4ff }, // lavanda
+        { "String",       0xffff9e8a }, // salmone
+        { "Preprocessor", 0xffe0b07a }, // ocra
+        { "Punctuation",  0xffa3aeb9 }  // grigio chiaro
+    };
+
+    juce::CodeEditorComponent::ColourScheme scheme;
+
+    for (auto& t : types)
+        scheme.set (t.name, juce::Colour (t.colour));
+
+    return scheme;
+}

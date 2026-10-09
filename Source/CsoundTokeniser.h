@@ -23,6 +23,10 @@ public:
     int readNextToken (juce::CodeDocument::Iterator& source) override;
     juce::CodeEditorComponent::ColourScheme getDefaultColourScheme() override;
 
+    /** Stessa struttura di getDefaultColourScheme (chiara), per l'editor
+        con sfondo scuro (Config > Dark Editor). */
+    static juce::CodeEditorComponent::ColourScheme getDarkColourScheme();
+
     enum TokenType
     {
         tokenType_default = 0,

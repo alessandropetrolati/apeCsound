@@ -28,7 +28,8 @@ enum class CsoundActionSheetIcon
     codeBraces,  // sintassi moderna "f(x)"
     cut, copy, paste, selectAll, indent, comment,
     gear,        // sottomenu Config
-    textLarger, textSmaller // "A" grande/piccola con +/- (font dell'editor)
+    textLarger, textSmaller, // "A" grande/piccola con +/- (font dell'editor)
+    sun          // "Light Editor": sole (palette chiara)
 };
 
 /**

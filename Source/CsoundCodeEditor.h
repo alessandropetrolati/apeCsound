@@ -213,6 +213,12 @@ private:
     // focus stealing di REAPER in PluginEditor - ma intercetta il mouse
     // (hover/click) per permettere di selezionare un suggerimento senza
     // passare dalla tastiera.
+    struct Suggestion
+    {
+        juce::String name;    // nome dell'opcode
+        juce::String syntax;  // riga di sintassi completa (formato del manuale)
+    };
+
     struct SuggestionPopup final : public juce::Component
     {
         SuggestionPopup();
@@ -224,9 +230,12 @@ private:
         juce::Point<int> computeSize() const;
         int rowIndexAtY (int y) const;
 
-        juce::StringArray suggestionNames;
+        // Una riga per VARIANTE di opcode (come CsoundQt): nome, argomenti
+        // di ingresso e rate dell'uscita, es. "oscil   xamp, xcps [, ifn, iphs]  :a".
+        juce::StringArray rows;
         juce::String suggestionPrefix;
         int selectedIndex = 0;
+        int widestRow = 0; // in caratteri, per computeSize()
 
         // Chiamati con l'indice di riga sotto il mouse (o -1 se nessuno):
         // CsoundCodeEditor li usa per sincronizzare selectedIndex (hover)
@@ -244,7 +253,11 @@ private:
     void hideSuggestions();
     void clearOpcodeHelp();
     void positionSuggestionPopup();
-    void acceptSuggestion (const juce::String& fullName);
+    // Per VALORE (non per riferimento): la chiamata arriva con un elemento
+    // di currentSuggestions, che hideSuggestions() svuota a meta' funzione
+    // (un riferimento diventerebbe pendente -> crash sul refcount della String).
+    void acceptSuggestion (Suggestion suggestion);
+    void mouseDown (const juce::MouseEvent& e) override;
     void moveSuggestionSelection (int delta);
     bool forceShowSuggestions();
 
@@ -285,8 +298,27 @@ private:
     juce::StringArray allOpcodeNames;
 
     // Suggerimenti attualmente mostrati (vuoto se il popup non e' visibile):
-    // Tab completa al primo.
-    juce::StringArray currentSuggestions;
+    // una voce per VARIANTE di sintassi (stile CsoundQt), Invio/Tab/click
+    // inseriscono l'INTERA struttura "outlet opcode inlet [, opzionali]".
+    juce::Array<Suggestion> currentSuggestions;
+
+    // Tutte le righe di sintassi conosciute per un opcode: UDO del file,
+    // manuale (una per variante), o firma dal motore; {name} se ignoto.
+    juce::StringArray getSyntaxVariants (const juce::String& name);
+    void buildSuggestions (const juce::String& prefixWord, int maxRows);
+    static juce::String makeSuggestionRow (const juce::String& name, const juce::String& syntax);
+
+    // "Modalita' parametri" (CsoundQt): dopo l'inserimento di una sintassi
+    // completa il primo token della riga e' selezionato; Tab/Shift+Tab
+    // passano al token successivo/precedente (separatori: spazio , ( ) [ ]
+    // =), digitare lo sostituisce; Esc, Invio, freccie o un click escono.
+    void enterParameterMode (int line);
+    void exitParameterMode();
+    bool selectParameterToken (bool forward);
+    bool parameterMode = false;
+    int parameterLine = -1;
+    juce::String parameterOpcode; // help della barra fisso su questo opcode
+    bool selectingParameter = false;
 
     // True se onOpcodeHelpChanged e' stato chiamato per ultimo con del
     // testo non vuoto - serve a decidere se Esc deve "consumare" la

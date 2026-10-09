@@ -514,6 +514,25 @@ namespace
         return filled;
     }
 
+    // Sole: disco centrale + otto raggi.
+    juce::Path makeSunPath()
+    {
+        juce::Path disc;
+        disc.addEllipse (8.0f, 8.0f, 8.0f, 8.0f);
+        auto filled = strokeOpenPath (disc, 1.8f);
+
+        juce::Path rays;
+        for (int i = 0; i < 8; ++i)
+        {
+            const float angle = juce::MathConstants<float>::twoPi * (float) i / 8.0f;
+            const float c = std::cos (angle), sn = std::sin (angle);
+            rays.startNewSubPath (12.0f + c * 6.5f, 12.0f + sn * 6.5f);
+            rays.lineTo         (12.0f + c * 9.5f, 12.0f + sn * 9.5f);
+        }
+        filled.addPath (strokeOpenPath (rays, 1.8f));
+        return filled;
+    }
+
     juce::Path makeSheetIconPath (CsoundActionSheetIcon icon)
     {
         switch (icon)
@@ -545,6 +564,7 @@ namespace
             case CsoundActionSheetIcon::gear:          return makeGearPath();
             case CsoundActionSheetIcon::textLarger:    return makeTextSizePath (true);
             case CsoundActionSheetIcon::textSmaller:   return makeTextSizePath (false);
+            case CsoundActionSheetIcon::sun:           return makeSunPath();
             case CsoundActionSheetIcon::none:
             default:                                   return {};
         }

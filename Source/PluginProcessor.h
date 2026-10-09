@@ -679,7 +679,11 @@ public:
     // CsoundAudioProcessorEditor::performInitializeSession()) deve ancora
     // rileggere getCsdText() e aggiornare document/parameterPanel, come fa
     // gia' dopo loadSessionFromFile.
-    void initializeSession();
+    void initializeSession (bool useTemplate = true);
+
+    /** Scheletro .csd minimo (header + sezioni vuote), per
+        "Init Session Clear": nessun parametro, nessuno strumento. */
+    static juce::String emptyCsdText();
 
     // --- Bozza dell'editor ---------------------------------------------
     // Il testo che l'utente vede nell'editor di codice, anche NON ancora

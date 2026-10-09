@@ -44,7 +44,7 @@ CsoundCodeEditor::CsoundCodeEditor (juce::CodeDocument& doc, juce::CodeTokeniser
     {
         if (index >= 0 && index < currentSuggestions.size())
         {
-            acceptSuggestion (currentSuggestions[index]);
+            acceptSuggestion (currentSuggestions.getReference (index));
             grabKeyboardFocus(); // il click e' andato al popup, non all'editor
         }
     };
@@ -248,9 +248,33 @@ bool CsoundCodeEditor::keyPressed (const juce::KeyPress& key)
 
         if (key == juce::KeyPress::returnKey || key == juce::KeyPress::tabKey)
         {
-            acceptSuggestion (currentSuggestions[suggestionPopup.selectedIndex]);
+            acceptSuggestion (currentSuggestions.getReference (suggestionPopup.selectedIndex));
             return true;
         }
+    }
+
+    // Modalita' parametri (vedi enterParameterMode): Tab/Shift+Tab
+    // navigano i token della riga inserita; Esc, Invio e freccie escono.
+    if (parameterMode)
+    {
+        if (key.isKeyCode (juce::KeyPress::tabKey))
+        {
+            if (! selectParameterToken (! key.getModifiers().isShiftDown()))
+                exitParameterMode();
+
+            return true;
+        }
+
+        if (key == juce::KeyPress::escapeKey)
+        {
+            exitParameterMode();
+            return true;
+        }
+
+        if (key == juce::KeyPress::returnKey || key.isKeyCode (juce::KeyPress::upKey) || key.isKeyCode (juce::KeyPress::downKey)
+            || key.isKeyCode (juce::KeyPress::leftKey) || key.isKeyCode (juce::KeyPress::rightKey)
+            || key.isKeyCode (juce::KeyPress::homeKey) || key.isKeyCode (juce::KeyPress::endKey))
+            exitParameterMode();
     }
 
     const bool handled = CodeView::keyPressed (key);
@@ -1039,6 +1063,20 @@ void CsoundCodeEditor::updateOpcodeHelp()
 
     currentSuggestions.clear();
 
+    // In modalita' parametri la barra resta sull'opcode appena inserito e
+    // non compaiono suggerimenti mentre si saltano i token.
+    if (parameterMode)
+    {
+        if (caret.getLineNumber() != parameterLine)
+            exitParameterMode();
+        else
+        {
+            hideSuggestions();
+            pushSignatureHelp (parameterOpcode);
+            return;
+        }
+    }
+
     if (fullWord.isEmpty())
     {
         clearOpcodeHelp();
@@ -1069,23 +1107,7 @@ void CsoundCodeEditor::updateOpcodeHelp()
     //    caratteri, suggerisci i nomi di opcode che iniziano con quel
     //    prefisso (fino a 8, ordine alfabetico).
     if (prefixWord.length() == fullWord.length() && prefixWord.length() >= 2)
-    {
-        // Prima le UDO del file (poche e "vicine" a chi scrive), poi il resto.
-        for (auto& udo : userOpcodes)
-            if (udo.name.startsWithIgnoreCase (prefixWord) && ! udo.name.equalsIgnoreCase (prefixWord))
-                currentSuggestions.addIfNotAlreadyThere (udo.name);
-
-        for (auto& name : allOpcodeNames)
-        {
-            if (name.startsWithIgnoreCase (prefixWord) && ! name.equalsIgnoreCase (prefixWord))
-            {
-                currentSuggestions.add (name);
-
-                if (currentSuggestions.size() >= 8)
-                    break;
-            }
-        }
-    }
+        buildSuggestions (prefixWord, 12);
 
     if (currentSuggestions.isEmpty())
     {
@@ -1312,7 +1334,16 @@ void CsoundCodeEditor::clearOpcodeHelp()
 void CsoundCodeEditor::showSuggestions (const juce::String& prefix)
 {
     suggestionPopup.suggestionPrefix = prefix;
-    suggestionPopup.suggestionNames = currentSuggestions;
+    suggestionPopup.rows.clear();
+    suggestionPopup.widestRow = 0;
+
+    for (auto& s : currentSuggestions)
+    {
+        const auto row = makeSuggestionRow (s.name, s.syntax);
+        suggestionPopup.rows.add (row);
+        suggestionPopup.widestRow = juce::jmax (suggestionPopup.widestRow, row.length());
+    }
+
     suggestionPopup.selectedIndex = 0; // ogni nuovo filtro riparte dal primo
 
     positionSuggestionPopup();
@@ -1330,7 +1361,7 @@ void CsoundCodeEditor::pushSignatureHelpForSelectedSuggestion()
     // suggerimento, invece di anticipare gia' la firma di quello
     // evidenziato (esattamente come fa CsoundQt).
     if (suggestionPopup.selectedIndex >= 0 && suggestionPopup.selectedIndex < currentSuggestions.size())
-        pushSignatureHelp (currentSuggestions[suggestionPopup.selectedIndex]);
+        pushSignatureHelp (currentSuggestions.getReference (suggestionPopup.selectedIndex).name);
 }
 
 bool CsoundCodeEditor::forceShowSuggestions()
@@ -1347,24 +1378,211 @@ bool CsoundCodeEditor::forceShowSuggestions()
     if (prefixWord.isEmpty())
         return false;
 
-    currentSuggestions.clear();
-
-    for (auto& name : allOpcodeNames)
-    {
-        if (name.startsWithIgnoreCase (prefixWord) && ! name.equalsIgnoreCase (prefixWord))
-        {
-            currentSuggestions.add (name);
-
-            if (currentSuggestions.size() >= 8)
-                break;
-        }
-    }
+    rescanUserOpcodesIfNeeded();
+    buildSuggestions (prefixWord, 12);
 
     if (currentSuggestions.isEmpty())
         return false;
 
     showSuggestions (prefixWord);
     return true;
+}
+
+//==============================================================================
+// Suggerimenti per VARIANTE di sintassi (stile CsoundQt) ------------------
+juce::StringArray CsoundCodeEditor::getSyntaxVariants (const juce::String& name)
+{
+    juce::StringArray lines;
+
+    if (const auto* udo = findUserOpcode (name))
+    {
+        lines.add (formatSignatureLine ({ udo->name, udo->outTypes, udo->inTypes }));
+        return lines;
+    }
+
+    if (const auto* manual = CsoundOpcodeHelpData::find (name))
+    {
+        lines = juce::StringArray::fromLines (manual->syntax);
+        lines.trim();
+        lines.removeEmptyStrings();
+
+        if (! lines.isEmpty())
+            return lines;
+    }
+
+    const auto it = liveSignatureLines.find (name.toLowerCase());
+
+    if (it != liveSignatureLines.end() && ! it->second.isEmpty())
+        return it->second;
+
+    lines.add (name);
+    return lines;
+}
+
+void CsoundCodeEditor::buildSuggestions (const juce::String& prefixWord, int maxRows)
+{
+    currentSuggestions.clear();
+
+    juce::StringArray names;
+
+    // Prima le UDO del file (poche e "vicine" a chi scrive), poi il resto.
+    for (auto& udo : userOpcodes)
+        if (udo.name.startsWithIgnoreCase (prefixWord) && ! udo.name.equalsIgnoreCase (prefixWord))
+            names.addIfNotAlreadyThere (udo.name);
+
+    for (auto& name : allOpcodeNames)
+        if (name.startsWithIgnoreCase (prefixWord) && ! name.equalsIgnoreCase (prefixWord))
+            names.addIfNotAlreadyThere (name);
+
+    for (auto& name : names)
+    {
+        for (auto& syntax : getSyntaxVariants (name))
+        {
+            currentSuggestions.add ({ name, syntax });
+
+            if (currentSuggestions.size() >= maxRows)
+                return;
+        }
+    }
+}
+
+juce::String CsoundCodeEditor::makeSuggestionRow (const juce::String& name, const juce::String& syntax)
+{
+    // Come CsoundQt: "nome          inlet, inlet [, opz]     :rate"
+    const auto words = juce::StringArray::fromTokens (syntax.trim(), " ", "");
+    int opcodeIdx = -1;
+
+    for (int w = 0; w < words.size(); ++w)
+        if (words[w].equalsIgnoreCase (name)) { opcodeIdx = w; break; }
+
+    juce::String outs, ins;
+
+    if (opcodeIdx >= 0)
+    {
+        for (int w = 0; w < opcodeIdx; ++w)       outs << (w > 0 ? " " : "") << words[w];
+        for (int w = opcodeIdx + 1; w < words.size(); ++w) ins << (w > opcodeIdx + 1 ? " " : "") << words[w];
+    }
+
+    juce::String row = name.length() < 14 ? name.paddedRight (' ', 14) : name + " ";
+
+    if (ins.isNotEmpty())
+        row << (ins.length() <= 30 ? ins : ins.substring (0, 29) + juce::String::charToString (0x2026));
+
+    if (outs.isNotEmpty())
+    {
+        if (row.length() < 46)
+            row = row.paddedRight (' ', 46);
+
+        const auto rate = outs.startsWith ("g") && outs.length() > 1 ? outs.substring (1, 2) : outs.substring (0, 1);
+        row << " :" << (rate == "f" ? juce::String ("pvs") : rate);
+    }
+
+    return row;
+}
+
+void CsoundCodeEditor::enterParameterMode (int line)
+{
+    parameterMode = true;
+    parameterLine = line;
+}
+
+void CsoundCodeEditor::exitParameterMode()
+{
+    if (! parameterMode)
+        return;
+
+    parameterMode = false;
+    parameterLine = -1;
+    parameterOpcode.clear();
+}
+
+bool CsoundCodeEditor::selectParameterToken (bool forward)
+{
+    // Token = sequenza di caratteri senza separatori; una stringa "..." e'
+    // un token unico. Parte dal caret (o dalla selezione corrente).
+    auto& doc = getDocument();
+    const int line = getCaretPos().getLineNumber();
+
+    if (line != parameterLine)
+        return false;
+
+    const auto text = doc.getLine (line).trimEnd();
+    const int len = text.length();
+
+    auto isSep = [] (juce::juce_wchar c)
+    {
+        return c == ' ' || c == '\t' || c == ',' || c == '(' || c == ')' || c == '[' || c == ']' || c == '\\' || c == '=';
+    };
+
+    auto tokenEndFrom = [&] (int start) -> int
+    {
+        if (start < len && text[start] == '"')
+        {
+            int e = start + 1;
+            while (e < len && text[e] != '"') ++e;
+            return juce::jmin (len, e + 1);
+        }
+
+        int e = start;
+        while (e < len && ! isSep (text[e])) ++e;
+        return e;
+    };
+
+    int start = -1;
+
+    if (forward)
+    {
+        int i = juce::jmax (getSelectionStart().getIndexInLine(), getSelectionEnd().getIndexInLine());
+
+        // fine del token corrente, poi salta i separatori
+        if (i < len && ! isSep (text[i]) && i > 0 && ! isSep (text[i - 1]))
+            i = tokenEndFrom (i);
+
+        while (i < len && isSep (text[i])) ++i;
+
+        if (i >= len)
+            return false;
+
+        start = i;
+    }
+    else
+    {
+        int i = juce::jmin (getSelectionStart().getIndexInLine(), getSelectionEnd().getIndexInLine()) - 1;
+
+        while (i >= 0 && isSep (text[i])) --i;
+
+        if (i < 0)
+            return false;
+
+        if (text[i] == '"')
+        {
+            int s = i - 1;
+            while (s >= 0 && text[s] != '"') --s;
+            start = juce::jmax (0, s);
+        }
+        else
+        {
+            int s = i;
+            while (s > 0 && ! isSep (text[s - 1])) --s;
+            start = s;
+        }
+    }
+
+    const int end = tokenEndFrom (start);
+
+    if (end <= start)
+        return false;
+
+    selectingParameter = true;
+    selectRegion (juce::CodeDocument::Position (doc, line, start), juce::CodeDocument::Position (doc, line, end));
+    selectingParameter = false;
+    return true;
+}
+
+void CsoundCodeEditor::mouseDown (const juce::MouseEvent& e)
+{
+    exitParameterMode(); // come CsoundQt: un click esce dalla modalita' parametri
+    CodeView::mouseDown (e);
 }
 
 void CsoundCodeEditor::moveSuggestionSelection (int delta)
@@ -1405,16 +1623,79 @@ void CsoundCodeEditor::positionSuggestionPopup()
     suggestionPopup.setVisible (true);
 }
 
-void CsoundCodeEditor::acceptSuggestion (const juce::String& fullName)
+void CsoundCodeEditor::acceptSuggestion (Suggestion suggestion)
 {
+    // Come CsoundQt: la parola parziale viene sostituita dall'INTERA
+    // sintassi ("ares oscil xamp, xcps [, ifn, iphs]", o la forma
+    // funzionale se e' attiva la sintassi moderna). Se sulla riga c'e' gia'
+    // del testo prima della parola (es. "aout = " o un outlet scritto a
+    // mano) si inserisce dal nome dell'opcode in poi, senza gli outlet.
     const auto caret = getCaretPos();
-    const auto lineText = codeDocument.getLine (caret.getLineNumber());
+    const int line = caret.getLineNumber();
+    const auto lineText = codeDocument.getLine (line);
     const auto word = wordEndingAt (lineText, caret.getIndexInLine());
 
-    if (! fullName.startsWithIgnoreCase (word))
+    if (! suggestion.name.startsWithIgnoreCase (word))
         return;
 
-    insertTextAtCaret (fullName.substring (word.length()));
+    const int wordStartIndex = caret.getIndexInLine() - word.length();
+    const bool textBefore = lineText.substring (0, wordStartIndex).trim().isNotEmpty();
+
+    juce::String syntax = suggestion.syntax.trim();
+
+    if (modernSyntaxHelp)
+        syntax = toModernSyntax (syntax, suggestion.name).trim();
+
+    juce::String toInsert = syntax;
+
+    if (textBefore)
+    {
+        if (syntax.contains (" = "))
+            toInsert = syntax.fromFirstOccurrenceOf (" = ", false, false).trim();
+        else
+        {
+            // dal nome dell'opcode (come token intero) in poi
+            const auto words = juce::StringArray::fromTokens (syntax, " ", "");
+            juce::String rest;
+
+            for (int w = 0, found = 0; w < words.size(); ++w)
+            {
+                if (! found && words[w].equalsIgnoreCase (suggestion.name))
+                    found = 1;
+
+                if (found)
+                    rest << (rest.isEmpty() ? "" : " ") << words[w];
+            }
+
+            if (rest.isNotEmpty())
+                toInsert = rest;
+        }
+    }
+
+    hideSuggestions();
+
+    // Modalita' parametri (attivata PRIMA dell'inserimento, cosi' la barra
+    // di help resta su questo opcode e non ricompaiono suggerimenti per
+    // l'ultimo token inserito): il primo token della parte inserita viene
+    // selezionato, Tab passa ai successivi.
+    const bool withParameters = toInsert.containsAnyOf (" ,(");
+
+    if (withParameters)
+    {
+        parameterOpcode = suggestion.name;
+        enterParameterMode (line);
+    }
+
+    // Sostituisce la parola parziale con la sintassi (un solo passo di undo).
+    selectRegion (juce::CodeDocument::Position (codeDocument, line, wordStartIndex), caret);
+    insertTextAtCaret (toInsert);
+
+    if (withParameters)
+    {
+        moveCaretTo (juce::CodeDocument::Position (codeDocument, line, wordStartIndex), false);
+        selectParameterToken (true); // dal caret all'inizio del primo token: lo seleziona
+        pushSignatureHelp (suggestion.name);
+    }
 }
 
 //==============================================================================
@@ -1429,15 +1710,17 @@ CsoundCodeEditor::SuggestionPopup::SuggestionPopup()
 
 juce::Point<int> CsoundCodeEditor::SuggestionPopup::computeSize() const
 {
-    constexpr int width = 240;
+    // Larghezza in base alla riga piu' lunga (font monospaziato 13 px:
+    // ~7.8 px per carattere), con un minimo.
+    const int width = juce::jmax (240, 16 + juce::roundToInt ((float) widestRow * 7.8f));
 
-    return { width, 8 + suggestionNames.size() * lineHeight };
+    return { width, 8 + rows.size() * lineHeight };
 }
 
 int CsoundCodeEditor::SuggestionPopup::rowIndexAtY (int y) const
 {
     const auto index = (y - 6) / lineHeight;
-    return (index >= 0 && index < suggestionNames.size()) ? index : -1;
+    return (index >= 0 && index < rows.size()) ? index : -1;
 }
 
 void CsoundCodeEditor::SuggestionPopup::mouseMove (const juce::MouseEvent& event)
@@ -1481,7 +1764,7 @@ void CsoundCodeEditor::SuggestionPopup::paint (juce::Graphics& g)
 
     const auto monoFont = juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain));
 
-    for (int i = 0; i < suggestionNames.size(); ++i)
+    for (int i = 0; i < rows.size(); ++i)
     {
         auto lineArea = area.removeFromTop (lineHeight);
 
@@ -1491,7 +1774,7 @@ void CsoundCodeEditor::SuggestionPopup::paint (juce::Graphics& g)
             g.fillRect (lineArea.expanded (4, 0));
         }
 
-        const auto& name = suggestionNames[i];
+        const auto& name = rows[i];
 
         g.setFont (monoFont);
         g.setColour (juce::Colour (0xff5b4636));

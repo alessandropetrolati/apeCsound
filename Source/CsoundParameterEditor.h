@@ -263,6 +263,11 @@ public:
     // dell'editor di codice e della consolle - vedi PluginEditor.
     std::function<void (int)> onFontSizeChangeRequested;
 
+    // "Light Editor" (spunta): palette chiara dell'editor di codice (la
+    // scura e' il default). isDarkEditorEnabled = stato ATTUALE scuro.
+    std::function<void()> onToggleDarkEditorRequested;
+    std::function<bool()> isDarkEditorEnabled;
+
     // Chiamata alla fine di OGNI rebuildUnifiedRows() (aggiunta/rimozione
     // di un parametro, commit di un metadata, undo/redo, refresh dopo Load/
     // ripristino): PluginEditor la usa per ricontrollare se la sessione

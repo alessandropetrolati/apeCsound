@@ -54,7 +54,12 @@ CsoundAudioProcessor::CsoundAudioProcessor()
     // su entrambe: la memoria e' quella del testo digitato, trascurabile.
     codeDocument.getUndoManager().setMaxNumberOfStoredUnits (std::numeric_limits<int>::max(), 0);
     sessionUndoManager.setMaxNumberOfStoredUnits (std::numeric_limits<int>::max(), 0);
-    csdText = defaultCsdText();
+    // Template iniziale con i suoi parametri (<apeCsoundParams>): stesso
+    // percorso di Load/Initialize. Solo dati (slot + testo), nessuna
+    // notifica all'host: i valori ai default li applica l'editor/il
+    // ripristino dello stato, qui restano quelli iniziali dell'APVTS.
+    if (! loadSessionStructureAndCode (defaultCsdText()))
+        csdText = defaultCsdText();
 }
 
 CsoundAudioProcessor::~CsoundAudioProcessor()
@@ -2595,12 +2600,25 @@ bool CsoundAudioProcessor::loadSessionStructureAndCode (const juce::String& full
     return true;
 }
 
-void CsoundAudioProcessor::initializeSession()
+void CsoundAudioProcessor::initializeSession (bool useTemplate)
 {
     // Stesso ordine di loadSessionFromFile sopra: azzera SEMPRE la
     // mappatura prima di toccare il codice, incondizionatamente.
-    resetAllParameterSlots();
-    setCsdCodeFromFullText (defaultCsdText());
+    // useTemplate = true ("Init Session Template"): il template
+    // (defaultCsdText) porta con se' un blocco <apeCsoundParams> (Delay,
+    // Feedback, Wave): lo stesso percorso di Load, cosi' i parametri del
+    // template vengono creati e portati ai loro default.
+    // useTemplate = false ("Init Session Clear"): scheletro .csd vuoto,
+    // nessun parametro. (loadSessionStructureAndCode azzera gia' gli slot.)
+    const auto text = useTemplate ? defaultCsdText() : emptyCsdText();
+
+    if (! loadSessionStructureAndCode (text))
+    {
+        resetAllParameterSlots();
+        setCsdCodeFromFullText (text);
+    }
+
+    resetParameterValuesToDefaults();
 
     // Sessione nuova = NON collegata a nessun file: il prossimo "Save" si
     // comporta come "Save As" (vedi performSaveLinked nell'editor).
@@ -3590,6 +3608,28 @@ int CsoundAudioProcessor::midiOutCloseCallback (CSOUND* /*cs*/, void* /*userData
     return 0;
 }
 
+juce::String CsoundAudioProcessor::emptyCsdText()
+{
+    return R"CSD(<CsoundSynthesizer>
+<CsOptions>
+-m0 -Ma
+</CsOptions>
+<CsInstruments>
+
+sr       = 44100
+ksmps    = 32
+nchnls   = 2
+nchnls_i = 2
+0dbfs    = 1
+
+</CsInstruments>
+<CsScore>
+e
+</CsScore>
+</CsoundSynthesizer>
+)CSD";
+}
+
 juce::String CsoundAudioProcessor::defaultCsdText()
 {
     // nchnls_i dichiara i canali di INGRESSO (bus Input del plugin, es.
@@ -3634,7 +3674,7 @@ massign 0, 1
 
 ; =========================================================
 ; INSTRUMENT 1: MIDI SYNTH
-; Generates a sawtooth wave controlled by MIDI notes
+; Generates a band limited oscillator, controlled by MIDI notes
 ; =========================================================
 
 instr 1
@@ -3647,10 +3687,21 @@ instr 1
 
     ; Convert MIDI velocity to amplitude
     iamp = ampmidi(0.5)
-
-    ; Generate the oscillator signal
-    asig vco2 iamp, icps
-
+    
+    ;MENU: Options=Sawtooth,Square/PWM,Pulse; Default=Sawtooth
+    iWave chnget "Wave"
+    
+    ; Attack time.
+    iattack = 0.05
+    ; Decay time.
+    idecay = 0
+    ; Sustain level.
+    isustain = 1
+    ; Release time.
+    irelease = 0.5
+    aenv madsr iattack, idecay, isustain, irelease
+    asig vco aenv*iamp, icps, iWave, 0.5
+    
     ; Send the synth audio to the plugin outputs 1 and 2
     ; (outch n works up to nchnls: on a 4-channel track you can also
     ; write outch 3, aSig / outch 4, aSig)
@@ -3673,23 +3724,28 @@ instr 2
     aInR inch 2
 
     ; Delay parameters
-    idelay = 0.3
-    kfb    = 0.4
+    idelay = 1
+    
+    ;SLIDER FLOAT: Min=0; Max=1; Skew=1; Step=0.001
+    kdelay chnget "Delay"
+    
+    ;SLIDER FLOAT: Min=0; Max=0.98; Skew=1; Step=0.001
+    kfb chnget "Feedback"
 
     ; Left channel delay line
     aDL delayr idelay
-    aL  deltap3 idelay
+    aL  deltap3 kdelay
     delayw aInL + (aL * kfb)
 
     ; Right channel delay line
     aDR delayr idelay
-    aR  deltap3 idelay
+    aR  deltap3 kdelay
     delayw aInR + (aR * kfb)
 
     ; Mix dry input with the delayed signal
     aOutL = aInL + (aL * 0.5)
     aOutR = aInR + (aR * 0.5)
-
+    
     ; Send the processed audio to the plugin outputs 1 and 2
     ; (outch n works up to nchnls: on a 4-channel track you can also
     ; write outch 3, aSig / outch 4, aSig)
@@ -3705,6 +3761,26 @@ i 2 0 z
 e
 </CsScore>
 </CsoundSynthesizer>
+
+<apeCsoundParams>
+<?xml version="1.0" encoding="UTF-8"?>
+
+<APE_CSOUND_STATE>
+  <CHANNEL_PARAM_SLOTS>
+    <SLOT index="0" channel="Delay" min="0.0" max="1.0" default="0.300000011920929"
+          skew="1.0" step="0.001000000047497451"/>
+    <SLOT index="1" channel="Feedback" min="0.0" max="0.9800000190734863"
+          default="0.4000000059604645" skew="1.0" step="0.001000000047497451"/>
+  </CHANNEL_PARAM_SLOTS>
+  <INT_PARAM_SLOTS/>
+  <BOOL_PARAM_SLOTS/>
+  <CHOICE_PARAM_SLOTS>
+    <SLOT index="0" channel="Wave" defaultIndex="0" options="Sawtooth&#10;Square/PWM&#10;Pulse"/>
+  </CHOICE_PARAM_SLOTS>
+</APE_CSOUND_STATE>
+
+</apeCsoundParams>
+
 )CSD";
 }
 

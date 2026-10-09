@@ -139,6 +139,7 @@ namespace
 
     const char* const kModernSyntaxHelpKey = "modernSyntaxHelp";
     const char* const kEditorFontSizeKey   = "editorFontSize"; // punti; consolle = -2
+    const char* const kEditorDarkThemeKey  = "editorDarkTheme"; // palette scura dell'editor (default true)
     constexpr int kDefaultEditorFontSize = 15, kMinEditorFontSize = 9, kMaxEditorFontSize = 32;
 
     // Palette della toolbar (dal mockup "R2 - Capsula centrale"): fondo
@@ -227,6 +228,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // Dimensione del testo di editor e consolle: preferenza utente
     // persistente (Config > Larger/Smaller Text).
     applyEditorFontSize (getUserSettings().getIntValue (kEditorFontSizeKey, kDefaultEditorFontSize));
+    applyEditorTheme (getUserSettings().getBoolValue (kEditorDarkThemeKey, true)); // scuro di default
 
     // Il motore puo' girare da tempo con la UI chiusa: recuperiamo subito la
     // storia recente dei messaggi (buffer circolare in CsoundAudioProcessor)
@@ -390,6 +392,11 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.onLoadSessionRequested = [this] { promptLoadSession(); };
     parameterPanel.onSaveLinkedRequested  = [this] { performSaveLinked(); };
     parameterPanel.onAboutRequested       = [this] { aboutView.show(); };
+    parameterPanel.isDarkEditorEnabled = [this] { return getUserSettings().getBoolValue (kEditorDarkThemeKey, true); };
+    parameterPanel.onToggleDarkEditorRequested = [this]
+    {
+        applyEditorTheme (! getUserSettings().getBoolValue (kEditorDarkThemeKey, true));
+    };
     parameterPanel.onFontSizeChangeRequested = [this] (int delta)
     {
         const int current = getUserSettings().getIntValue (kEditorFontSizeKey, kDefaultEditorFontSize);
@@ -442,7 +449,12 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
         items.push_back (CsoundActionSheetItem::separator());
         {
             CsoundActionSheetItem item;
-            item.id = 4; item.text = "Initialize Session"; item.icon = CsoundActionSheetIcon::newDocument;
+            item.id = 4; item.text = "Init Session Template"; item.icon = CsoundActionSheetIcon::newDocument;
+            items.push_back (item);
+        }
+        {
+            CsoundActionSheetItem item;
+            item.id = 5; item.text = "Init Session Clear"; item.icon = CsoundActionSheetIcon::newDocument;
             items.push_back (item);
         }
 
@@ -458,7 +470,8 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
                 case 1: safeThis->performSaveLinked();      break;
                 case 2: safeThis->promptSaveSession();      break;
                 case 3: safeThis->promptLoadSession();      break;
-                case 4: safeThis->promptInitializeSession(); break;
+                case 4: safeThis->promptInitializeSession (true);  break;
+                case 5: safeThis->promptInitializeSession (false); break;
                 default: break;
             }
         });
@@ -730,6 +743,37 @@ void CsoundAudioProcessorEditor::applyEditorFontSize (int points)
     logConsole.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), (float) juce::jmax (8, points - 2), juce::Font::plain));
     logConsole.applyFontToAllText (logConsole.getFont());
     editor.scrollToKeepCaretOnScreen();
+}
+
+void CsoundAudioProcessorEditor::applyEditorTheme (bool dark)
+{
+    getUserSettings().setValue (kEditorDarkThemeKey, dark);
+
+    if (dark)
+    {
+        // Palette scura: colori impostati direttamente sul componente
+        // (hanno la precedenza su quelli della LookAndFeel).
+        const juce::Colour bg (0xff1b2027), gutter (0xff161a20), text (0xffe6edf3), muted (0xff6f7a85);
+        editor.setColour (CodeView::backgroundColourId,     bg);
+        editor.setColour (CodeView::defaultTextColourId,    text);
+        editor.setColour (CodeView::lineNumberBackgroundId, gutter);
+        editor.setColour (CodeView::lineNumberTextId,       muted);
+        editor.setColour (CodeView::highlightColourId,      kToolbarAccent.withAlpha (0.35f));
+        editor.setColour (CodeView::caretColourId,          kToolbarAccent);
+        editor.setColourScheme (CsoundTokeniser::getDarkColourScheme());
+    }
+    else
+    {
+        // Palette chiara: si torna ai colori della LookAndFeel.
+        for (int id : { (int) CodeView::backgroundColourId, (int) CodeView::defaultTextColourId,
+                        (int) CodeView::lineNumberBackgroundId, (int) CodeView::lineNumberTextId,
+                        (int) CodeView::highlightColourId, (int) CodeView::caretColourId })
+            editor.removeColour (id);
+
+        editor.setColourScheme (tokeniser.getDefaultColourScheme());
+    }
+
+    editor.repaint();
 }
 
 void CsoundAudioProcessorEditor::updateKeyboardInset()
@@ -1222,7 +1266,7 @@ void CsoundAudioProcessorEditor::performLoadSessionFile (const juce::File& file)
     }
 }
 
-void CsoundAudioProcessorEditor::promptInitializeSession()
+void CsoundAudioProcessorEditor::promptInitializeSession (bool useTemplate)
 {
     // Dialogo nativo a due vie (showNativeTwoButtonAlert, vedi
     // NativeAlertMac.h/.mm - stesso usato da CsoundParameterMappingPanel::
@@ -1238,17 +1282,19 @@ void CsoundAudioProcessorEditor::promptInitializeSession()
 
     showNativeTwoButtonAlertAsync (
         "Initialize session?",
-        "This will remove all parameters and replace the current code with the default template. "
-        "The code change can be undone afterwards; the parameter mapping cannot.",
+        useTemplate ? "This will replace the current code and parameters with the built-in template. "
+                      "The code change can be undone afterwards; the parameter mapping cannot."
+                    : "This will remove all parameters and replace the current code with an empty .csd. "
+                      "The code change can be undone afterwards; the parameter mapping cannot.",
         "Cancel", "Initialize",
-        [safeThis] (int choice)
+        [safeThis, useTemplate] (int choice)
     {
         if (safeThis != nullptr && choice == 2)
-            safeThis->performInitializeSession();
+            safeThis->performInitializeSession (useTemplate);
     }, this);
 }
 
-void CsoundAudioProcessorEditor::performInitializeSession()
+void CsoundAudioProcessorEditor::performInitializeSession (bool useTemplate)
 {
     // Stesso ordine/commenti di performLoadSessionFile() sopra: il
     // processor e' la fonte di verita' (initializeSession() azzera i 4
@@ -1256,11 +1302,12 @@ void CsoundAudioProcessorEditor::performInitializeSession()
     // document/parameterPanel vanno rilette esplicitamente DOPO.
     // Annullabile come un solo passo (testo + struttura + collegamento):
     // vedi replaceSessionUndoably.
-    replaceSessionUndoably ([this] { audioProcessor.initializeSession(); return true; });
+    replaceSessionUndoably ([this, useTemplate] { audioProcessor.initializeSession (useTemplate); return true; });
 
     markApplyPendingAfterLoad();
 
-    appendToLog ("--- Session initialized (default template) ---");
+    appendToLog (useTemplate ? "--- Session initialized (default template) ---"
+                             : "--- Session initialized (empty) ---");
 
     // initializeSession() ha scollegato la sessione da qualunque file: un
     // eventuale avviso "file mancante/diverso" non ha piu' senso.
@@ -2264,7 +2311,7 @@ Every instance exposes a **fixed set of 144 parameters** to the DAW: **64 Float*
 
 # Toolbar
 - **Apply** - recompiles and restarts Csound with the text in the editor. A red ring means the editor text differs from the running code.
-- **File capsule** (centre) - name of the linked `.csd`, its folder and state (saved / unsaved changes / file not found, coloured dot). Click it for **Save**, **Save as...**, **Load...** and **Initialize Session**.
+- **File capsule** (centre) - name of the linked `.csd`, its folder and state (saved / unsaved changes / file not found, coloured dot). Click it for **Save**, **Save as...**, **Load...**, **Init Session Template** and **Init Session Clear**.
 - **Magnifier** - opens the Find / Replace bar: match case `Aa`, whole word `W`, Replace / Replace All; Enter = next match, Esc closes.
 - **Menu** - Show/Hide Parameters and Console, Undo / Redo, Config, apeCsound Guide, Csound Manual, About.
 
@@ -2273,7 +2320,8 @@ The `.csd` file on disk is the truth. A DAW project stores the path of the linke
 - **Save** - writes the editor text and the parameter structure (an `<apeCsoundParams>` block after `</CsoundSynthesizer>`) to the linked file.
 - **Save as...** - chooses a new file (default folder `~/Documents/apeCsound`) and links it.
 - **Load...** - opens a `.csd`; you can also drop a `.csd` on the window. Unsaved changes are protected by a dialog.
-- **Initialize Session** - unlinks the file and loads the built-in template.
+- **Init Session Template** - unlinks the file and loads the built-in template (synth + delay with its parameters).
+- **Init Session Clear** - unlinks the file and starts from an empty `.csd` (header only, no parameters).
 - If the linked file is missing when a project reopens, the embedded copy is used and a yellow bar offers **Relocate...** / **Save As...**.
 - The editor shows only the `<CsoundSynthesizer>` block; anything before or after it (Cabbage, CsoundQt panels) is preserved.
 

@@ -2790,6 +2790,15 @@ void CsoundParameterMappingPanel::showPanelMenu()
             item.icon = CsoundActionSheetIcon::console;
             config.subItems.push_back (item);
         }
+        {
+            CsoundActionSheetItem item;
+            item.id = 120; item.text = "Light Editor";
+            item.enabled = onToggleDarkEditorRequested != nullptr;
+            item.tickedFn = [this] { return isDarkEditorEnabled != nullptr && ! isDarkEditorEnabled(); };
+            item.keepOpen = true;
+            item.icon = CsoundActionSheetIcon::sun;
+            config.subItems.push_back (item);
+        }
         config.subItems.push_back (CsoundActionSheetItem::separator());
         {
             CsoundActionSheetItem item;
@@ -2866,6 +2875,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 116: if (safeThis->onToggleFollowCsdChannelsRequested) safeThis->onToggleFollowCsdChannelsRequested(); break;
             case 118: if (safeThis->onFontSizeChangeRequested) safeThis->onFontSizeChangeRequested (+1); break;
             case 119: if (safeThis->onFontSizeChangeRequested) safeThis->onFontSizeChangeRequested (-1); break;
+            case 120: if (safeThis->onToggleDarkEditorRequested) safeThis->onToggleDarkEditorRequested(); break;
             case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
             default: break;
         }
