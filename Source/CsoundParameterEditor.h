@@ -1192,6 +1192,7 @@ private:
     // tipi in un'unica transazione di Undo (come le altre operazioni del
     // pannello - vedi il commento su undo()/redo()).
     void removeAllParameters();
+    void performRemoveAllParameters(); // dopo la conferma di removeAllParameters()
 
     // "Reset to INIT Values" del menu sopra (richiesta
     // esplicita): riporta il VALORE CORRENTE di ogni parametro assegnato al

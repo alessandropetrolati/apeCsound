@@ -3,29 +3,28 @@
 #include <JuceHeader.h>
 #include "csound.h"
 #include "csound_misc.h"
+#include "csound_rtaudio.h"
+#include "csound_rtmidi.h"
 
 /**
-    Carica CsoundLib64 a RUNTIME con dlopen()/dlsym(), invece di linkarla a
-    tempo di compilazione (-framework CsoundLib64). Il motivo: linkare il
-    framework costringeva Xcode a gestire install name/@rpath/fase di
-    embedding/firma automatica - una catena fragile che ha richiesto piu'
-    round di debug (install_name_tool, LD_RUNPATH_SEARCH_PATHS, la cartella
-    "libs" che viola le regole di Apple sui framework imbeddati...).
+    Csound 7 LINKATA STATICAMENTE (build/csound-install/universal/lib/
+    libCsoundLib64.a + libsndfile.a + libsamplerate.a, vedi
+    scripts/build_csound_static.sh): nessuna .dylib/.framework da copiare
+    nel bundle, nessun dlopen, nessuna firma separata - e soprattutto
+    funziona anche su iOS, dove le librerie dinamiche caricate a runtime
+    non sono ammesse.
 
-    Con dlopen() scegliamo NOI il path esatto da cui caricare la libreria
-    (dentro il bundle del plugin, calcolato a partire dall'eseguibile in
-    esecuzione - vedi CsoundDynamicLib.cpp), quindi non serve piu' nessun
-    @rpath/LC_LOAD_DYLIB: il nostro eseguibile non dipende a livello di
-    Mach-O da CsoundLib64 affatto, dipende da questo modulo che la trova e
-    la carica lui stesso. Il file .dylib dentro il bundle resta comunque
-    necessario (va ancora copiato li' da uno script di build - vedi
-    scripts/embed_csound_framework.sh, molto piu' semplice ora: solo
-    copia+pulizia+firma, niente piu' install_name_tool), ma come la
-    carichiamo e' interamente sotto il nostro controllo.
+    L'interfaccia resta quella di prima (un namespace di puntatori a
+    funzione, CsoundAPI::csoundXxx) cosi' PluginProcessor non cambia:
+    load() ora non carica nulla, si limita ad agganciare i puntatori ai
+    simboli C linkati staticamente (::csoundXxx di csound.h & co.). E'
+    idempotente e non puo' fallire.
 
-    Tutti i puntatori sotto sono nullptr finche' load() non ha successo:
-    vanno usati solo dopo aver controllato isLoaded() (o il valore di
-    ritorno di load() stesso).
+    Storia: in precedenza CsoundLib64 veniva caricata a runtime con
+    dlopen()/dlsym() dal bundle del plugin (vedi la cronologia git per
+    quella versione, scripts/embed_csound_framework.sh era il suo script
+    di post-build). I puntatori sotto sono nullptr finche' load() non e'
+    stata chiamata.
 */
 namespace CsoundAPI
 {
@@ -92,17 +91,11 @@ namespace CsoundAPI
     extern CsoundNewOpcodeListFn csoundNewOpcodeList;
     extern CsoundDisposeOpcodeListFn csoundDisposeOpcodeList;
 
-    /** true se load() e' gia' stata chiamata con successo. */
+    /** true se load() e' gia' stata chiamata. */
     bool isLoaded() noexcept;
 
-    /** Cerca ed apre CsoundLib64 dentro il bundle del plugin (Contents/
-        Frameworks/CsoundLib64.framework/CsoundLib64, risolto a partire
-        dall'eseguibile in esecuzione) e risolve tutti i simboli sopra.
-        Idempotente: se gia' riuscita, le chiamate successive ritornano
-        true senza ricaricare nulla. Va chiamata una volta prima di usare
-        qualunque puntatore di questo namespace (es. all'inizio di
-        CsoundAudioProcessor::compileAndStart). Se ritorna false ed
-        errorMessage non e' nullptr, vi scrive il motivo (file non trovato,
-        dlopen fallita, simbolo mancante). */
+    /** Aggancia i puntatori sopra ai simboli di Csound linkati
+        staticamente. Idempotente, ritorna sempre true (errorMessage non
+        viene mai scritto: resta per compatibilita' con il codice chiamante). */
     bool load (juce::String* errorMessage = nullptr);
 }

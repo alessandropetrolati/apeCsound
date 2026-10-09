@@ -6,20 +6,13 @@
 #include <array>
 #include <cstdarg>
 
-// Csound (la VERA release 7.0.0, installata da /Applications/Csound dal pkg
-// "csound7Environment" - non il vecchio /Library/Frameworks/CsoundLib64.
-// framework, rimasto Csound 6.18) NON viene piu' linkata a tempo di
-// compilazione (niente -framework CsoundLib64): viene caricata a RUNTIME
-// con dlopen()/dlsym() da CsoundDynamicLib - vedi il commento in cima a
-// quel file per il perche' (install name/@rpath/fase di embedding gestita
-// da Xcode erano una fonte continua di problemi). Qui serve comunque
-// #include "csound.h"/"csound_misc.h" per i TIPI (CSOUND, MYFLT/cs_float,
-// opcodeListEntry...) e per i prototipi usati solo come riferimento per i
-// typedef dei puntatori a funzione in CsoundDynamicLib.h - non per
-// linkare: tutte le chiamate nel .cpp passano da CsoundAPI::csoundXxx
-// (puntatori a funzione risolti da CsoundDynamicLib::load()), mai da
-// csoundXxx(...) direttamente, altrimenti il linker tornerebbe a
-// richiedere il simbolo reale.
+// Csound 7 e' linkata STATICAMENTE (build/csound-install/universal/lib,
+// vedi scripts/build_csound_static.sh e CsoundDynamicLib.h). Qui servono
+// "csound.h"/"csound_misc.h" per i TIPI (CSOUND, MYFLT/cs_float,
+// opcodeListEntry...); tutte le chiamate nel .cpp passano da
+// CsoundAPI::csoundXxx (puntatori agganciati da CsoundAPI::load() ai
+// simboli statici), cosi' il codice e' rimasto identico a quando la
+// libreria veniva caricata a runtime.
 //
 // API usata (Csound 7, NON compatibile con la sintassi Csound 6 - vedi
 // anche i commenti in PluginProcessor.cpp): csoundCreate(hostData,
@@ -489,6 +482,10 @@ public:
     // nchnls / nchnls_i dichiarati nel testo del .csd (0 = non dichiarato).
     static int parseDeclaredHeaderValue (const juce::String& csdText, const juce::String& name);
     static constexpr int kMaxBusChannels = 16;
+
+    // App Group iOS (stesso valore di iosAppGroupsId nel .jucer): cartella
+    // condivisa fra app Standalone ed estensione AUv3, vedi getBaseFolder().
+    static constexpr const char* kIOSAppGroupId = "group.it.apesoft.apeCsound";
     void processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) override;
 
     bool hasEditor() const override { return true; }

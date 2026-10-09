@@ -54,9 +54,9 @@ A fixed pool of host-automatable parameters can be mapped to Csound channels and
 
 - macOS 12 or later, with Xcode.
 - [JUCE 8](https://juce.com) and the Projucer.
-- **Csound 7** as `CsoundLib64.framework` (version 7.0.0 is used during development).
+- **Csound 7**, built as a static library by `scripts/build_csound_static.sh` (Homebrew `cmake`, `bison`, `flex`).
 
-Csound is **not linked at build time**. The plugin loads `CsoundLib64.framework` at runtime (`dlopen`) from inside its own bundle, and a post-build script copies the framework into the bundle. See `Source/CsoundDynamicLib.h`.
+Csound is **linked statically**: `libCsoundLib64.a` + `libsndfile.a` + `libsamplerate.a` (universal arm64/x86_64, all opcodes in the core, no plugin `.dylib`s, no realtime audio/MIDI backends since the host provides audio and MIDI). The plugin bundle has no external dependency and the same approach works on iOS, where runtime-loaded libraries are not allowed. `Source/CsoundDynamicLib.*` keeps a thin function-pointer layer over the C API (a leftover of the previous `dlopen` design) so the rest of the code did not change.
 
 ---
 
@@ -68,17 +68,17 @@ Csound is **not linked at build time**. The plugin loads `CsoundLib64.framework`
    cd apeCsound
    ```
 
-2. **Provide Csound 7.** Place `CsoundLib64.framework` in a folder named `Csound` at the repository root:
+2. **Build Csound 7 as a static library**
+   ```sh
+   cd scripts && ./build_csound_static.sh
    ```
-   Csound/CsoundLib64.framework
-   ```
-   This folder is ignored by git. The Xcode project reads Csound's headers from `Csound/CsoundLib64.framework/Headers`.
+   This clones Csound (`develop` branch), libsndfile and libsamplerate, builds them for arm64 and x86_64 and installs headers and universal `.a` files in `build/csound-install/universal/{include,lib}`. The folder is ignored by git. The Xcode project reads headers and libraries from there and links `Accelerate.framework` (Csound's FFT).
 
-3. **Check the post-build script.** `scripts/embed_csound_framework.sh` copies the framework into the built bundle and ad-hoc signs it. Make sure its `FRAMEWORK_SRC` variable points to the framework from step 2.
+   For iOS, then run `./build_csound_static_ios.sh`: it cross-compiles the same sources for device (arm64) and simulator (arm64 + x86_64) into `build/csound-install/ios/{iphoneos,iphonesimulator}/lib`, which the iOS exporter picks up through `$(PLATFORM_NAME)`.
 
-4. **Open the project in the Projucer.** Open `Csound.jucer` and check that the JUCE module paths point to your JUCE installation. Then save the project to generate `Builds/MacOSX` and `JuceLibraryCode`.
+3. **Open the project in the Projucer.** Open `apeCsound.jucer` and check that the JUCE module paths point to your JUCE installation. Then save the project to generate `Builds/MacOSX` and `JuceLibraryCode`.
 
-5. **Build in Xcode.** Open `Builds/MacOSX/apeCsound.xcodeproj` and build the **VST3** or **Standalone** target. The post-build script embeds and signs Csound automatically.
+4. **Build in Xcode.** Open `Builds/MacOSX/apeCsound.xcodeproj` and build the **VST3**, **AUv3** or **Standalone** target; for iOS open `Builds/iOS/apeCsound.xcodeproj` (AUv3 + Standalone). Nothing else to embed: Csound is inside the binary.
 
 > `scripts/build_csound_static.sh` is an experimental script for building Csound 7 as static universal libraries (arm64 + x86_64). It is not used by the current Xcode project.
 
@@ -104,7 +104,7 @@ Source/
   CsoundTokeniser.*        Syntax highlighting
   CsoundParameterEditor.*  Parameters panel
   CsoundActionSheet.*      Touch-friendly menus
-  CsoundDynamicLib.*       Runtime loading of CsoundLib64
+  CsoundDynamicLib.*       Function-pointer layer over the statically linked Csound C API
   NativeAlertMac.*         Native macOS dialogs
 scripts/                   Build helpers for Csound
 Resources/                 App icon

@@ -2853,15 +2853,22 @@ void CsoundParameterMappingPanel::removeAllParameters()
     // questa. "Cancel" e' il bottone di default (primo aggiunto, risponde
     // a Invio): un'azione cosi' distruttiva non deve MAI essere quella che
     // scatta per errore premendo Invio o la barra spaziatrice.
-    const int choice = showNativeTwoButtonAlert (
+    juce::Component::SafePointer<CsoundParameterMappingPanel> safeThis (this);
+
+    showNativeTwoButtonAlertAsync (
         "Remove all parameters?",
         "This will remove every parameter currently mapped in this plugin. "
         "You can undo this after confirming.",
-        "Cancel", "Remove All");
+        "Cancel", "Remove All",
+        [safeThis] (int choice)
+    {
+        if (safeThis != nullptr && choice == 2)
+            safeThis->performRemoveAllParameters();
+    });
+}
 
-    if (choice != 2)
-        return;
-
+void CsoundParameterMappingPanel::performRemoveAllParameters()
+{
     // Snapshot di TUTTI gli slot dei 4 tipi, per poter ripristinare tutto
     // con un solo Undo (azione singola e atomica, come le altre operazioni
     // del pannello - vedi il commento su undo()/redo()).

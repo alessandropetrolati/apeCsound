@@ -1034,13 +1034,19 @@ void CsoundAudioProcessorEditor::loadSessionFile (const juce::File& file)
     // sul file collegato se c'e', altrimenti apre Save As...) e POI carica;
     // "Don't Save" scarta le modifiche e carica; "Cancel" non fa nulla.
     // 1 = Save, 2 = Don't Save, 0 = Cancel o finestra chiusa.
-    const int result = showNativeThreeButtonAlert ("Unsaved changes", message,
-                                                   "Save", "Don't Save", "Cancel");
+    juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
 
-    if (result == 1)
-        performSaveLinked ([this, file] { performLoadSessionFile (file); });
-    else if (result == 2)
-        performLoadSessionFile (file);
+    showNativeThreeButtonAlertAsync ("Unsaved changes", message, "Save", "Don't Save", "Cancel",
+                                     [safeThis, file] (int result)
+    {
+        if (safeThis == nullptr)
+            return;
+
+        if (result == 1)
+            safeThis->performSaveLinked ([safeThis, file] { if (safeThis != nullptr) safeThis->performLoadSessionFile (file); });
+        else if (result == 2)
+            safeThis->performLoadSessionFile (file);
+    });
 }
 
 void CsoundAudioProcessorEditor::performLoadSessionFile (const juce::File& file)
@@ -1105,14 +1111,18 @@ void CsoundAudioProcessorEditor::promptInitializeSession()
     // attuale deve esportarlo PRIMA a mano (Save as CSD...) - offrire
     // "Save" anche qui aggiungerebbe un passaggio che non corrisponde a
     // nessuna richiesta esplicita.
-    const int choice = showNativeTwoButtonAlert (
+    juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
+
+    showNativeTwoButtonAlertAsync (
         "Initialize session?",
         "This will remove all parameters and replace the current code with the default template. "
         "The code change can be undone afterwards; the parameter mapping cannot.",
-        "Cancel", "Initialize");
-
-    if (choice == 2)
-        performInitializeSession();
+        "Cancel", "Initialize",
+        [safeThis] (int choice)
+    {
+        if (safeThis != nullptr && choice == 2)
+            safeThis->performInitializeSession();
+    });
 }
 
 void CsoundAudioProcessorEditor::performInitializeSession()
@@ -1268,15 +1278,20 @@ void CsoundAudioProcessorEditor::promptRelocateSession()
             // comunque con Undo (vedi replaceSessionUndoably).
             if (audioProcessor.wasRestoredDirty() || currentSessionHash() != audioProcessor.getRestoredSessionHash())
             {
-                const int choice = showNativeTwoButtonAlert (
+                juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
+
+                showNativeTwoButtonAlertAsync (
                     "Replace current content?",
                     "The code and parameter mapping currently in use are not saved to any file. "
                     "Relocating will replace them with the contents of " + file.getFileName() + ". "
                     "Use Save As... instead to keep them.",
-                    "Cancel", "Relocate");
-
-                if (choice != 2)
-                    return;
+                    "Cancel", "Relocate",
+                    [safeThis, file] (int choice)
+                {
+                    if (safeThis != nullptr && choice == 2)
+                        safeThis->performLoadSessionFile (file);
+                });
+                return;
             }
 
             performLoadSessionFile (file); // carica + collega + applica; azzera "file mancante"
@@ -1428,16 +1443,26 @@ void CsoundAudioProcessorEditor::performSaveLinked (std::function<void()> onSave
     // quelle sono proprio cio' che si sta per salvare.
     if (audioProcessor.hasLinkedFileChangedOnDisk())
     {
-        const int choice = showNativeTwoButtonAlert (
+        juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
+
+        showNativeTwoButtonAlertAsync (
             "File changed on disk",
             linked.getFileName() + " has been modified outside this session since it was loaded. "
             "Overwrite it with the current session?",
-            "Cancel", "Overwrite");
-
-        if (choice != 2)
-            return;
+            "Cancel", "Overwrite",
+            [safeThis, linked, onSaved] (int choice)
+        {
+            if (safeThis != nullptr && choice == 2)
+                safeThis->writeLinkedSessionFile (linked, onSaved);
+        });
+        return;
     }
 
+    writeLinkedSessionFile (linked, onSaved);
+}
+
+void CsoundAudioProcessorEditor::writeLinkedSessionFile (const juce::File& linked, std::function<void()> onSaved)
+{
     const bool ok = audioProcessor.saveSessionToFile (linked, document.getAllContent());
 
     if (ok)

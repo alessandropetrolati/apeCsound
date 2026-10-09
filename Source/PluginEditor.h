@@ -318,6 +318,7 @@ private:
     // scritto davvero - usata dal dialogo "Unsaved changes" di Load CSD
     // ("Save" = salva come farebbe il menu, POI carica).
     void performSaveLinked (std::function<void()> onSaved = nullptr);
+    void writeLinkedSessionFile (const juce::File& linked, std::function<void()> onSaved); // parte finale di performSaveLinked (dopo l'eventuale conferma)
 
     // juce::CodeDocument::Listener: CsoundCodeEditor (vedi "editor" sotto)
     // ha GIA' un proprio listener privato sullo stesso document (per l'help

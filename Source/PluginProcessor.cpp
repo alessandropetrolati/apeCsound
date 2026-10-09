@@ -11,36 +11,20 @@
 
 namespace
 {
-    // Csound carica gli opcode "plugin" aggiuntivi (osc, pvsops, midi, ecc.
-    // - i file in CsoundLib64.framework/Resources/Opcodes64, separati dal
-    // core) da una cartella di default compilata staticamente dentro il
-    // framework come path ASSOLUTO (/Applications/Csound/CsoundLib64.
-    // framework/Resources/Opcodes64 - verificato con 'strings' sul binario
-    // reale). Siccome il framework e' solo EMBEDDATO nel bundle del plugin,
-    // non installato su /Applications sulla macchina di chi lo riceve,
-    // senza questo passo Csound cercherebbe quegli opcode in una cartella
-    // inesistente. In Csound 7 non serve piu' un trucco con variabili
-    // d'ambiente (OPCODE6DIR64, usato per errore in una versione precedente
-    // di questo file quando il framework copiato era ancora Csound 6.18):
-    // CsoundAPI::csoundCreate() accetta direttamente un path di override come secondo
-    // argomento (vedi doc in csound.h) - questa funzione calcola quel path,
-    // puntando alla copia di Opcodes64 che viaggia dentro il bundle stesso
-    // (.../Contents/Frameworks/CsoundLib64.framework/Resources/Opcodes64).
-   #if JUCE_MAC
+    // Csound e' linkata STATICAMENTE con tutti gli opcode nel core (vedi
+    // CsoundDynamicLib.h, build con BUILD_PLUGINS=OFF): nessuna cartella di
+    // plugin .dylib da caricare. Passiamo comunque a csoundCreate() una
+    // cartella VUOTA come opcodedir, altrimenti Csound userebbe la sua
+    // cartella di default (es. /usr/local/lib/csound/plugins64-7.0 o
+    // OPCODE7DIR) e, se sulla macchina c'e' un Csound installato, caricherebbe
+    // i SUOI plugin dinamici dentro il nostro processo - versione diversa,
+    // crash garantito prima o poi. La cartella vuota la creiamo noi.
     juce::String getEmbeddedOpcodeDir()
     {
-        const auto exe = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
-
-        // exe e' .../<Bundle>.{app,vst3,component}/Contents/MacOS/<Nome>:
-        // risaliamo a Contents e scendiamo in Frameworks/...
-        const auto contents = exe.getParentDirectory().getParentDirectory();
-        const auto opcodeDir = contents.getChildFile ("Frameworks/CsoundLib64.framework/Resources/Opcodes64");
-
-        return opcodeDir.isDirectory() ? opcodeDir.getFullPathName() : juce::String();
+        auto dir = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("apeCsound-no-plugins");
+        dir.createDirectory();
+        return dir.getFullPathName();
     }
-   #else
-    juce::String getEmbeddedOpcodeDir() { return {}; }
-   #endif
 }
 
 CsoundAudioProcessor::CsoundAudioProcessor()
@@ -801,13 +785,10 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
 {
     jassert (juce::MessageManager::getInstance()->isThisTheMessageThread());
 
-    // CsoundAPI::load() e' idempotente (ritorna true subito se gia'
-    // riuscita prima): va chiamata qui, prima di ogni altro uso di
-    // CsoundAPI::csoundXxx, perche' e' il punto da cui dlopen() apre
-    // CsoundLib64 dal bundle del plugin - vedi CsoundDynamicLib.h/.cpp per
-    // il perche' di questo disegno (niente piu' -framework/@rpath/fase di
-    // embedding gestita da Xcode). Se fallisce (file non trovato, simbolo
-    // mancante...) non c'e' nessun motore da compilare: meglio fermarsi
+    // CsoundAPI::load() aggancia i puntatori CsoundAPI::csoundXxx ai simboli
+    // di Csound linkati STATICAMENTE (vedi CsoundDynamicLib.h): idempotente,
+    // non puo' fallire, ma va chiamata prima di ogni altro uso. Il
+    // controllo dell'esito resta per sicurezza: senza motore meglio fermarsi
     // qui con un messaggio chiaro in console che un crash piu' avanti.
     if (! CsoundAPI::isLoaded())
     {
@@ -1395,8 +1376,21 @@ namespace
 // su getStateInformation in PluginProcessor.h.
 juce::File CsoundAudioProcessor::getBaseFolder()
 {
+   #if JUCE_IOS
+    // iOS: l'estensione AUv3 (dentro la DAW) e l'app Standalone sono due
+    // sandbox diverse; i .csd devono stare nel contenitore condiviso
+    // dell'App Group (abilitato nel .jucer con lo stesso identificatore),
+    // altrimenti un file salvato dall'app non si vede dal plugin e
+    // viceversa. Se il contenitore non e' disponibile (entitlement
+    // mancante) si ripiega sui Documents della singola sandbox.
+    auto container = juce::File::getContainerForSecurityApplicationGroupIdentifier (kIOSAppGroupId);
+    auto folder = (container != juce::File{} ? container.getChildFile ("Documents")
+                                             : juce::File::getSpecialLocation (juce::File::userDocumentsDirectory))
+                      .getChildFile ("apeCsound");
+   #else
     auto folder = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
                       .getChildFile ("apeCsound");
+   #endif
 
     // NON la crea qui (punto 10): la crea il file chooser dell'editor quando
     // serve (vedi getCsdChooserStartDirectory in PluginEditor.cpp).

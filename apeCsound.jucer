@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="hIifYP" name="apeCsound" projectType="audioplug" jucerFormatVersion="1"
-              pluginFormats="buildStandalone,buildVST3" companyWebsite="www.apesoft.it"
+              pluginFormats="buildAU,buildAUv3,buildStandalone,buildVST3" companyWebsite="www.apesoft.it"
               companyEmail="apps@apesoft.it" bundleIdentifier="it.apesoft.Csound"
               pluginManufacturerCode="Apes" pluginCode="Csnd" pluginCharacteristicsValue="pluginWantsMidiIn,pluginEditorRequiresKeys"
               pluginManufacturer="apeSoft" aaxIdentifier="it.apesoft.csound"
@@ -79,12 +79,16 @@
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>
   <EXPORTFORMATS>
     <XCODE_MAC targetFolder="Builds/MacOSX" iosDevelopmentTeamID="9L4T4JL6GX"
-               smallIcon="QhPr70" bigIcon="QhPr70" postbuildCommand="&quot;$SRCROOT/../../scripts/embed_csound_framework.sh&quot;">
+               smallIcon="QhPr70" bigIcon="QhPr70" externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate"
+               extraFrameworks="Accelerate" microphonePermissionNeeded="1"
+               microphonePermissionsText="apeCsound needs the microphone for live audio input.">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" headerPath="../../Csound/CsoundLib64.framework/Headers"
-                       macOSDeploymentTarget="12" osxCompatibility="12 SDK"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="apeCsound" headerPath="../../Csound/CsoundLib64.framework/Headers"
-                       macOSDeploymentTarget="12" osxCompatibility="12 SDK"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" headerPath="../../build/csound-install/universal/include"
+                       libraryPath="../../build/csound-install/universal/lib" macOSDeploymentTarget="12"
+                       osxCompatibility="12 SDK"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="apeCsound" headerPath="../../build/csound-install/universal/include"
+                       libraryPath="../../build/csound-install/universal/lib" macOSDeploymentTarget="12"
+                       osxCompatibility="12 SDK"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../JUCE/modules"/>
@@ -105,5 +109,39 @@
         <MODULEPATH id="juce_osc" path="../JUCE/modules"/>
       </MODULEPATHS>
     </XCODE_MAC>
+    <XCODE_IPHONE targetFolder="Builds/iOS" iosDevelopmentTeamID="9L4T4JL6GX" smallIcon="QhPr70"
+                  bigIcon="QhPr70" iosDeviceFamily="2" iPhoneScreenOrientation="portraitlandscape"
+                  iPadScreenOrientation="UIInterfaceOrientationLandscapeLeft,UIInterfaceOrientationLandscapeRight,UIInterfaceOrientationPortrait,UIInterfaceOrientationPortraitUpsideDown"
+                  UIFileSharingEnabled="1" UISupportsDocumentBrowser="1" iosBackgroundAudio="1"
+                  iosAppGroups="1" iosAppGroupsId="group.it.apesoft.apeCsound"
+                  microphonePermissionNeeded="1" microphonePermissionsText="apeCsound needs the microphone for live audio input."
+                  externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate" extraFrameworks="Accelerate">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" iosDeploymentTarget="17.0"
+                       headerPath="../../build/csound-install/universal/include" libraryPath="../../build/csound-install/ios/$(PLATFORM_NAME)/lib"
+                       iosCompatibility="17.0"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="apeCsound" iosDeploymentTarget="17.0"
+                       headerPath="../../build/csound-install/universal/include" libraryPath="../../build/csound-install/ios/$(PLATFORM_NAME)/lib"
+                       iosCompatibility="17.0"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_audio_basics" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_plugin_client" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors_headless" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_core" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_cryptography" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_dsp" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_osc" path="../JUCE/modules"/>
+      </MODULEPATHS>
+    </XCODE_IPHONE>
   </EXPORTFORMATS>
 </JUCERPROJECT>

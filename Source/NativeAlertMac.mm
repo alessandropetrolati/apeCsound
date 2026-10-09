@@ -1,21 +1,66 @@
-// NESSUN header JUCE qui (ne' <JuceHeader.h> ne' un modulo "nudo" come
-// <juce_core/juce_core.h>) - vedi il commento in testa a NativeAlertMac.h
-// sul perche': combinare "using namespace juce;"/juce_gui_basics con
-// <Cocoa/Cocoa.h> nello stesso file genera centinaia di conflitti di nomi.
-// Questo file conosce solo tipi Objective-C/Cocoa e const char* in ingresso
-// e int in uscita (extern "C", nessun juce::String che attraverso questo
-// confine).
+// NESSUN header JUCE qui - vedi NativeAlertMac.h. Solo Cocoa/UIKit, const
+// char* in ingresso e una callback C in uscita.
 
 #if defined(__APPLE__)
 
-#import <Cocoa/Cocoa.h>
+#include <TargetConditionals.h>
 
-extern "C" int showNativeThreeButtonAlertRaw (const char* title,
-                                               const char* message,
-                                               const char* button1Text,
-                                               const char* button2Text,
-                                               const char* button3Text)
+#if TARGET_OS_IPHONE
+ #import <UIKit/UIKit.h>
+#else
+ #import <Cocoa/Cocoa.h>
+#endif
+
+extern "C" void showNativeAlertRaw (const char* title, const char* message,
+                                    const char* button1Text, const char* button2Text, const char* button3Text,
+                                    void (*callback) (int result, void* context), void* context)
 {
+   #if TARGET_OS_IPHONE
+    UIAlertController* alert = [UIAlertController alertControllerWithTitle: [NSString stringWithUTF8String: title]
+                                                                   message: [NSString stringWithUTF8String: message]
+                                                            preferredStyle: UIAlertControllerStyleAlert];
+
+    const char* titles[3] = { button1Text, button2Text, button3Text };
+
+    for (int i = 0; i < 3; ++i)
+    {
+        if (titles[i] == nullptr)
+            continue;
+
+        const int result = i + 1;
+        NSString* t = [NSString stringWithUTF8String: titles[i]];
+        const bool isCancel = [t caseInsensitiveCompare: @"Cancel"] == NSOrderedSame;
+
+        UIAlertAction* action = [UIAlertAction actionWithTitle: t
+                                                         style: isCancel ? UIAlertActionStyleCancel : UIAlertActionStyleDefault
+                                                       handler: ^(UIAlertAction*) { callback (result, context); }];
+        [alert addAction: action];
+
+        if (i == 0)
+            alert.preferredAction = action; // = Invio su tastiera esterna
+    }
+
+    // View controller in primo piano: la finestra chiave dell'app (o
+    // dell'host AUv3), scendendo lungo i presentati.
+    UIViewController* root = nil;
+
+    for (UIWindow* w in [UIApplication sharedApplication].windows)
+        if (w.isKeyWindow) { root = w.rootViewController; break; }
+
+    if (root == nil)
+        root = [UIApplication sharedApplication].windows.firstObject.rootViewController;
+
+    while (root.presentedViewController != nil)
+        root = root.presentedViewController;
+
+    if (root == nil)
+    {
+        callback (0, context);
+        return;
+    }
+
+    [root presentViewController: alert animated: YES completion: nil];
+   #else
     NSAlert* alert = [[NSAlert alloc] init];
 
     alert.alertStyle = NSAlertStyleWarning;
@@ -23,43 +68,22 @@ extern "C" int showNativeThreeButtonAlertRaw (const char* title,
     alert.informativeText = [NSString stringWithUTF8String: message];
 
     // Il PRIMO bottone aggiunto e' quello che NSAlert posiziona piu' a
-    // destra (l'azione di default, scattabile anche con Invio) - quindi
-    // button1Text deve essere l'azione "consigliata" (qui: "Save").
-    [alert addButtonWithTitle: [NSString stringWithUTF8String: button1Text]];
-    [alert addButtonWithTitle: [NSString stringWithUTF8String: button2Text]];
-    [alert addButtonWithTitle: [NSString stringWithUTF8String: button3Text]];
-
-    const NSModalResponse response = [alert runModal];
-
-    if (response == NSAlertFirstButtonReturn)
-        return 1;
-
-    if (response == NSAlertSecondButtonReturn)
-        return 2;
-
-    return 0; // terzo bottone, oppure finestra chiusa senza scegliere
-}
-
-extern "C" int showNativeTwoButtonAlertRaw (const char* title,
-                                             const char* message,
-                                             const char* button1Text,
-                                             const char* button2Text)
-{
-    NSAlert* alert = [[NSAlert alloc] init];
-
-    alert.alertStyle = NSAlertStyleWarning;
-    alert.messageText = [NSString stringWithUTF8String: title];
-    alert.informativeText = [NSString stringWithUTF8String: message];
-
-    // Stesso ordine/convenzione di showNativeThreeButtonAlertRaw sopra: il
-    // PRIMO bottone aggiunto e' quello di default (piu' a destra,
-    // scattabile con Invio).
+    // destra (l'azione di default, scattabile anche con Invio).
     [alert addButtonWithTitle: [NSString stringWithUTF8String: button1Text]];
     [alert addButtonWithTitle: [NSString stringWithUTF8String: button2Text]];
 
+    if (button3Text != nullptr)
+        [alert addButtonWithTitle: [NSString stringWithUTF8String: button3Text]];
+
     const NSModalResponse response = [alert runModal];
 
-    return response == NSAlertFirstButtonReturn ? 1 : 2;
+    int result = 0;
+    if (response == NSAlertFirstButtonReturn)       result = 1;
+    else if (response == NSAlertSecondButtonReturn) result = 2;
+    else if (response == NSAlertThirdButtonReturn)  result = 3;
+
+    callback (result, context);
+   #endif
 }
 
 #endif // defined(__APPLE__)
