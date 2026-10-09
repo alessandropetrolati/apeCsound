@@ -443,6 +443,44 @@ void CsoundCodeEditor::itemDropped (const SourceDetails& dragSourceDetails)
 
 void CsoundCodeEditor::paintOverChildren (juce::Graphics& g)
 {
+    // Occorrenze della ricerca (vedi setSearchQuery): solo quelle sulle
+    // righe visibili. Riempimento SEMI-trasparente, cosi' il testo sotto
+    // resta leggibile; la corrente e' piu' marcata e ha un bordo.
+    if (! searchMatches.empty())
+    {
+        const int firstLine = getFirstLineOnScreen();
+        const int lastLine  = firstLine + getNumLinesOnScreen() + 1;
+        const float lineHeight = (float) getLineHeight();
+
+        for (int i = 0; i < (int) searchMatches.size(); ++i)
+        {
+            const auto& m = searchMatches[(size_t) i];
+
+            if (m.line < firstLine)
+                continue;
+            if (m.line > lastLine)
+                break; // le occorrenze sono in ordine di posizione, quindi di riga
+
+            const auto a = getCharacterBounds (juce::CodeDocument::Position (codeDocument, m.line, m.column));
+            const auto b = getCharacterBounds (juce::CodeDocument::Position (codeDocument, m.line, m.column + (m.end - m.start)));
+            const juce::Rectangle<float> r ((float) a.getX(), (float) a.getY(),
+                                            (float) juce::jmax (2, b.getX() - a.getX()), lineHeight);
+
+            if (i == currentSearchMatch)
+            {
+                g.setColour (juce::Colour (0xffff9f1c).withAlpha (0.45f));
+                g.fillRoundedRectangle (r, 2.0f);
+                g.setColour (juce::Colour (0xffe07b00));
+                g.drawRoundedRectangle (r.reduced (0.5f), 2.0f, 1.5f);
+            }
+            else
+            {
+                g.setColour (juce::Colour (0xffffe066).withAlpha (0.45f));
+                g.fillRoundedRectangle (r, 2.0f);
+            }
+        }
+    }
+
     if (dragHighlightLine < 0)
         return;
 
@@ -471,6 +509,12 @@ void CsoundCodeEditor::resized()
 // redo, inserimento programmatico.
 void CsoundCodeEditor::codeDocumentTextInserted (const juce::String& newText, int insertIndex)
 {
+    // Ricerca attiva: le occorrenze seguono il testo (anche durante un
+    // re-indent, un undo o una sostituzione - tranne replaceAll, che
+    // ricalcola una volta sola alla fine).
+    if (searchQuery.isNotEmpty() && ! suspendSearchRefresh)
+        refreshSearchMatches();
+
     if (isReindenting)
         return;
 
@@ -496,6 +540,9 @@ void CsoundCodeEditor::codeDocumentTextInserted (const juce::String& newText, in
 
 void CsoundCodeEditor::codeDocumentTextDeleted (int /*startIndex*/, int /*endIndex*/)
 {
+    if (searchQuery.isNotEmpty() && ! suspendSearchRefresh)
+        refreshSearchMatches();
+
     // Non serve reagire alle cancellazioni per il re-indent: si ricalcola
     // alla prossima riga toccata da un inserimento. L'help/autocompletamento
     // invece deve aggiornarsi anche qui (es. l'utente cancella l'ultima
@@ -1137,4 +1184,210 @@ void CsoundCodeEditor::SuggestionPopup::paint (juce::Graphics& g)
         g.setColour (juce::Colour (0xff8a7a55));
         g.drawText (name.substring (suggestionPrefix.length()), remainderArea, juce::Justification::centredLeft, false);
     }
+}
+
+//==============================================================================
+// Cerca / Sostituisci - vedi il commento su setSearchQuery in CsoundCodeEditor.h.
+void CsoundCodeEditor::setSearchQuery (const juce::String& query, bool matchCase, bool wholeWord)
+{
+    searchQuery = query;
+    searchMatchCase = matchCase;
+    searchWholeWord = wholeWord;
+    currentSearchMatch = -1;
+
+    refreshSearchMatches();
+
+    // "Cerca mentre scrivi": porta subito in vista l'occorrenza scelta.
+    if (currentSearchMatch >= 0)
+        selectSearchMatch (currentSearchMatch);
+}
+
+void CsoundCodeEditor::clearSearch()
+{
+    searchQuery.clear();
+    searchMatches.clear();
+    currentSearchMatch = -1;
+    repaint();
+    notifySearchResults();
+}
+
+void CsoundCodeEditor::refreshSearchMatches()
+{
+    searchMatches.clear();
+
+    if (searchQuery.isEmpty())
+    {
+        currentSearchMatch = -1;
+        repaint();
+        notifySearchResults();
+        return;
+    }
+
+    // Il testo come array di caratteri (indici = posizioni di
+    // CodeDocument): juce::String e' UTF-8, l'accesso per indice sarebbe
+    // lineare a ogni chiamata.
+    std::vector<juce::juce_wchar> text, query;
+    {
+        const auto content = codeDocument.getAllContent();
+        for (auto p = content.getCharPointer(); ! p.isEmpty(); ++p)
+            text.push_back (*p);
+        for (auto p = searchQuery.getCharPointer(); ! p.isEmpty(); ++p)
+            query.push_back (*p);
+    }
+
+    auto fold = [this] (juce::juce_wchar c)
+    {
+        return searchMatchCase ? c : juce::CharacterFunctions::toLowerCase (c);
+    };
+
+    auto isWordChar = [] (juce::juce_wchar c)
+    {
+        return juce::CharacterFunctions::isLetterOrDigit (c) || c == '_';
+    };
+
+    const int n = (int) text.size(), m = (int) query.size();
+    int line = 0, lineStart = 0, scanned = 0;
+
+    for (int i = 0; i + m <= n; )
+    {
+        int k = 0;
+        while (k < m && fold (text[(size_t) (i + k)]) == fold (query[(size_t) k]))
+            ++k;
+
+        bool found = (k == m);
+
+        if (found && searchWholeWord)
+            found = (i == 0 || ! isWordChar (text[(size_t) (i - 1)]))
+                 && (i + m == n || ! isWordChar (text[(size_t) (i + m)]));
+
+        if (! found)
+        {
+            ++i;
+            continue;
+        }
+
+        for (; scanned < i; ++scanned)
+            if (text[(size_t) scanned] == '\n')
+            {
+                ++line;
+                lineStart = scanned + 1;
+            }
+
+        searchMatches.push_back ({ i, i + m, line, i - lineStart });
+        i += m; // occorrenze non sovrapposte
+    }
+
+    // Occorrenza corrente: la prima che inizia alla selezione/caret o dopo,
+    // cosi' "Next" e la digitazione nel campo proseguono da dove si e'.
+    currentSearchMatch = -1;
+
+    if (! searchMatches.empty())
+    {
+        const auto selection = getHighlightedRegion();
+        const int anchor = selection.isEmpty() ? getCaretPos().getPosition() : selection.getStart();
+
+        currentSearchMatch = 0;
+        for (int i = 0; i < (int) searchMatches.size(); ++i)
+            if (searchMatches[(size_t) i].start >= anchor)
+            {
+                currentSearchMatch = i;
+                break;
+            }
+    }
+
+    repaint();
+    notifySearchResults();
+}
+
+void CsoundCodeEditor::selectSearchMatch (int index)
+{
+    if (index < 0 || index >= (int) searchMatches.size())
+        return;
+
+    currentSearchMatch = index;
+    const auto& m = searchMatches[(size_t) index];
+
+    // selectRegion sposta anche il caret, e quindi la vista, sull'occorrenza.
+    selectRegion (juce::CodeDocument::Position (codeDocument, m.start),
+                  juce::CodeDocument::Position (codeDocument, m.end));
+    repaint();
+    notifySearchResults();
+}
+
+void CsoundCodeEditor::selectNextSearchMatch()
+{
+    if (searchMatches.empty())
+        return;
+
+    // Se la corrente e' gia' selezionata si passa alla successiva,
+    // altrimenti (l'utente ha spostato il caret) si seleziona quella scelta
+    // dal caret.
+    const auto selection = getHighlightedRegion();
+    const auto& cur = searchMatches[(size_t) juce::jmax (0, currentSearchMatch)];
+    const bool onCurrent = selection.getStart() == cur.start && selection.getEnd() == cur.end;
+
+    selectSearchMatch (onCurrent ? (currentSearchMatch + 1) % (int) searchMatches.size()
+                                 : juce::jmax (0, currentSearchMatch));
+}
+
+void CsoundCodeEditor::selectPreviousSearchMatch()
+{
+    if (searchMatches.empty())
+        return;
+
+    const int count = (int) searchMatches.size();
+    selectSearchMatch ((juce::jmax (0, currentSearchMatch) - 1 + count) % count);
+}
+
+bool CsoundCodeEditor::replaceCurrentSearchMatch (const juce::String& replacement)
+{
+    if (currentSearchMatch < 0 || currentSearchMatch >= (int) searchMatches.size())
+        return false;
+
+    const auto m = searchMatches[(size_t) currentSearchMatch];
+    const int resumeFrom = m.start + replacement.length();
+
+    // Una transazione dedicata = un solo passo di undo.
+    codeDocument.newTransaction();
+    codeDocument.replaceSection (m.start, m.end, replacement);
+    codeDocument.newTransaction();
+
+    // Le occorrenze sono gia' state ricalcolate dal listener: si passa alla
+    // prima DOPO il testo appena inserito (evita di risostituire dentro la
+    // sostituzione stessa, es. "a" -> "aa").
+    for (int i = 0; i < (int) searchMatches.size(); ++i)
+        if (searchMatches[(size_t) i].start >= resumeFrom)
+        {
+            selectSearchMatch (i);
+            return true;
+        }
+
+    if (! searchMatches.empty())
+        selectSearchMatch (0);
+    else
+        notifySearchResults();
+
+    return true;
+}
+
+int CsoundCodeEditor::replaceAllSearchMatches (const juce::String& replacement)
+{
+    if (searchMatches.empty())
+        return 0;
+
+    const auto matches = searchMatches; // copia: il listener e' sospeso, ma per sicurezza
+    const int count = (int) matches.size();
+
+    suspendSearchRefresh = true;
+    codeDocument.newTransaction();
+
+    // Dall'ultima alla prima: gli indici delle precedenti restano validi.
+    for (int i = count - 1; i >= 0; --i)
+        codeDocument.replaceSection (matches[(size_t) i].start, matches[(size_t) i].end, replacement);
+
+    codeDocument.newTransaction();
+    suspendSearchRefresh = false;
+
+    refreshSearchMatches();
+    return count;
 }

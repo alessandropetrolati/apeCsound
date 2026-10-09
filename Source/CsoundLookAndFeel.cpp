@@ -133,8 +133,26 @@ namespace
             "11.7,13.72L8.42,17H5.59L9.58,13Z");
     }
 
+    // Lente (Cerca/Sostituisci nell'editor di codice): cerchio + manico in
+    // diagonale, stesso tratto arrotondato delle altre icone "a linea".
+    juce::Path makeFindIconPath()
+    {
+        juce::Path p;
+        p.addEllipse (3.0f, 3.0f, 13.0f, 13.0f);
+        p.startNewSubPath (14.2f, 14.2f);
+        p.lineTo (21.0f, 21.0f);
+
+        juce::Path filled;
+        juce::PathStrokeType (2.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded)
+            .createStrokedPath (filled, p);
+        return filled;
+    }
+
     juce::Path getIconPathForButtonName (const juce::String& name)
     {
+        if (name == "find")
+            return makeFindIconPath();
+
         if (name == "apply")
             return makeAudioEngineIconPath();
 

@@ -100,6 +100,10 @@ public:
 private:
     // CsoundAudioProcessor::Listener
     void csoundMessageReceived (const juce::String& message) override;
+    // Blocco di messaggi gia' filtrati dal processor (vedi il filtro della
+    // consolle in PluginProcessor.h): UN solo aggiornamento della consolle
+    // per blocco invece che uno per messaggio.
+    void csoundMessagesReceived (const juce::StringArray& messages) override;
     void csoundEngineStarted() override;
     void csoundEngineStopped() override;
 
@@ -208,6 +212,30 @@ private:
         static constexpr int cardWidth  = 360;
         static constexpr int cardHeight = 472;
     };
+
+    // Barra Cerca/Sostituisci (richiesta esplicita) sotto la toolbar, aperta
+    // e chiusa dal bottone lente (findButton). La ricerca vera e propria e
+    // l'evidenziazione stanno in CsoundCodeEditor (setSearchQuery & co.).
+    // Una riga: [Find][3 of 12][^][v][Aa][W]  [Replace][Replace][All][x]
+    struct FindReplaceBar final : public juce::Component
+    {
+        FindReplaceBar();
+        void paint (juce::Graphics& g) override;
+        void resized() override;
+
+        juce::TextEditor findField, replaceField;
+        juce::Label countLabel;
+        juce::TextButton prevButton, nextButton;
+        juce::TextButton matchCaseButton { "Aa" }, wholeWordButton { "W" };
+        juce::TextButton replaceButton { "Replace" }, replaceAllButton { "All" };
+        juce::TextButton closeButton;
+    };
+
+    void toggleFindBar();
+    void openFindBar();
+    void closeFindBar();
+    void updateFindQuery();   // testo/opzioni della barra -> editor.setSearchQuery
+    void updateFindCount();   // contatore "3 of 12" + bottoni Replace abilitati
 
     struct SessionWarningBar final : public juce::Component
     {
@@ -338,6 +366,11 @@ private:
     // access the processor object that created it.
     CsoundAudioProcessor& audioProcessor;
 
+    // Necessario perche' i tooltip compaiano (setTooltip da solo non basta:
+    // JUCE li mostra solo se esiste un juce::TooltipWindow nella gerarchia).
+    // Mancava, quindi NESSUN tooltip del plugin veniva mai mostrato.
+    juce::TooltipWindow tooltipWindow { this, 600 };
+
     // Guardia di rientranza per bridgeCodeEditIntoSharedUndo() - vedi il
     // commento nel .cpp su CodeEditTransactionProxy. Riferimento al flag del
     // PROCESSOR (CsoundAudioProcessor::getCodeUndoGuard): le azioni in
@@ -362,6 +395,13 @@ private:
 
     // Nella toolbar, tra Apply e il burger - vedi SessionFileLabel.
     SessionFileLabel sessionFileLabel;
+
+    // Cerca/Sostituisci - vedi FindReplaceBar. Il bottone lente sta nella
+    // toolbar, a sinistra del burger; la barra sotto la toolbar, visibile
+    // solo quando aperta.
+    juce::TextButton findButton;
+    FindReplaceBar findBar;
+    static constexpr int findBarHeight = 40;
 
     // Vista "About" - vedi AboutView. Figlio a tutta finestra, nascosto
     // finche' non viene aperto dal menu.

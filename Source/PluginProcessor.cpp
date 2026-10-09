@@ -4,6 +4,8 @@
 #include <cmath>
 #include <regex>
 #include <map>
+#include <set>
+#include <functional>
 
 namespace
 {
@@ -45,6 +47,9 @@ CsoundAudioProcessor::CsoundAudioProcessor()
                                  .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "PARAMETERS", createChannelParamLayout())
 {
+    // Svuotamento periodico della coda dei messaggi Csound, filtrata (vedi
+    // il commento sul filtro della consolle in PluginProcessor.h).
+    startTimer (kMessageFlushIntervalMs);
     csdText = defaultCsdText();
 }
 
@@ -53,6 +58,7 @@ CsoundAudioProcessor::~CsoundAudioProcessor()
     // Per primo: le callAsync gia' in coda non devono piu' toccare `this`
     // (vedi aliveFlag in PluginProcessor.h).
     aliveFlag->store (false);
+    stopTimer(); // filtro della consolle (vedi flushPendingMessages)
     stopEngine();
 }
 
@@ -2090,8 +2096,11 @@ bool CsoundAudioProcessor::loadSessionStructureAndCode (const juce::String& full
         // plugin ma e' probabilmente un .csd Cabbage scritto a mano/da
         // un'altra app: proviamo a dedurre il mapping dei parametri dai
         // widget, invece di lasciare INVARIATO (o vuoto) quello attuale -
-        // vedi importCabbageParameters in PluginProcessor.h.
-        importCabbageParameters (fullText);
+        // vedi importCabbageParameters in PluginProcessor.h. Se non c'e'
+        // un <Cabbage>, si prova con un pannello di CsoundQt (<bsbPanel>) -
+        // vedi importCsoundQtParameters.
+        if (! importCabbageParameters (fullText))
+            importCsoundQtParameters (fullText);
         return true;
     }
 
@@ -2141,6 +2150,225 @@ void CsoundAudioProcessor::initializeSession()
     // comporta come "Save As" (vedi performSaveLinked nell'editor).
     unlinkSession();
     updateSessionBaselineHash();
+}
+
+bool CsoundAudioProcessor::importCsoundQtParameters (const juce::String& csdText)
+{
+    // Vedi il commento sulla dichiarazione in PluginProcessor.h per la
+    // tabella completa widget -> parametro.
+    const auto panelStart = csdText.indexOf ("<bsbPanel");
+    if (panelStart < 0)
+        return false;
+
+    static const juce::String kPanelClose = "</bsbPanel>";
+    const auto panelEnd = csdText.indexOf (panelStart, kPanelClose);
+    if (panelEnd < 0)
+        return false;
+
+    // CsoundQt scrive il pannello con QXmlStreamWriter: e' XML valido, si
+    // usa il parser di JUCE invece di regex riga per riga come per Cabbage.
+    const auto panelText = csdText.substring (panelStart, panelEnd + kPanelClose.length());
+    auto panel = juce::XmlDocument::parse (panelText);
+
+    if (panel == nullptr)
+    {
+        handleMessage ("--- CsoundQt import: <bsbPanel> found but it is not valid XML - no parameters mapped ---");
+        return false;
+    }
+
+    // Un nuovo import RIMPIAZZA la mappatura precedente (stessa regola di
+    // importCabbageParameters).
+    for (int i = 0; i < numChannelParams; ++i)
+        setChannelParamSlot (i, ChannelParamSlot{});
+    for (int i = 0; i < numBoolParams; ++i)
+        setBoolParamSlot (i, BoolParamSlot{});
+    for (int i = 0; i < numChoiceParams; ++i)
+        setChoiceParamSlot (i, ChoiceParamSlot{});
+
+    int floatIndex = 0, boolIndex = 0, choiceIndex = 0;
+    int skippedFloat = 0, skippedBool = 0, skippedChoice = 0, skippedDuplicate = 0;
+    int limitedRanges = 0;
+    std::set<juce::String> usedChannels;
+
+    auto text = [] (const juce::XmlElement& obj, const char* tag)
+    {
+        return obj.getChildElementAllSubText (tag, {}).trim();
+    };
+
+    auto number = [&text] (const juce::XmlElement& obj, const char* tag, double fallback)
+    {
+        const auto t = text (obj, tag);
+        return t.isEmpty() ? fallback : t.getDoubleValue();
+    };
+
+    // true se il canale e' nuovo (e lo prenota), false se va saltato.
+    auto claim = [&usedChannels, &skippedDuplicate] (const juce::String& channel)
+    {
+        if (channel.isEmpty())
+            return false;
+        if (! usedChannels.insert (channel).second)
+        {
+            ++skippedDuplicate;
+            return false;
+        }
+        return true;
+    };
+
+    auto addFloat = [this, &floatIndex, &skippedFloat] (const juce::String& channel,
+                                                       double minV, double maxV, double defV, double step)
+    {
+        if (floatIndex >= numChannelParams)
+        {
+            ++skippedFloat;
+            return;
+        }
+
+        if (maxV < minV)
+            std::swap (minV, maxV);   // come fa CsoundQt stesso (QuteSlider/QuteKnob)
+
+        ChannelParamSlot slot;
+        slot.channelName  = channel;
+        slot.minValue     = (float) minV;
+        slot.maxValue     = (float) maxV;
+        slot.defaultValue = (float) juce::jlimit (minV, maxV, defV);
+        slot.skew         = 1.0f;
+        slot.increment    = (float) (step > 0.0 ? step : 0.001);
+        setChannelParamSlot (floatIndex++, slot);
+    };
+
+    // Ricorsivo: i bsbObject sono figli diretti di <bsbPanel>, ma cercarli a
+    // qualunque profondita' non costa nulla e regge eventuali raggruppamenti.
+    std::function<void (const juce::XmlElement&)> visit = [&] (const juce::XmlElement& parent)
+    {
+        for (auto* obj : parent.getChildIterator())
+        {
+            if (! obj->hasTagName ("bsbObject"))
+            {
+                visit (*obj);
+                continue;
+            }
+
+            const auto type    = obj->getStringAttribute ("type");
+            const auto channel = text (*obj, "objectName");
+
+            if (type == "BSBVSlider" || type == "BSBHSlider" || type == "BSBSlider" || type == "BSBKnob")
+            {
+                if (claim (channel))
+                    addFloat (channel, number (*obj, "minimum", 0.0), number (*obj, "maximum", 1.0),
+                              number (*obj, "value", 0.0), 0.001);
+            }
+            else if (type == "BSBSpinBox" || type == "BSBScrollNumber")
+            {
+                if (claim (channel))
+                {
+                    // Range limitato (richiesta esplicita): CsoundQt di
+                    // default scrive +-1e12 / +-999999999999 per "nessun
+                    // limite", che come slider DAW sarebbe inutilizzabile (e
+                    // lo step perderebbe precisione in float). Ogni estremo
+                    // oltre kNumberBoxRangeLimit viene riportato al limite;
+                    // il default resta sempre dentro il range risultante.
+                    constexpr double kNumberBoxRangeLimit = 10000.0;
+
+                    double minV = number (*obj, "minimum", 0.0);
+                    double maxV = number (*obj, "maximum", 1.0);
+                    const double defV = number (*obj, "value", 0.0);
+
+                    if (maxV < minV)
+                        std::swap (minV, maxV);
+
+                    if (std::abs (minV) > kNumberBoxRangeLimit || std::abs (maxV) > kNumberBoxRangeLimit)
+                    {
+                        ++limitedRanges;
+                        minV = juce::jlimit (-kNumberBoxRangeLimit, kNumberBoxRangeLimit, minV);
+                        maxV = juce::jlimit (-kNumberBoxRangeLimit, kNumberBoxRangeLimit, maxV);
+                        minV = juce::jmin (minV, defV);   // mai tagliare fuori il default
+                        maxV = juce::jmax (maxV, defV);
+
+                        if (maxV <= minV)                 // entrambi gli estremi dallo stesso lato
+                        {
+                            minV = defV - kNumberBoxRangeLimit;
+                            maxV = defV + kNumberBoxRangeLimit;
+                        }
+                    }
+
+                    addFloat (channel, minV, maxV, defV, number (*obj, "resolution", 0.001));
+                }
+            }
+            else if (type == "BSBController")
+            {
+                if (claim (channel))
+                    addFloat (channel, number (*obj, "xMin", 0.0), number (*obj, "xMax", 1.0),
+                              number (*obj, "xValue", 0.0), 0.001);
+
+                const auto channel2 = text (*obj, "objectName2");
+                if (claim (channel2))
+                    addFloat (channel2, number (*obj, "yMin", 0.0), number (*obj, "yMax", 1.0),
+                              number (*obj, "yValue", 0.0), 0.001);
+            }
+            else if (type == "BSBCheckBox")
+            {
+                if (! claim (channel))
+                    continue;
+
+                if (boolIndex >= numBoolParams)
+                {
+                    ++skippedBool;
+                    continue;
+                }
+
+                BoolParamSlot slot;
+                slot.channelName  = channel;
+                slot.defaultValue = text (*obj, "selected") == "true";
+                setBoolParamSlot (boolIndex++, slot);
+            }
+            else if (type == "BSBDropdown")
+            {
+                if (! claim (channel))
+                    continue;
+
+                if (choiceIndex >= numChoiceParams)
+                {
+                    ++skippedChoice;
+                    continue;
+                }
+
+                ChoiceParamSlot slot;
+                slot.channelName = channel;
+
+                if (auto* list = obj->getChildByName ("bsbDropdownItemList"))
+                    for (auto* item : list->getChildWithTagNameIterator ("bsbDropdownItem"))
+                        if (slot.optionLabels.size() < maxChoiceOptions)
+                            slot.optionLabels.add (item->getChildElementAllSubText ("name", {}).trim());
+
+                slot.defaultIndex = juce::jlimit (0, juce::jmax (0, slot.optionLabels.size() - 1),
+                                                  text (*obj, "selectedIndex").getIntValue());
+                setChoiceParamSlot (choiceIndex++, slot);
+            }
+            // Altri tipi (BSBLabel, BSBDisplay, BSBButton, BSBGraph, ...):
+            // nessun parametro.
+        }
+    };
+
+    visit (*panel);
+
+    juce::String summary;
+    summary << "--- CsoundQt import: " << floatIndex << " float, " << boolIndex << " bool, "
+            << choiceIndex << " choice parameters mapped";
+
+    if (skippedFloat > 0)
+        summary << " (" << skippedFloat << " float widget(s) skipped: over the limit of " << numChannelParams << ")";
+    if (skippedBool > 0)
+        summary << " (" << skippedBool << " checkbox(es) skipped: over the limit of " << numBoolParams << ")";
+    if (skippedChoice > 0)
+        summary << " (" << skippedChoice << " menu(s) skipped: over the limit of " << numChoiceParams << ")";
+    if (skippedDuplicate > 0)
+        summary << " - " << skippedDuplicate << " widget(s) skipped: channel name already used";
+    if (limitedRanges > 0)
+        summary << " - " << limitedRanges << " spin box/scroll number range(s) limited to +/-10000";
+
+    summary << " ---";
+    handleMessage (summary);
+    return true;
 }
 
 bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
@@ -2643,27 +2871,101 @@ void CsoundAudioProcessor::handleMessage (const juce::String& msg)
     if (msg.isEmpty())
         return;
 
-    // handleMessage gira sul thread AUDIO (chiamata da dentro
-    // csoundPerformKsmps): qui deve fare il meno possibile. Tutto il
-    // bookkeeping della history (lock + StringArray::add/remove, che con
-    // messaggi frequenti puo' costare non poco) e' quindi spostato dentro
-    // il lambda, che gira sul thread dei messaggi grazie a callAsync - non
-    // sul thread audio.
-    juce::MessageManager::callAsync ([this, msg, alive = aliveFlag]
+    // Thread AUDIO (dentro csoundPerformKsmps): SOLO accodamento, niente
+    // callAsync per messaggio (vedi il commento sul filtro nel .h).
+    const juce::SpinLock::ScopedLockType sl (pendingMessagesLock);
+
+    if (pendingMessages.size() < kMaxPendingMessages)
+        pendingMessages.add (msg);
+    else
+        ++droppedMessages;
+}
+
+void CsoundAudioProcessor::timerCallback()
+{
+    flushPendingMessages();
+}
+
+void CsoundAudioProcessor::flushPendingMessages()
+{
+    juce::StringArray incoming;
+    int dropped = 0;
     {
-        if (! alive->load())
-            return;
+        const juce::SpinLock::ScopedLockType sl (pendingMessagesLock);
+        incoming.swapWith (pendingMessages);
+        dropped = droppedMessages;
+        droppedMessages = 0;
+    }
 
+    const auto now = juce::Time::getMillisecondCounter();
+    juce::StringArray out;
+
+    auto shortened = [] (const juce::String& m)
+    {
+        return m.length() > 80 ? m.substring (0, 77) + "..." : m;
+    };
+
+    // Finestre scadute: riassunto delle ripetizioni soppresse, poi la
+    // finestra si chiude (la prossima occorrenza ne apre una nuova e torna
+    // a essere mostrata).
+    for (auto it = repeatWindows.begin(); it != repeatWindows.end();)
+    {
+        if (now - it->second.startMs >= (juce::uint32) kRepeatWindowMs)
         {
-            const juce::ScopedLock sl (messageHistoryLock);
-            messageHistory.add (msg);
+            if (it->second.suppressed > 0)
+                out.add ("--- previous message repeated " + juce::String (it->second.suppressed)
+                         + " more time(s): " + shortened (it->first) + " ---");
+            it = repeatWindows.erase (it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
 
-            while (messageHistory.size() > messageHistoryCapacity)
-                messageHistory.remove (0);
+    int floodSuppressed = 0;
+
+    for (auto& m : incoming)
+    {
+        auto& w = repeatWindows[m];
+
+        if (w.shown == 0 && w.suppressed == 0)
+            w.startMs = now;
+
+        if (w.shown >= kMaxIdenticalMessagesPerWindow)
+        {
+            ++w.suppressed;
+            continue;
         }
 
-        listeners.call ([&msg] (Listener& l) { l.csoundMessageReceived (msg); });
-    });
+        if (out.size() >= kMaxLinesPerFlush)
+        {
+            ++floodSuppressed;   // flood di messaggi DIVERSI: non mostrati
+            continue;
+        }
+
+        ++w.shown;
+        out.add (m);
+    }
+
+    if (floodSuppressed > 0)
+        out.add ("--- " + juce::String (floodSuppressed) + " message(s) not shown (console flood) ---");
+
+    if (dropped > 0)
+        out.add ("--- " + juce::String (dropped) + " message(s) lost (output too fast) ---");
+
+    if (out.isEmpty())
+        return;
+
+    {
+        const juce::ScopedLock sl (messageHistoryLock);
+        messageHistory.addArray (out);
+
+        if (messageHistory.size() > messageHistoryCapacity)
+            messageHistory.removeRange (0, messageHistory.size() - messageHistoryCapacity);
+    }
+
+    listeners.call ([&out] (Listener& l) { l.csoundMessagesReceived (out); });
 }
 
 juce::StringArray CsoundAudioProcessor::getMessageHistory() const

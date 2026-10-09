@@ -26,7 +26,7 @@ A fixed pool of host-automatable parameters can be mapped to Csound channels and
 | Menu | 16 | up to 16 labelled options, default |
 
 - Drag a parameter onto the code editor to insert the matching `chnget` line.
-- `.csd` files containing a Cabbage `<Cabbage>` section are imported automatically: widgets are mapped to parameters.
+- `.csd` files made with **Cabbage** (`<Cabbage>` section) or **CsoundQt** (`<bsbPanel>` widgets: sliders, knobs, spin boxes, scroll numbers, XY controllers, checkboxes, dropdown menus) are imported automatically: widgets are mapped to parameters.
 - The parameter mapping is saved **inside the `.csd`** in an `<apeCsoundParams>` section after `</CsoundSynthesizer>`. Csound ignores it, so the file stays a valid, portable `.csd`.
 
 ### Sessions

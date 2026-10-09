@@ -2713,6 +2713,8 @@ void CsoundParameterMappingPanel::showPanelMenu()
         items.push_back (item);
     }
     
+    items.push_back (CsoundActionSheetItem::separator());
+    
     // "Initialize Session" (richiesta esplicita: "pulisce tutto e carica
     // il CSD hard coded") - stesso trattamento di Save/Load CSD sopra,
     // PluginEditor imposta onInitializeSessionRequested nel proprio
@@ -2754,7 +2756,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
     items.push_back (CsoundActionSheetItem::separator());
     {
         CsoundActionSheetItem item;
-        item.id = 113; item.text = "About " + juce::String (ProjectInfo::projectName);
+        item.id = 113; item.text = "About";//About " + juce::String (ProjectInfo::projectName);
         item.enabled = onAboutRequested != nullptr;
         item.icon = CsoundActionSheetIcon::info;
         items.push_back (item);

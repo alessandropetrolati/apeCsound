@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 #include <map>
 #include <functional>
+#include <vector>
 #include "CsoundOpcodeHelp.h"
 
 /**
@@ -101,7 +102,53 @@ public:
     std::function<void()> onUndoRequested;
     std::function<void()> onRedoRequested;
 
+    // --- Cerca / Sostituisci (richiesta esplicita) ---------------------
+    // Pilotato dalla barra Find/Replace di PluginEditor. Tutte le
+    // occorrenze sono evidenziate in paintOverChildren (giallo), quella
+    // corrente piu' marcata (arancio, con bordo). Le occorrenze si
+    // ricalcolano da sole a ogni modifica del documento finche' la ricerca
+    // e' attiva (query non vuota). matchCase: maiuscole/minuscole distinte;
+    // wholeWord: l'occorrenza non deve essere attaccata a lettere, cifre o
+    // '_' (i caratteri degli identificatori Csound).
+    void setSearchQuery (const juce::String& query, bool matchCase, bool wholeWord);
+    void clearSearch();
+
+    int getNumSearchMatches() const          { return (int) searchMatches.size(); }
+    int getCurrentSearchMatchIndex() const   { return currentSearchMatch; } // -1 = nessuna
+
+    // Seleziona (e porta in vista) l'occorrenza successiva/precedente,
+    // ricominciando dall'inizio/fine del documento.
+    void selectNextSearchMatch();
+    void selectPreviousSearchMatch();
+
+    // Sostituiscono come UN solo passo di undo (una transazione del
+    // documento, rispecchiata nella cronologia condivisa dal ponte di
+    // PluginEditor). replaceCurrent... sostituisce l'occorrenza corrente e
+    // passa alla successiva; ritorna false se non ce n'e' una.
+    // replaceAll... ritorna il numero di sostituzioni.
+    bool replaceCurrentSearchMatch (const juce::String& replacement);
+    int  replaceAllSearchMatches (const juce::String& replacement);
+
+    // Chiamata ogni volta che cambiano le occorrenze o quella corrente
+    // (per il contatore "3 of 12" della barra).
+    std::function<void()> onSearchResultsChanged;
+
 private:
+    struct SearchMatch
+    {
+        int start = 0, end = 0;   // indici di carattere nel documento [start, end)
+        int line = 0, column = 0; // per disegnare senza ricalcolare la posizione
+    };
+
+    void refreshSearchMatches();                 // ricalcola tutte le occorrenze
+    void selectSearchMatch (int index);          // seleziona + porta in vista
+    void notifySearchResults() { if (onSearchResultsChanged) onSearchResultsChanged(); }
+
+    juce::String searchQuery;
+    bool searchMatchCase = false, searchWholeWord = false;
+    std::vector<SearchMatch> searchMatches;
+    int currentSearchMatch = -1;
+    bool suspendSearchRefresh = false;           // durante replaceAll (un ricalcolo solo alla fine)
     // juce::CodeDocument::Listener
     void codeDocumentTextInserted (const juce::String& newText, int insertIndex) override;
     void codeDocumentTextDeleted (int startIndex, int endIndex) override;

@@ -189,6 +189,36 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // Vista "About" (vedi AboutView in PluginEditor.h): nascosta, aperta dal
     // menu hamburger tramite parameterPanel.onAboutRequested.
     addChildComponent (aboutView);
+
+    // Cerca/Sostituisci (vedi FindReplaceBar in PluginEditor.h). Bottone
+    // lente circolare come clearConsoleButton (icona "find" in
+    // CsoundLookAndFeel); quando la barra e' aperta resta "acceso"
+    // (toggle state -> buttonOnColourId).
+    findButton.setName ("find");
+    findButton.getProperties().set ("circular", true);
+    findButton.setTooltip ("Find / Replace in the code editor");
+    findButton.onClick = [this] { toggleFindBar(); };
+    addAndMakeVisible (findButton);
+    addChildComponent (findBar);
+
+    findBar.findField.onTextChange    = [this] { updateFindQuery(); };
+    findBar.findField.onReturnKey     = [this] { editor.selectNextSearchMatch(); };
+    findBar.findField.onEscapeKey     = [this] { closeFindBar(); };
+    findBar.replaceField.onReturnKey  = [this] { editor.replaceCurrentSearchMatch (findBar.replaceField.getText()); };
+    findBar.replaceField.onEscapeKey  = [this] { closeFindBar(); };
+    findBar.matchCaseButton.onClick   = [this] { updateFindQuery(); };
+    findBar.wholeWordButton.onClick   = [this] { updateFindQuery(); };
+    findBar.nextButton.onClick        = [this] { editor.selectNextSearchMatch(); };
+    findBar.prevButton.onClick        = [this] { editor.selectPreviousSearchMatch(); };
+    findBar.replaceButton.onClick     = [this] { editor.replaceCurrentSearchMatch (findBar.replaceField.getText()); };
+    findBar.replaceAllButton.onClick  = [this]
+    {
+        const int replaced = editor.replaceAllSearchMatches (findBar.replaceField.getText());
+        if (replaced > 0)
+            appendToLog ("--- Replaced " + juce::String (replaced) + " occurrence(s) ---");
+    };
+    findBar.closeButton.onClick       = [this] { closeFindBar(); };
+    editor.onSearchResultsChanged     = [this] { updateFindCount(); };
     updateSessionStatus();
 
     // Il nome del Component e' come CsoundLookAndFeel sceglie quale icona
@@ -198,6 +228,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // rimpiazzare il .csd corrente con quello appena modificato nell'editor.
     applyButton.setName ("apply");
     applyButton.onClick = [this] { performApply(); };
+    applyButton.setTooltip ("Apply: recompile and run the code in the editor (outlined in red when the editor differs from the running code)");
     addAndMakeVisible (applyButton);
 
     // Bozza non applicata ripresa dal processor: bordo rosso subito.
@@ -560,12 +591,19 @@ void CsoundAudioProcessorEditor::resized()
     panelMenuButton.setBounds (toolbar.removeFromRight (panelToolbarButtonDiameter)
                                        .withSizeKeepingCentre (panelToolbarButtonDiameter, panelToolbarButtonDiameter));
 
+
     // withSizeKeepingCentre (...): stessa identica altezza fissa di +/burger
     // sopra (panelToolbarButtonDiameter), invece dell'altezza "piatta" della
     // sola area toolbar ridotta - richiesta esplicita ("il tasto Apply deve
     // essere alto come + e burger").
     applyButton.setBounds (toolbar.removeFromLeft (applyWidth)
                                    .withSizeKeepingCentre (applyWidth, panelToolbarButtonDiameter));
+
+    // Lente (Cerca/Sostituisci) a sinistra, subito dopo Apply (richiesta
+    // esplicita).
+    toolbar.removeFromLeft (12);
+    findButton.setBounds (toolbar.removeFromLeft (panelToolbarButtonDiameter)
+                                 .withSizeKeepingCentre (panelToolbarButtonDiameter, panelToolbarButtonDiameter));
 
     // Nome del file collegato (+ "•" se modificato) nello spazio che resta
     // tra Apply e il burger - vedi SessionFileLabel in PluginEditor.h.
@@ -580,6 +618,10 @@ void CsoundAudioProcessorEditor::resized()
     // altrimenti non sottrae spazio a editor/sidebar/consolle.
     if (sessionWarningBar.isVisible())
         sessionWarningBar.setBounds (area.removeFromTop (sessionWarningBarHeight));
+
+    // Barra Cerca/Sostituisci, solo quando aperta.
+    if (findBar.isVisible())
+        findBar.setBounds (area.removeFromTop (findBarHeight));
 
     // Niente inset laterali: solo lo spazio verticale tra toolbar ed editor
     // resta. Sidebar ancorata A DESTRA, su tutta l'altezza rimanente (editor
@@ -1392,6 +1434,12 @@ void CsoundAudioProcessorEditor::csoundMessageReceived (const juce::String& mess
     appendToLog (message);
 }
 
+void CsoundAudioProcessorEditor::csoundMessagesReceived (const juce::StringArray& messages)
+{
+    if (! messages.isEmpty())
+        appendToLog (messages.joinIntoString ("\n"));
+}
+
 void CsoundAudioProcessorEditor::csoundEngineStarted()
 {
     // Il motore viene (ri)compilato con un'istanza CSOUND* nuova ogni
@@ -1650,4 +1698,184 @@ void CsoundAudioProcessorEditor::AboutView::show()
 void CsoundAudioProcessorEditor::AboutView::hide()
 {
     juce::Desktop::getInstance().getAnimator().fadeOut (this, 120);
+}
+
+//==============================================================================
+// Cerca / Sostituisci - vedi FindReplaceBar in PluginEditor.h.
+namespace
+{
+    const juce::Colour kFindBarBg      { 0xff10181f }; // come la toolbar
+    const juce::Colour kFindBarBorder  { 0xff2a3a44 };
+    const juce::Colour kFindFieldBg    { 0xff202a33 };
+    const juce::Colour kFindFieldLine  { 0xff3a4550 };
+    const juce::Colour kFindText       { 0xffe8eef1 };
+    const juce::Colour kFindMuted      { 0xff8a9aa5 };
+    const juce::Colour kFindAccent     { 0xff17a2b8 };
+
+    void styleFindField (juce::TextEditor& field, const juce::String& placeholder)
+    {
+        field.setMultiLine (false);
+        field.setReturnKeyStartsNewLine (false);
+        field.setFont (juce::FontOptions (13.0f));
+        field.setIndents (8, 6);
+        field.setColour (juce::TextEditor::backgroundColourId,     kFindFieldBg);
+        field.setColour (juce::TextEditor::textColourId,           kFindText);
+        field.setColour (juce::TextEditor::outlineColourId,        kFindFieldLine);
+        field.setColour (juce::TextEditor::focusedOutlineColourId, kFindAccent);
+        field.setColour (juce::TextEditor::highlightColourId,      kFindAccent.withAlpha (0.35f));
+        field.setColour (juce::CaretComponent::caretColourId,      kFindText);
+        field.setTextToShowWhenEmpty (placeholder, kFindMuted);
+    }
+
+    void styleFindButton (juce::TextButton& button, const juce::String& tooltip, bool toggle = false)
+    {
+        button.setColour (juce::TextButton::buttonColourId,   kFindFieldBg);
+        button.setColour (juce::TextButton::buttonOnColourId, kFindAccent);
+        button.setColour (juce::TextButton::textColourOffId,  kFindText);
+        button.setColour (juce::TextButton::textColourOnId,   juce::Colours::white);
+        button.setTooltip (tooltip);
+        button.setClickingTogglesState (toggle);
+        // Clic sui bottoni senza togliere il focus da tastiera al campo di
+        // ricerca (Invio continua a fare "Next").
+        button.setWantsKeyboardFocus (false);
+        button.setMouseClickGrabsKeyboardFocus (false);
+    }
+}
+
+CsoundAudioProcessorEditor::FindReplaceBar::FindReplaceBar()
+{
+    styleFindField (findField, "Find");
+    styleFindField (replaceField, "Replace with");
+    addAndMakeVisible (findField);
+    addAndMakeVisible (replaceField);
+
+    countLabel.setFont (juce::Font (juce::FontOptions (12.0f)));
+    countLabel.setColour (juce::Label::textColourId, kFindMuted);
+    countLabel.setJustificationType (juce::Justification::centred);
+    countLabel.setMinimumHorizontalScale (0.8f);
+    addAndMakeVisible (countLabel);
+
+    prevButton.setButtonText (juce::String::charToString (0x2191)); // freccia su
+    nextButton.setButtonText (juce::String::charToString (0x2193)); // freccia giu'
+    closeButton.setButtonText (juce::String::charToString (0x00D7)); // x
+
+    styleFindButton (prevButton,       "Previous match");
+    styleFindButton (nextButton,       "Next match (Return in the Find field)");
+    styleFindButton (matchCaseButton,  "Match case: distinguish uppercase and lowercase letters", true);
+    styleFindButton (wholeWordButton,  "Whole word: match only complete words (not inside longer names)", true);
+    styleFindButton (replaceButton,    "Replace the current match and go to the next one (Return in the Replace field)");
+    styleFindButton (replaceAllButton, "Replace all matches - one undo step");
+    styleFindButton (closeButton,      "Close Find / Replace (Esc)");
+
+    findField.setTooltip ("Text to find - matches are highlighted in the code editor");
+    replaceField.setTooltip ("Replacement text");
+    countLabel.setTooltip ("Current match / total matches");
+
+    for (auto* b : { &prevButton, &nextButton, &matchCaseButton, &wholeWordButton,
+                     &replaceButton, &replaceAllButton, &closeButton })
+        addAndMakeVisible (b);
+}
+
+void CsoundAudioProcessorEditor::FindReplaceBar::paint (juce::Graphics& g)
+{
+    g.fillAll (kFindBarBg);
+    g.setColour (kFindBarBorder);
+    g.drawLine (0.0f, (float) getHeight() - 0.5f, (float) getWidth(), (float) getHeight() - 0.5f, 1.0f);
+}
+
+void CsoundAudioProcessorEditor::FindReplaceBar::resized()
+{
+    auto area = getLocalBounds().reduced (10, 6);
+    const int h = area.getHeight();
+
+    // Fissi a destra e tra i due campi; i due campi si dividono il resto.
+    closeButton.setBounds (area.removeFromRight (h));
+    area.removeFromRight (10);
+    replaceAllButton.setBounds (area.removeFromRight (44));
+    area.removeFromRight (4);
+    replaceButton.setBounds (area.removeFromRight (74));
+    area.removeFromRight (6);
+
+    const int fixedFindSide = 70 + 4 + h + 2 + h + 8 + 36 + 2 + 32 + 16;
+    const int fieldWidth = juce::jmax (80, (area.getWidth() - fixedFindSide) / 2);
+
+    findField.setBounds (area.removeFromLeft (fieldWidth));
+    area.removeFromLeft (4);
+    countLabel.setBounds (area.removeFromLeft (70));
+    area.removeFromLeft (4);
+    prevButton.setBounds (area.removeFromLeft (h));
+    area.removeFromLeft (2);
+    nextButton.setBounds (area.removeFromLeft (h));
+    area.removeFromLeft (8);
+    matchCaseButton.setBounds (area.removeFromLeft (36));
+    area.removeFromLeft (2);
+    wholeWordButton.setBounds (area.removeFromLeft (32));
+    area.removeFromLeft (16);
+    replaceField.setBounds (area);
+}
+
+void CsoundAudioProcessorEditor::toggleFindBar()
+{
+    if (findBar.isVisible())
+        closeFindBar();
+    else
+        openFindBar();
+}
+
+void CsoundAudioProcessorEditor::openFindBar()
+{
+    // Testo selezionato nell'editor (su una sola riga) come query iniziale,
+    // come in qualunque editor di codice.
+    const auto selection = editor.getHighlightedRegion();
+    if (! selection.isEmpty())
+    {
+        const auto selected = document.getTextBetween (juce::CodeDocument::Position (document, selection.getStart()),
+                                                       juce::CodeDocument::Position (document, selection.getEnd()));
+        if (! selected.containsChar ('\n'))
+            findBar.findField.setText (selected, juce::dontSendNotification);
+    }
+
+    findBar.setVisible (true);
+    findButton.setToggleState (true, juce::dontSendNotification);
+    resized();
+
+    findBar.findField.grabKeyboardFocus();
+    findBar.findField.selectAll();
+    updateFindQuery();
+}
+
+void CsoundAudioProcessorEditor::closeFindBar()
+{
+    findBar.setVisible (false);
+    findButton.setToggleState (false, juce::dontSendNotification);
+    editor.clearSearch();
+    resized();
+    editor.grabKeyboardFocus();
+}
+
+void CsoundAudioProcessorEditor::updateFindQuery()
+{
+    editor.setSearchQuery (findBar.findField.getText(),
+                           findBar.matchCaseButton.getToggleState(),
+                           findBar.wholeWordButton.getToggleState());
+    updateFindCount();
+}
+
+void CsoundAudioProcessorEditor::updateFindCount()
+{
+    const int count = editor.getNumSearchMatches();
+    const bool hasQuery = findBar.findField.getText().isNotEmpty();
+
+    juce::String text;
+    if (hasQuery)
+        text = count == 0 ? juce::String ("No results")
+                          : juce::String (editor.getCurrentSearchMatchIndex() + 1) + " of " + juce::String (count);
+
+    findBar.countLabel.setText (text, juce::dontSendNotification);
+    findBar.countLabel.setColour (juce::Label::textColourId,
+                                  hasQuery && count == 0 ? juce::Colour (0xffff6b6b) : kFindMuted);
+
+    for (auto* b : { &findBar.prevButton, &findBar.nextButton,
+                     &findBar.replaceButton, &findBar.replaceAllButton })
+        b->setEnabled (count > 0);
 }

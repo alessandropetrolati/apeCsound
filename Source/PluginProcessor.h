@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <map>
 #include <atomic>
 #include <array>
 #include <cstdarg>
@@ -173,7 +174,8 @@ private:
     lock-free se si vogliono garanzie real-time piu' rigorose (vedi nota in
     compileAndStart()).
 */
-class CsoundAudioProcessor final : public juce::AudioProcessor
+class CsoundAudioProcessor final : public juce::AudioProcessor,
+                                   private juce::Timer
 {
 public:
     struct Listener
@@ -182,6 +184,16 @@ public:
 
         // Chiamati sempre sul message thread di JUCE (mai dal thread audio).
         virtual void csoundMessageReceived (const juce::String& message) {}
+
+        // Gli stessi messaggi, consegnati a BLOCCHI (uno ogni ~50 ms, gia'
+        // filtrati - vedi flushPendingMessages). Chi deve aggiornare una UI
+        // dovrebbe sovrascrivere questa: un aggiornamento per blocco invece
+        // che per messaggio. Il default inoltra a csoundMessageReceived.
+        virtual void csoundMessagesReceived (const juce::StringArray& messages)
+        {
+            for (auto& m : messages)
+                csoundMessageReceived (m);
+        }
         virtual void csoundEngineStarted() {}
         virtual void csoundEngineStopped() {}
 
@@ -823,6 +835,33 @@ private:
     // sopra). Ritorna false se non e' stato trovato nessun tag <Cabbage>.
     bool importCabbageParameters (const juce::String& csdText);
 
+    // Import automatico dai widget di CsoundQt (stesso spirito di
+    // importCabbageParameters sopra) - chiamato da loadSessionStructureAndCode
+    // quando il file non ha <apeCsoundParams> ne' <Cabbage> ma ha un pannello
+    // <bsbPanel> (scritto da CsoundQt DOPO </CsoundSynthesizer>). Ogni
+    // <bsbObject type="..."> dentro il pannello diventa uno o piu' slot;
+    // tag verificati sul codice di CsoundQt (getWidgetXmlText() di ciascun
+    // widget e WidgetLayout::newXmlWidget, ramo develop):
+    //   BSBVSlider / BSBHSlider / BSBSlider / BSBKnob -> 1 slot Float
+    //     objectName, minimum, maximum, value; skew 1, step 0.001 fissi
+    //   BSBSpinBox / BSBScrollNumber                  -> 1 slot Float
+    //     objectName, minimum, maximum, value, resolution (= step); skew 1
+    //   BSBController (xy pad / meter)                -> fino a 2 slot Float
+    //     X: objectName,  xMin, xMax, xValue
+    //     Y: objectName2, yMin, yMax, yValue          (skew 1, step 0.001)
+    //     un asse con nome canale vuoto viene saltato
+    //   BSBCheckBox                                    -> 1 slot Bool
+    //     objectName, selected ("true"/"false")
+    //   BSBDropdown                                    -> 1 slot Choice
+    //     objectName, bsbDropdownItemList/bsbDropdownItem/name (max 16),
+    //     selectedIndex
+    // Gli altri tipi (label, display, button, graph, scope...) sono ignorati.
+    // Un nome canale gia' usato da un widget precedente viene saltato (in
+    // CsoundQt piu' widget possono condividere un canale, qui creerebbero
+    // due parametri DAW in conflitto sullo stesso chnget). Ritorna false se
+    // non c'e' nessun <bsbPanel> o se non e' XML valido.
+    bool importCsoundQtParameters (const juce::String& csdText);
+
     // Costruisce il layout COMPLETO di apvts: i 16 parametri float (vedi
     // ChannelHostParameter), i 16 interi (IntHostParameter), i 16 booleani
     // (BoolHostParameter) e i 16 a scelta multipla (ChoiceHostParameter), in
@@ -849,6 +888,43 @@ private:
     // necessaria.
     static void messageCallback (CSOUND* cs, int attr, const char* fmt, va_list args);
     void handleMessage (const juce::String& msg);
+
+    // --- Filtro della consolle (richiesta esplicita: messaggi identici a
+    //     raffica, es. "division by zero" a ogni k-cycle, inchiodavano il
+    //     plugin). Prima ogni messaggio faceva una callAsync dal thread
+    //     audio e un aggiornamento completo della consolle: migliaia al
+    //     secondo saturavano il message thread. Ora:
+    //   1. handleMessage (thread audio) mette solo in coda (SpinLock, coda
+    //      limitata a kMaxPendingMessages - oltre si contano come persi);
+    //   2. timerCallback (message thread, ogni kMessageFlushIntervalMs)
+    //      svuota la coda e applica il filtro: lo STESSO testo viene
+    //      mostrato al massimo kMaxIdenticalMessagesPerWindow volte per
+    //      finestra di kRepeatWindowMs; le ripetizioni oltre vengono contate
+    //      e riassunte in UNA riga a fine finestra ("repeated N more times").
+    //      In piu' al massimo kMaxLinesPerFlush righe per blocco (contro i
+    //      flood di messaggi tutti diversi, es. printk);
+    //   3. i messaggi filtrati vanno in history e ai listener in UN blocco
+    //      (Listener::csoundMessagesReceived).
+    void timerCallback() override;
+    void flushPendingMessages();
+
+    static constexpr int kMessageFlushIntervalMs        = 50;
+    static constexpr int kRepeatWindowMs                = 1000;
+    static constexpr int kMaxIdenticalMessagesPerWindow = 3;
+    static constexpr int kMaxLinesPerFlush              = 40;
+    static constexpr int kMaxPendingMessages            = 4096;
+
+    juce::StringArray pendingMessages;     // scritto dal thread audio
+    int droppedMessages = 0;               // coda piena
+    juce::SpinLock pendingMessagesLock;
+
+    struct RepeatWindow
+    {
+        juce::uint32 startMs = 0;
+        int shown = 0;
+        int suppressed = 0;
+    };
+    std::map<juce::String, RepeatWindow> repeatWindows; // solo message thread
     static juce::String defaultCsdText();
 
     // --- Bridge MIDI host <-> Csound (csoundSetHostMIDIIO) ---
