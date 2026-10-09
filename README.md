@@ -16,6 +16,15 @@ Developed by **Alessandro Petrolati** — [apeSoft](https://www.apesoft.it).
 - Console with Csound's messages and errors.
 
 ### DAW parameters
+## Audio channels
+
+The plugin accepts 1–16 output channels and 0–16 input channels per bus (mono, stereo, surround or discrete layouts). The DAW decides the track channel count; the engine is recompiled whenever it changes.
+
+- **Follow CSD nchnls** (default, in *Config* on the main menu, saved with the project): Csound runs with the `nchnls` / `nchnls_i` declared in the `.csd` header, so the code behaves identically on any track. `outch n` goes to track channel *n*; channels that exist only on one side are silent. If the header does not declare a value, the track count is used (minimum 2 outputs, since `outs` needs two).
+- With the option disabled, Csound always follows the track (`nchnls` = track outputs, min 2; `nchnls_i` = track inputs), whatever the header says.
+
+Any mismatch between header and track is reported in the console. Surround layouts (5.1, 7.1…) are delivered by the host in physical speaker order; the plugin compensates the reordering done by the JUCE wrapper so that `outch 5` is really channel 5 of the track.
+
 A fixed pool of host-automatable parameters can be mapped to Csound channels and read with `chnget`:
 
 | Type | Slots | Configuration |

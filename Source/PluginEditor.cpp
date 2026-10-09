@@ -30,12 +30,21 @@ namespace
         CodeEditTransactionProxy (juce::CodeDocument& documentIn, bool& guardFlagIn)
             : document (documentIn), guardFlag (guardFlagIn) {}
 
+        // Se il document non ha (piu') nulla da annullare/rifare le due
+        // cronologie si sono disallineate: meglio un passo a vuoto che
+        // annullare una transazione sbagliata. Non dovrebbe succedere (vedi
+        // setMaxNumberOfStoredUnits nel costruttore del processor), e'
+        // solo una rete di sicurezza.
         bool perform() override
         {
             if (! firstPerform)
             {
                 const juce::ScopedValueSetter<bool> guard (guardFlag, true);
-                document.getUndoManager().redo();
+
+                if (document.getUndoManager().canRedo())
+                    document.getUndoManager().redo();
+                else
+                    jassertfalse;
             }
 
             firstPerform = false;
@@ -45,7 +54,12 @@ namespace
         bool undo() override
         {
             const juce::ScopedValueSetter<bool> guard (guardFlag, true);
-            document.getUndoManager().undo();
+
+            if (document.getUndoManager().canUndo())
+                document.getUndoManager().undo();
+            else
+                jassertfalse;
+
             return true;
         }
 
@@ -370,6 +384,15 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
         getUserSettings().saveIfNeeded();
     };
     parameterPanel.onOpenManualRequested = [] { juce::URL (kCsoundManualUrl).launchInDefaultBrowser(); };
+
+    // Canali: Csound segue la DAW (default) o il .csd - vedi
+    // CsoundAudioProcessor::setFollowCsdChannels (salvato nello stato del
+    // progetto, ricompila subito).
+    parameterPanel.isFollowingCsdChannels = [this] { return audioProcessor.isFollowingCsdChannels(); };
+    parameterPanel.onToggleFollowCsdChannelsRequested = [this]
+    {
+        audioProcessor.setFollowCsdChannels (! audioProcessor.isFollowingCsdChannels());
+    };
 
     // Clic sulla capsula del file: Save / Save as... (stesse azioni del
     // menu principale, vedi performSaveLinked/promptSaveSession).

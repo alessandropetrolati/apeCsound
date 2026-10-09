@@ -188,7 +188,12 @@ bool CsoundCodeEditor::keyPressed (const juce::KeyPress& key)
         }
     }
 
-    if (key == juce::KeyPress ('Z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier, 0))
+    // Cmd+Shift+Z e ANCHE Cmd+Y: TextEditorKeyMapper (usato da
+    // CodeEditorComponent::keyPressed) accetta entrambi per il redo. Se
+    // Cmd+Y arrivasse alla classe base farebbe redo SOLO sul document,
+    // disallineando le due cronologie (vedi CodeEditTransactionProxy).
+    if (key == juce::KeyPress ('Z', juce::ModifierKeys::commandModifier | juce::ModifierKeys::shiftModifier, 0)
+        || key == juce::KeyPress ('Y', juce::ModifierKeys::commandModifier, 0))
     {
         if (onRedoRequested)
         {

@@ -472,6 +472,23 @@ public:
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
+
+    //==========================================================================
+    // Canali audio. Default (followCsdChannels = true): Csound usa nchnls /
+    // nchnls_i DICHIARATI nel .csd, cosi' il codice gira identico su
+    // qualunque traccia; processBlock adatta per canale e quelli in piu' da
+    // una parte o dall'altra restano muti. Se il .csd NON dichiara nchnls
+    // (o nchnls_i) quel valore viene preso dalla traccia. Con
+    // followCsdChannels = false Csound segue sempre la traccia (--nchnls /
+    // --nchnls_i dai bus, min 2 in uscita perche' quasi tutti i .csd usano
+    // "outs"). In entrambi i casi una differenza tra .csd e DAW viene
+    // segnalata in console.
+    void setFollowCsdChannels (bool shouldFollow);
+    bool isFollowingCsdChannels() const noexcept { return followCsdChannels.load(); }
+
+    // nchnls / nchnls_i dichiarati nel testo del .csd (0 = non dichiarato).
+    static int parseDeclaredHeaderValue (const juce::String& csdText, const juce::String& name);
+    static constexpr int kMaxBusChannels = 16;
     void processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) override;
 
     bool hasEditor() const override { return true; }
@@ -966,6 +983,22 @@ private:
     // Quando arriva a csKsmps, spin e' pieno -> csoundPerformKsmps().
     // Latenza risultante: csKsmps campioni (riportata all'host).
     int ksmpsPos           = 0;
+
+    std::atomic<bool> followCsdChannels { true };
+
+    // Ordine FISICO dei canali della traccia -> indice nel buffer JUCE.
+    // JUCE ordina i canali di un layout "con nome" (5.1, 7.1...) nel SUO
+    // ordine canonico, che per i surround non coincide con quello in cui
+    // la DAW li consegna (VST3: L R C Lfe Ls Rs Sl Sr, in ordine di bit
+    // dello speaker arrangement). Senza questa mappa "outch 5" finiva sul
+    // canale 7 della traccia (visto in REAPER con una traccia a 8 canali).
+    // Per i set discreti/mono/stereo la mappa e' l'identita'.
+    std::array<int, kMaxBusChannels> hostOutputIndex {};
+    std::array<int, kMaxBusChannels> hostInputIndex {};
+    void rebuildHostChannelMaps();
+    static void buildPhysicalOrderMap (const juce::AudioChannelSet& set, std::array<int, kMaxBusChannels>& map);
+    int compiledHostOutputs = -1; // canali host al momento della compilazione:
+    int compiledHostInputs  = -1; // se cambiano, prepareToPlay ricompila
 
     // Sopra questo ksmps, a ogni Apply la console avvisa della latenza sul
     // monitoraggio live (128 campioni = 2.7 ms @ 48 kHz).

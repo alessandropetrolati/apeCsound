@@ -2,6 +2,8 @@
 #include "PluginEditor.h"
 #include <cstdlib>
 #include <cmath>
+#include <algorithm>
+#include <limits>
 #include <regex>
 #include <map>
 #include <set>
@@ -50,6 +52,24 @@ CsoundAudioProcessor::CsoundAudioProcessor()
     // Svuotamento periodico della coda dei messaggi Csound, filtrata (vedi
     // il commento sul filtro della consolle in PluginProcessor.h).
     startTimer (kMessageFlushIntervalMs);
+
+    for (int i = 0; i < kMaxBusChannels; ++i)
+        hostOutputIndex[(size_t) i] = hostInputIndex[(size_t) i] = i; // identita' finche' non c'e' un layout
+
+    // Le DUE cronologie di undo (quella interna di CodeDocument e quella
+    // condivisa con il pannello Parametri) sono accoppiate uno-a-uno da
+    // CodeEditTransactionProxy (vedi PluginEditor.cpp): ogni proxy nella
+    // cronologia condivisa corrisponde a UNA transazione del document, e
+    // l'undo di un proxy fa undo della transazione "corrente" del document.
+    // Il limite di default di juce::UndoManager (30000 unita', dove un
+    // inserimento di testo vale text.length() + 32) faceva scartare al
+    // document le transazioni piu' vecchie - bastava un Load/Paste di un
+    // .csd di 20-30 KB - mentre i proxy corrispondenti restavano nella
+    // cronologia condivisa: da li' in poi ogni Undo annullava la transazione
+    // SBAGLIATA ("l'undo si incasina e perde la history"). Nessun limite
+    // su entrambe: la memoria e' quella del testo digitato, trascurabile.
+    codeDocument.getUndoManager().setMaxNumberOfStoredUnits (std::numeric_limits<int>::max(), 0);
+    sessionUndoManager.setMaxNumberOfStoredUnits (std::numeric_limits<int>::max(), 0);
     csdText = defaultCsdText();
 }
 
@@ -612,6 +632,7 @@ void CsoundAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock
 {
     hostSampleRate = sampleRate;
     hostBlockSize  = samplesPerBlock;
+    rebuildHostChannelMaps();
 
     // Se il motore e' gia' attivo (es. l'host richiama prepareToPlay per un
     // cambio di sample rate/buffer size mentre il plugin sta suonando) lo
@@ -628,7 +649,14 @@ void CsoundAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock
     // due chiamate dipende dall'host, non e' garantito): in tal caso va
     // ricompilato anche se per qualche motivo il motore risultasse gia'
     // attivo, perche' altrimenti suonerebbe ancora il .csd di default.
-    if (pendingStateRestore.exchange (false) || ! isEngineRunning())
+    // Cambio del numero di canali della traccia (la DAW richiama
+    // prepareToPlay dopo aver cambiato il layout dei bus): Csound va
+    // ricompilato con il nuovo nchnls/nchnls_i, vedi compileAndStart.
+    const bool channelsChanged = isEngineRunning()
+                              && (compiledHostOutputs != juce::jmax (1, getMainBusNumOutputChannels())
+                                  || compiledHostInputs != getMainBusNumInputChannels());
+
+    if (pendingStateRestore.exchange (false) || ! isEngineRunning() || channelsChanged)
         compileAndStart (getCsdText());
 }
 
@@ -639,20 +667,133 @@ void CsoundAudioProcessor::releaseResources()
 
 bool CsoundAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
+    // Da 1 a kMaxBusChannels canali in uscita (qualunque set: mono, stereo,
+    // quad, 5.1, discreti...); ingresso disattivato o 1..kMaxBusChannels,
+    // anche diverso dall'uscita: Csound ha nchnls e nchnls_i separati e
+    // processBlock copia spin/spout canale per canale.
     const auto outSet = layouts.getMainOutputChannelSet();
+    const auto inSet  = layouts.getMainInputChannelSet();
 
-    if (outSet != juce::AudioChannelSet::stereo() && outSet != juce::AudioChannelSet::mono())
+    if (outSet.isDisabled() || outSet.size() > kMaxBusChannels)
         return false;
 
-    // Il bus di Input puo' essere disattivato dall'host (niente audio in
-    // ingresso), ma se e' attivo deve avere lo stesso numero di canali
-    // dell'output: evita mismatch quando scriviamo spin/spout per canale.
-    const auto inSet = layouts.getMainInputChannelSet();
-
-    if (! inSet.isDisabled() && inSet != outSet)
+    if (! inSet.isDisabled() && inSet.size() > kMaxBusChannels)
         return false;
 
     return true;
+}
+
+void CsoundAudioProcessor::buildPhysicalOrderMap (const juce::AudioChannelSet& set, std::array<int, kMaxBusChannels>& map)
+{
+    using CT = juce::AudioChannelSet::ChannelType;
+
+    // Posizione (bit) di ciascun tipo di canale nello speaker arrangement
+    // VST3 (Steinberg::Vst::Speaker): e' l'ordine fisico con cui l'host
+    // consegna i canali. Stessa convenzione di JUCE (juce_VST3_Common.h):
+    // leftSurroundRear/rightSurroundRear usano i bit di Ls/Rs quando il
+    // layout non ha leftSurround/rightSurround (e' il caso del 7.1 di JUCE).
+    auto vst3Bit = [] (CT t) -> int
+    {
+        switch (t)
+        {
+            case CT::left:               return 0;
+            case CT::right:              return 1;
+            case CT::centre:             return 2;
+            case CT::LFE:                return 3;
+            case CT::leftSurround:       return 4;
+            case CT::rightSurround:      return 5;
+            case CT::leftCentre:         return 6;
+            case CT::rightCentre:        return 7;
+            case CT::centreSurround:     return 8;
+            case CT::leftSurroundSide:   return 9;
+            case CT::rightSurroundSide:  return 10;
+            case CT::topMiddle:          return 11;
+            case CT::topFrontLeft:       return 12;
+            case CT::topFrontCentre:     return 13;
+            case CT::topFrontRight:      return 14;
+            case CT::topRearLeft:        return 15;
+            case CT::topRearCentre:      return 16;
+            case CT::topRearRight:       return 17;
+            case CT::LFE2:               return 18;
+            case CT::leftSurroundRear:   return 4;
+            case CT::rightSurroundRear:  return 5;
+            case CT::wideLeft:           return 19;
+            case CT::wideRight:          return 20;
+            default:                     return -1; // discreti, ambisonics, altro: identita'
+        }
+    };
+
+    const int n = juce::jmin (kMaxBusChannels, set.size());
+
+    for (int i = 0; i < kMaxBusChannels; ++i)
+        map[(size_t) i] = i;
+
+    // (bit, indice JUCE) ordinati per bit = ordine fisico.
+    std::vector<std::pair<int, int>> order;
+
+    for (int i = 0; i < n; ++i)
+    {
+        const int bit = vst3Bit (set.getTypeOfChannel (i));
+
+        if (bit < 0)
+            return; // layout non "con nome": ordine JUCE = ordine fisico
+
+        order.emplace_back (bit, i);
+    }
+
+    std::sort (order.begin(), order.end());
+
+    for (int physical = 0; physical < (int) order.size(); ++physical)
+        map[(size_t) physical] = order[(size_t) physical].second;
+}
+
+void CsoundAudioProcessor::rebuildHostChannelMaps()
+{
+    buildPhysicalOrderMap (getChannelLayoutOfBus (false, 0), hostOutputIndex);
+    buildPhysicalOrderMap (getChannelLayoutOfBus (true, 0),  hostInputIndex);
+}
+
+void CsoundAudioProcessor::setFollowCsdChannels (bool shouldFollow)
+{
+    if (followCsdChannels.exchange (shouldFollow) == shouldFollow)
+        return;
+
+    // Cambia il modo in cui si calcola nchnls: ricompila subito.
+    if (juce::MessageManager::getInstance()->isThisTheMessageThread())
+        compileAndStart (getCsdText());
+}
+
+int CsoundAudioProcessor::parseDeclaredHeaderValue (const juce::String& csdText, const juce::String& name)
+{
+    // "nchnls = 4" / "nchnls=4" a inizio riga (spazi a parte), fuori dai
+    // commenti; prima occorrenza. Niente regex: una scansione riga per riga.
+    juce::StringArray lines;
+    lines.addLines (csdText);
+
+    for (auto line : lines)
+    {
+        const int comment = line.indexOfChar (';');
+        if (comment >= 0)
+            line = line.substring (0, comment);
+
+        line = line.trim();
+
+        if (! line.startsWith (name))
+            continue;
+
+        auto rest = line.substring (name.length()).trimStart();
+
+        if (! rest.startsWith ("="))
+            continue;
+
+        rest = rest.substring (1).trim();
+        const int value = rest.getIntValue();
+
+        if (value > 0 && rest.isNotEmpty() && juce::CharacterFunctions::isDigit (rest[0]))
+            return value;
+    }
+
+    return 0;
 }
 
 //==============================================================================
@@ -757,7 +898,57 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     // diversi in <CsInstruments>: qui li sovrascriviamo deliberatamente.
     CsoundAPI::csoundSetOption (cs, ("--sample-rate=" + juce::String (hostSampleRate, 0)).toRawUTF8());
     //CsoundAPI::csoundSetOption (cs, ("--ksmps=" + juce::String (hostBlockSize)).toRawUTF8());
-    CsoundAPI::csoundSetOption (cs, ("--nchnls=" + juce::String (2)).toRawUTF8());
+    // Canali: vedi setFollowCsdChannels in PluginProcessor.h.
+    const int hostOut = juce::jmax (1, getMainBusNumOutputChannels());
+    const int hostIn  = getMainBusNumInputChannels();
+    const int csdOut  = parseDeclaredHeaderValue (newCsdText, "nchnls");
+    const int csdIn   = parseDeclaredHeaderValue (newCsdText, "nchnls_i");
+    compiledHostOutputs = hostOut;
+    compiledHostInputs  = hostIn;
+    rebuildHostChannelMaps();
+
+    // Valori dalla traccia (usati quando non si segue il .csd o quando il
+    // .csd non li dichiara). Min 2 in uscita: "outs" con nchnls = 1 e' un
+    // errore di init in Csound, e quasi tutti i .csd lo usano; su una
+    // traccia mono processBlock prende il solo canale sinistro.
+    const int trackOut = juce::jmax (2, hostOut);
+    const int trackIn  = hostIn;
+    const bool follow  = followCsdChannels.load();
+
+    const int csOut = follow && csdOut > 0 ? csdOut : trackOut;
+    const int csIn  = follow && csdIn  > 0 ? csdIn  : trackIn;
+
+    CsoundAPI::csoundSetOption (cs, ("--nchnls=" + juce::String (csOut)).toRawUTF8());
+
+    if (csIn > 0)
+        CsoundAPI::csoundSetOption (cs, ("--nchnls_i=" + juce::String (csIn)).toRawUTF8());
+
+    if (follow)
+    {
+        if (csdOut > 0 && csdOut != hostOut)
+            handleMessage ("Channels: nchnls = " + juce::String (csdOut) + " from the CSD, the track has "
+                           + juce::String (hostOut) + " output channel(s): extra channels on either side are silent"
+                           " (disable Config > \"Follow CSD nchnls\" to let Csound follow the track).");
+
+        if (csdOut == 0)
+            handleMessage ("Channels: the CSD does not declare nchnls, using the track: nchnls = " + juce::String (csOut) + ".");
+
+        if (csdIn > 0 && csdIn != hostIn)
+            handleMessage ("Channels: nchnls_i = " + juce::String (csdIn) + " from the CSD, the track has "
+                           + juce::String (hostIn) + " input channel(s).");
+    }
+    else
+    {
+        if (csdOut > 0 && csdOut != csOut)
+            handleMessage ("Channels: the CSD declares nchnls = " + juce::String (csdOut)
+                           + ", the track has " + juce::String (hostOut) + " output channel(s): Csound runs with nchnls = "
+                           + juce::String (csOut) + " (enable Config > \"Follow CSD nchnls\" to keep the CSD value).");
+
+        if (csdIn > 0 && hostIn > 0 && csdIn != hostIn)
+            handleMessage ("Channels: the CSD declares nchnls_i = " + juce::String (csdIn)
+                           + ", the track has " + juce::String (hostIn) + " input channel(s): Csound runs with nchnls_i = "
+                           + juce::String (hostIn) + ".");
+    }
     
     // csoundCompileCsdText non esiste piu' in Csound 7: csoundCompileCSD
     // con mode=1 fa lo stesso lavoro (il secondo argomento e' codice CSD
@@ -812,6 +1003,19 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
 
         handleMessage ("Latency: " + juce::String (csKsmps) + " samples ("
                        + msText + ", compensated by the host)");
+        handleMessage ("Channels: nchnls = " + juce::String (csNumChannels) + ", nchnls_i = " + juce::String (csInputChannels)
+                       + " (track: " + juce::String (compiledHostOutputs) + " out, " + juce::String (compiledHostInputs) + " in, layout "
+                       + getChannelLayoutOfBus (false, 0).getDescription() + ")");
+
+        // Layout surround: mostra la corrispondenza canale fisico -> canale
+        // JUCE se non e' l'identita' (per capire dove finisce "outch n").
+        juce::String remap;
+        for (int i = 0; i < juce::jmin (kMaxBusChannels, compiledHostOutputs); ++i)
+            if (hostOutputIndex[(size_t) i] != i)
+                remap << (remap.isEmpty() ? "" : ", ") << "outch " << (i + 1) << " -> buffer " << (hostOutputIndex[(size_t) i] + 1);
+
+        if (remap.isNotEmpty())
+            handleMessage ("Channels: surround layout reordered by the host wrapper, compensated: " + remap);
 
         if (csKsmps > kHighKsmpsWarningThreshold)
             handleMessage ("Warning: ksmps " + juce::String (csKsmps) + " adds "
@@ -900,8 +1104,11 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         //    canali di uscita sovrascrivono quelli di ingresso.
         for (int ch = 0; ch < csInputChannels; ++ch)
         {
-            const int srcChannel = numIn > 0 ? juce::jmin (ch, numIn - 1) : -1;
-            const float* src = srcChannel >= 0 ? buffer.getReadPointer (srcChannel, written) : nullptr;
+            // Canali Csound oltre quelli dell'host: silenzio (non la copia
+            // dell'ultimo canale host). hostInputIndex: ordine fisico della
+            // traccia -> indice del buffer JUCE (vedi rebuildHostChannelMaps).
+            const int hostCh = ch < numIn && ch < kMaxBusChannels ? hostInputIndex[(size_t) ch] : -1;
+            const float* src = hostCh >= 0 && hostCh < numIn ? buffer.getReadPointer (hostCh, written) : nullptr;
 
             for (int i = 0; i < frames; ++i)
                 spin[(size_t) (ksmpsPos + i) * (size_t) csInputChannels + (size_t) ch] = src != nullptr ? (cs_float) src[i] : (cs_float) 0;
@@ -910,11 +1117,24 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         // 2) spout (calcolato al tick precedente) -> output host.
         for (int ch = 0; ch < numOut; ++ch)
         {
-            auto* dest = buffer.getWritePointer (ch, written);
-            const int srcChannel = juce::jmin (ch, csNumChannels - 1);
+            // ch = canale FISICO della traccia (1 = "outch 1"); hostCh =
+            // dove sta nel buffer JUCE (vedi rebuildHostChannelMaps).
+            const int hostCh = ch < kMaxBusChannels ? hostOutputIndex[(size_t) ch] : ch;
+
+            if (hostCh < 0 || hostCh >= numOut)
+                continue;
+
+            auto* dest = buffer.getWritePointer (hostCh, written);
+
+            // Canali host oltre quelli di Csound: silenzio.
+            if (ch >= csNumChannels)
+            {
+                juce::FloatVectorOperations::clear (dest, frames);
+                continue;
+            }
 
             for (int i = 0; i < frames; ++i)
-                dest[i] = (float) spout[(size_t) (ksmpsPos + i) * (size_t) csNumChannels + (size_t) srcChannel];
+                dest[i] = (float) spout[(size_t) (ksmpsPos + i) * (size_t) csNumChannels + (size_t) ch];
         }
 
         ksmpsPos += frames;
@@ -1486,6 +1706,7 @@ void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         const bool dirty = isSessionDirty();
         const juce::ScopedLock sl (sessionLock);
         root.setAttribute ("dirty", dirty ? 1 : 0);
+        root.setAttribute ("followCsdChannels", followCsdChannels.load() ? 1 : 0);
         root.setAttribute ("baseline", linkedFileMissing ? juce::String() : sessionBaselineHash);
         root.setAttribute ("fileModTime", juce::String (linkedFileModTimeAtLoad.toMilliseconds()));
     }
@@ -1633,6 +1854,7 @@ void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInByte
     // --- 1. Risolve il file collegato ---------------------------------
     const auto csdPath = xml->getStringAttribute ("csd");
     const bool isRelative = xml->getIntAttribute ("csdIsRelative", 1) != 0;
+    followCsdChannels.store (xml->getIntAttribute ("followCsdChannels", 1) != 0);
 
     juce::File linked;
     if (csdPath.isNotEmpty())
@@ -3161,28 +3383,47 @@ juce::String CsoundAudioProcessor::defaultCsdText()
 </CsOptions>
 <CsInstruments>
 
-; NOTE: "sr" is overridden by the DAW's sample rate.
-; NOTE: "ksmps" is respected as declared.
-; NOTE: "nchnls" is currently fixed to stereo.
+; =========================================================
+; HEADER - how apeCsound treats these values
+; =========================================================
+; sr      : overridden by the DAW sample rate (whatever is written here).
+; ksmps   : respected as declared. It is also the plugin latency
+;           (reported to the DAW, which compensates it): keep it small
+;           (16-64) when processing live input.
+; nchnls  : the value declared HERE is what Csound runs with (default,
+;           Config > "Follow CSD nchnls" enabled): the code behaves the
+;           same on any track. "outch n" goes to channel n of the track;
+;           if the CSD has more channels than the track the extra ones are
+;           silent, if the track has more they stay silent. Set the track
+;           channel count in the DAW to hear them all (REAPER: track
+;           routing > channels). A mismatch is reported in the console.
+;           If nchnls is NOT declared, the track channel count is used
+;           (minimum 2, because "outs" needs two).
+;           Disabling "Follow CSD nchnls" makes Csound always follow the
+;           track instead, whatever is written here.
+; nchnls_i: same rule for the inputs read with "inch 1", "inch 2", ...
+;           A channel beyond the track inputs reads silence.
+; outs/outch/out: write to the plugin outputs 1, 2, ... up to nchnls.
 
-sr     = 44100
-ksmps  = 10
-nchnls = 2
-0dbfs  = 1
+sr       = 44100
+ksmps    = 10
+nchnls   = 2
+nchnls_i = 2
+0dbfs    = 1
 
 ; Assign MIDI all channels to the synth instrument
 massign 0, 1
 
 ; =========================================================
 ; INSTRUMENT 1: MIDI SYNTH
-; Generates a sine wave controlled by MIDI notes
+; Generates a sawtooth wave controlled by MIDI notes
 ; =========================================================
 
 instr 1
 
     ; Get the MIDI note number
     inote notnum
-    
+
     ; Convert MIDI note number to frequency in Hz
     icps = cpsmidinn(inote)
 
@@ -3191,22 +3432,27 @@ instr 1
 
     ; Generate the oscillator signal
     asig vco2 iamp, icps
-    
-    ; Send the synth signal directly to the outputs
-    outs asig, asig
+
+    ; Send the synth audio to the plugin outputs 1 and 2
+    ; (outch n works up to nchnls: on a 4-channel track you can also
+    ; write outch 3, aSig / outch 4, aSig)
+    outch 1, asig
+    outch 2, asig
 
 endin
 
 
 ; =========================================================
 ; INSTRUMENT 2: AUDIO INPUT EFFECT
-; Reads stereo audio from the DAW input and applies delay
+; Reads stereo audio from the DAW track input (inch 1 / inch 2)
+; and applies a feedback delay
 ; =========================================================
 
 instr 2
 
-    ; Read stereo audio from the host input
-    aInL, aInR ins
+    ; Read audio from the plugin inputs (nchnls_i channels available)
+    aInL inch 1
+    aInR inch 2
 
     ; Delay parameters
     idelay = 0.3
@@ -3226,8 +3472,11 @@ instr 2
     aOutL = aInL + (aL * 0.5)
     aOutR = aInR + (aR * 0.5)
 
-    ; Send the processed audio to the outputs
-    outs aOutL, aOutR
+    ; Send the processed audio to the plugin outputs 1 and 2
+    ; (outch n works up to nchnls: on a 4-channel track you can also
+    ; write outch 3, aSig / outch 4, aSig)
+    outch 1, aOutL
+    outch 2, aOutR
 
 endin
 

@@ -250,6 +250,12 @@ public:
     std::function<bool()> isModernSyntaxEnabled;
     std::function<void()> onOpenManualRequested;
 
+    // "Follow CSD nchnls" (spunta): Csound usa nchnls/nchnls_i del .csd
+    // invece dei canali della traccia - vedi
+    // CsoundAudioProcessor::setFollowCsdChannels.
+    std::function<void()> onToggleFollowCsdChannelsRequested;
+    std::function<bool()> isFollowingCsdChannels;
+
     // Chiamata alla fine di OGNI rebuildUnifiedRows() (aggiunta/rimozione
     // di un parametro, commit di un metadata, undo/redo, refresh dopo Load/
     // ripristino): PluginEditor la usa per ricontrollare se la sessione

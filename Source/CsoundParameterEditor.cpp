@@ -2762,23 +2762,38 @@ void CsoundParameterMappingPanel::showPanelMenu()
     // Sezione help: sintassi moderna nella barra di help (spunta) e
     // manuale Csound online, poi "About" (vedi i callback nel .h).
     items.push_back (CsoundActionSheetItem::separator());
+    // "Config": sottomenu (drill-down) con le opzioni con spunta.
     {
-        CsoundActionSheetItem item;
-        item.id = 114; item.text = "Modern Syntax in Help";
-        item.enabled = onToggleModernSyntaxRequested != nullptr;
-        item.ticked = isModernSyntaxEnabled != nullptr && isModernSyntaxEnabled();
-        item.icon = CsoundActionSheetIcon::codeBraces;
-        items.push_back (item);
+        CsoundActionSheetItem config;
+        config.text = "Config";
+        config.icon = CsoundActionSheetIcon::gear;
+        {
+            CsoundActionSheetItem item;
+            item.id = 114; item.text = "Modern Syntax in Help";
+            item.enabled = onToggleModernSyntaxRequested != nullptr;
+            item.ticked = isModernSyntaxEnabled != nullptr && isModernSyntaxEnabled();
+            item.icon = CsoundActionSheetIcon::codeBraces;
+            config.subItems.push_back (item);
+        }
+        {
+            CsoundActionSheetItem item;
+            item.id = 116; item.text = "Follow CSD nchnls";
+            item.enabled = onToggleFollowCsdChannelsRequested != nullptr;
+            item.ticked = isFollowingCsdChannels != nullptr && isFollowingCsdChannels();
+            item.icon = CsoundActionSheetIcon::console;
+            config.subItems.push_back (item);
+        }
+        items.push_back (config);
     }
+    
+    items.push_back (CsoundActionSheetItem::separator());
     {
         CsoundActionSheetItem item;
-        item.id = 115; item.text = "Csound Manual (online)";
+        item.id = 115; item.text = "Csound Manual";
         item.enabled = onOpenManualRequested != nullptr;
         item.icon = CsoundActionSheetIcon::book;
         items.push_back (item);
     }
-
-    items.push_back (CsoundActionSheetItem::separator());
     {
         CsoundActionSheetItem item;
         item.id = 113; item.text = "About";//About " + juce::String (ProjectInfo::projectName);
@@ -2817,6 +2832,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 113: if (safeThis->onAboutRequested) safeThis->onAboutRequested(); break;
             case 114: if (safeThis->onToggleModernSyntaxRequested) safeThis->onToggleModernSyntaxRequested(); break;
             case 115: if (safeThis->onOpenManualRequested) safeThis->onOpenManualRequested(); break;
+            case 116: if (safeThis->onToggleFollowCsdChannelsRequested) safeThis->onToggleFollowCsdChannelsRequested(); break;
             default: break;
         }
     });

@@ -467,6 +467,35 @@ namespace
         return filled;
     }
 
+    // Ingranaggio: anello con 8 denti.
+    juce::Path makeGearPath()
+    {
+        juce::Path gear;
+        const float cx = 12.0f, cy = 12.0f, rOut = 9.5f, rIn = 7.0f;
+        const int teeth = 8;
+
+        for (int i = 0; i < teeth * 2; ++i)
+        {
+            const float a0 = juce::MathConstants<float>::twoPi * (float) i / (float) (teeth * 2);
+            const float a1 = juce::MathConstants<float>::twoPi * (float) (i + 1) / (float) (teeth * 2);
+            const float r  = (i % 2 == 0) ? rOut : rIn;
+
+            if (i == 0)
+                gear.startNewSubPath (cx + r * std::cos (a0), cy + r * std::sin (a0));
+
+            gear.lineTo (cx + r * std::cos (a0), cy + r * std::sin (a0));
+            gear.lineTo (cx + r * std::cos (a1), cy + r * std::sin (a1));
+        }
+
+        gear.closeSubPath();
+
+        juce::Path hole;
+        hole.addEllipse (cx - 3.2f, cy - 3.2f, 6.4f, 6.4f);
+        gear.addPath (hole); // sottrazione per regola even-odd del fill
+        gear.setUsingNonZeroWinding (false);
+        return gear;
+    }
+
     juce::Path makeSheetIconPath (CsoundActionSheetIcon icon)
     {
         switch (icon)
@@ -495,6 +524,7 @@ namespace
             case CsoundActionSheetIcon::selectAll:     return makeSelectAllPath();
             case CsoundActionSheetIcon::indent:        return makeIndentPath();
             case CsoundActionSheetIcon::comment:       return makeCommentPath();
+            case CsoundActionSheetIcon::gear:          return makeGearPath();
             case CsoundActionSheetIcon::none:
             default:                                   return {};
         }

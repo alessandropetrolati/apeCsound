@@ -26,7 +26,8 @@ enum class CsoundActionSheetIcon
     info,
     book,        // manuale online
     codeBraces,  // sintassi moderna "f(x)"
-    cut, copy, paste, selectAll, indent, comment
+    cut, copy, paste, selectAll, indent, comment,
+    gear         // sottomenu Config
 };
 
 /**
