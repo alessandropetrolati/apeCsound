@@ -2562,6 +2562,7 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     : processor (processorToEdit), undoManager (sharedUndoManager)
 {
     setLookAndFeel (&lookAndFeel);
+    processor.addListener (this);
 
     // Bottone multifunzione: circolare e accentato (proprieta' dinamica
     // "circular", vedi CsoundParameterPanelLookAndFeel per lo sfondo),
@@ -2623,7 +2624,16 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
 
 CsoundParameterMappingPanel::~CsoundParameterMappingPanel()
 {
+    processor.removeListener (this);
     setLookAndFeel (nullptr);
+}
+
+void CsoundParameterMappingPanel::sessionEditedByUndoRedo (bool structureReplaced)
+{
+    if (structureReplaced)
+        refreshAllFromProcessor(); // scarta anche pendingRow
+    else
+        rebuildUnifiedRows();
 }
 
 bool CsoundParameterMappingPanel::undo()
@@ -2739,6 +2749,17 @@ void CsoundParameterMappingPanel::showPanelMenu()
         items.push_back (item);
     }
 
+    // "About" in fondo al menu, nella sua sezione (richiesta esplicita):
+    // apre la vista informazioni di PluginEditor (vedi onAboutRequested nel .h).
+    items.push_back (CsoundActionSheetItem::separator());
+    {
+        CsoundActionSheetItem item;
+        item.id = 113; item.text = "About " + juce::String (ProjectInfo::projectName);
+        item.enabled = onAboutRequested != nullptr;
+        item.icon = CsoundActionSheetIcon::info;
+        items.push_back (item);
+    }
+
     // SafePointer, non [this]: CsoundActionSheet::show() richiama onSelected
     // in modo ASINCRONO (juce::MessageManager::callAsync dentro dismiss(),
     // vedi CsoundActionSheet.cpp) - a differenza di un juce::PopupMenu
@@ -2766,6 +2787,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 106: if (safeThis->onLoadSessionRequested) safeThis->onLoadSessionRequested(); break;
             case 111: if (safeThis->onInitializeSessionRequested) safeThis->onInitializeSessionRequested(); break;
             case 112: if (safeThis->onSaveLinkedRequested) safeThis->onSaveLinkedRequested(); break;
+            case 113: if (safeThis->onAboutRequested) safeThis->onAboutRequested(); break;
             default: break;
         }
     });
@@ -2801,32 +2823,36 @@ void CsoundParameterMappingPanel::removeAllParameters()
     for (int i = 0; i < CsoundAudioProcessor::numChoiceParams;  ++i) beforeChoice[i] = processor.getChoiceParamSlot (i);
 
     pendingRow = nullptr;
+    rowsInEditMode.clear();
 
+    // Niente `this` nelle lambda: vedi il commento in wirePushUndo
+    // (rebuildUnifiedRows) - la ricostruzione arriva via
+    // sessionEditedByUndoRedo().
+    auto& proc = processor;
     undoManager.beginNewTransaction();
     undoManager.perform (new LambdaUndoableAction
     {
-        [this]
+        [&proc]
         {
             for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
-                processor.setChannelParamSlot (i, CsoundAudioProcessor::ChannelParamSlot {});
+                proc.setChannelParamSlot (i, CsoundAudioProcessor::ChannelParamSlot {});
             for (int i = 0; i < CsoundAudioProcessor::numIntParams; ++i)
-                processor.setIntParamSlot (i, CsoundAudioProcessor::IntParamSlot {});
+                proc.setIntParamSlot (i, CsoundAudioProcessor::IntParamSlot {});
             for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
-                processor.setBoolParamSlot (i, CsoundAudioProcessor::BoolParamSlot {});
+                proc.setBoolParamSlot (i, CsoundAudioProcessor::BoolParamSlot {});
             for (int i = 0; i < CsoundAudioProcessor::numChoiceParams; ++i)
-                processor.setChoiceParamSlot (i, CsoundAudioProcessor::ChoiceParamSlot {});
+                proc.setChoiceParamSlot (i, CsoundAudioProcessor::ChoiceParamSlot {});
 
-            rowsInEditMode.clear();
-            rebuildUnifiedRows();
+            proc.notifySessionEditedByUndoRedo (false);
         },
-        [this, beforeFloat, beforeInt, beforeBool, beforeChoice]
+        [&proc, beforeFloat, beforeInt, beforeBool, beforeChoice]
         {
-            for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i) processor.setChannelParamSlot (i, beforeFloat[i]);
-            for (int i = 0; i < CsoundAudioProcessor::numIntParams;     ++i) processor.setIntParamSlot (i, beforeInt[i]);
-            for (int i = 0; i < CsoundAudioProcessor::numBoolParams;    ++i) processor.setBoolParamSlot (i, beforeBool[i]);
-            for (int i = 0; i < CsoundAudioProcessor::numChoiceParams;  ++i) processor.setChoiceParamSlot (i, beforeChoice[i]);
+            for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i) proc.setChannelParamSlot (i, beforeFloat[i]);
+            for (int i = 0; i < CsoundAudioProcessor::numIntParams;     ++i) proc.setIntParamSlot (i, beforeInt[i]);
+            for (int i = 0; i < CsoundAudioProcessor::numBoolParams;    ++i) proc.setBoolParamSlot (i, beforeBool[i]);
+            for (int i = 0; i < CsoundAudioProcessor::numChoiceParams;  ++i) proc.setChoiceParamSlot (i, beforeChoice[i]);
 
-            rebuildUnifiedRows();
+            proc.notifySessionEditedByUndoRedo (false);
         }
     });
 
@@ -2868,84 +2894,13 @@ void CsoundParameterMappingPanel::setAllRowsEditMode (bool edit)
 
 void CsoundParameterMappingPanel::resetAllParametersToInit()
 {
-    // NESSUN Undo qui (vedi il commento sulla dichiarazione nel .h): i
-    // VALORI dei parametri sono gestiti dalla DAW/host, quindi questa lista
-    // raccoglie solo (parametro, normalizzato target) - non serve piu' il
-    // valore "before" per un undoIt che non esiste.
-    struct Entry
-    {
-        juce::RangedAudioParameter* param;
-        float defaultNormalized; // valore normalizzato 0..1 del default/init configurato
-    };
-
-    std::vector<Entry> entries;
-
-    auto addEntry = [&entries] (juce::RangedAudioParameter* param, float defaultNormalized)
-    {
-        if (param != nullptr)
-            entries.push_back ({ param, defaultNormalized });
-    };
-
-    // Float: il parametro apvts ha gia' range nativo 0..1 (vedi
-    // ChannelHostParameter) - normalizeChannelParam va benissimo cosi' com'e'.
-    for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
-    {
-        const auto slot = processor.getChannelParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
-
-        addEntry (processor.apvts.getParameter (CsoundAudioProcessor::getChannelParamID (i)),
-                  CsoundAudioProcessor::normalizeChannelParam (slot, (double) slot.defaultValue));
-    }
-
-    // Int: normalizeIntParam gia' restituisce 0..1 (NON il range nativo
-    // 0..intHostRangeMax del parametro - quello serve solo a getRawParameterValue()/
-    // allo slider, vedi i commenti su IntHostParameter/pushChannelParametersToCsound) -
-    // setValueNotifyingHost vuole SEMPRE 0..1, qui e' gia' nella forma giusta.
-    for (int i = 0; i < CsoundAudioProcessor::numIntParams; ++i)
-    {
-        const auto slot = processor.getIntParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
-
-        addEntry (processor.apvts.getParameter (CsoundAudioProcessor::getIntParamID (i)),
-                  CsoundAudioProcessor::normalizeIntParam (slot, (double) slot.defaultValue));
-    }
-
-    // Bool: nessuna denormalizzazione, 0.0/1.0 diretto (stessa convenzione
-    // di pushChannelParametersToCsound per i Bool).
-    for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
-    {
-        const auto slot = processor.getBoolParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
-
-        addEntry (processor.apvts.getParameter (CsoundAudioProcessor::getBoolParamID (i)),
-                  slot.defaultValue ? 1.0f : 0.0f);
-    }
-
-    // Choice: AudioParameterChoice ha un NormalisableRange nativo
-    // (0, maxChoiceOptions - 1, 1) - normalizzato 0..1 = indice / (N - 1),
-    // stessa logica usata per interpretare getRawParameterValue() altrove
-    // ma invertita (qui si normalizza un indice, non si denormalizza).
-    for (int i = 0; i < CsoundAudioProcessor::numChoiceParams; ++i)
-    {
-        const auto slot = processor.getChoiceParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
-
-        const float normalized = CsoundAudioProcessor::maxChoiceOptions > 1
-            ? (float) slot.defaultIndex / (float) (CsoundAudioProcessor::maxChoiceOptions - 1)
-            : 0.0f;
-
-        addEntry (processor.apvts.getParameter (CsoundAudioProcessor::getChoiceParamID (i)), normalized);
-    }
-
-    if (entries.empty())
+    // Logica nel processor (CsoundAudioProcessor::resetParameterValuesToDefaults),
+    // condivisa con il Load CSD che riporta i valori ai default. NESSUN Undo:
+    // i VALORI sono gestiti dalla DAW (vedi il commento nel .h).
+    if (unifiedRows.empty())
         return;
 
-    for (auto& e : entries)
-        e.param->setValueNotifyingHost (e.defaultNormalized);
+    processor.resetParameterValuesToDefaults();
 
     if (onParameterCopiedToClipboard)
         onParameterCopiedToClipboard ("--- Reset all parameters to init values ---");
@@ -3316,11 +3271,17 @@ void CsoundParameterMappingPanel::rebuildUnifiedRows()
             // singola operazione (ogni rimozione/modifica di metadata e'
             // gia' di per se' un'unita' atomica discreta), Cmd+Z risale la
             // pila un passo alla volta, come un Undo normale.
+            // Le lambda NON catturano `this` (il pannello): l'azione vive
+            // nella cronologia del PROCESSOR e sopravvive alla chiusura
+            // dell'editor - dopo l'esecuzione notificano il processor, e il
+            // pannello aperto (questo o uno nuovo) si ricostruisce in
+            // sessionEditedByUndoRedo().
+            auto& proc = processor;
             undoManager.beginNewTransaction();
             undoManager.perform (new LambdaUndoableAction
             {
-                [this, doIt]   { doIt();   rebuildUnifiedRows(); },
-                [this, undoIt] { undoIt(); rebuildUnifiedRows(); }
+                [&proc, doIt]   { doIt();   proc.notifySessionEditedByUndoRedo (false); },
+                [&proc, undoIt] { undoIt(); proc.notifySessionEditedByUndoRedo (false); }
             });
         };
     };

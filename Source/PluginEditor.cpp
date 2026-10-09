@@ -56,6 +56,37 @@ namespace
         JUCE_DECLARE_NON_COPYABLE (CodeEditTransactionProxy)
     };
 
+    // Azione di sharedUndoManager per una sostituzione di sessione (vedi
+    // CsoundAudioProcessorEditor::replaceSessionUndoably): stesso schema
+    // "prima perform() no-op" di CodeEditTransactionProxy, perche' la
+    // sostituzione e' gia' avvenuta quando l'azione viene registrata.
+    struct SessionReplaceAction final : public juce::UndoableAction
+    {
+        SessionReplaceAction (std::function<void()> redoFn, std::function<void()> undoFn)
+            : redoIt (std::move (redoFn)), undoIt (std::move (undoFn)) {}
+
+        bool perform() override
+        {
+            if (! firstPerform && redoIt)
+                redoIt();
+
+            firstPerform = false;
+            return true;
+        }
+
+        bool undo() override
+        {
+            if (undoIt)
+                undoIt();
+            return true;
+        }
+
+        std::function<void()> redoIt, undoIt;
+        bool firstPerform = true;
+
+        JUCE_DECLARE_NON_COPYABLE (SessionReplaceAction)
+    };
+
     // Cartella di partenza di TUTTI i file chooser (Save As/Load/Relocate):
     // SEMPRE la cartella base della sessione, ~/Documents/apeCsound (vedi
     // CsoundAudioProcessor::getBaseFolder) - richiesta esplicita: "devono
@@ -65,7 +96,10 @@ namespace
     // nello stato del progetto resta relativo, quindi portabile.
     juce::File getCsdChooserStartDirectory()
     {
-        return CsoundAudioProcessor::getBaseFolder();
+        // La cartella viene creata QUI, solo quando serve davvero (punto 10).
+        auto folder = CsoundAudioProcessor::getBaseFolder();
+        folder.createDirectory();
+        return folder;
     }
 }
 
@@ -76,8 +110,26 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
 {
     setLookAndFeel (&lookAndFeel);
 
-    document.replaceAllContent (audioProcessor.getCsdText());
-    document.clearUndoHistory();
+    // getEditorDraft(), non getCsdText(): riapre l'editor sul testo che
+    // l'utente aveva lasciato, anche se non ancora applicato (vedi
+    // CsoundAudioProcessor::setEditorDraft) - BUG corretto: chiudere e
+    // riaprire la finestra del plugin perdeva le modifiche non applicate.
+    //
+    // Il documento e la cronologia vivono nel processor e sopravvivono alla
+    // chiusura della finestra: si ricarica il testo (e si azzera la
+    // cronologia) SOLO alla prima apertura o se nel frattempo l'host ha
+    // sostituito la sessione (consumeDocumentResyncRequest), o per sicurezza
+    // se il documento non coincide con la bozza. Altrimenti si riprende
+    // esattamente da dove si era, undo compreso (richiesta esplicita).
+    if (audioProcessor.consumeDocumentResyncRequest()
+        || document.getAllContent() != audioProcessor.getEditorDraft())
+    {
+        document.replaceAllContent (audioProcessor.getEditorDraft());
+        document.clearUndoHistory();
+        sharedUndoManager.clearUndoHistory();
+    }
+
+    sessionStatusDebouncer.callback = [this] { updateSessionStatus(); };
 
     // Secondo listener indipendente sullo stesso document (vedi il
     // commento in PluginEditor.h): aggiunto DOPO il replaceAllContent qui
@@ -133,6 +185,10 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     sessionWarningBar.relocateButton.onClick = [this] { promptRelocateSession(); };
     sessionWarningBar.saveAsButton.onClick   = [this] { promptSaveSession(); };
     addChildComponent (sessionWarningBar);
+
+    // Vista "About" (vedi AboutView in PluginEditor.h): nascosta, aperta dal
+    // menu hamburger tramite parameterPanel.onAboutRequested.
+    addChildComponent (aboutView);
     updateSessionStatus();
 
     // Il nome del Component e' come CsoundLookAndFeel sceglie quale icona
@@ -143,6 +199,9 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     applyButton.setName ("apply");
     applyButton.onClick = [this] { performApply(); };
     addAndMakeVisible (applyButton);
+
+    // Bozza non applicata ripresa dal processor: bordo rosso subito.
+    updateApplyButtonDirtyState();
 
     clearConsoleButton.setName ("clear");
     clearConsoleButton.getProperties().set ("circular", true);
@@ -212,6 +271,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.onSaveSessionRequested = [this] { promptSaveSession(); };
     parameterPanel.onLoadSessionRequested = [this] { promptLoadSession(); };
     parameterPanel.onSaveLinkedRequested  = [this] { performSaveLinked(); };
+    parameterPanel.onAboutRequested       = [this] { aboutView.show(); };
 
     // Ogni cambio di STRUTTURA dei parametri (add/remove/metadata/undo/redo)
     // ricontrolla la barra "modifiche non salvate" - vedi onMappingChanged in
@@ -472,6 +532,10 @@ void CsoundAudioProcessorEditor::bridgeCodeEditIntoSharedUndo()
 void CsoundAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds();
+
+    // Overlay "About": sempre a tutta finestra (anche se nascosto, cosi' e'
+    // gia' dimensionato quando lo si apre).
+    aboutView.setBounds (area);
 
     toolbarBounds = area.removeFromTop (toolbarHeight);
 
@@ -805,37 +869,18 @@ void CsoundAudioProcessorEditor::performLoadSessionFile (const juce::File& file)
     // spostato), il progetto suona comunque la copia incorporata e
     // l'editor mostra la barra "file non trovato" con Save As... - vedi
     // SessionWarningBar in PluginEditor.h.
-    if (audioProcessor.loadSessionFromFile (file))
+    // Annullabile come un solo passo (testo + struttura + collegamento):
+    // vedi replaceSessionUndoably.
+    if (replaceSessionUndoably ([this, file] { return audioProcessor.loadSessionFromFile (file); }))
     {
+        // replaceSessionUndoably ha gia' riletto editor e pannello dal
+        // processor (il reset dei 4 tipi di slot in loadSessionFromFile fa
+        // si' che un .csd senza parametri svuoti davvero il pannello) e reso
+        // il Load annullabile come UN solo passo: Cmd+Z riporta insieme
+        // testo, struttura dei parametri e collegamento al file precedenti
+        // (non ricompila: bordo rosso su Apply).
 
-        // L'editor di codice e il pannello parametri hanno il proprio
-        // stato locale (document/righe), costruito a partire dal
-        // processor - vanno rilette esplicitamente ora che
-        // loadSessionFromFile ha sostituito quello stato, altrimenti
-        // continuerebbero a mostrare la sessione precedente finche' non
-        // si cambia tab/si riapre il pannello. Il reset incondizionato
-        // dei 4 tipi di slot (vedi CsoundAudioProcessor::
-        // resetAllParameterSlots, chiamato da loadSessionFromFile PRIMA
-        // di leggere il nuovo file) fa si' che un .csd senza nessun
-        // parametro svuoti davvero il pannello, invece di lasciare
-        // appesa la mappatura della sessione precedente.
-        // NIENTE clearUndoHistory() qui (a differenza del replaceAllContent
-        // nel costruttore, che e' il primo caricamento e non ha nulla da
-        // annullare): un Load CSD deve restare ANNULLABILE con Undo,
-        // tornando al codice precedente - richiesto esplicitamente. Il
-        // newTransaction() prima del replaceAllContent chiude qualunque
-        // gruppo di modifiche precedente (la digitazione dell'utente) cosi'
-        // il Load diventa un singolo passo di undo a se stante: un solo
-        // Cmd+Z annulla l'intero caricamento, non solo meta' del nuovo
-        // testo. NOTA: questo annulla solo il TESTO nell'editor - la
-        // mappatura parametri nella sidebar (parameterPanel) non ha una
-        // propria cronologia di undo e resta quella del CSD appena
-        // caricato anche dopo un Undo del codice.
-        document.newTransaction();
-        document.replaceAllContent (audioProcessor.getCsdText());
-        parameterPanel.refreshAllFromProcessor();
-
-        // Il replaceAllContent qui sopra ha gia' fatto scattare
+        // Il replaceAllContent di replaceSessionUndoably ha gia' fatto scattare
         // updateApplyButtonDirtyState() (listener del document), che con
         // editor e processor appena sincronizzati risulta "non
         // modificato" - sovrascriviamo subito con il bordo rosso forzato:
@@ -894,11 +939,9 @@ void CsoundAudioProcessorEditor::performInitializeSession()
     // processor e' la fonte di verita' (initializeSession() azzera i 4
     // tipi di slot e sostituisce getCsdText() con defaultCsdText()),
     // document/parameterPanel vanno rilette esplicitamente DOPO.
-    audioProcessor.initializeSession();
-
-    document.newTransaction();
-    document.replaceAllContent (audioProcessor.getCsdText());
-    parameterPanel.refreshAllFromProcessor();
+    // Annullabile come un solo passo (testo + struttura + collegamento):
+    // vedi replaceSessionUndoably.
+    replaceSessionUndoably ([this] { audioProcessor.initializeSession(); return true; });
 
     markApplyPendingAfterLoad();
 
@@ -993,30 +1036,100 @@ void CsoundAudioProcessorEditor::promptRelocateSession()
         {
             const auto file = chooser.getResult();
 
-            if (file != juce::File{})
-                performLoadSessionFile (file); // carica + collega + applica; azzera "file mancante"
+            if (file == juce::File{})
+                return;
+
+            // Il contenuto in uso non esiste su nessun file se la sessione
+            // era "•" quando il progetto e' stato salvato, o se e' stata
+            // modificata dopo il ripristino: chiedere prima di sostituirlo
+            // (BUG corretto: prima si sostituiva in silenzio). Annullabile
+            // comunque con Undo (vedi replaceSessionUndoably).
+            if (audioProcessor.wasRestoredDirty() || currentSessionHash() != audioProcessor.getRestoredSessionHash())
+            {
+                const int choice = showNativeTwoButtonAlert (
+                    "Replace current content?",
+                    "The code and parameter mapping currently in use are not saved to any file. "
+                    "Relocating will replace them with the contents of " + file.getFileName() + ". "
+                    "Use Save As... instead to keep them.",
+                    "Cancel", "Relocate");
+
+                if (choice != 2)
+                    return;
+            }
+
+            performLoadSessionFile (file); // carica + collega + applica; azzera "file mancante"
         });
 }
 
 bool CsoundAudioProcessorEditor::isSessionDirty() const
 {
-    // "Modificato" = la sessione com'e' ADESSO nell'editor (testo anche non
-    // applicato + struttura dei parametri) differisce dall'ultimo Save/Load.
-    // Senza file collegato e' sempre "da salvare".
-    if (! audioProcessor.isSessionLinked())
-        return true;
+    // Unica fonte nel processor (vedi CsoundAudioProcessor::isSessionDirty):
+    // legge la bozza, che l'editor tiene aggiornata a ogni modifica.
+    return audioProcessor.isSessionDirty();
+}
 
-    // File collegato NON trovato (barra "file not found" visibile): il
-    // contenuto in uso e' la copia incorporata nel progetto e NESSUN file su
-    // disco lo contiene - e' da salvare per definizione, anche se identico
-    // alla baseline. Senza questo, Load CSD lo considerava "pulito" e lo
-    // sostituiva senza chiedere (BUG corretto).
-    if (audioProcessor.isLinkedFileMissing())
-        return true;
+juce::String CsoundAudioProcessorEditor::currentSessionHash()
+{
+    return CsoundAudioProcessor::computeTextHash (audioProcessor.buildSessionTextFor (document.getAllContent()));
+}
 
-    const auto currentHash = CsoundAudioProcessor::computeTextHash (
-        audioProcessor.buildSessionTextFor (document.getAllContent()));
-    return currentHash != audioProcessor.getSessionBaselineHash();
+bool CsoundAudioProcessorEditor::replaceSessionUndoably (const std::function<bool()>& loadIntoProcessor)
+{
+    const auto before = audioProcessor.captureSessionSnapshot();
+
+    if (! loadIntoProcessor())
+        return false;
+
+    const auto after = audioProcessor.captureSessionSnapshot();
+
+    // Testo dell'editor in una transazione DEDICATA del document (chiusa
+    // prima e dopo), senza bridge: sara' l'azione qui sotto a fare undo/redo
+    // di questa transazione, insieme al resto della sessione - le due
+    // cronologie (document e sharedUndoManager) restano allineate.
+    // Punto 12: se sia il testo vecchio sia quello nuovo sono vuoti,
+    // replaceAllContent non crea nessuna azione nel document - e l'undo/redo
+    // qui sotto NON deve toccarlo (annullerebbe una transazione estranea).
+    const bool documentChanged = document.getNumCharacters() > 0 || audioProcessor.getCsdText().isNotEmpty();
+
+    {
+        const juce::ScopedValueSetter<bool> guard (isApplyingCodeUndoRedo, true);
+        document.newTransaction();
+        document.replaceAllContent (audioProcessor.getCsdText());
+        document.newTransaction();
+    }
+
+    // Le lambda NON catturano `this` (l'editor): l'azione vive nella
+    // cronologia del PROCESSOR e puo' essere eseguita dopo che questa
+    // finestra e' stata chiusa e riaperta (un'altra istanza di editor).
+    // Usano solo oggetti del processor e notificano l'interfaccia, se c'e'.
+    auto& proc  = audioProcessor;
+    auto& doc   = document;
+    auto& guard = isApplyingCodeUndoRedo;
+
+    auto applySide = [&proc, &doc, &guard, documentChanged] (const CsoundAudioProcessor::SessionSnapshot& snap, bool isUndo)
+    {
+        if (documentChanged)
+        {
+            const juce::ScopedValueSetter<bool> g (guard, true);
+            if (isUndo)
+                doc.getUndoManager().undo();
+            else
+                doc.getUndoManager().redo();
+        }
+
+        proc.setEditorDraft (doc.getAllContent());
+        proc.restoreSessionSnapshot (snap);
+        proc.notifySessionEditedByUndoRedo (true);
+    };
+
+    sharedUndoManager.beginNewTransaction();
+    sharedUndoManager.perform (new SessionReplaceAction (
+        [applySide, after]  { applySide (after,  false); },
+        [applySide, before] { applySide (before, true);  }));
+
+    parameterPanel.refreshAllFromProcessor();
+    updateSessionStatus();
+    return true;
 }
 
 void CsoundAudioProcessorEditor::updateSessionStatus()
@@ -1060,7 +1173,7 @@ void CsoundAudioProcessorEditor::updateSessionStatus()
     sessionFileLabel.repaint();
 
     sessionWarningBar.messageLabel.setText (
-        "CSD file not found: " + audioProcessor.getLinkedCsdDisplayPath()
+        "CSD file not found or empty: " + audioProcessor.getLinkedCsdDisplayPath()
         + ". The copy embedded in the project is in use: relocate the file, or save it as a new one.",
         juce::dontSendNotification);
 
@@ -1128,11 +1241,12 @@ void CsoundAudioProcessorEditor::refreshSessionFromProcessor()
     // della sostituzione, come fa gia' CodeEditTransactionProxy.
     {
         const juce::ScopedValueSetter<bool> guard (isApplyingCodeUndoRedo, true);
-        document.replaceAllContent (audioProcessor.getCsdText());
+        document.replaceAllContent (audioProcessor.getEditorDraft()); // bozza ripristinata, se c'era
     }
 
     document.clearUndoHistory();
     sharedUndoManager.clearUndoHistory();
+    audioProcessor.consumeDocumentResyncRequest(); // gia' risincronizzato qui
 
     parameterPanel.refreshAllFromProcessor();
     updateApplyButtonDirtyState();
@@ -1147,6 +1261,12 @@ void CsoundAudioProcessorEditor::sessionStateRestored()
     const auto path = audioProcessor.getLinkedCsdDisplayPath();
     appendToLog (path.isNotEmpty() ? ("--- Session restored (linked to " + path + ") ---")
                                    : "--- Session restored ---");
+}
+
+void CsoundAudioProcessorEditor::sessionEditedByUndoRedo (bool)
+{
+    updateApplyButtonDirtyState();
+    updateSessionStatus();
 }
 
 void CsoundAudioProcessorEditor::performApply()
@@ -1303,4 +1423,231 @@ void CsoundAudioProcessorEditor::appendToLog (const juce::String& text)
         logConsole.setText (lines.joinIntoString ("\n") + "\n", false);
         logConsole.moveCaretToEnd();
     }
+}
+
+//==============================================================================
+// Vista "About" - vedi il commento su AboutView in PluginEditor.h.
+namespace
+{
+    const juce::Colour kAboutCardBg     { 0xff141d24 }; // stesso fondo del menu (CsoundActionSheet)
+    const juce::Colour kAboutBorder     { 0xff2a3540 };
+    const juce::Colour kAboutText       { 0xffe8eef1 };
+    const juce::Colour kAboutTextMuted  { 0xff8a9aa5 };
+    const juce::Colour kAboutAccent     { 0xff17a2b8 };
+    const juce::Colour kAboutRowBg      { 0xff1c2730 };
+    const juce::Colour kAboutRowHover   { 0xff243441 };
+
+    // Caratteri non ASCII via codepoint: un letterale UTF-8 in
+    // juce::String(const char*) fa scattare un jassert.
+    juce::String uc (juce::juce_wchar c) { return juce::String::charToString (c); }
+}
+
+CsoundAudioProcessorEditor::AboutView::LinkRow::LinkRow (juce::String titleText, juce::String subtitleText, juce::URL target)
+    : title (std::move (titleText)), subtitle (std::move (subtitleText)), url (std::move (target))
+{
+    setMouseCursor (juce::MouseCursor::PointingHandCursor);
+}
+
+void CsoundAudioProcessorEditor::AboutView::LinkRow::paint (juce::Graphics& g)
+{
+    auto b = getLocalBounds().toFloat();
+
+    g.setColour (hovered ? kAboutRowHover : kAboutRowBg);
+    g.fillRoundedRectangle (b, 10.0f);
+
+    if (hovered)
+    {
+        g.setColour (kAboutAccent.withAlpha (0.55f));
+        g.drawRoundedRectangle (b.reduced (0.5f), 10.0f, 1.0f);
+    }
+
+    auto content = getLocalBounds().reduced (16, 9);
+
+    // Freccia "esterno" a destra: dice che il link apre il browser.
+    g.setColour (hovered ? kAboutAccent : kAboutTextMuted);
+    g.setFont (juce::Font (juce::FontOptions (16.0f)));
+    g.drawFittedText (uc (0x2197), content.removeFromRight (20), juce::Justification::centredRight, 1);
+
+    g.setColour (kAboutText);
+    g.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
+    g.drawFittedText (title, content.removeFromTop (content.getHeight() / 2), juce::Justification::bottomLeft, 1);
+
+    g.setColour (kAboutTextMuted);
+    g.setFont (juce::Font (juce::FontOptions (11.5f)));
+    g.drawFittedText (subtitle, content, juce::Justification::topLeft, 1);
+}
+
+void CsoundAudioProcessorEditor::AboutView::LinkRow::mouseUp (const juce::MouseEvent& e)
+{
+    if (contains (e.getPosition()))
+        url.launchInDefaultBrowser();
+}
+
+CsoundAudioProcessorEditor::AboutView::Card::Card()
+    : githubRow ("Source code on GitHub", "github.com/alessandropetrolati/Csound",
+                 juce::URL ("https://github.com/alessandropetrolati/Csound")),
+      websiteRow ("apeSoft website", "www.apesoft.it",
+                  juce::URL ("https://www.apesoft.it"))
+{
+    icon = juce::ImageCache::getFromMemory (BinaryData::csicon_png, BinaryData::csicon_pngSize);
+    addAndMakeVisible (githubRow);
+    addAndMakeVisible (websiteRow);
+}
+
+juce::Rectangle<int> CsoundAudioProcessorEditor::AboutView::Card::closeButtonBounds() const
+{
+    return { getWidth() - 16 - 28, 16, 28, 28 };
+}
+
+void CsoundAudioProcessorEditor::AboutView::Card::resized()
+{
+    githubRow.setBounds  (24, 270, getWidth() - 48, 56);
+    websiteRow.setBounds (24, 336, getWidth() - 48, 56);
+}
+
+void CsoundAudioProcessorEditor::AboutView::Card::paint (juce::Graphics& g)
+{
+    const auto b = getLocalBounds().toFloat();
+    const float radius = 16.0f;
+    const int w = getWidth();
+
+    // Fondo + leggero alone accentato in alto + bordo sottile.
+    g.setColour (kAboutCardBg);
+    g.fillRoundedRectangle (b, radius);
+
+    {
+        juce::Graphics::ScopedSaveState state (g);
+        juce::Path clip;
+        clip.addRoundedRectangle (b, radius);
+        g.reduceClipRegion (clip);
+        g.setGradientFill (juce::ColourGradient (kAboutAccent.withAlpha (0.20f), b.getCentreX(), 0.0f,
+                                                 kAboutAccent.withAlpha (0.0f), b.getCentreX(), 180.0f, false));
+        g.fillRect (b.withHeight (180.0f));
+    }
+
+    g.setColour (kAboutBorder);
+    g.drawRoundedRectangle (b.reduced (0.5f), radius, 1.0f);
+
+    // Chiudi (x) in alto a destra.
+    {
+        const auto cb = closeButtonBounds().toFloat();
+        g.setColour (kAboutRowBg);
+        g.fillEllipse (cb);
+        g.setColour (kAboutTextMuted);
+        const float m = cb.getWidth() * 0.34f;
+        g.drawLine (cb.getX() + m, cb.getY() + m, cb.getRight() - m, cb.getBottom() - m, 1.6f);
+        g.drawLine (cb.getRight() - m, cb.getY() + m, cb.getX() + m, cb.getBottom() - m, 1.6f);
+    }
+
+    // Icona dell'app, angoli arrotondati.
+    {
+        const juce::Rectangle<float> iconArea ((float) (w - 72) * 0.5f, 28.0f, 72.0f, 72.0f);
+        if (icon.isValid())
+        {
+            juce::Graphics::ScopedSaveState state (g);
+            juce::Path p;
+            p.addRoundedRectangle (iconArea, 16.0f);
+            g.reduceClipRegion (p);
+            g.drawImage (icon, iconArea, juce::RectanglePlacement::centred);
+        }
+    }
+
+    // Nome + versione (da ProjectInfo, cosi' restano sempre allineati al progetto).
+    g.setColour (kAboutText);
+    g.setFont (juce::Font (juce::FontOptions (24.0f, juce::Font::bold)));
+    g.drawFittedText (ProjectInfo::projectName, 0, 112, w, 30, juce::Justification::centred, 1);
+
+    g.setColour (kAboutTextMuted);
+    g.setFont (juce::Font (juce::FontOptions (13.0f)));
+    g.drawFittedText ("Version " + juce::String (ProjectInfo::versionString), 0, 142, w, 18, juce::Justification::centred, 1);
+
+    // Separatore.
+    g.setColour (kAboutBorder);
+    g.fillRect (40, 178, w - 80, 1);
+
+    // Autore.
+    g.setColour (kAboutTextMuted);
+    g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
+    g.drawFittedText ("DEVELOPED BY", 0, 194, w, 14, juce::Justification::centred, 1);
+
+    g.setColour (kAboutText);
+    g.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
+    g.drawFittedText ("Alessandro Petrolati", 0, 211, w, 22, juce::Justification::centred, 1);
+
+    g.setColour (kAboutAccent);
+    g.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
+    g.drawFittedText ("apeSoft", 0, 234, w, 20, juce::Justification::centred, 1);
+
+    // Piede.
+    g.setColour (kAboutTextMuted);
+    g.setFont (juce::Font (juce::FontOptions (11.5f)));
+    g.drawFittedText ("Powered by Csound  " + uc (0x00B7) + "  Built with JUCE", 0, 412, w, 16, juce::Justification::centred, 1);
+    g.drawFittedText (uc (0x00A9) + " " + juce::String (juce::Time::getCurrentTime().getYear()) + " apeSoft",
+                      0, 430, w, 16, juce::Justification::centred, 1);
+}
+
+void CsoundAudioProcessorEditor::AboutView::Card::mouseUp (const juce::MouseEvent& e)
+{
+    if (closeButtonBounds().contains (e.getPosition()) && onClose)
+        onClose();
+}
+
+CsoundAudioProcessorEditor::AboutView::AboutView()
+{
+    setWantsKeyboardFocus (true);
+    card.onClose = [this] { hide(); };
+    addAndMakeVisible (card);
+}
+
+void CsoundAudioProcessorEditor::AboutView::paint (juce::Graphics& g)
+{
+    g.fillAll (juce::Colours::black.withAlpha (0.45f));
+}
+
+void CsoundAudioProcessorEditor::AboutView::resized()
+{
+    // Scheda a dimensioni fisse, centrata; se la finestra e' piu' piccola
+    // viene SCALATA in proporzione (mai tagliata).
+    const auto bounds = getLocalBounds();
+    const auto cardArea = juce::Rectangle<int> (cardWidth, cardHeight).withCentre (bounds.getCentre());
+    card.setBounds (cardArea);
+
+    const float scale = juce::jmin (1.0f,
+                                    (float) (bounds.getWidth()  - 24) / (float) cardWidth,
+                                    (float) (bounds.getHeight() - 24) / (float) cardHeight);
+
+    card.setTransform (scale < 1.0f
+        ? juce::AffineTransform::scale (juce::jmax (0.1f, scale), juce::jmax (0.1f, scale),
+                                        (float) cardArea.getCentreX(), (float) cardArea.getCentreY())
+        : juce::AffineTransform());
+}
+
+void CsoundAudioProcessorEditor::AboutView::mouseUp (const juce::MouseEvent& e)
+{
+    // Raggiunto solo per i clic sul velo (la scheda intercetta i propri).
+    if (e.eventComponent == this)
+        hide();
+}
+
+bool CsoundAudioProcessorEditor::AboutView::keyPressed (const juce::KeyPress& key)
+{
+    if (key == juce::KeyPress::escapeKey)
+    {
+        hide();
+        return true;
+    }
+
+    return false;
+}
+
+void CsoundAudioProcessorEditor::AboutView::show()
+{
+    toFront (true);
+    juce::Desktop::getInstance().getAnimator().fadeIn (this, 140);
+    grabKeyboardFocus();
+}
+
+void CsoundAudioProcessorEditor::AboutView::hide()
+{
+    juce::Desktop::getInstance().getAnimator().fadeOut (this, 120);
 }

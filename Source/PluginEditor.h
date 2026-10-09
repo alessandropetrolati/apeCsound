@@ -109,6 +109,11 @@ private:
     // refreshSessionFromProcessor) e aggiorna la barra di avviso.
     void sessionStateRestored() override;
 
+    // Un'azione della cronologia di sessione (nel processor) e' stata
+    // annullata/ripetuta: aggiorna bordo di Apply e indicatore "•" (il
+    // pannello Parametri ascolta lo stesso evento e si ricostruisce da solo).
+    void sessionEditedByUndoRedo (bool structureReplaced) override;
+
     // Rilegge document/parameterPanel dallo stato ATTUALE del processor
     // (dopo un ripristino dall'host) e azzera ENTRAMBE le cronologie di
     // undo (quella interna del document e sharedUndoManager - le voci
@@ -151,6 +156,57 @@ private:
         juce::String detailText; // path relativo/assoluto + stato
         bool dirty = false;      // "•" accanto al nome
         bool missing = false;    // file non trovato: nome in rosso
+    };
+
+    // Vista "About" (richiesta esplicita: informazioni sull'autore, link ai
+    // sorgenti su GitHub e al sito apeSoft, "con uno stile appropriato"):
+    // overlay a tutta finestra con velo scuro e una scheda centrata nello
+    // stesso tema scuro del menu (CsoundActionSheet). Si chiude con la x,
+    // con Esc o toccando fuori dalla scheda. La scheda ha dimensioni fisse
+    // e viene SCALATA (non tagliata) se la finestra del plugin e' piu' piccola.
+    struct AboutView final : public juce::Component
+    {
+        // Riga cliccabile che apre un URL nel browser di sistema.
+        struct LinkRow final : public juce::Component
+        {
+            LinkRow (juce::String titleText, juce::String subtitleText, juce::URL target);
+            void paint (juce::Graphics& g) override;
+            void mouseEnter (const juce::MouseEvent&) override { hovered = true;  repaint(); }
+            void mouseExit  (const juce::MouseEvent&) override { hovered = false; repaint(); }
+            void mouseUp (const juce::MouseEvent& e) override;
+
+            juce::String title, subtitle;
+            juce::URL url;
+            bool hovered = false;
+        };
+
+        // La scheda vera e propria (dimensioni fisse cardWidth x cardHeight).
+        struct Card final : public juce::Component
+        {
+            Card();
+            void paint (juce::Graphics& g) override;
+            void resized() override;
+            void mouseUp (const juce::MouseEvent& e) override;
+            juce::Rectangle<int> closeButtonBounds() const;
+
+            std::function<void()> onClose;
+            juce::Image icon;
+            LinkRow githubRow, websiteRow;
+        };
+
+        AboutView();
+        void paint (juce::Graphics& g) override;
+        void resized() override;
+        void mouseUp (const juce::MouseEvent& e) override;
+        bool keyPressed (const juce::KeyPress& key) override;
+
+        void show();
+        void hide();
+
+        Card card;
+
+        static constexpr int cardWidth  = 360;
+        static constexpr int cardHeight = 472;
     };
 
     struct SessionWarningBar final : public juce::Component
@@ -199,8 +255,33 @@ private:
     // ad aggiornare il bordo rosso di Apply (updateApplyButtonDirtyState),
     // fa anche da punto di ingresso per bridgeCodeEditIntoSharedUndo()
     // sotto - vedi li' per il perche'.
-    void codeDocumentTextInserted (const juce::String&, int) override { updateApplyButtonDirtyState(); bridgeCodeEditIntoSharedUndo(); updateSessionStatus(); }
-    void codeDocumentTextDeleted (int, int) override                  { updateApplyButtonDirtyState(); bridgeCodeEditIntoSharedUndo(); updateSessionStatus(); }
+    // pushEditorDraft() PER PRIMO: la bozza nel processor deve essere gia'
+    // aggiornata quando updateSessionStatus() calcola il "•" (che la legge
+    // da li', vedi CsoundAudioProcessor::isSessionDirty).
+    void codeDocumentTextInserted (const juce::String&, int) override { pushEditorDraft(); updateApplyButtonDirtyState(); bridgeCodeEditIntoSharedUndo(); scheduleSessionStatusUpdate(); }
+    void codeDocumentTextDeleted (int, int) override                  { pushEditorDraft(); updateApplyButtonDirtyState(); bridgeCodeEditIntoSharedUndo(); scheduleSessionStatusUpdate(); }
+
+    // Copia il testo ATTUALE del document nel processor come bozza (vedi
+    // CsoundAudioProcessor::setEditorDraft): cosi' sopravvive alla chiusura
+    // della finestra del plugin e finisce nello stato del progetto.
+    void pushEditorDraft() { audioProcessor.setEditorDraft (document.getAllContent()); }
+
+    // Sostituisce la sessione (Load CSD, Initialize, Relocate) come UN solo
+    // passo annullabile e coerente: loadIntoProcessor carica nel processor;
+    // qui si fotografa la sessione prima/dopo (CsoundAudioProcessor::
+    // SessionSnapshot), si sostituisce il testo dell'editor in UNA
+    // transazione dedicata del document (senza passare dal bridge), e si
+    // registra in sharedUndoManager un'azione che, in undo/redo, riporta
+    // INSIEME testo + struttura dei parametri + collegamento al file. Il
+    // codice in esecuzione NON viene ricompilato dall'undo (bordo rosso su
+    // Apply), i valori dei parametri restano alla DAW. Ritorna false (e non
+    // registra nulla) se il caricamento fallisce.
+    bool replaceSessionUndoably (const std::function<bool()>& loadIntoProcessor);
+
+    // Hash della sessione com'e' nell'editor ADESSO (bozza + struttura) e
+    // quello registrato all'apertura/ripristino: Relocate... li confronta
+    // per sapere se dopo il ripristino ci sono state modifiche da perdere.
+    juce::String currentSessionHash();
 
     // Rispecchia (quando serve, vedi l'implementazione nel .cpp) la
     // transazione CORRENTE dell'UndoManager interno di "document" come
@@ -212,7 +293,8 @@ private:
 
     // Guardia di rientranza per bridgeCodeEditIntoSharedUndo() sopra - vedi
     // il commento nel .cpp su CodeEditTransactionProxy.
-    bool isApplyingCodeUndoRedo = false;
+    // (vedi isApplyingCodeUndoRedo piu' sotto, dopo audioProcessor: ora e'
+    // un riferimento alla guardia che vive nel processor.)
 
     // Confronta il testo ATTUALE dell'editor con l'ultimo testo applicato
     // nel processor (audioProcessor.getCsdText()): se sono diversi, il
@@ -256,7 +338,17 @@ private:
     // access the processor object that created it.
     CsoundAudioProcessor& audioProcessor;
 
-    juce::CodeDocument document;
+    // Guardia di rientranza per bridgeCodeEditIntoSharedUndo() - vedi il
+    // commento nel .cpp su CodeEditTransactionProxy. Riferimento al flag del
+    // PROCESSOR (CsoundAudioProcessor::getCodeUndoGuard): le azioni in
+    // cronologia, che sopravvivono all'editor, lo usano anche a finestra chiusa.
+    // Dichiarato DOPO audioProcessor: viene inizializzato da esso.
+    bool& isApplyingCodeUndoRedo { audioProcessor.getCodeUndoGuard() };
+
+    // Documento del codice: vive nel PROCESSOR (vedi
+    // CsoundAudioProcessor::getCodeDocument) cosi' testo e cronologia di
+    // undo sopravvivono alla chiusura della finestra del plugin.
+    juce::CodeDocument& document { audioProcessor.getCodeDocument() };
     CsoundTokeniser tokeniser;
     CsoundCodeEditor editor { document, &tokeniser };
 
@@ -270,6 +362,10 @@ private:
 
     // Nella toolbar, tra Apply e il burger - vedi SessionFileLabel.
     SessionFileLabel sessionFileLabel;
+
+    // Vista "About" - vedi AboutView. Figlio a tutta finestra, nascosto
+    // finche' non viene aperto dal menu.
+    AboutView aboutView;
 
     juce::TextEditor logConsole;
 
@@ -289,7 +385,24 @@ private:
     // bridgeCodeEditIntoSharedUndo() sopra), (2) le modifiche di
     // mappatura/metadata del pannello Parametri (nome canale, min/max,
     // opzioni, aggiunta/rimozione di un parametro).
-    juce::UndoManager sharedUndoManager;
+    // Riferimento alla cronologia del PROCESSOR (vedi
+    // CsoundAudioProcessor::getSessionUndoManager) - prima era un membro di
+    // questo editor e veniva distrutta chiudendo la finestra (BUG corretto).
+    juce::UndoManager& sharedUndoManager { audioProcessor.getSessionUndoManager() };
+
+    // Ricalcolo del "•" RITARDATO durante la digitazione (vedi
+    // scheduleSessionStatusUpdate): XML della struttura + SHA-256 a ogni
+    // tasto erano costosi con CSD grandi. La bozza invece viene copiata nel
+    // processor SUBITO (pushEditorDraft), cosi' nulla si perde se la DAW
+    // salva il progetto proprio in quel momento.
+    struct DeferredCall final : public juce::Timer
+    {
+        std::function<void()> callback;
+        void timerCallback() override { stopTimer(); if (callback) callback(); }
+    };
+
+    DeferredCall sessionStatusDebouncer;
+    void scheduleSessionStatusUpdate() { sessionStatusDebouncer.startTimer (150); }
 
     // Pannello del mapping parametri (rename canale + metadata per slot):
     // nascosto di default, mostrato come SIDEBAR ANCORATA a destra (non

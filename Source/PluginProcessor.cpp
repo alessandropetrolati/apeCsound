@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <regex>
+#include <map>
 
 namespace
 {
@@ -49,6 +50,9 @@ CsoundAudioProcessor::CsoundAudioProcessor()
 
 CsoundAudioProcessor::~CsoundAudioProcessor()
 {
+    // Per primo: le callAsync gia' in coda non devono piu' toccare `this`
+    // (vedi aliveFlag in PluginProcessor.h).
+    aliveFlag->store (false);
     stopEngine();
 }
 
@@ -894,8 +898,11 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
                 outgoingMidiBuffer = nullptr;
                 midiMessages.swapWith (outgoing);
 
-                juce::MessageManager::callAsync ([this]
+                juce::MessageManager::callAsync ([this, alive = aliveFlag]
                 {
+                    if (! alive->load())
+                        return;
+
                     listeners.call ([] (Listener& l) { l.csoundEngineStopped(); });
                 });
                 return;
@@ -983,6 +990,8 @@ void CsoundAudioProcessor::setCsdCodeFromFullText (const juce::String& fullCode)
         csdPreamble.clear();
         csdPostamble.clear();
         csdText = fullCode;
+        editorDraft.clear();     // codice appena caricato: nessuna bozza
+        hasEditorDraft = false;  // (vedi setEditorDraft)
         return;
     }
 
@@ -990,6 +999,21 @@ void CsoundAudioProcessor::setCsdCodeFromFullText (const juce::String& fullCode)
     csdPreamble  = fullCode.substring (0, openAt);
     csdText      = fullCode.substring (openAt, blockEnd);
     csdPostamble = fullCode.substring (blockEnd);
+    editorDraft.clear();
+    hasEditorDraft = false;
+}
+
+void CsoundAudioProcessor::setEditorDraft (const juce::String& code)
+{
+    const juce::ScopedLock sl (csdTextLock);
+    editorDraft = code;
+    hasEditorDraft = true;
+}
+
+juce::String CsoundAudioProcessor::getEditorDraft() const
+{
+    const juce::ScopedLock sl (csdTextLock);
+    return hasEditorDraft ? editorDraft : csdText;
 }
 
 //==============================================================================
@@ -1121,7 +1145,7 @@ namespace
     const char* const kStateRoot       = "PluginState";
     const char* const kStateEmbedded   = "EmbeddedCsd";
     const char* const kStateParam      = "P";
-    const char* const kLegacyStateRoot = "APE_CSOUND_STATE";
+    const char* const kStateDraft      = "EditorDraft";
 }
 
 //==============================================================================
@@ -1132,10 +1156,8 @@ juce::File CsoundAudioProcessor::getBaseFolder()
     auto folder = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
                       .getChildFile ("apeCsound");
 
-    // createDirectory() e' idempotente: se esiste gia' non fa nulla. Se
-    // fallisse (permessi), si ritorna comunque il path: i path relativi
-    // semplicemente non risolveranno, e il fallback assoluto resta valido.
-    folder.createDirectory();
+    // NON la crea qui (punto 10): la crea il file chooser dell'editor quando
+    // serve (vedi getCsdChooserStartDirectory in PluginEditor.cpp).
     return folder;
 }
 
@@ -1174,64 +1196,26 @@ juce::String CsoundAudioProcessor::computeTextHash (const juce::String& text)
     return juce::SHA256 (text.toRawUTF8(), text.getNumBytesAsUTF8()).toHexString();
 }
 
-juce::String CsoundAudioProcessor::readGitHeadCommit (const juce::File& startDir)
-{
-    // Risale le cartelle fino a trovare .git (directory, o file "gitdir:"
-    // di un worktree - in quel caso si segue il puntatore). Tutto in
-    // lettura di file, nessun processo esterno: e' solo un'informazione.
-    for (auto dir = startDir; dir != juce::File{} && dir.exists(); dir = dir.getParentDirectory())
-    {
-        auto gitEntry = dir.getChildFile (".git");
-
-        if (! gitEntry.exists())
-        {
-            if (dir.getParentDirectory() == dir)
-                break;
-            continue;
-        }
-
-        auto gitDir = gitEntry;
-
-        if (gitEntry.existsAsFile())
-        {
-            const auto pointer = gitEntry.loadFileAsString().trim();
-            if (! pointer.startsWith ("gitdir:"))
-                return {};
-            gitDir = dir.getChildFile (pointer.fromFirstOccurrenceOf ("gitdir:", false, false).trim());
-        }
-
-        const auto head = gitDir.getChildFile ("HEAD").loadFileAsString().trim();
-
-        if (head.isEmpty())
-            return {};
-
-        if (! head.startsWith ("ref:"))
-            return head; // HEAD "detached": e' gia' l'hash
-
-        const auto ref = head.fromFirstOccurrenceOf ("ref:", false, false).trim();
-        const auto refFile = gitDir.getChildFile (ref);
-
-        if (refFile.existsAsFile())
-            return refFile.loadFileAsString().trim();
-
-        // Ref "impacchettata" (dopo un gc): una riga "<hash> <ref>" in packed-refs.
-        for (auto& line : juce::StringArray::fromLines (gitDir.getChildFile ("packed-refs").loadFileAsString()))
-            if (line.endsWith (" " + ref))
-                return line.upToFirstOccurrenceOf (" ", false, false).trim();
-
-        return {};
-    }
-
-    return {};
-}
-
 juce::String CsoundAudioProcessor::buildSessionText()
 {
     return buildSessionTextFor (getCsdText());
 }
 
-juce::String CsoundAudioProcessor::buildSessionTextFor (const juce::String& codeText)
+juce::String CsoundAudioProcessor::buildSessionTextFor (const juce::String& rawCodeText)
 {
+    // Il codice NON deve contenere una sezione <apeCsoundParams> (BUG
+    // corretto): incollando un .csd completo nell'editor quella del file
+    // incollato restava nel codice, il file salvato ne conteneva DUE e al
+    // Load successivo vinceva la prima (quella vecchia), perdendo la
+    // mappatura reale. La struttura vera e' solo quella in coda, scritta qui.
+    juce::String codeText = rawCodeText;
+    for (int open = codeText.indexOf (kParamsTagOpen); open >= 0; open = codeText.indexOf (kParamsTagOpen))
+    {
+        const int close = codeText.indexOf (open, kParamsTagClose);
+        const int end = close >= 0 ? close + kParamsTagClose.length() : codeText.length();
+        codeText = codeText.substring (0, open).trimEnd() + codeText.substring (end);
+    }
+
     auto xml = buildParamsStructureTree().createXml();
 
     // Il codice vero e proprio resta testo Csound PURO in testa - quello
@@ -1248,8 +1232,12 @@ juce::String CsoundAudioProcessor::buildSessionTextFor (const juce::String& code
         postamble = csdPostamble;
     }
 
+    // trimEnd(): salvataggio e ricaricamento devono produrre lo STESSO testo
+    // (il loader taglia gli spazi prima di <apeCsoundParams>) - altrimenti
+    // l'hash di un file appena salvato non coincideva con quello dopo il
+    // ricaricamento, con un falso "changed on disk" alla riapertura.
     juce::String text;
-    text << preamble << codeText << postamble << "\n\n"
+    text << (preamble + codeText + postamble).trimEnd() << "\n\n"
          << kParamsTagOpen << "\n"
          << (xml != nullptr ? xml->toString() : juce::String()) << "\n"
          << kParamsTagClose << "\n";
@@ -1275,6 +1263,151 @@ bool CsoundAudioProcessor::isLinkedFileMissing() const
     return linkedFileMissing;
 }
 
+bool CsoundAudioProcessor::wasRestoredDirty() const
+{
+    const juce::ScopedLock sl (sessionLock);
+    return restoredDirty;
+}
+
+juce::String CsoundAudioProcessor::getRestoredSessionHash() const
+{
+    const juce::ScopedLock sl (sessionLock);
+    return restoredSessionHash;
+}
+
+void CsoundAudioProcessor::notifySessionEditedByUndoRedo (bool structureReplaced)
+{
+    jassert (juce::MessageManager::existsAndIsCurrentThread());
+    listeners.call ([structureReplaced] (Listener& l) { l.sessionEditedByUndoRedo (structureReplaced); });
+}
+
+bool CsoundAudioProcessor::isSessionDirty()
+{
+    if (! isSessionLinked() || isLinkedFileMissing())
+        return true;
+
+    return computeTextHash (buildSessionTextFor (getEditorDraft())) != getSessionBaselineHash();
+}
+
+void CsoundAudioProcessor::unlinkSession()
+{
+    const juce::ScopedLock sl (sessionLock);
+    linkedCsdFile = juce::File();
+    linkedFileModTimeAtLoad = juce::Time();
+    linkedFileMissing = false;
+    restoredDirty = false;
+}
+
+CsoundAudioProcessor::SessionSnapshot CsoundAudioProcessor::captureSessionSnapshot()
+{
+    SessionSnapshot snap;
+    snap.structure = buildParamsStructureTree();
+
+    auto captureValues = [this, &snap] (int count, juce::String (*idFn) (int))
+    {
+        for (int i = 0; i < count; ++i)
+            if (auto* param = apvts.getParameter (idFn (i)))
+                snap.values.push_back (param->getValue());
+            else
+                snap.values.push_back (-1.0f);
+    };
+    captureValues (numChannelParams, &CsoundAudioProcessor::getChannelParamID);
+    captureValues (numIntParams,     &CsoundAudioProcessor::getIntParamID);
+    captureValues (numBoolParams,    &CsoundAudioProcessor::getBoolParamID);
+    captureValues (numChoiceParams,  &CsoundAudioProcessor::getChoiceParamID);
+
+    {
+        const juce::ScopedLock sl (csdTextLock);
+        snap.preamble  = csdPreamble;
+        snap.postamble = csdPostamble;
+    }
+
+    const juce::ScopedLock sl (sessionLock);
+    snap.linkedFile    = linkedCsdFile;
+    snap.linkedModTime = linkedFileModTimeAtLoad;
+    snap.baselineHash  = sessionBaselineHash;
+    snap.fileMissing   = linkedFileMissing;
+    snap.restoredDirty = restoredDirty;
+    return snap;
+}
+
+void CsoundAudioProcessor::restoreSessionSnapshot (const SessionSnapshot& snap)
+{
+    // Solo struttura + preambolo/coda + collegamento: il codice in
+    // esecuzione e la bozza NON si toccano qui (la bozza segue da sola il
+    // document dell'editor, che il chiamante riporta indietro/avanti).
+    applyParamsStructureTree (snap.structure);
+
+    // Valori, nello stesso ordine di captureSessionSnapshot.
+    {
+        size_t k = 0;
+        auto restoreValues = [this, &snap, &k] (int count, juce::String (*idFn) (int))
+        {
+            for (int i = 0; i < count; ++i, ++k)
+                if (k < snap.values.size() && snap.values[k] >= 0.0f)
+                    if (auto* param = apvts.getParameter (idFn (i)))
+                        param->setValueNotifyingHost (snap.values[k]);
+        };
+        restoreValues (numChannelParams, &CsoundAudioProcessor::getChannelParamID);
+        restoreValues (numIntParams,     &CsoundAudioProcessor::getIntParamID);
+        restoreValues (numBoolParams,    &CsoundAudioProcessor::getBoolParamID);
+        restoreValues (numChoiceParams,  &CsoundAudioProcessor::getChoiceParamID);
+    }
+
+    {
+        const juce::ScopedLock sl (csdTextLock);
+        csdPreamble  = snap.preamble;
+        csdPostamble = snap.postamble;
+    }
+
+    const juce::ScopedLock sl (sessionLock);
+    linkedCsdFile           = snap.linkedFile;
+    linkedFileModTimeAtLoad = snap.linkedModTime;
+    sessionBaselineHash     = snap.baselineHash;
+    linkedFileMissing       = snap.fileMissing;
+    restoredDirty           = snap.restoredDirty;
+}
+
+void CsoundAudioProcessor::resetParameterValuesToDefaults()
+{
+    // Stessa conversione a normalizzato 0..1 usata ovunque per
+    // setValueNotifyingHost (vedi normalizeChannelParam/normalizeIntParam).
+    auto push = [] (juce::RangedAudioParameter* param, float normalized)
+    {
+        if (param != nullptr)
+            param->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, normalized));
+    };
+
+    for (int i = 0; i < numChannelParams; ++i)
+    {
+        const auto slot = getChannelParamSlot (i);
+        if (slot.channelName.isNotEmpty())
+            push (apvts.getParameter (getChannelParamID (i)), normalizeChannelParam (slot, (double) slot.defaultValue));
+    }
+
+    for (int i = 0; i < numIntParams; ++i)
+    {
+        const auto slot = getIntParamSlot (i);
+        if (slot.channelName.isNotEmpty())
+            push (apvts.getParameter (getIntParamID (i)), normalizeIntParam (slot, (double) slot.defaultValue));
+    }
+
+    for (int i = 0; i < numBoolParams; ++i)
+    {
+        const auto slot = getBoolParamSlot (i);
+        if (slot.channelName.isNotEmpty())
+            push (apvts.getParameter (getBoolParamID (i)), slot.defaultValue ? 1.0f : 0.0f);
+    }
+
+    for (int i = 0; i < numChoiceParams; ++i)
+    {
+        const auto slot = getChoiceParamSlot (i);
+        if (slot.channelName.isNotEmpty())
+            push (apvts.getParameter (getChoiceParamID (i)),
+                  maxChoiceOptions > 1 ? (float) slot.defaultIndex / (float) (maxChoiceOptions - 1) : 0.0f);
+    }
+}
+
 bool CsoundAudioProcessor::hasLinkedFileChangedOnDisk() const
 {
     juce::File file;
@@ -1285,8 +1418,13 @@ bool CsoundAudioProcessor::hasLinkedFileChangedOnDisk() const
         modTimeAtLoad = linkedFileModTimeAtLoad;
     }
 
-    if (file == juce::File{} || ! file.existsAsFile() || modTimeAtLoad == juce::Time())
+    if (file == juce::File{} || ! file.existsAsFile())
         return false;
+
+    // Data sconosciuta (es. il file mancava al ripristino ed e' ricomparso):
+    // non sappiamo cosa contenga rispetto alla sessione - meglio chiedere.
+    if (modTimeAtLoad == juce::Time())
+        return true;
 
     return file.getLastModificationTime() != modTimeAtLoad;
 }
@@ -1308,7 +1446,6 @@ void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         const bool relative = linked.isAChildOf (base);
         root.setAttribute ("csd", relative ? linked.getRelativePathFrom (base) : linked.getFullPathName());
         root.setAttribute ("csdIsRelative", relative ? 1 : 0);
-        root.setAttribute ("gitCommit", readGitHeadCommit (linked.getParentDirectory()));
     }
     else
     {
@@ -1316,10 +1453,32 @@ void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         root.setAttribute ("csdIsRelative", 0);
     }
 
-    root.setAttribute ("hash", computeTextHash (sessionText));
+    // Stato "•" al momento del salvataggio del progetto (vedi
+    // setStateInformation): se la sessione aveva modifiche non scritte su
+    // file, al ripristino si usera' la copia incorporata invece del disco.
+    // baseline/fileModTime servono a far ripartire l'indicatore "•" e il
+    // controllo "modificato da fuori" esattamente da dove erano. Con il
+    // file mancante la baseline non ha senso (nessun file la rappresenta):
+    // vuota, cosi' alla riapertura la sessione risulta comunque "•".
+    {
+        const bool dirty = isSessionDirty();
+        const juce::ScopedLock sl (sessionLock);
+        root.setAttribute ("dirty", dirty ? 1 : 0);
+        root.setAttribute ("baseline", linkedFileMissing ? juce::String() : sessionBaselineHash);
+        root.setAttribute ("fileModTime", juce::String (linkedFileModTimeAtLoad.toMilliseconds()));
+    }
 
     auto* embedded = root.createNewChildElement (kStateEmbedded);
     embedded->addTextElement (sessionText);
+
+    // Bozza dell'editor, SOLO se diversa dal codice in esecuzione (il caso
+    // normale dopo un Apply non la scrive): al ripristino l'editor mostra
+    // di nuovo il testo non applicato, con il bordo rosso su Apply.
+    {
+        const auto draft = getEditorDraft();
+        if (draft != getCsdText())
+            root.createNewChildElement (kStateDraft)->addTextElement (draft);
+    }
 
     // VALORI correnti per nome canale, in unita' reali (non normalizzati):
     // cosi' un riordino degli slot nel .csd, o un cambio di range, non
@@ -1372,93 +1531,71 @@ void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     copyXmlToBinary (root, destData);
 }
 
-void CsoundAudioProcessor::applyChannelValues (const juce::XmlElement& pluginStateXml)
+void CsoundAudioProcessor::applyRestoredValues (const juce::XmlElement& pluginStateXml)
 {
-    // Cerca lo slot assegnato con quel nome canale nel pool del tipo
-    // indicato e imposta il valore (normalizzato 0..1 per setValueNotifyingHost,
-    // vedi il commento su normalizeChannelParam/normalizeIntParam).
+    // Valori salvati, per tipo + nome canale (vedi getStateInformation).
+    std::map<juce::String, double> saved;
     for (auto* p : pluginStateXml.getChildWithTagNameIterator (kStateParam))
+        saved[p->getStringAttribute ("type") + ":" + p->getStringAttribute ("channel")] = p->getDoubleAttribute ("value");
+
+    auto find = [&saved] (const char* type, const juce::String& channel, double& out)
     {
-        const auto channel = p->getStringAttribute ("channel");
-        const auto type    = p->getStringAttribute ("type");
-        const double value = p->getDoubleAttribute ("value");
+        const auto it = saved.find (juce::String (type) + ":" + channel);
+        if (it == saved.end())
+            return false;
+        out = it->second;
+        return true;
+    };
 
-        if (channel.isEmpty())
-            continue;
-
-        juce::RangedAudioParameter* param = nullptr;
-        float normalized = 0.0f;
-
-        if (type == "f")
-        {
-            for (int i = 0; i < numChannelParams && param == nullptr; ++i)
-            {
-                const auto slot = getChannelParamSlot (i);
-                if (slot.channelName == channel)
-                {
-                    param = apvts.getParameter (getChannelParamID (i));
-                    normalized = normalizeChannelParam (slot, value);
-                }
-            }
-        }
-        else if (type == "i")
-        {
-            for (int i = 0; i < numIntParams && param == nullptr; ++i)
-            {
-                const auto slot = getIntParamSlot (i);
-                if (slot.channelName == channel)
-                {
-                    param = apvts.getParameter (getIntParamID (i));
-                    normalized = normalizeIntParam (slot, value);
-                }
-            }
-        }
-        else if (type == "b")
-        {
-            for (int i = 0; i < numBoolParams && param == nullptr; ++i)
-            {
-                if (getBoolParamSlot (i).channelName == channel)
-                {
-                    param = apvts.getParameter (getBoolParamID (i));
-                    normalized = value >= 0.5 ? 1.0f : 0.0f;
-                }
-            }
-        }
-        else if (type == "c")
-        {
-            for (int i = 0; i < numChoiceParams && param == nullptr; ++i)
-            {
-                if (getChoiceParamSlot (i).channelName == channel)
-                {
-                    param = apvts.getParameter (getChoiceParamID (i));
-                    normalized = maxChoiceOptions > 1
-                        ? juce::jlimit (0.0f, 1.0f, (float) value / (float) (maxChoiceOptions - 1))
-                        : 0.0f;
-                }
-            }
-        }
-
+    auto push = [] (juce::RangedAudioParameter* param, float normalized)
+    {
         if (param != nullptr)
             param->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, normalized));
-    }
-}
+    };
 
-void CsoundAudioProcessor::restoreLegacyState (const juce::ValueTree& state)
-{
-    // Vecchio formato: codice + struttura + apvts tutto nel blob. Sessione
-    // NON collegata (nessun path nel vecchio stato), nessun avviso.
-    const auto restoredCsd = state.getProperty ("csd", getCsdText()).toString();
-    restoreStateFromTree (state, restoredCsd);
-
+    // UNA sola notifica per parametro: valore salvato se c'e', altrimenti il
+    // default dello slot (un parametro aggiunto al file dopo il salvataggio
+    // del progetto riparte dal suo default).
+    for (int i = 0; i < numChannelParams; ++i)
     {
-        const juce::ScopedLock sl (sessionLock);
-        linkedCsdFile = juce::File();
-        linkedFileModTimeAtLoad = juce::Time();
-        linkedFileMissing = false;
+        const auto slot = getChannelParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+        double v = slot.defaultValue;
+        find ("f", slot.channelName, v);
+        push (apvts.getParameter (getChannelParamID (i)), normalizeChannelParam (slot, v));
     }
 
-    updateSessionBaselineHash();
-    scheduleRecompileAfterRestore (restoredCsd);
+    for (int i = 0; i < numIntParams; ++i)
+    {
+        const auto slot = getIntParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+        double v = slot.defaultValue;
+        find ("i", slot.channelName, v);
+        push (apvts.getParameter (getIntParamID (i)), normalizeIntParam (slot, v));
+    }
+
+    for (int i = 0; i < numBoolParams; ++i)
+    {
+        const auto slot = getBoolParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+        double v = slot.defaultValue ? 1.0 : 0.0;
+        find ("b", slot.channelName, v);
+        push (apvts.getParameter (getBoolParamID (i)), v >= 0.5 ? 1.0f : 0.0f);
+    }
+
+    for (int i = 0; i < numChoiceParams; ++i)
+    {
+        const auto slot = getChoiceParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+        double v = slot.defaultIndex;
+        find ("c", slot.channelName, v);
+        push (apvts.getParameter (getChoiceParamID (i)),
+              maxChoiceOptions > 1 ? (float) v / (float) (maxChoiceOptions - 1) : 0.0f);
+    }
 }
 
 void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
@@ -1467,18 +1604,6 @@ void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInByte
 
     if (xml == nullptr)
         return;
-
-    if (xml->hasTagName (kLegacyStateRoot))
-    {
-        if (auto state = juce::ValueTree::fromXml (*xml); state.isValid())
-            restoreLegacyState (state);
-
-        juce::MessageManager::callAsync ([this]
-        {
-            listeners.call ([] (Listener& l) { l.sessionStateRestored(); });
-        });
-        return;
-    }
 
     if (! xml->hasTagName (kStateRoot))
         return;
@@ -1491,50 +1616,109 @@ void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInByte
     if (csdPath.isNotEmpty())
         linked = isRelative ? getBaseFolder().getChildFile (csdPath) : juce::File (csdPath);
 
-    // --- 2. Il file e' la verita': se c'e' si carica quello, SEMPRE.
-    //        La copia incorporata serve solo se il file manca. -----------
-    juce::String textToLoad;
-    juce::Time modTimeAtLoad;
-    bool missing = false;
+    // --- 2. Quale versione usare (MAI un dialogo qui) -------------------
+    //   file presente e sessione pulita al salvataggio -> il file (la verita')
+    //   file presente ma sessione "•" al salvataggio   -> copia incorporata
+    //        + bozza: le modifiche non salvate su file non si perdono (BUG
+    //        corretto: prima vinceva sempre il disco), "•" resta acceso
+    //   file mancante                                  -> copia incorporata + barra
+    //   nessun file collegato                          -> copia incorporata
+    const bool dirtyAtSave = xml->getIntAttribute ("dirty", 0) != 0;
 
+    // "Utilizzabile" = esiste E ha un contenuto (BUG corretto: un file vuoto
+    // - sync interrotta, conflitto, troncamento - veniva "caricato" come
+    // nulla, la sessione risultava collegata e salvata, e la copia
+    // incorporata andava persa al salvataggio successivo del progetto). Un
+    // file vuoto o illeggibile e' trattato come mancante: copia incorporata
+    // + barra di avviso.
+    juce::String diskText;
     if (linked != juce::File{} && linked.existsAsFile())
+        diskText = readSessionFile (linked);
+
+    const bool fileExists = diskText.trim().isNotEmpty();
+    const bool useDisk    = fileExists && ! dirtyAtSave;
+
+    juce::String textToLoad;
+
+    if (useDisk)
+        textToLoad = diskText;
+    else if (auto* embedded = xml->getChildByName (kStateEmbedded))
+        textToLoad = embedded->getAllSubText();
+
+    // --- 3. Carica struttura + codice (SENZA reset ai default), poi i
+    //        valori in un solo passaggio (vedi applyRestoredValues). -------
+    if (textToLoad.isNotEmpty())
+        loadSessionStructureAndCode (textToLoad);
+
+    applyRestoredValues (*xml);
+
+    // Bozza non applicata (solo con la copia incorporata: se si usa il
+    // disco, il codice e' quello del file).
+    if (! useDisk)
+        if (auto* draft = xml->getChildByName (kStateDraft))
+            setEditorDraft (draft->getAllSubText());
+
+    if (useDisk)
     {
-        textToLoad = readSessionFile (linked);
-        modTimeAtLoad = linked.getLastModificationTime();
+        {
+            const juce::ScopedLock sl (sessionLock);
+            linkedCsdFile = linked;
+            linkedFileModTimeAtLoad = linked.getLastModificationTime();
+            linkedFileMissing = false;
+            restoredDirty = false;
+        }
+
+        updateSessionBaselineHash();
+
+        // Punto 4: il file e' cambiato da quando il progetto e' stato salvato
+        // (git pull, altro editor)? E' caricato comunque (il file e' la
+        // verita'), ma lo si segnala con UNA riga in consolle - niente barre
+        // ne' dialoghi.
+        const auto savedBaseline = xml->getStringAttribute ("baseline");
+        if (savedBaseline.isNotEmpty() && savedBaseline != getSessionBaselineHash())
+            handleMessage ("--- " + linked.getFileName()
+                           + " changed on disk since this project was saved: the disk version was loaded ---");
     }
     else
     {
-        if (auto* embedded = xml->getChildByName (kStateEmbedded))
-            textToLoad = embedded->getAllSubText();
-
-        missing = linked != juce::File{};
-    }
-
-    // --- 3. Carica (struttura + codice), poi i valori per nome canale ---
-    if (textToLoad.isNotEmpty())
-        loadSessionFromText (textToLoad);
-
-    applyChannelValues (*xml);
-
-    {
         const juce::ScopedLock sl (sessionLock);
         linkedCsdFile = linked;
-        linkedFileModTimeAtLoad = modTimeAtLoad;
-        linkedFileMissing = missing;
-    }
+        linkedFileMissing = linked != juce::File{} && ! fileExists;
+        // Solo "aveva modifiche non salvate su file": un file semplicemente
+        // spostato con la sessione pulita NON deve far chiedere conferma a
+        // Relocate... (prima chiedeva sempre, anche con contenuto identico).
+        restoredDirty = dirtyAtSave;
 
-    updateSessionBaselineHash();
+        // Riparte da dove era: baseline del file e sua data di modifica al
+        // momento del salvataggio del progetto (vedi getStateInformation).
+        sessionBaselineHash = xml->getStringAttribute ("baseline");
+        linkedFileModTimeAtLoad = juce::Time (xml->getStringAttribute ("fileModTime").getLargeIntValue());
+    }
 
     // loadSessionFromText non ricompila da solo (e' usato anche da Load
     // CSD, dove e' l'editor a chiamare Apply): qui invece, come nel vecchio
     // setStateInformation, va schedulata la ricompilazione del testo
     // appena ripristinato.
+    // Sessione sostituita dall'host: alla prossima apertura l'editor
+    // ricarica il documento e azzera la cronologia (se e' gia' aperto lo fa
+    // sessionStateRestored). E si fotografa lo stato "appena ripristinato"
+    // per Relocate... (vedi getRestoredSessionHash).
+    documentResyncRequested = true;
+    {
+        const auto hash = computeTextHash (buildSessionTextFor (getEditorDraft()));
+        const juce::ScopedLock sl (sessionLock);
+        restoredSessionHash = hash;
+    }
+
     scheduleRecompileAfterRestore (getCsdText());
 
     // L'editor (se aperto) rilegge tutto e mostra l'eventuale avviso.
     // callAsync: setStateInformation puo' arrivare da un thread dell'host.
-    juce::MessageManager::callAsync ([this]
+    juce::MessageManager::callAsync ([this, alive = aliveFlag]
     {
+        if (! alive->load())
+            return;
+
         listeners.call ([] (Listener& l) { l.sessionStateRestored(); });
     });
 }
@@ -1835,6 +2019,7 @@ bool CsoundAudioProcessor::saveSessionToFile (const juce::File& file, const juce
     linkedFileModTimeAtLoad = file.getLastModificationTime(); // appena scritto da noi
     sessionBaselineHash = hash; // appena scritto: sessione e file coincidono
     linkedFileMissing = false;
+    restoredDirty = false;
     return true;
 }
 
@@ -1865,6 +2050,7 @@ bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
         linkedCsdFile = file;
         linkedFileModTimeAtLoad = file.getLastModificationTime();
         linkedFileMissing = false;
+        restoredDirty = false;
     }
 
     updateSessionBaselineHash();
@@ -1872,6 +2058,16 @@ bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
 }
 
 bool CsoundAudioProcessor::loadSessionFromText (const juce::String& fullText)
+{
+    if (! loadSessionStructureAndCode (fullText))
+        return false;
+
+    // Struttura nuova -> valori ai default (vedi resetParameterValuesToDefaults).
+    resetParameterValuesToDefaults();
+    return true;
+}
+
+bool CsoundAudioProcessor::loadSessionStructureAndCode (const juce::String& fullText)
 {
     if (fullText.isEmpty())
         return false;
@@ -1943,13 +2139,7 @@ void CsoundAudioProcessor::initializeSession()
 
     // Sessione nuova = NON collegata a nessun file: il prossimo "Save" si
     // comporta come "Save As" (vedi performSaveLinked nell'editor).
-    {
-        const juce::ScopedLock sl (sessionLock);
-        linkedCsdFile = juce::File();
-        linkedFileModTimeAtLoad = juce::Time();
-        linkedFileMissing = false;
-    }
-
+    unlinkSession();
     updateSessionBaselineHash();
 }
 
@@ -2293,7 +2483,11 @@ bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
 void CsoundAudioProcessor::restoreStateFromTree (const juce::ValueTree& state, const juce::String& csdTextToRestore)
 {
     setCsdCodeFromFullText (csdTextToRestore);
+    applyParamsStructureTree (state);
+}
 
+void CsoundAudioProcessor::applyParamsStructureTree (const juce::ValueTree& state)
+{
         if (auto apvtsState = state.getChildWithName ("PARAMETERS"); apvtsState.isValid())
             apvts.replaceState (apvtsState);
 
@@ -2422,8 +2616,11 @@ void CsoundAudioProcessor::scheduleRecompileAfterRestore (const juce::String& re
     // caso).
     if (isEngineRunning())
     {
-        juce::MessageManager::callAsync ([this, restoredCsd]
+        juce::MessageManager::callAsync ([this, restoredCsd, alive = aliveFlag]
         {
+            if (! alive->load())
+                return;
+
             pendingStateRestore = false;
             compileAndStart (restoredCsd);
         });
@@ -2452,8 +2649,11 @@ void CsoundAudioProcessor::handleMessage (const juce::String& msg)
     // messaggi frequenti puo' costare non poco) e' quindi spostato dentro
     // il lambda, che gira sul thread dei messaggi grazie a callAsync - non
     // sul thread audio.
-    juce::MessageManager::callAsync ([this, msg]
+    juce::MessageManager::callAsync ([this, msg, alive = aliveFlag]
     {
+        if (! alive->load())
+            return;
+
         {
             const juce::ScopedLock sl (messageHistoryLock);
             messageHistory.add (msg);

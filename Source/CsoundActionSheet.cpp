@@ -313,6 +313,25 @@ namespace
         return filled;
     }
 
+    // Informazioni (About): cerchio con una "i" (punto + asta) - il glifo
+    // universale per "informazioni sull'app".
+    juce::Path makeInfoPath()
+    {
+        juce::Path circle;
+        circle.addEllipse (3.0f, 3.0f, 18.0f, 18.0f);
+        auto filled = strokeOpenPath (circle, 1.7f);
+
+        juce::Path stem;
+        stem.startNewSubPath (12.0f, 10.8f);
+        stem.lineTo (12.0f, 16.6f);
+        filled.addPath (strokeOpenPath (stem, 2.0f));
+
+        juce::Path dot;
+        dot.addEllipse (10.75f, 6.6f, 2.5f, 2.5f);
+        filled.addPath (dot);
+        return filled;
+    }
+
     juce::Path makeSheetIconPath (CsoundActionSheetIcon icon)
     {
         switch (icon)
@@ -332,6 +351,7 @@ namespace
             case CsoundActionSheetIcon::trash:         return makeTrashPath();
             case CsoundActionSheetIcon::resetDefault:  return makeResetDefaultPath();
             case CsoundActionSheetIcon::newDocument:   return makeNewDocumentPath();
+            case CsoundActionSheetIcon::info:          return makeInfoPath();
             case CsoundActionSheetIcon::none:
             default:                                   return {};
         }

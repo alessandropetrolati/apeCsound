@@ -22,7 +22,8 @@ enum class CsoundActionSheetIcon
     sliderFloat, sliderInt, toggleSwitch, comboMenu,
     eyeOpen, eyeClosed,
     trash, resetDefault,
-    newDocument
+    newDocument,
+    info
 };
 
 /**

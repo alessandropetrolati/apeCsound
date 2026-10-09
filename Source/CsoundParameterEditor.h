@@ -149,7 +149,8 @@ public:
     makeFloatConfigComment() ecc. nel .cpp) - vedi il commento in testa a
     CsoundCodeEditor.h per il formato esatto.
 */
-class CsoundParameterMappingPanel final : public juce::Component
+class CsoundParameterMappingPanel final : public juce::Component,
+                                          private CsoundAudioProcessor::Listener
 {
 public:
     explicit CsoundParameterMappingPanel (CsoundAudioProcessor& processorToEdit,
@@ -158,6 +159,13 @@ public:
 
     void resized() override;
     void paint (juce::Graphics& g) override;
+
+    // CsoundAudioProcessor::Listener: un'azione della cronologia (che vive
+    // nel processor e NON cattura piu' questo pannello - sopravvive alla
+    // chiusura dell'editor) ha cambiato la struttura dei parametri:
+    // ricostruisce la lista. structureReplaced (Load/Initialize/Relocate)
+    // scarta anche un'eventuale riga "in sospeso".
+    void sessionEditedByUndoRedo (bool structureReplaced) override;
 
     // Ricostruisce l'intera lista unificata dallo stato attuale del
     // processor - chiamata da PluginEditor dopo un Load Session da file
@@ -230,6 +238,10 @@ public:
     // CsoundAudioProcessorEditor::performSaveLinked() (che ricade su Save
     // As se la sessione non e' collegata a nessun file).
     std::function<void()> onSaveLinkedRequested;
+
+    // "About apeCsound" del menu hamburger: impostata da PluginEditor, che
+    // mostra la vista informazioni (vedi AboutView in PluginEditor.h).
+    std::function<void()> onAboutRequested;
 
     // Chiamata alla fine di OGNI rebuildUnifiedRows() (aggiunta/rimozione
     // di un parametro, commit di un metadata, undo/redo, refresh dopo Load/

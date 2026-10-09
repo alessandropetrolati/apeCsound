@@ -194,6 +194,15 @@ public:
         // di un progetto con molti plugin - per questo e' un avviso in
         // editor, non una finestra.
         virtual void sessionStateRestored() {}
+
+        // Chiamato (sul message thread) da un'azione di undo/redo della
+        // cronologia di sessione (vedi getSessionUndoManager): le azioni
+        // vivono nel PROCESSOR e sopravvivono alla chiusura dell'editor,
+        // quindi non possono riferirsi a componenti UI - notificano qui, e
+        // pannello/editor (se aperti) si aggiornano. structureReplaced = true
+        // per una sostituzione di sessione intera (Load/Initialize/Relocate):
+        // il pannello scarta anche una riga "in sospeso".
+        virtual void sessionEditedByUndoRedo (bool /*structureReplaced*/) {}
     };
 
     // --- 16 "macro" parametri host (VST3/AU/Standalone) mappabili a canali
@@ -473,7 +482,7 @@ public:
     // struttura + apvts tutto dentro): lo stato contiene
     //
     //   <PluginState csd="FFTFreeze/FFTFreeze.csd" csdIsRelative="1"
-    //                hash="sha256..." gitCommit="abc1234">
+    //                dirty="0" baseline="sha256..." fileModTime="...">
     //     <EmbeddedCsd> ...copia completa della SESSIONE .csd... </EmbeddedCsd>
     //     <P channel="Frame1" type="f" value="2"/>
     //     ...
@@ -483,16 +492,12 @@ public:
     //     (getBaseFolder(), ~/Documents/apeCsound) se il file sta li'
     //     dentro, altrimenti assoluto (csdIsRelative="0") come fallback;
     //     vuoto se la sessione non e' collegata a nessun file.
-    //   - hash: SHA-256 del testo incorporato (= cio' che saveSessionToFile
-    //     scriverebbe in quel momento). Solo informativo/diagnostico: al
-    //     ripristino NON si confronta nulla (vedi sotto).
-    //   - gitCommit: solo informativo (lettura best-effort di .git/HEAD
-    //     risalendo dalla cartella del file, senza lanciare processi).
     //   - EmbeddedCsd: copia di SCORTA di cio' che il progetto suonava
     //     quando e' stato salvato - usata SOLO se il file non c'e' piu'.
     //   - P: i VALORI correnti dei parametri assegnati, per NOME CANALE (non
     //     per indice di slot) in unita' reali, cosi' sopravvivono a un
-    //     riordino degli slot nel file.
+    //     riordino degli slot nel file. Un parametro presente nel file ma
+    //     non nel progetto riparte dal suo default.
     //
     // La STRUTTURA dei parametri (min/max/default/skew/step/opzioni) NON e'
     // piu' nello stato: vive SOLO dentro il tag <CsoundParams> del .csd
@@ -500,12 +505,18 @@ public:
     // buildSessionText().
     //
     // Modello (semplificato, richiesta esplicita: "e' troppo articolato"):
-    // IL FILE E' LA VERITA'. Ripristino (setStateInformation), SENZA MAI un
-    // dialogo modale:
-    //   file esiste                    -> si carica il file da disco, sempre
+    // IL FILE E' LA VERITA', salvo modifiche non ancora salvate su file.
+    // Ripristino (setStateInformation), SENZA MAI un dialogo modale:
+    //   file esiste, sessione pulita al salvataggio -> il file da disco
+    //   file esiste, sessione "•" al salvataggio    -> copia incorporata +
+    //        bozza dell'editor (<EditorDraft>), "•" resta acceso - le
+    //        modifiche non salvate su file non si perdono
     //   file mancante                  -> copia incorporata + avviso in editor
-    //                                     ("file non trovato", Save As)
+    //                                     ("file non trovato", Relocate/Save As)
     //   nessun path (istanza nuova)    -> template di default
+    // Attributi aggiuntivi: dirty (stato "•"), baseline (hash della sessione
+    // all'ultimo Save/Load) e fileModTime (data del file a quel momento), per
+    // far ripartire "•" e il controllo "modificato da fuori" da dove erano.
     // L'esito e' esposto con isLinkedFileMissing() e notificato con
     // Listener::sessionStateRestored(). Un vecchio stato APE_CSOUND_STATE
     // (versioni precedenti) viene ancora letto, come sessione non collegata.
@@ -513,6 +524,8 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     // --- Sessione collegata a un file .csd -----------------------------
+    // NON crea la cartella (punto 10: prima la creava a ogni salvataggio del
+    // progetto): la crea solo il file chooser dell'editor, quando serve.
     // Cartella base FISSA per i path relativi: ~/Documents/apeCsound su
     // macOS (userDocumentsDirectory), la Documents dell'app su iOS (stessa
     // chiamata JUCE, dentro la sandbox - un App Group richiederebbe un
@@ -625,7 +638,113 @@ public:
     // gia' dopo loadSessionFromFile.
     void initializeSession();
 
+    // --- Bozza dell'editor ---------------------------------------------
+    // Il testo che l'utente vede nell'editor di codice, anche NON ancora
+    // applicato con Apply (BUG corretto: prima viveva SOLO nel document
+    // dell'editor, quindi chiudere la finestra del plugin o salvare il
+    // progetto della DAW perdeva ogni modifica non applicata). L'editor la
+    // aggiorna a ogni modifica del document; alla (ri)apertura la rilegge con
+    // getEditorDraft(). Azzerata a ogni caricamento di codice (Load,
+    // ripristino, Initialize - vedi setCsdCodeFromFullText): da li'
+    // getEditorDraft() torna a coincidere con getCsdText().
+    void setEditorDraft (const juce::String& code);
+    juce::String getEditorDraft() const;
+
+    // true se la sessione com'e' ADESSO (bozza dell'editor + struttura dei
+    // parametri) differisce dall'ultimo Save/Load, oppure non e' collegata a
+    // nessun file, oppure il file collegato non si trova. Unica fonte per
+    // il "•" nella toolbar, per il dialogo di Load CSD e per l'attributo
+    // "dirty" nello stato del progetto (vedi getStateInformation).
+    bool isSessionDirty();
+
+    // Scollega la sessione da qualunque file (diventa "Untitled"): usata da
+    // Initialize Session e dall'import di un .csd incollato nell'editor.
+    void unlinkSession();
+
+    // Riporta il VALORE di ogni parametro assegnato al suo default/init
+    // (slot.defaultValue/defaultIndex) via setValueNotifyingHost - chiamata
+    // a ogni caricamento di una struttura (Load CSD, incolla, ripristino;
+    // in quest'ultimo i valori salvati nel progetto vengono riapplicati
+    // subito dopo) e dalla voce "Reset to INIT Values" del pannello. BUG
+    // corretto: prima un Load lasciava i valori normalizzati del CSD
+    // precedente sugli slot, rimappati sui range nuovi.
+    void resetParameterValuesToDefaults();
+
+    // true se al ripristino dal progetto la sessione era "•" (modifiche non
+    // salvate su file): la Relocate... la usa per chiedere conferma prima di
+    // sostituire un contenuto che non esiste su nessun file. Azzerata da
+    // Save/Load/Initialize/unlink.
+    bool wasRestoredDirty() const;
+
+    // Istantanea di tutto cio' che un caricamento di sessione (Load CSD,
+    // Initialize, incolla, Relocate) cambia OLTRE al testo dell'editor - per
+    // renderlo annullabile come UN solo passo coerente (BUG corretto:
+    // l'undo ripristinava solo il testo, lasciando collegamento al file e
+    // struttura dei parametri quelli nuovi). Esclusi di proposito: il
+    // codice in esecuzione (l'undo non ricompila: Apply resta all'utente,
+    // bordo rosso) e i VALORI dei parametri (gestiti dalla DAW, mai nella
+    // cronologia del plugin).
+    struct SessionSnapshot
+    {
+        juce::ValueTree structure;
+        juce::String preamble, postamble;
+        juce::File linkedFile;
+        juce::Time linkedModTime;
+        juce::String baselineHash;
+        bool fileMissing = false;
+        bool restoredDirty = false;
+
+        // Valori normalizzati 0..1 di TUTTI i parametri dei 4 pool, nello
+        // stesso ordine (Float, Int, Bool, Choice): servono SOLO all'undo/redo
+        // di una sostituzione di sessione (BUG corretto: annullare un Load
+        // lasciava sui parametri i default del file appena annullato). Le
+        // modifiche ai valori dal pannello/DAW restano fuori dalla cronologia.
+        std::vector<float> values;
+    };
+
+    SessionSnapshot captureSessionSnapshot();
+    void restoreSessionSnapshot (const SessionSnapshot& snapshot);
+
+    // --- Cronologia di undo e documento del codice ----------------------
+    // Vivono nel PROCESSOR, non nell'editor (BUG corretto, richiesta
+    // esplicita: "quando chiudo l'editor del plugin e lo riapro, l'undo
+    // history si perde" - prima erano membri dell'editor, distrutti alla
+    // chiusura della finestra). L'editor li usa per riferimento. Da usare
+    // SOLO sul message thread (juce::CodeDocument non e' thread-safe): per le
+    // letture da altri thread c'e' la bozza (getEditorDraft).
+    juce::CodeDocument& getCodeDocument()     { return codeDocument; }
+    juce::UndoManager&  getSessionUndoManager() { return sessionUndoManager; }
+
+    // Guardia di rientranza del ponte document -> cronologia condivisa (vedi
+    // CsoundAudioProcessorEditor::bridgeCodeEditIntoSharedUndo): vive qui
+    // perche' le azioni in cronologia la referenziano anche a editor chiuso.
+    bool& getCodeUndoGuard() { return codeUndoGuard; }
+
+    // Vedi Listener::sessionEditedByUndoRedo. Solo message thread.
+    void notifySessionEditedByUndoRedo (bool structureReplaced);
+
+    // true (una volta sola) se dall'ultima apertura dell'editor la sessione
+    // e' stata sostituita dall'host (setStateInformation) o se e' la prima
+    // apertura: l'editor deve ricaricare il documento dalla bozza e azzerare
+    // la cronologia. Altrimenti documento e cronologia restano quelli di
+    // prima della chiusura.
+    bool consumeDocumentResyncRequest() { return documentResyncRequested.exchange (false); }
+
+    // Hash della sessione (bozza + struttura) subito dopo l'ultimo
+    // ripristino dal progetto: Relocate... lo confronta con lo stato attuale
+    // per sapere se ci sono modifiche fatte DOPO il ripristino. Nel
+    // processor (non nell'editor) cosi' sopravvive alla chiusura della finestra.
+    juce::String getRestoredSessionHash() const;
+
 private:
+    // Corpo di loadSessionFromText SENZA il reset dei valori ai default
+    // (vedi resetParameterValuesToDefaults): carica struttura + codice.
+    bool loadSessionStructureAndCode (const juce::String& fullText);
+
+    // Applica SOLO la struttura dei parametri (slot) da un ValueTree prodotto
+    // da buildParamsStructureTree - usata da restoreStateFromTree e da
+    // restoreSessionSnapshot.
+    void applyParamsStructureTree (const juce::ValueTree& state);
     /** Costruisce il juce::ValueTree con la SOLA STRUTTURA dei parametri
         (metadata dei 64 slot: nome canale/range/skew/increment/default/
         opzioni) - e' cio' che finisce nel tag <CsoundParams> del .csd (vedi
@@ -649,19 +768,12 @@ private:
     // testo appena ripristinato - vedi il commento esteso nel .cpp.
     void scheduleRecompileAfterRestore (const juce::String& restoredCsd);
 
-    // Lettura best-effort del commit HEAD di git risalendo da startDir fino
-    // a trovare una cartella .git (HEAD -> ref -> refs/heads/x, o
-    // packed-refs) - SENZA lanciare processi. Stringa vuota se non e' un
-    // repository o qualcosa non si legge. Solo informativo.
-    static juce::String readGitHeadCommit (const juce::File& startDir);
-
-    // Applica i valori per nome canale letti da <P channel type value/>:
-    // va chiamata DOPO che la struttura (slot) e' stata ripristinata.
-    void applyChannelValues (const juce::XmlElement& pluginStateXml);
-
-    // Ripristino di uno stato nel VECCHIO formato (APE_CSOUND_STATE con
-    // codice + struttura + apvts): sessione non collegata, nessun avviso.
-    void restoreLegacyState (const juce::ValueTree& state);
+    // Imposta in UN solo passaggio il valore di ogni parametro assegnato:
+    // quello salvato nel progetto (<P channel type value/>, per nome canale)
+    // se c'e', altrimenti il default dello slot. Va chiamata DOPO che la
+    // struttura e' stata ripristinata. Sostituisce "reset ai default + valori
+    // salvati", che notificava l'host due volte per parametro (punto 7).
+    void applyRestoredValues (const juce::XmlElement& pluginStateXml);
 
     // Svuota TUTTI gli slot Float/Int/Bool/Choice (channelName tornato
     // vuoto = non assegnato, come un plugin appena istanziato) - chiamata
@@ -780,6 +892,21 @@ private:
     // buildSessionTextFor() - vedi setCsdCodeFromFullText(). Stesso lock
     // di csdText.
     juce::String csdPreamble, csdPostamble;
+
+    // Documento del codice + cronologia di sessione - vedi getCodeDocument().
+    // Ordine di dichiarazione voluto: la cronologia (che contiene azioni con
+    // riferimenti al documento) viene distrutta PRIMA del documento.
+    juce::CodeDocument codeDocument;
+    juce::UndoManager sessionUndoManager;
+    bool codeUndoGuard = false;
+    std::atomic<bool> documentResyncRequested { true }; // prima apertura: sincronizza
+    juce::String restoredSessionHash;                    // vedi getRestoredSessionHash() - sotto sessionLock
+
+    // Vedi setEditorDraft()/getEditorDraft(). hasEditorDraft distingue "nessuna
+    // bozza" da "bozza vuota" (l'utente ha cancellato tutto). Stesso lock di
+    // csdText.
+    juce::String editorDraft;
+    bool hasEditorDraft = false;
     mutable juce::CriticalSection csdTextLock;
 
     // Sessione collegata a un file - vedi getLinkedCsdFile() e il commento
@@ -790,6 +917,17 @@ private:
     juce::Time linkedFileModTimeAtLoad;       // vedi hasLinkedFileChangedOnDisk()
     juce::String sessionBaselineHash;         // vedi getSessionBaselineHash()
     bool linkedFileMissing = false;           // vedi isLinkedFileMissing()
+    bool restoredDirty = false;               // vedi wasRestoredDirty()
+
+    // Le lambda passate a juce::MessageManager::callAsync catturano `this`:
+    // se l'host distrugge il processor prima che il messaggio venga eseguito,
+    // accederebbero a un oggetto distrutto. Ogni lambda cattura anche una
+    // COPIA di questo flag e non fa nulla se e' diventato false - il
+    // distruttore lo azzera per primo (stesso thread dei messaggi su cui
+    // girano le lambda, quindi nessuna corsa). Un flag condiviso invece di
+    // juce::WeakReference per non dipendere da come la classe base
+    // juce::AudioProcessor dichiara (o no) la propria master reference.
+    std::shared_ptr<std::atomic<bool>> aliveFlag = std::make_shared<std::atomic<bool>> (true);
     mutable juce::CriticalSection sessionLock;
 
     // Ricalcola sessionBaselineHash dallo stato ATTUALE (da chiamare dopo
