@@ -1,6 +1,7 @@
 #include "CsoundCodeEditor.h"
 #include "CsoundActionSheet.h"
 #include "IOSKeyboard.h"
+#include "CsoundEditCallout.h" // [EDIT-CALLOUT]
 #include <cmath>
 #include <limits>
 
@@ -47,6 +48,10 @@ CsoundCodeEditor::CsoundCodeEditor (juce::CodeDocument& doc, juce::CodeTokeniser
             grabKeyboardFocus(); // il click e' andato al popup, non all'editor
         }
     };
+
+    // [EDIT-CALLOUT] bolla di editing touch (vedi CsoundEditCallout.h)
+    addChildComponent (editCallout);
+    editCallout.onItemSelected = [this] (int id) { performContextMenuItem (id); };
 }
 
 CsoundCodeEditor::~CsoundCodeEditor()
@@ -290,30 +295,61 @@ void CsoundCodeEditor::showContextMenu (juce::Point<int>)
     // show() risale da qui all'AudioProcessorEditor (vedi CsoundActionSheet::show).
     CsoundActionSheet::show (*this, "", std::move (items), [safeThis] (int result)
     {
-        if (safeThis == nullptr)
-            return;
-
-        auto& ed = *safeThis;
-
-        switch (result)
-        {
-            case ctxCut:       ed.cutToClipboard(); break;
-            case ctxCopy:      ed.copyToClipboard(); break;
-            case ctxPaste:     ed.pasteFromClipboard(); break;
-            case ctxDelete:    ed.deleteSelection(); break;
-            case ctxSelectAll: ed.selectAll(); break;
-            case ctxUndo:      if (ed.onUndoRequested) ed.onUndoRequested(); else ed.undo(); break;
-            case ctxRedo:      if (ed.onRedoRequested) ed.onRedoRequested(); else ed.redo(); break;
-            case ctxIndent:    ed.indentSelectedLines(); break;
-            case ctxComment:   ed.toggleCommentOnSelectedLines(); break;
-            default: break;
-        }
-
-       #if ! JUCE_IOS
-        ed.grabKeyboardFocus(); // su iOS farebbe comparire la tastiera a schermo dopo ogni voce
-       #endif
+        if (safeThis != nullptr)
+            safeThis->performContextMenuItem (result);
     });
 }
+
+void CsoundCodeEditor::performContextMenuItem (int result)
+{
+    switch (result)
+    {
+        case ctxCut:       cutToClipboard(); break;
+        case ctxCopy:      copyToClipboard(); break;
+        case ctxPaste:     pasteFromClipboard(); break;
+        case ctxDelete:    deleteSelection(); break;
+        case ctxSelectAll: selectAll(); break;
+        case ctxUndo:      if (onUndoRequested) onUndoRequested(); else undo(); break;
+        case ctxRedo:      if (onRedoRequested) onRedoRequested(); else redo(); break;
+        case ctxIndent:    indentSelectedLines(); break;
+        case ctxComment:   toggleCommentOnSelectedLines(); break;
+        default: break;
+    }
+
+   #if ! JUCE_IOS
+    grabKeyboardFocus(); // su iOS farebbe comparire la tastiera a schermo dopo ogni voce
+   #endif
+}
+
+// [EDIT-CALLOUT] ---------------------------------------------------------------
+void CsoundCodeEditor::showTouchEditMenu (juce::Rectangle<int> selectionArea)
+{
+    const bool hasSelection = getHighlightedRegion().getLength() > 0;
+    const bool canPaste = IOSKeyboard::clipboardHasText();
+
+    std::vector<CsoundEditCallout::Item> items;
+    auto add = [&items] (int id, const juce::String& text, CsoundActionSheetIcon icon, bool enabled = true)
+    {
+        items.push_back ({ id, text, enabled, icon });
+    };
+
+    add (ctxCut,       "Cut",        CsoundActionSheetIcon::cut,       hasSelection);
+    add (ctxCopy,      "Copy",       CsoundActionSheetIcon::copy,      hasSelection);
+    add (ctxPaste,     "Paste",      CsoundActionSheetIcon::paste,     canPaste);
+    add (ctxSelectAll, "Select All", CsoundActionSheetIcon::selectAll);
+    add (ctxUndo,      "Undo",       CsoundActionSheetIcon::undo, onUndoRequested != nullptr || getDocument().getUndoManager().canUndo());
+    add (ctxRedo,      "Redo",       CsoundActionSheetIcon::redo, onRedoRequested != nullptr || getDocument().getUndoManager().canRedo());
+    add (ctxIndent,    "Indent",     CsoundActionSheetIcon::indent);
+    add (ctxComment,   areSelectedLinesCommented() ? "Uncomment" : "Comment", CsoundActionSheetIcon::comment);
+
+    editCallout.show (selectionArea, std::move (items));
+}
+
+void CsoundCodeEditor::hideTouchEditMenu()
+{
+    editCallout.hide();
+}
+// ------------------------------------------------------------------------------
 
 void CsoundCodeEditor::focusLost (juce::Component::FocusChangeType cause)
 {

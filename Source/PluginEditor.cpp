@@ -166,6 +166,13 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
 {
     setLookAndFeel (&lookAndFeel);
 
+    // Tastiera a schermo iOS: riduce il layout allo spazio visibile (vedi
+    // keyboardInset in PluginEditor.h). Sulle altre piattaforme non arriva
+    // mai nessuna notifica.
+    IOSKeyboard::initialise();
+    keyboardWatcher.onChange = [this] { updateKeyboardInset(); };
+    IOSKeyboard::getBroadcaster().addChangeListener (&keyboardWatcher);
+
     // getEditorDraft(), non getCsdText(): riapre l'editor sul testo che
     // l'utente aveva lasciato, anche se non ancora applicato (vedi
     // CsoundAudioProcessor::setEditorDraft) - BUG corretto: chiudere e
@@ -207,6 +214,12 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // dell'interfaccia chiara: accento teal sul testo per restare in tema.
     logConsole.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0xff10181f));
     logConsole.setColour (juce::TextEditor::textColourId, juce::Colour (0xff8fd9e0));
+    // Niente cornice: LookAndFeel_V4 disegna un bordo di 1 px (outline) e
+    // una riga in fondo nel colore outline, che sullo sfondo scuro della
+    // consolle sembravano un margine a sinistra/in basso.
+    logConsole.setColour (juce::TextEditor::outlineColourId,        juce::Colour (0xff10181f));
+    logConsole.setColour (juce::TextEditor::focusedOutlineColourId, juce::Colour (0xff10181f));
+    logConsole.setBorder (juce::BorderSize<int> (0));
     logConsole.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain));
     addAndMakeVisible (logConsole);
 
@@ -528,6 +541,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
 
 CsoundAudioProcessorEditor::~CsoundAudioProcessorEditor()
 {
+    IOSKeyboard::getBroadcaster().removeChangeListener (&keyboardWatcher);
     document.removeListener (this);
 
     // Scollega la LookAndFeel del pannello Parametri impostata nel
@@ -654,7 +668,7 @@ void CsoundAudioProcessorEditor::bridgeCodeEditIntoSharedUndo()
     if (isApplyingCodeUndoRedo)
         return;
 
-    // getNumActionsInCurrentTransaction() == 1: questa e' la PRIMA
+    // getNumActionsInCurrentTransaction() == 0: questa e' la PRIMA
     // modifica di una transazione FRESCA di CodeDocument (juce::
     // CodeEditorComponent ne chiude una da sola dopo una pausa nella
     // digitazione, o esplicitamente per azioni come paste/undo/ecc. - vedi
@@ -677,10 +691,46 @@ void CsoundAudioProcessorEditor::bridgeCodeEditIntoSharedUndo()
     // come ogni modifica ai metadata (vedi undoManager.beginNewTransaction()
     // in CsoundParameterMappingPanel) - questo e' ciò che rende possibile
     // la "linearita' avanti e indietro" richiesta tra editor e pannello.
-    if (document.getUndoManager().getNumActionsInCurrentTransaction() == 1)
+    //
+    // == 0, NON == 1 (BUG corretto con CodeView): questo listener scatta
+    // DENTRO UndoableAction::perform(), cioe' PRIMA che juce::UndoManager
+    // aggiunga l'azione alla transazione (vedi UndoManager::perform: prima
+    // action->perform(), poi actions.add). Quindi per la PRIMA azione di
+    // una transazione fresca il conteggio e' 0 (newTransaction ancora
+    // pendente), per la seconda e' 1, e cosi' via. Con "== 1" il proxy
+    // nasceva solo alla SECONDA azione: con CodeEditorComponent ogni
+    // battuta produceva due azioni (deleteSection vuoto + insert) e la
+    // cosa passava inosservata, con CodeView (una sola azione per
+    // battuta) le transazioni di una sola azione - una lettera, un paste,
+    // un backspace - restavano SENZA proxy e le due cronologie si
+    // disallineavano ("perde la storia").
+    if (document.getUndoManager().getNumActionsInCurrentTransaction() == 0)
     {
         sharedUndoManager.beginNewTransaction();
         sharedUndoManager.perform (new CodeEditTransactionProxy (document, isApplyingCodeUndoRedo));
+    }
+}
+
+void CsoundAudioProcessorEditor::updateKeyboardInset()
+{
+    // Sovrapposizione fra il bordo inferiore di questa finestra e la
+    // tastiera, in coordinate dello schermo (punti): e' lo spazio da
+    // lasciare libero in fondo. Mai oltre meta' finestra, cosi' il layout
+    // resta sensato anche con tastiere molto alte su finestre piccole.
+    const auto keyboard = IOSKeyboard::getFrameOnScreen();
+    int inset = 0;
+
+    if (! keyboard.isEmpty())
+    {
+        const auto screenBounds = getScreenBounds();
+        inset = juce::jlimit (0, getHeight(), screenBounds.getBottom() - keyboard.getY());
+    }
+
+    if (inset != keyboardInset)
+    {
+        keyboardInset = inset;
+        resized();
+        editor.scrollToKeepCaretOnScreen(); // caret/selezione nello spazio rimasto visibile
     }
 }
 
@@ -757,7 +807,8 @@ void CsoundAudioProcessorEditor::resized()
     // PluginEditor.h sul perche' (richiesta esplicita: editor sempre
     // accessibile/editabile sia per editing che per il drag della maniglia,
     // mai coperto da un overlay).
-    area.removeFromTop (8);
+    // (Nessuno spazio tra toolbar ed editor: richiesta esplicita, il testo
+    // parte subito sotto la riga della toolbar.)
 
     if (showingParameterPanel)
     {
@@ -774,7 +825,8 @@ void CsoundAudioProcessorEditor::resized()
         auto dividerArea = area.removeFromRight (sidebarDividerWidth);
 
         parameterPanel.setBounds (sidebarArea);
-        sidebarDivider.setBounds (dividerArea);
+        sidebarDivider.setBounds (dividerArea.expanded (dividerGrabMargin, 0)); // presa larga, striscia stretta
+        sidebarDivider.toFront (false);
     }
 
     // Consolle nascosta (showingConsole = false, vedi toggleConsole()):
@@ -794,7 +846,8 @@ void CsoundAudioProcessorEditor::resized()
         auto consoleDividerArea = area.removeFromBottom (consoleDividerHeight);
 
         logConsole.setBounds (bottomArea);
-        consoleDivider.setBounds (consoleDividerArea);
+        consoleDivider.setBounds (consoleDividerArea.expanded (0, dividerGrabMargin)); // presa alta, striscia stretta
+        consoleDivider.toFront (false);
 
         // clearConsoleButton galleggia in overlap sopra l'angolo in alto a
         // destra di logConsole (richiesto esplicitamente, al posto del
@@ -811,6 +864,18 @@ void CsoundAudioProcessorEditor::resized()
     else
     {
         clearConsoleButton.setVisible (false);
+    }
+
+    // Tastiera a schermo (iOS, vedi keyboardInset): si contrae SOLO il
+    // blocco editor + barra di help, in modo che finisca sopra la tastiera;
+    // la consolle (e tutto il resto) resta al suo posto, coperta.
+    if (keyboardInset > 0)
+    {
+        const int visibleBottom = getHeight() - keyboardInset;
+        const int minEditorHeight = opcodeHelpBarHeight + 3 * editor.getLineHeight();
+
+        if (area.getBottom() > visibleBottom)
+            area.setBottom (juce::jmax (area.getY() + minEditorHeight, visibleBottom));
     }
 
     auto helpBarArea = area.removeFromBottom (opcodeHelpBarHeight);
@@ -1577,7 +1642,15 @@ CsoundAudioProcessorEditor::SidebarDivider::SidebarDivider()
 
 void CsoundAudioProcessorEditor::SidebarDivider::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xffd7dee3));
+    // Solo la striscia centrale (sidebarDividerWidth) e' disegnata: i
+    // margini di presa ai lati restano trasparenti (vedi dividerGrabMargin).
+    const auto strip = getLocalBounds().withSizeKeepingCentre (sidebarDividerWidth, getHeight());
+    g.setColour (juce::Colour (0xffd7dee3));
+    g.fillRect (strip);
+
+    // Segno di trascinamento: pillola verticale al centro.
+    g.setColour (juce::Colour (0xff9aa6b1));
+    g.fillRoundedRectangle (strip.toFloat().withSizeKeepingCentre (4.0f, 36.0f), 2.0f);
 }
 
 void CsoundAudioProcessorEditor::SidebarDivider::mouseDown (const juce::MouseEvent&)
@@ -1604,7 +1677,12 @@ CsoundAudioProcessorEditor::ConsoleDivider::ConsoleDivider()
 
 void CsoundAudioProcessorEditor::ConsoleDivider::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colour (0xffd7dee3));
+    const auto strip = getLocalBounds().withSizeKeepingCentre (getWidth(), consoleDividerHeight);
+    g.setColour (juce::Colour (0xffd7dee3));
+    g.fillRect (strip);
+
+    g.setColour (juce::Colour (0xff9aa6b1));
+    g.fillRoundedRectangle (strip.toFloat().withSizeKeepingCentre (36.0f, 4.0f), 2.0f);
 }
 
 void CsoundAudioProcessorEditor::ConsoleDivider::mouseDown (const juce::MouseEvent&)

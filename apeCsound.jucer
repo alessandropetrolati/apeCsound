@@ -40,12 +40,13 @@
             file="Source/CsoundCodeEditor.h"/>
       <FILE id="cCVwA" name="CsoundCodeView.cpp" compile="1" resource="0"
             file="Source/CsoundCodeView.cpp"/>
-      <FILE id="cCVwB" name="CsoundCodeView.h" compile="0" resource="0"
-            file="Source/CsoundCodeView.h"/>
-      <FILE id="iKbdA" name="IOSKeyboard.mm" compile="1" resource="0"
-            file="Source/IOSKeyboard.mm"/>
-      <FILE id="iKbdB" name="IOSKeyboard.h" compile="0" resource="0"
-            file="Source/IOSKeyboard.h"/>
+      <FILE id="cCVwB" name="CsoundCodeView.h" compile="0" resource="0" file="Source/CsoundCodeView.h"/>
+      <FILE id="cECoA" name="CsoundEditCallout.cpp" compile="1" resource="0"
+            file="Source/CsoundEditCallout.cpp"/>
+      <FILE id="cECoB" name="CsoundEditCallout.h" compile="0" resource="0"
+            file="Source/CsoundEditCallout.h"/>
+      <FILE id="iKbdA" name="IOSKeyboard.mm" compile="1" resource="0" file="Source/IOSKeyboard.mm"/>
+      <FILE id="iKbdB" name="IOSKeyboard.h" compile="0" resource="0" file="Source/IOSKeyboard.h"/>
       <FILE id="sScfH" name="SecurityScopedFile.h" compile="0" resource="0"
             file="Source/SecurityScopedFile.h"/>
       <FILE id="sScfM" name="SecurityScopedFile.mm" compile="1" resource="0"
@@ -127,7 +128,8 @@
                   iosAppGroups="1" iosAppGroupsId="group.it.apesoft.apeCsound"
                   microphonePermissionNeeded="1" microphonePermissionsText="apeCsound needs the microphone for live audio input."
                   customPList="&lt;plist version=&quot;1.0&quot;&gt;&#10;&lt;dict&gt;&#10;  &lt;key&gt;LSSupportsOpeningDocumentsInPlace&lt;/key&gt;&#10;  &lt;true/&gt;&#10;  &lt;key&gt;CFBundleDocumentTypes&lt;/key&gt;&#10;  &lt;array&gt;&#10;    &lt;dict&gt;&#10;      &lt;key&gt;CFBundleTypeName&lt;/key&gt;&#10;      &lt;string&gt;Csound Unified Document&lt;/string&gt;&#10;      &lt;key&gt;LSHandlerRank&lt;/key&gt;&#10;      &lt;string&gt;Alternate&lt;/string&gt;&#10;      &lt;key&gt;LSItemContentTypes&lt;/key&gt;&#10;      &lt;array&gt;&#10;        &lt;string&gt;it.apesoft.csd&lt;/string&gt;&#10;      &lt;/array&gt;&#10;    &lt;/dict&gt;&#10;  &lt;/array&gt;&#10;  &lt;key&gt;UTExportedTypeDeclarations&lt;/key&gt;&#10;  &lt;array&gt;&#10;    &lt;dict&gt;&#10;      &lt;key&gt;UTTypeIdentifier&lt;/key&gt;&#10;      &lt;string&gt;it.apesoft.csd&lt;/string&gt;&#10;      &lt;key&gt;UTTypeDescription&lt;/key&gt;&#10;      &lt;string&gt;Csound Unified Document&lt;/string&gt;&#10;      &lt;key&gt;UTTypeConformsTo&lt;/key&gt;&#10;      &lt;array&gt;&#10;        &lt;string&gt;public.plain-text&lt;/string&gt;&#10;      &lt;/array&gt;&#10;      &lt;key&gt;UTTypeTagSpecification&lt;/key&gt;&#10;      &lt;dict&gt;&#10;        &lt;key&gt;public.filename-extension&lt;/key&gt;&#10;        &lt;array&gt;&#10;          &lt;string&gt;csd&lt;/string&gt;&#10;        &lt;/array&gt;&#10;      &lt;/dict&gt;&#10;    &lt;/dict&gt;&#10;  &lt;/array&gt;&#10;&lt;/dict&gt;&#10;&lt;/plist&gt;"
-                  externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate" extraFrameworks="Accelerate">
+                  externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate" extraFrameworks="Accelerate"
+                  UIStatusBarHidden="1">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" iosDeploymentTarget="17.0"
                        headerPath="../../build/csound-install/universal/include" libraryPath="../../build/csound-install/ios/$(PLATFORM_NAME)/lib"

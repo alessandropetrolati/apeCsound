@@ -6,6 +6,7 @@
 #include <vector>
 #include "CsoundOpcodeHelp.h"
 #include "CsoundCodeView.h"
+#include "CsoundEditCallout.h" // [EDIT-CALLOUT]
 
 /**
     CodeView (editor di codice nostro, vedi CsoundCodeView.h) specializzato
@@ -185,6 +186,12 @@ private:
     // rilascio dopo una selezione (pressione prolungata/maniglie) o al tap
     // sulla selezione.
     void showContextMenu (juce::Point<int> localPos) override;
+    void performContextMenuItem (int itemId);
+
+    // [EDIT-CALLOUT] menu touch non modale (vedi CsoundEditCallout.h)
+    void showTouchEditMenu (juce::Rectangle<int> selectionArea) override;
+    void hideTouchEditMenu() override;
+    CsoundEditCallout editCallout;
 
     // Intervallo di righe coperto dalla selezione (o la riga del caret):
     // una riga finale "toccata" solo con il caret in colonna 0 e' esclusa.

@@ -7,6 +7,7 @@
 #include "CsoundCodeEditor.h"
 #include "CsoundLookAndFeel.h"
 #include "CsoundParameterEditor.h"
+#include "IOSKeyboard.h"
 
 /**
     Editor del plugin/standalone (juce::AudioProcessorEditor): editor con
@@ -430,6 +431,20 @@ private:
     CsoundCodeEditor editor { document, &tokeniser };
 
     OpcodeHelpBar opcodeHelpBar;
+
+    // Tastiera a schermo (iOS): keyboardInset = pixel della finestra sotto
+    // il bordo superiore della tastiera. Si contrae SOLO il blocco editor +
+    // barra di help (vedi resized), cosi' caret/selezione restano visibili;
+    // consolle e resto del layout restano fermi, coperti dalla tastiera. Aggiornato dalle
+    // notifiche di IOSKeyboard (vedi updateKeyboardInset); 0 altrove.
+    struct KeyboardWatcher final : public juce::ChangeListener
+    {
+        std::function<void()> onChange;
+        void changeListenerCallback (juce::ChangeBroadcaster*) override { if (onChange) onChange(); }
+    };
+    KeyboardWatcher keyboardWatcher;
+    int keyboardInset = 0;
+    void updateKeyboardInset();
     static constexpr int opcodeHelpBarHeight = 26;
 
     // Vedi SessionWarningBar sopra: visibile SOLO quando c'e' qualcosa da
@@ -513,6 +528,12 @@ private:
     static constexpr int sidebarMinWidth = 280;
     static constexpr int sidebarEditorMinWidth = 300;
     static constexpr int sidebarDividerWidth = 6;
+    // Area di presa dei divisori piu' larga della striscia disegnata (su
+    // entrambi i lati, in overlap trasparente su editor/sidebar/consolle):
+    // il layout riserva solo i 6 px visibili, il componente e' largo
+    // 6 + 2*dividerGrabMargin e sta davanti nello z-order. Stesso aspetto
+    // su macOS e iOS, con la "pillola" al centro come segno di trascinamento.
+    static constexpr int dividerGrabMargin = 6;
 
     // Striscia verticale draggabile tra editor/consolle e la sidebar:
     // cattura il proprio mouseDown/mouseDrag per ridimensionare sidebarWidth

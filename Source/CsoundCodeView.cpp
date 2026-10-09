@@ -56,6 +56,8 @@ CodeView::CodeView (juce::CodeDocument& doc, juce::CodeTokeniser* tok)
     longPressTimer.onTick = [this] { longPressFired(); };
     autoScrollTimer.onTick = [this] { autoScrollTick(); };
 
+    IOSKeyboard::initialise(); // osservatori della tastiera iOS attivi PRIMA della prima apertura
+
     document.addListener (&documentListener);
     updateFontMetrics();
     documentChanged (0);
@@ -169,6 +171,7 @@ void CodeView::documentChanged (int fromLine)
     contentSizeDirty = true;
     updateGutterWidth();
     updateScrollBars();
+    hideTouchEditMenu(); // [EDIT-CALLOUT]
     repaint();
 }
 
@@ -393,6 +396,8 @@ void CodeView::setScrollPosition (double newX, double newY)
     scrollX = newX;
     scrollY = newY;
 
+    hideTouchEditMenu(); // [EDIT-CALLOUT]
+
     verticalScrollBar.setCurrentRange (scrollY, area.getHeight(), juce::dontSendNotification);
     horizontalScrollBar.setCurrentRange (scrollX, area.getWidth(), juce::dontSendNotification);
 
@@ -560,6 +565,8 @@ void CodeView::deselectAll()
 
 void CodeView::caretMoved (bool keepOnScreen)
 {
+    hideTouchEditMenu(); // [EDIT-CALLOUT] ricompare, se serve, da chi ha mosso la selezione
+
     if (keepOnScreen)
         scrollToKeepCaretOnScreen();
 
@@ -664,7 +671,10 @@ void CodeView::insertTextInternal (const juce::String& text)
     if (isHighlightActive())
         document.deleteSection (getSelectionStart().getPosition(), getSelectionEnd().getPosition());
 
-    document.insertText (insertIndex, text);
+    // Niente azioni "vuote" nella cronologia del documento: il ponte verso
+    // lo sharedUndoManager (PluginEditor) conta le azioni per transazione.
+    if (text.isNotEmpty())
+        document.insertText (insertIndex, text);
 
     const juce::CodeDocument::Position after (document, insertIndex + text.length());
     setCaretAndAnchor (after, after);
@@ -677,7 +687,12 @@ void CodeView::insertTextAtCaret (const juce::String& text)
 {
     // Una battuta singola si accoda alla transazione corrente (gruppo di
     // digitazione); un blocco (paste, a capo...) apre un passo di undo suo.
-    beginTypingTransactionIfNeeded (text.length() != 1 || isHighlightActive() || text.containsChar ('\n'));
+    // Battuta singola (anche il backspace di iOS, che arriva come
+    // setHighlightedRegion(1 carattere) + insertTextAtCaret("")) ->
+    // si accoda al gruppo di digitazione; a capo, blocchi (paste, IME) o
+    // sostituzione di una selezione "vera" -> passo di undo a se'.
+    const bool replacingSelection = isHighlightActive() && getHighlightedRegion().getLength() > 1;
+    beginTypingTransactionIfNeeded (text.length() > 1 || text.containsChar ('\n') || replacingSelection);
     insertTextInternal (text);
 }
 
@@ -1132,6 +1147,7 @@ void CodeView::focusGained (FocusChangeType)
 
 void CodeView::focusLost (FocusChangeType)
 {
+    hideTouchEditMenu(); // [EDIT-CALLOUT]
     caretBlinkTimer.stopTimer();
     caretVisible = false;
     repaint();
@@ -1177,6 +1193,7 @@ void CodeView::mouseDown (const juce::MouseEvent& e)
 
     stopMomentum();
     autoScrollTimer.stopTimer();
+    hideTouchEditMenu(); // [EDIT-CALLOUT] tocco altrove (o su una maniglia): via la bolla
 
     if (e.mods.isPopupMenu())
     {
@@ -1282,13 +1299,14 @@ void CodeView::mouseDrag (const juce::MouseEvent& e)
 
         case Gesture::touchSelecting:
         case Gesture::touchHandleDragging:
+        case Gesture::touchCaretDragging:
         {
             if (e.source.getIndex() != gestureSourceIndex)
                 break;
 
             lastDragPoint = e.position;
             magnifierPoint = e.position;
-            moveCaretTo (getPositionAt (e.x, e.y), true);
+            moveCaretTo (getPositionAt (e.x, e.y), gesture != Gesture::touchCaretDragging);
 
             if (! getTextArea().contains (e.getPosition()))
                 autoScrollTimer.startTimer (50);
@@ -1373,12 +1391,12 @@ void CodeView::mouseUp (const juce::MouseEvent& e)
 
             if (e.getNumberOfClicks() >= 2)
             {
-                // Doppio tap: seleziona la parola con le maniglie, SENZA
-                // aprire il menu (tastiera + menu insieme coprivano il
-                // testo): il menu si apre con un tap sulla selezione o
-                // trascinando una maniglia.
+                // Doppio tap: seleziona la parola con le maniglie e apre il
+                // menu (callout non modale, come iOS - anche con la
+                // tastiera aperta).
                 selectWordAt (pos);
                 showHandles = true;
+                showMenuForSelection();
             }
             else if (onSelection && showHandles)
             {
@@ -1410,6 +1428,12 @@ void CodeView::mouseUp (const juce::MouseEvent& e)
 
             if (isHighlightActive())
                 showMenuForSelection();
+            break;
+
+        case Gesture::touchCaretDragging:
+            gesture = Gesture::none;
+            magnifierVisible = false;
+            repaint();
             break;
 
         case Gesture::none:
@@ -1460,10 +1484,27 @@ void CodeView::longPressFired()
     if (gesture != Gesture::touchUndecided)
         return;
 
+    const auto pos = getPositionAt ((int) gestureStartPoint.x, (int) gestureStartPoint.y);
+
+   #if JUCE_IOS
+    // Tastiera aperta (si sta scrivendo): come in iOS la pressione
+    // prolungata NON seleziona ma diventa "navigazione" - la lente segue
+    // il dito e il caret si sposta carattere per carattere; al rilascio
+    // nessun menu. Con la tastiera chiusa: selezione della parola.
+    if (hasKeyboardFocus (true) && IOSKeyboard::isVisible())
+    {
+        gesture = Gesture::touchCaretDragging;
+        showHandles = false;
+        moveCaretTo (pos, false);
+        magnifierVisible = true;
+        magnifierPoint = gestureStartPoint;
+        repaint();
+        return;
+    }
+   #endif
+
     gesture = Gesture::touchSelecting;
     grabKeyboardFocus();
-
-    const auto pos = getPositionAt ((int) gestureStartPoint.x, (int) gestureStartPoint.y);
     selectWordAt (pos);
 
     // Da qui il dito trascina la FINE della selezione: ancora = inizio.
@@ -1477,8 +1518,17 @@ void CodeView::longPressFired()
 
 void CodeView::showMenuForSelection()
 {
-    const auto r = getCharacterBounds (getSelectionStart());
-    showContextMenu ({ r.getX(), r.getY() });
+    // [EDIT-CALLOUT] area della selezione (in coordinate del componente)
+    // come ancora del menu touch.
+    const auto a = getCharacterBounds (getSelectionStart());
+    const auto b = getCharacterBounds (getSelectionEnd());
+    const auto textArea = getTextArea();
+
+    juce::Rectangle<int> area = a.getY() == b.getY()
+        ? juce::Rectangle<int> (a.getX(), a.getY(), juce::jmax (a.getWidth(), b.getX() - a.getX()), lineHeight)
+        : juce::Rectangle<int> (textArea.getX(), a.getY(), textArea.getWidth(), b.getBottom() - a.getY());
+
+    showTouchEditMenu (area);
 }
 
 void CodeView::autoScrollTick()
@@ -1497,7 +1547,7 @@ void CodeView::autoScrollTick()
         return;
 
     setScrollPosition (scrollX + dx, scrollY + dy);
-    moveCaretTo (getPositionAt ((int) lastDragPoint.x, (int) lastDragPoint.y), true);
+    moveCaretTo (getPositionAt ((int) lastDragPoint.x, (int) lastDragPoint.y), gesture != Gesture::touchCaretDragging);
 }
 
 void CodeView::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel)

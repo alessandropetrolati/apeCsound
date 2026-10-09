@@ -531,6 +531,11 @@ namespace
     }
 }
 
+juce::Path CsoundActionSheet::getIconPath (CsoundActionSheetIcon icon)
+{
+    return makeSheetIconPath (icon);
+}
+
 void CsoundActionSheet::show (juce::Component& host, const juce::String& title,
                                std::vector<CsoundActionSheetItem> items,
                                std::function<void (int)> onSelected)

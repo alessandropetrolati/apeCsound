@@ -99,6 +99,10 @@ public:
     // sempre l'intera larghezza/altezza della finestra). onSelected riceve
     // l'id della riga scelta, oppure 0 se il foglio e' stato chiuso senza
     // scegliere nulla (tap sullo scrim).
+    /** Path (24x24 circa, da scalare con scaleToFit) dell'icona: le stesse
+        icone dei menu, riusate da CsoundEditCallout. Vuoto per none. */
+    static juce::Path getIconPath (CsoundActionSheetIcon icon);
+
     static void show (juce::Component& host, const juce::String& title,
                        std::vector<CsoundActionSheetItem> items,
                        std::function<void (int)> onSelected);

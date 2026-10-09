@@ -149,6 +149,15 @@ public:
     virtual void caretPositionMoved() {}
     virtual void editorViewportPositionChanged() {}
 
+    // [EDIT-CALLOUT] Menu di editing per il TOUCH (rilascio dopo pressione
+    // prolungata/maniglie, tap sulla selezione): default = lo stesso menu
+    // contestuale; CsoundCodeEditor lo sostituisce con il callout non
+    // modale (CsoundEditCallout). hideTouchEditMenu viene chiamato quando
+    // selezione, scroll, testo o focus cambiano. Per rimuovere il callout
+    // basta cancellare questi due hook e le loro chiamate (cercare il tag).
+    virtual void showTouchEditMenu (juce::Rectangle<int> selectionArea)   { showContextMenu (selectionArea.getPosition()); }
+    virtual void hideTouchEditMenu() {}
+
     //==========================================================================
     // juce::Component
     void paint (juce::Graphics& g) override;
@@ -191,7 +200,8 @@ private:
         touchUndecided,        // dito giu', ancora ne' scroll ne' selezione
         touchScrolling,        // pan con un dito
         touchSelecting,        // dopo la pressione prolungata: trascina la selezione
-        touchHandleDragging    // trascina una maniglia della selezione
+        touchHandleDragging,   // trascina una maniglia della selezione
+        touchCaretDragging     // pressione prolungata con la tastiera aperta: sposta il caret (lente, nessuna selezione)
     };
 
     // Listener del documento come OGGETTO membro, non come classe base:
