@@ -222,6 +222,40 @@ private:
         static constexpr int cardHeight = 472;
     };
 
+    // Guida rapida "apeCsound Guide" (menu principale, prima di "Csound
+    // Manual"): overlay come AboutView, con una scheda piu' grande e un
+    // testo scorrevole che descrive tutte le funzioni del plugin (vedi
+    // guideText() in PluginEditor.cpp). Si chiude con la x, Esc o un clic
+    // fuori dalla scheda.
+    struct GuideView final : public juce::Component
+    {
+        GuideView();
+        void paint (juce::Graphics& g) override;
+        void resized() override;
+        void mouseUp (const juce::MouseEvent& e) override;
+        bool keyPressed (const juce::KeyPress& key) override;
+
+        void show();
+        void hide();
+
+        struct Card final : public juce::Component
+        {
+            Card();
+            void paint (juce::Graphics& g) override;
+            void resized() override;
+            void mouseUp (const juce::MouseEvent& e) override;
+            juce::Rectangle<int> closeButtonBounds() const;
+
+            std::function<void()> onClose;
+            juce::TextEditor text;
+        };
+
+        Card card;
+        static juce::String guideText();
+    };
+
+    GuideView guideView;
+
     // Barra Cerca/Sostituisci (richiesta esplicita) sotto la toolbar, aperta
     // e chiusa dal bottone lente (findButton). La ricerca vera e propria e
     // l'evidenziazione stanno in CsoundCodeEditor (setSearchQuery & co.).

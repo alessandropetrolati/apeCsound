@@ -2796,6 +2796,13 @@ void CsoundParameterMappingPanel::showPanelMenu()
     }
     {
         CsoundActionSheetItem item;
+        item.id = 117; item.text = "apeCsound Guide";
+        item.enabled = onGuideRequested != nullptr;
+        item.icon = CsoundActionSheetIcon::info;
+        items.push_back (item);
+    }
+    {
+        CsoundActionSheetItem item;
         item.id = 113; item.text = "About";//About " + juce::String (ProjectInfo::projectName);
         item.enabled = onAboutRequested != nullptr;
         item.icon = CsoundActionSheetIcon::info;
@@ -2833,6 +2840,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 114: if (safeThis->onToggleModernSyntaxRequested) safeThis->onToggleModernSyntaxRequested(); break;
             case 115: if (safeThis->onOpenManualRequested) safeThis->onOpenManualRequested(); break;
             case 116: if (safeThis->onToggleFollowCsdChannelsRequested) safeThis->onToggleFollowCsdChannelsRequested(); break;
+            case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
             default: break;
         }
     });

@@ -245,6 +245,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // Vista "About" (vedi AboutView in PluginEditor.h): nascosta, aperta dal
     // menu hamburger tramite parameterPanel.onAboutRequested.
     addChildComponent (aboutView);
+    addChildComponent (guideView);
 
     // Cerca/Sostituisci (vedi FindReplaceBar in PluginEditor.h). Bottone
     // lente circolare come clearConsoleButton (icona "find" in
@@ -371,6 +372,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.onLoadSessionRequested = [this] { promptLoadSession(); };
     parameterPanel.onSaveLinkedRequested  = [this] { performSaveLinked(); };
     parameterPanel.onAboutRequested       = [this] { aboutView.show(); };
+    parameterPanel.onGuideRequested       = [this] { guideView.show(); };
 
     // Sintassi moderna nella barra di help: preferenza utente persistente
     // (vedi getUserSettings()), applicata all'editor subito e a ogni toggle.
@@ -702,6 +704,7 @@ void CsoundAudioProcessorEditor::resized()
     // Overlay "About": sempre a tutta finestra (anche se nascosto, cosi' e'
     // gia' dimensionato quando lo si apre).
     aboutView.setBounds (area);
+    guideView.setBounds (area);
 
     toolbarBounds = area.removeFromTop (toolbarHeight);
 
@@ -727,6 +730,12 @@ void CsoundAudioProcessorEditor::resized()
     panelMenuButton.setBounds (toolbar.removeFromRight (panelToolbarButtonDiameter)
                                        .withSizeKeepingCentre (panelToolbarButtonDiameter, panelToolbarButtonDiameter));
 
+    // Lente (Cerca/Sostituisci) a destra, subito prima del burger
+    // (richiesta esplicita).
+    toolbar.removeFromRight (12);
+    findButton.setBounds (toolbar.removeFromRight (panelToolbarButtonDiameter)
+                                 .withSizeKeepingCentre (panelToolbarButtonDiameter, panelToolbarButtonDiameter));
+
 
     // withSizeKeepingCentre (...): stessa identica altezza fissa di +/burger
     // sopra (panelToolbarButtonDiameter), invece dell'altezza "piatta" della
@@ -735,11 +744,6 @@ void CsoundAudioProcessorEditor::resized()
     applyButton.setBounds (toolbar.removeFromLeft (applyWidth)
                                    .withSizeKeepingCentre (applyWidth, panelToolbarButtonDiameter));
 
-    // Lente (Cerca/Sostituisci) a sinistra, subito dopo Apply (richiesta
-    // esplicita).
-    toolbar.removeFromLeft (12);
-    findButton.setBounds (toolbar.removeFromLeft (panelToolbarButtonDiameter)
-                                 .withSizeKeepingCentre (panelToolbarButtonDiameter, panelToolbarButtonDiameter));
 
     // Nome del file collegato (+ "•" se modificato) nello spazio che resta
     // tra Apply e il burger - vedi SessionFileLabel in PluginEditor.h.
@@ -1902,6 +1906,256 @@ void CsoundAudioProcessorEditor::AboutView::show()
 void CsoundAudioProcessorEditor::AboutView::hide()
 {
     juce::Desktop::getInstance().getAnimator().fadeOut (this, 120);
+}
+
+//==============================================================================
+// Guida rapida - vedi GuideView in PluginEditor.h.
+CsoundAudioProcessorEditor::GuideView::Card::Card()
+{
+    text.setMultiLine (true);
+    text.setReadOnly (true);
+    text.setScrollbarsShown (true);
+    text.setCaretVisible (false);
+    text.setPopupMenuEnabled (false);
+    text.setColour (juce::TextEditor::backgroundColourId, kAboutCardBg);
+    text.setColour (juce::TextEditor::textColourId, kAboutText);
+    text.setColour (juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
+    text.setColour (juce::TextEditor::focusedOutlineColourId, juce::Colours::transparentBlack);
+    text.setColour (juce::TextEditor::highlightColourId, kAboutAccent.withAlpha (0.35f));
+    text.setLineSpacing (1.3f);
+    text.setWantsKeyboardFocus (false);
+    addAndMakeVisible (text);
+
+    // Mini-markup di guideText(): "# Titolo" sezione, "## Titolo"
+    // sottosezione, "**grassetto**", `codice` (monospace, accento),
+    // "- " elenco puntato. Reso con le run di stile di juce::TextEditor
+    // (font/colore impostati prima di ogni insertTextAtCaret): niente
+    // WebView, che in un plugin e' fragile e pesante.
+    const auto bodyFont  = juce::Font (juce::FontOptions (13.5f));
+    const auto boldFont  = juce::Font (juce::FontOptions (13.5f, juce::Font::bold));
+    const auto h1Font    = juce::Font (juce::FontOptions (17.0f, juce::Font::bold));
+    const auto h2Font    = juce::Font (juce::FontOptions (14.0f, juce::Font::bold));
+    const auto codeFont  = juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.5f, juce::Font::plain));
+
+    auto append = [this] (const juce::String& run, const juce::Font& font, juce::Colour colour)
+    {
+        text.setFont (font);
+        text.setColour (juce::TextEditor::textColourId, colour);
+        text.insertTextAtCaret (run);
+    };
+
+    // Testo inline: **bold** e `code` dentro una riga normale.
+    auto appendInline = [&] (const juce::String& line, const juce::Font& font, juce::Colour colour)
+    {
+        int i = 0;
+
+        while (i < line.length())
+        {
+            const int b = line.indexOf (i, "**");
+            const int c = line.indexOfChar (i, '`');
+            int next = -1;
+            bool isBold = false;
+
+            if (b >= 0 && (c < 0 || b < c)) { next = b; isBold = true; }
+            else if (c >= 0)                { next = c; }
+
+            if (next < 0)
+            {
+                append (line.substring (i), font, colour);
+                break;
+            }
+
+            if (next > i)
+                append (line.substring (i, next), font, colour);
+
+            if (isBold)
+            {
+                const int end = line.indexOf (next + 2, "**");
+                if (end < 0) { append (line.substring (next), font, colour); break; }
+                append (line.substring (next + 2, end), boldFont, kAboutText);
+                i = end + 2;
+            }
+            else
+            {
+                const int end = line.indexOfChar (next + 1, '`');
+                if (end < 0) { append (line.substring (next), font, colour); break; }
+                append (line.substring (next + 1, end), codeFont, kAboutAccent);
+                i = end + 1;
+            }
+        }
+    };
+
+    juce::StringArray lines;
+    lines.addLines (guideText());
+
+    for (const auto& raw : lines)
+    {
+        if (raw.startsWith ("## "))
+        {
+            append (raw.substring (3) + "\n", h2Font, kAboutText);
+        }
+        else if (raw.startsWith ("# "))
+        {
+            append ("\n" + raw.substring (2).toUpperCase() + "\n", h1Font, kAboutAccent);
+        }
+        else if (raw.startsWith ("- "))
+        {
+            append (juce::String::charToString (0x2022) + "  ", bodyFont, kAboutAccent);
+            appendInline (raw.substring (2), bodyFont, kAboutText);
+            append ("\n", bodyFont, kAboutText);
+        }
+        else
+        {
+            appendInline (raw, bodyFont, raw.isEmpty() ? kAboutText : kAboutTextMuted.brighter (0.35f));
+            append ("\n", bodyFont, kAboutText);
+        }
+    }
+
+    text.moveCaretToTop (false);
+}
+
+void CsoundAudioProcessorEditor::GuideView::Card::paint (juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+
+    g.setColour (kAboutCardBg);
+    g.fillRoundedRectangle (bounds, 16.0f);
+    g.setColour (kAboutBorder);
+    g.drawRoundedRectangle (bounds.reduced (0.5f), 15.5f, 1.0f);
+
+    g.setColour (kAboutText);
+    g.setFont (juce::Font (juce::FontOptions (18.0f, juce::Font::bold)));
+    g.drawFittedText ("apeCsound Guide", 24, 16, getWidth() - 48 - 36, 28, juce::Justification::centredLeft, 1);
+
+    g.setColour (kAboutBorder);
+    g.drawLine (16.0f, 54.5f, (float) getWidth() - 16.0f, 54.5f, 1.0f);
+
+    // x di chiusura.
+    const auto close = closeButtonBounds().toFloat();
+    g.setColour (kAboutTextMuted);
+    juce::Path x;
+    x.startNewSubPath (close.getX() + 9.0f, close.getY() + 9.0f); x.lineTo (close.getRight() - 9.0f, close.getBottom() - 9.0f);
+    x.startNewSubPath (close.getRight() - 9.0f, close.getY() + 9.0f); x.lineTo (close.getX() + 9.0f, close.getBottom() - 9.0f);
+    g.strokePath (x, juce::PathStrokeType (1.8f));
+}
+
+juce::Rectangle<int> CsoundAudioProcessorEditor::GuideView::Card::closeButtonBounds() const
+{
+    return { getWidth() - 16 - 28, 14, 28, 28 };
+}
+
+void CsoundAudioProcessorEditor::GuideView::Card::resized()
+{
+    text.setBounds (getLocalBounds().withTrimmedTop (62).reduced (16, 0).withTrimmedBottom (16));
+}
+
+void CsoundAudioProcessorEditor::GuideView::Card::mouseUp (const juce::MouseEvent& e)
+{
+    if (closeButtonBounds().contains (e.getPosition()) && onClose)
+        onClose();
+}
+
+CsoundAudioProcessorEditor::GuideView::GuideView()
+{
+    setWantsKeyboardFocus (true);
+    card.onClose = [this] { hide(); };
+    addAndMakeVisible (card);
+}
+
+void CsoundAudioProcessorEditor::GuideView::paint (juce::Graphics& g)
+{
+    g.fillAll (juce::Colours::black.withAlpha (0.45f));
+}
+
+void CsoundAudioProcessorEditor::GuideView::resized()
+{
+    // Scheda grande quanto la finestra meno un margine (il testo scorre).
+    card.setBounds (getLocalBounds().reduced (juce::jmin (40, getWidth() / 10), juce::jmin (32, getHeight() / 10)));
+}
+
+void CsoundAudioProcessorEditor::GuideView::mouseUp (const juce::MouseEvent& e)
+{
+    if (e.eventComponent == this)
+        hide();
+}
+
+bool CsoundAudioProcessorEditor::GuideView::keyPressed (const juce::KeyPress& key)
+{
+    if (key == juce::KeyPress::escapeKey)
+    {
+        hide();
+        return true;
+    }
+
+    return false;
+}
+
+void CsoundAudioProcessorEditor::GuideView::show()
+{
+    toFront (true);
+    juce::Desktop::getInstance().getAnimator().fadeIn (this, 140);
+    grabKeyboardFocus();
+}
+
+void CsoundAudioProcessorEditor::GuideView::hide()
+{
+    juce::Desktop::getInstance().getAnimator().fadeOut (this, 120);
+}
+
+juce::String CsoundAudioProcessorEditor::GuideView::guideText()
+{
+    return R"GUIDE(**apeCsound** runs Csound 7 code live inside the DAW. It is a **multichannel effect and instrument at the same time**: the track audio reaches the code through `inch`, MIDI notes through `massign` / `notnum`, and whatever the code writes with `outs` / `outch` goes back to the track, on as many channels as the track has. Write or load a `.csd` in the editor, press **Apply**, and the engine recompiles in place while the track keeps playing.
+Every instance exposes a **fixed set of 144 parameters** to the DAW: **64 Float**, **32 Int**, **32 Bool** and **16 Choice** (up to 16 options each). Their indices are fixed - the DAW always sees "Float 1 ... Float 64" and so on - but each one can be configured from the Parameters panel: Csound channel name, range, default, skew, step or options. This is what makes them automatable and recallable like any other plugin parameter.
+
+# Toolbar
+- **Apply** - recompiles and restarts Csound with the text in the editor. A red ring means the editor text differs from the running code.
+- **File capsule** (centre) - name of the linked `.csd`, its folder and state (saved / unsaved changes / file not found, coloured dot). Click it for **Save**, **Save as...**, **Load...** and **Initialize Session**.
+- **Magnifier** - opens the Find / Replace bar: match case `Aa`, whole word `W`, Replace / Replace All; Enter = next match, Esc closes.
+- **Menu** - Show/Hide Parameters and Console, Undo / Redo, Config, apeCsound Guide, Csound Manual, About.
+
+# Session and files
+The `.csd` file on disk is the truth. A DAW project stores the path of the linked file, an embedded copy of the code and the parameter mapping, plus the current parameter values.
+- **Save** - writes the editor text and the parameter structure (an `<apeCsoundParams>` block after `</CsoundSynthesizer>`) to the linked file.
+- **Save as...** - chooses a new file (default folder `~/Documents/apeCsound`) and links it.
+- **Load...** - opens a `.csd`; you can also drop a `.csd` on the window. Unsaved changes are protected by a dialog.
+- **Initialize Session** - unlinks the file and loads the built-in template.
+- If the linked file is missing when a project reopens, the embedded copy is used and a yellow bar offers **Relocate...** / **Save As...**.
+- The editor shows only the `<CsoundSynthesizer>` block; anything before or after it (Cabbage, CsoundQt panels) is preserved.
+
+# Code editor
+- **Auto-indent** for `instr`/`endin`, `opcode`/`endop`, `if`/`then`, `while`/`do`, `until`, loops. Tab = 4 spaces.
+- **Right-click** (long press on touch) - Cut, Copy, Paste, Delete, Select All, Undo, Redo, **Indent** (re-indents the selected lines) and **Comment / Uncomment** (toggles `;` at the start of the lines).
+- **Opcode help bar** - syntax, description and manual category of the opcode under the caret, for every opcode of the Csound Reference Manual (text from CsoundQt's opcode database, GNU FDL), for the user-defined opcodes of the current file (`opcode Name, outs, ins`) and, for anything else, the type signature reported by the engine.
+- **Autocompletion** - type two letters and suggestions appear: Up/Down to choose, Tab or Enter to accept, Esc opens/closes the list.
+- **Config > Modern Syntax in Help** - every synopsis in Csound 7 functional form with type annotations, e.g. `ares:a = oscil(xamp, xcps)`.
+- **Undo / Redo** - Cmd+Z, Cmd+Shift+Z (or Cmd+Y) and the menu share one linear history between the editor and the Parameters panel; it survives closing and reopening the plugin window.
+
+# Parameters panel
+The 144 fixed parameters (64 Float, 32 Int, 32 Bool, 16 Choice) are mapped here to Csound channels read with `chnget`: **Float** (min/max/default/skew/step), **Int** (min/max/default), **Bool** (default), **Choice** (up to 16 options, sends the index). Use **+** on the panel title bar to add one; each row has edit, copy-`chnget` and remove buttons. Unassigned slots are hidden from the panel but still exist for the DAW. Values are pushed to Csound every block with `csoundSetControlChannel`.
+- **Drag a parameter into the code** - drag the handle on the left of a row and drop it on a line of the editor: a `chnget` line is inserted there, already indented, with the variable named after the channel (`kCutoff chnget "Cutoff"`) and, above it, a comment with the parameter configuration (`; SLIDER FLOAT: Min=20; Max=20000; Skew=0.3; Step=1`). The **copy** button puts the same text in the clipboard, for pasting by hand.
+- Files made with **Cabbage** (`<Cabbage>` section) or **CsoundQt** (`<bsbPanel>` widgets: sliders, knobs, spin boxes, scroll numbers, XY controllers, checkboxes, dropdowns, value buttons) are imported automatically on load: widgets become parameters. CsoundQt `exp` sliders get a matching skew, integer knobs step 1, checkbox `pressedValue` is respected.
+
+# Audio, MIDI and channels
+- `sr` always follows the DAW sample rate.
+- `ksmps` is respected and equals the plugin latency (reported to the DAW, which compensates it): keep it small (16-64) for live input.
+- **Config > Follow CSD nchnls** (default ON) - Csound runs with the `nchnls` / `nchnls_i` declared in the `.csd` header, so the code behaves the same on any track: `outch n` is channel n of the track, channels missing on either side are silent. If the header does not declare them, the track count is used (minimum 2 outputs). Disabled: Csound always follows the track. Mismatches are reported in the console.
+- **Track layouts** - the track can have 1 to 16 output channels and 0 to 16 input channels (0 = input bus disabled). Surround layouts (5.1, 7.1...) are compensated so that channel numbers match the track. Changing the track channel count recompiles the engine.
+- **MIDI** - notes and controllers from the track reach Csound (`-M0`, `massign`); MIDI generated by Csound (`midiout`) goes back to the DAW.
+
+# Console
+Csound messages, compile errors and plugin notes (latency, channels, imports). Identical messages repeated more than three times per second are summarised to keep the UI responsive. **Clear** empties it; it is also cleared on every Apply.
+
+# Config (main menu)
+- **Modern Syntax in Help** - functional syntax in the opcode help bar (user preference).
+- **Follow CSD nchnls** - see "Audio, MIDI and channels" (saved with the project).
+
+# Shortcuts
+- **Cmd+Z / Cmd+Shift+Z (Cmd+Y)** - undo / redo
+- **Esc** - autocompletion list, close the Find bar or an overlay
+- **Tab / Enter** - accept a suggestion
+- **Right-click or long press** - editor menu
+- No Cmd+S on purpose: it would collide with the DAW. Use the file capsule or the menu.
+)GUIDE";
 }
 
 //==============================================================================

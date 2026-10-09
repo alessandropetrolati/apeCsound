@@ -250,6 +250,9 @@ public:
     std::function<bool()> isModernSyntaxEnabled;
     std::function<void()> onOpenManualRequested;
 
+    // "apeCsound Guide": guida rapida interna (vedi GuideView in PluginEditor).
+    std::function<void()> onGuideRequested;
+
     // "Follow CSD nchnls" (spunta): Csound usa nchnls/nchnls_i del .csd
     // invece dei canali della traccia - vedi
     // CsoundAudioProcessor::setFollowCsdChannels.
