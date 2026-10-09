@@ -2611,7 +2611,7 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     addAndMakeVisible (viewport);
 
     emptyStateLabel.setText (
-        "Add a Slider Float, Slider Int, Toggle, or Menu parameter.",
+        "Add a Parameter from the Menu.",
         juce::dontSendNotification);
     emptyStateLabel.setJustificationType (juce::Justification::centred);
     emptyStateLabel.setFont (juce::Font (juce::FontOptions (14.0f)));
