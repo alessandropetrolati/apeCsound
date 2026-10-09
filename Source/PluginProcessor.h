@@ -680,6 +680,16 @@ public:
     // rileggere getCsdText() e aggiornare document/parameterPanel, come fa
     // gia' dopo loadSessionFromFile.
     void initializeSession (bool useTemplate = true);
+    /** Versione della libreria Csound REALMENTE linkata (csoundGetVersion
+        della .a statica) + precisione dei campioni (csoundGetSizeOfMYFLT),
+        es. "7.0.0 (double samples)". */
+    static juce::String getCsoundVersionString();
+
+    /** Righe del banner che il motore stampa all'avvio ("Csound version
+        7.0.0 (double samples) Oct 9 2026", "[commit: abc123]"): data di
+        build e commit della libreria, catturate dal message callback.
+        Vuoto finche' il motore non e' mai partito. */
+    juce::String getCsoundBuildInfo() const;
 
     /** Scheletro .csd minimo (header + sezioni vuote), per
         "Init Session Clear": nessun parametro, nessuno strumento. */
@@ -956,7 +966,7 @@ private:
 
     juce::StringArray pendingMessages;     // scritto dal thread audio
     int droppedMessages = 0;               // coda piena
-    juce::SpinLock pendingMessagesLock;
+    mutable juce::SpinLock pendingMessagesLock; // mutable: letto anche da getCsoundBuildInfo() const
 
     struct RepeatWindow
     {
@@ -966,6 +976,7 @@ private:
     };
     std::map<juce::String, RepeatWindow> repeatWindows; // solo message thread
     static juce::String defaultCsdText();
+
 
     // --- Bridge MIDI host <-> Csound (csoundSetHostMIDIIO) ---
     // In: alimentata in processBlock() con i messaggi del blocco corrente,
@@ -1082,6 +1093,10 @@ private:
     // UI viene (ri)aperta puo' recuperare la storia recente invece di
     // trovare la console vuota anche se Csound e' in esecuzione da tempo.
     static constexpr int messageHistoryCapacity = 500;
+
+    // Banner di avvio di Csound (vedi getCsoundBuildInfo), scritto dal
+    // thread audio in handleMessage sotto pendingMessagesLock.
+    juce::String csoundBannerLine, csoundCommitLine;
     juce::StringArray messageHistory;
     mutable juce::CriticalSection messageHistoryLock;
 

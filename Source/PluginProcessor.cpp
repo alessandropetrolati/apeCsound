@@ -3402,6 +3402,13 @@ void CsoundAudioProcessor::handleMessage (const juce::String& msg)
     // callAsync per messaggio (vedi il commento sul filtro nel .h).
     const juce::SpinLock::ScopedLockType sl (pendingMessagesLock);
 
+    // Banner di avvio del motore: versione/precisione/data di build e
+    // commit della libreria (vedi getCsoundBuildInfo).
+    if (msg.startsWith ("Csound version"))
+        csoundBannerLine = msg;
+    else if (msg.contains ("[commit:"))
+        csoundCommitLine = msg.trim();
+
     if (pendingMessages.size() < kMaxPendingMessages)
         pendingMessages.add (msg);
     else
@@ -3606,6 +3613,50 @@ int CsoundAudioProcessor::midiOutWriteCallback (CSOUND* /*cs*/, void* userData, 
 int CsoundAudioProcessor::midiOutCloseCallback (CSOUND* /*cs*/, void* /*userData*/)
 {
     return 0;
+}
+
+juce::String CsoundAudioProcessor::getCsoundVersionString()
+{
+    // csoundGetVersion(): intero "major*1000 + minor*10 + patch" (es. 7000
+    // = 7.0.0, 6180 = 6.18.0), letto dalla libreria statica linkata, non
+    // da una costante nostra. (Csound 7 non espone piu' csoundGetAPIVersion.)
+    const int version = ::csoundGetVersion();
+
+    juce::String s;
+    s << (version / 1000) << "." << ((version / 10) % 100) << "." << (version % 10)
+      << (::csoundGetSizeOfMYFLT() == 8 ? " (double samples)" : " (float samples)");
+    return s;
+}
+
+juce::String CsoundAudioProcessor::getCsoundBuildInfo() const
+{
+    juce::String banner, commit;
+    {
+        const juce::SpinLock::ScopedLockType sl (pendingMessagesLock);
+        banner = csoundBannerLine;
+        commit = csoundCommitLine;
+    }
+
+    // "Csound version 7.0.0 (double samples) Oct  9 2026" -> solo la data
+    // di build (versione e precisione sono gia' in getCsoundVersionString).
+    juce::String info;
+    const auto closeParen = banner.lastIndexOfChar (')');
+
+    if (closeParen >= 0)
+    {
+        const auto date = banner.substring (closeParen + 1).trim();
+        if (date.isNotEmpty())
+            info << "built " << date;
+    }
+
+    if (commit.isNotEmpty())
+    {
+        const auto hash = commit.fromFirstOccurrenceOf ("[commit:", false, false).upToFirstOccurrenceOf ("]", false, false).trim();
+        if (hash.isNotEmpty())
+            info << (info.isEmpty() ? "" : " - ") << "commit " << hash.substring (0, 12);
+    }
+
+    return info;
 }
 
 juce::String CsoundAudioProcessor::emptyCsdText()

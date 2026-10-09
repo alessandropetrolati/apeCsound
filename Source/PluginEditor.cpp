@@ -391,7 +391,14 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.onSaveSessionRequested = [this] { promptSaveSession(); };
     parameterPanel.onLoadSessionRequested = [this] { promptLoadSession(); };
     parameterPanel.onSaveLinkedRequested  = [this] { performSaveLinked(); };
-    parameterPanel.onAboutRequested       = [this] { aboutView.show(); };
+    parameterPanel.onAboutRequested       = [this]
+    {
+        const int numOpcodes = audioProcessor.getOpcodeSignatures().size();
+        aboutView.card.engineLine1 = "Csound " + CsoundAudioProcessor::getCsoundVersionString()
+                                   + (numOpcodes > 0 ? " - " + juce::String (numOpcodes) + " opcodes" : juce::String());
+        aboutView.card.engineLine2 = audioProcessor.getCsoundBuildInfo();
+        aboutView.show();
+    };
     parameterPanel.isDarkEditorEnabled = [this] { return getUserSettings().getBoolValue (kEditorDarkThemeKey, true); };
     parameterPanel.onToggleDarkEditorRequested = [this]
     {
@@ -2015,9 +2022,16 @@ void CsoundAudioProcessorEditor::AboutView::Card::paint (juce::Graphics& g)
     g.setFont (juce::Font (juce::FontOptions (13.0f)));
     g.drawFittedText ("Version " + juce::String (ProjectInfo::versionString), 0, 142, w, 18, juce::Justification::centred, 1);
 
+    // Motore Csound: libreria statica realmente linkata (versione,
+    // precisione, numero di opcode) e banner di avvio (build/commit) -
+    // vedi engineLine1/engineLine2, impostate da PluginEditor.
+    g.setFont (juce::Font (juce::FontOptions (11.5f)));
+    g.drawFittedText (engineLine1, 0, 158, w, 14, juce::Justification::centred, 1);
+    g.drawFittedText (engineLine2, 0, 171, w, 14, juce::Justification::centred, 1);
+
     // Separatore.
     g.setColour (kAboutBorder);
-    g.fillRect (40, 178, w - 80, 1);
+    g.fillRect (40, 189, w - 80, 1);
 
     // Autore.
     g.setColour (kAboutTextMuted);

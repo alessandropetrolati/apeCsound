@@ -206,6 +206,10 @@ private:
             std::function<void()> onClose;
             juce::Image icon;
             LinkRow githubRow, websiteRow;
+
+            // Due righe sul motore Csound (versione/precisione/opcode e
+            // build/commit), impostate da PluginEditor prima di show().
+            juce::String engineLine1, engineLine2;
         };
 
         AboutView();
