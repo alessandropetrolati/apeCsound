@@ -787,8 +787,7 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     csKsmps            = CsoundAPI::csoundGetKsmps (cs);
     csNumChannels      = (int) CsoundAPI::csoundGetChannels (cs, 0);
     csInputChannels    = (int) CsoundAPI::csoundGetChannels (cs, 1);
-    spoutReadPos       = 0;
-    samplesLeftInBlock = 0;
+    ksmpsPos           = 0;
 
     if (csKsmps <= 0 || csNumChannels <= 0)
     {
@@ -796,6 +795,28 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
         CsoundAPI::csoundDestroy (cs);
         suspendProcessing (false);
         return;
+    }
+
+    // spout appena allocato da Csound e' a zero (in Csound 7 e' const per
+    // l'host): il primo tick restituisce silenzio mentre spin si riempie,
+    // quindi l'output e' in ritardo di esattamente csKsmps campioni.
+    setLatencySamples (csKsmps);
+
+    // A) latenza introdotta dal plugin, sempre in console a ogni Apply.
+    // B) avviso se ksmps e' alto: la latenza pesa sul monitoraggio live.
+    {
+        const double sr = hostSampleRate > 0.0 ? hostSampleRate : 44100.0;
+        const double latencyMs = 1000.0 * (double) csKsmps / sr;
+        const auto msText = juce::String (latencyMs, 2) + " ms @ "
+                          + juce::String (sr / 1000.0, 1) + " kHz";
+
+        handleMessage ("Latency: " + juce::String (csKsmps) + " samples ("
+                       + msText + ", compensated by the host)");
+
+        if (csKsmps > kHighKsmpsWarningThreshold)
+            handleMessage ("Warning: ksmps " + juce::String (csKsmps) + " adds "
+                           + msText + " latency on live input."
+                           " Use a lower ksmps (16-64) for live monitoring.");
     }
 
     activeCsound.store (cs);
@@ -868,36 +889,50 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
 
     while (written < numSamples)
     {
-        if (samplesLeftInBlock == 0)
+        // Quanti campioni mancano per completare il tick corrente.
+        const int frames = juce::jmin (csKsmps - ksmpsPos, numSamples - written);
+
+        cs_float*       spin  = CsoundAPI::csoundGetSpin  (cs);
+        const cs_float* spout = CsoundAPI::csoundGetSpout (cs);
+
+        // 1) Input host -> spin, alla stessa posizione del tick. Va fatto
+        //    PRIMA di scrivere l'output: in JUCE il buffer e' in-place, i
+        //    canali di uscita sovrascrivono quelli di ingresso.
+        for (int ch = 0; ch < csInputChannels; ++ch)
         {
-            const int framesForThisTick = juce::jmin (csKsmps, numSamples - written);
-            cs_float* spin = CsoundAPI::csoundGetSpin (cs);
+            const int srcChannel = numIn > 0 ? juce::jmin (ch, numIn - 1) : -1;
+            const float* src = srcChannel >= 0 ? buffer.getReadPointer (srcChannel, written) : nullptr;
 
-            // Audio in ingresso (es. microfono, se il bus Input e' attivo)
-            // scritto nello spin buffer per il prossimo tick da csKsmps
-            // campioni, letto lato .csd con l'opcode "inch".
-            for (int ch = 0; ch < csInputChannels; ++ch)
-            {
-                const int srcChannel = numIn > 0 ? juce::jmin (ch, numIn - 1) : -1;
-                const float* src = srcChannel >= 0 ? buffer.getReadPointer (srcChannel) : nullptr;
+            for (int i = 0; i < frames; ++i)
+                spin[(size_t) (ksmpsPos + i) * (size_t) csInputChannels + (size_t) ch] = src != nullptr ? (cs_float) src[i] : (cs_float) 0;
+        }
 
-                for (int i = 0; i < framesForThisTick; ++i)
-                    spin[(size_t) i * (size_t) csInputChannels + (size_t) ch] = src != nullptr ? (cs_float) src[written + i] : 0;
+        // 2) spout (calcolato al tick precedente) -> output host.
+        for (int ch = 0; ch < numOut; ++ch)
+        {
+            auto* dest = buffer.getWritePointer (ch, written);
+            const int srcChannel = juce::jmin (ch, csNumChannels - 1);
 
-                for (int i = framesForThisTick; i < csKsmps; ++i)
-                    spin[(size_t) i * (size_t) csInputChannels + (size_t) ch] = 0; // padding se numSamples non e' multiplo di ksmps
-            }
+            for (int i = 0; i < frames; ++i)
+                dest[i] = (float) spout[(size_t) (ksmpsPos + i) * (size_t) csNumChannels + (size_t) srcChannel];
+        }
 
-            // Un "tick" di ksmps campioni per ogni canale nel buffer spout
-            // (e consumo dello spin appena scritto sopra). midiInReadCallback
-            // e midiOutWriteCallback vengono chiamati da Csound qui dentro.
+        ksmpsPos += frames;
+        written  += frames;
+
+        // 3) spin pieno: un tick di Csound. Consuma spin e produce il nuovo
+        //    spout, che verra' letto nei prossimi csKsmps campioni (latenza
+        //    = csKsmps, nessun campione perso qualunque sia il block size
+        //    dell'host). midiInReadCallback/midiOutWriteCallback vengono
+        //    chiamati da Csound qui dentro.
+        if (ksmpsPos >= csKsmps)
+        {
+            ksmpsPos = 0;
+
             if (CsoundAPI::csoundPerformKsmps (cs) != 0)
             {
                 // Performance/score terminati: silenzio per il resto del
-                // buffer e segnaliamo lo stop (l'istanza va comunque
-                // distrutta esplicitamente con Stop, qui ci limitiamo a
-                // smettere di generare audio per evitare di leggere uno
-                // spout non piu' valido).
+                // buffer e segnaliamo lo stop.
                 buffer.clear (written, numSamples - written);
                 ready = false;
 
@@ -913,26 +948,7 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
                 });
                 return;
             }
-
-            spoutReadPos       = 0;
-            samplesLeftInBlock = csKsmps;
         }
-
-        const int framesToCopy = juce::jmin (samplesLeftInBlock, numSamples - written);
-        const cs_float* spout = CsoundAPI::csoundGetSpout (cs);
-
-        for (int ch = 0; ch < numOut; ++ch)
-        {
-            auto* dest = buffer.getWritePointer (ch, written);
-            const int srcChannel = juce::jmin (ch, csNumChannels - 1);
-
-            for (int i = 0; i < framesToCopy; ++i)
-                dest[i] = (float) spout[(size_t) (spoutReadPos + i) * (size_t) csNumChannels + (size_t) srcChannel];
-        }
-
-        spoutReadPos       += framesToCopy;
-        samplesLeftInBlock -= framesToCopy;
-        written            += framesToCopy;
     }
 
     outgoingMidiBuffer = nullptr;
@@ -3088,7 +3104,7 @@ juce::String CsoundAudioProcessor::defaultCsdText()
     // .csd con l'opcode "inch". nchnls resta per i canali di USCITA.
     return R"CSD(<CsoundSynthesizer>
 <CsOptions>
--m0
+-m0 -Ma
 </CsOptions>
 <CsInstruments>
 
@@ -3101,15 +3117,71 @@ ksmps  = 10
 nchnls = 2
 0dbfs  = 1
 
+; Assign MIDI all channels to the synth instrument
+massign 0, 1
+
+; =========================================================
+; INSTRUMENT 1: MIDI SYNTH
+; Generates a sine wave controlled by MIDI notes
+; =========================================================
 
 instr 1
-    ; is intentionally empty
+
+    ; Get the MIDI note number
+    inote notnum
+    
+    ; Convert MIDI note number to frequency in Hz
+    icps = cpsmidinn(inote)
+
+    ; Convert MIDI velocity to amplitude
+    iamp = ampmidi(0.5)
+
+    ; Generate the oscillator signal
+    asig vco2 iamp, icps
+    
+    ; Send the synth signal directly to the outputs
+    outs asig, asig
+
+endin
+
+
+; =========================================================
+; INSTRUMENT 2: AUDIO INPUT EFFECT
+; Reads stereo audio from the DAW input and applies delay
+; =========================================================
+
+instr 2
+
+    ; Read stereo audio from the host input
+    aInL, aInR ins
+
+    ; Delay parameters
+    idelay = 0.3
+    kfb    = 0.4
+
+    ; Left channel delay line
+    aDL delayr idelay
+    aL  deltap3 idelay
+    delayw aInL + (aL * kfb)
+
+    ; Right channel delay line
+    aDR delayr idelay
+    aR  deltap3 idelay
+    delayw aInR + (aR * kfb)
+
+    ; Mix dry input with the delayed signal
+    aOutL = aInL + (aL * 0.5)
+    aOutR = aInR + (aR * 0.5)
+
+    ; Send the processed audio to the outputs
+    outs aOutL, aOutR
+
 endin
 
 </CsInstruments>
 <CsScore>
-i1 0 z
-;f 0 z
+; Keep the audio effect running continuously
+i 2 0 z
 e
 </CsScore>
 </CsoundSynthesizer>

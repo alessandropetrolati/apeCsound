@@ -956,8 +956,15 @@ private:
     int csKsmps            = 0;
     int csNumChannels      = 0; // canali di output (nchnls) - dimensione di spout
     int csInputChannels    = 0; // canali di input (nchnls_i) - dimensione di spin
-    int spoutReadPos       = 0;
-    int samplesLeftInBlock = 0;
+    // Posizione corrente (0..csKsmps-1) dentro il tick ksmps: lo stesso indice
+    // serve per scrivere l'input host in spin e leggere l'output da spout.
+    // Quando arriva a csKsmps, spin e' pieno -> csoundPerformKsmps().
+    // Latenza risultante: csKsmps campioni (riportata all'host).
+    int ksmpsPos           = 0;
+
+    // Sopra questo ksmps, a ogni Apply la console avvisa della latenza sul
+    // monitoraggio live (128 campioni = 2.7 ms @ 48 kHz).
+    static constexpr int kHighKsmpsWarningThreshold = 128;
 
     double hostSampleRate = 44100.0;
     int    hostBlockSize  = 512;

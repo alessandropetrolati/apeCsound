@@ -22,7 +22,7 @@
 
 set -e
 
-FRAMEWORK_SRC="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/Csound/CsoundLib64.framework"
+FRAMEWORK_SRC="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/Csound/CsoundLib64.framework"
 DEST_CONTENTS="$CODESIGNING_FOLDER_PATH/Contents"
 
 # Il target "Shared Code" (libreria statica interna di JUCE, non un bundle)
