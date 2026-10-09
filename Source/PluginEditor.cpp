@@ -1532,8 +1532,8 @@ void CsoundAudioProcessorEditor::AboutView::LinkRow::mouseUp (const juce::MouseE
 }
 
 CsoundAudioProcessorEditor::AboutView::Card::Card()
-    : githubRow ("Source code on GitHub", "github.com/alessandropetrolati/Csound",
-                 juce::URL ("https://github.com/alessandropetrolati/Csound")),
+    : githubRow ("Source code on GitHub", "github.com/alessandropetrolati/apeCsound",
+                 juce::URL ("https://github.com/alessandropetrolati/apeCsound")),
       websiteRow ("apeSoft website", "www.apesoft.it",
                   juce::URL ("https://www.apesoft.it"))
 {
