@@ -276,6 +276,10 @@ private:
     float charWidth = 8.0f;
     int lineHeight = 15;
     float fontAscent = 11.0f;
+    // Inset del testo rispetto ai bordi (richiesta esplicita): in alto e a
+    // sinistra (dopo il gutter). Scorrono col contenuto.
+    static constexpr int textInsetTop  = 6;
+    static constexpr int textInsetLeft = 6;
     int tabSize = 4;
     bool useSpacesForTabs = true;
     bool showLineNumbers = true;

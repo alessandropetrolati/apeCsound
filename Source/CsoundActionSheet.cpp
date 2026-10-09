@@ -496,6 +496,24 @@ namespace
         return gear;
     }
 
+    // "A" con un + (o un -) in basso a destra: cambio dimensione del testo.
+    juce::Path makeTextSizePath (bool larger)
+    {
+        juce::Path a;
+        a.startNewSubPath (3.0f, 20.0f);  a.lineTo (9.5f, 3.5f);  a.lineTo (16.0f, 20.0f);
+        a.startNewSubPath (5.5f, 14.0f);  a.lineTo (13.5f, 14.0f);
+        auto filled = strokeOpenPath (a, 2.0f);
+
+        juce::Path sign;
+        sign.startNewSubPath (16.0f, 18.5f); sign.lineTo (23.0f, 18.5f);
+        if (larger)
+        {
+            sign.startNewSubPath (19.5f, 15.0f); sign.lineTo (19.5f, 22.0f);
+        }
+        filled.addPath (strokeOpenPath (sign, 1.8f));
+        return filled;
+    }
+
     juce::Path makeSheetIconPath (CsoundActionSheetIcon icon)
     {
         switch (icon)
@@ -525,6 +543,8 @@ namespace
             case CsoundActionSheetIcon::indent:        return makeIndentPath();
             case CsoundActionSheetIcon::comment:       return makeCommentPath();
             case CsoundActionSheetIcon::gear:          return makeGearPath();
+            case CsoundActionSheetIcon::textLarger:    return makeTextSizePath (true);
+            case CsoundActionSheetIcon::textSmaller:   return makeTextSizePath (false);
             case CsoundActionSheetIcon::none:
             default:                                   return {};
         }
@@ -739,7 +759,7 @@ int CsoundActionSheet::findRowAt (juce::Point<int> positionInRowsContent) const
         if (row.kind == LaidOutRow::Kind::normal)
         {
             const auto& item = pageStack.back().items[(size_t) row.itemIndex];
-            return item.enabled ? i : -1;
+            return item.isEnabledNow() ? i : -1;
         }
 
         return -1; // separatore/intestazione di sezione: non cliccabile
@@ -776,6 +796,16 @@ void CsoundActionSheet::activateRow (int rowIndex)
         pageStack.push_back ({ item.text, item.subItems });
         recomputeLayout();
         rowsViewport.setViewPosition (0, 0);
+        return;
+    }
+
+    if (item.keepOpen)
+    {
+        // Azione senza chiudere il foglio (vedi keepOpen in CsoundActionSheetItem).
+        if (onSelected)
+            onSelected (item.id);
+
+        rowsContent.repaint(); // spunte (tickedFn) aggiornate
         return;
     }
 
@@ -871,7 +901,7 @@ void CsoundActionSheet::RowsContent::paint (juce::Graphics& g)
         }
 
         // Riga normale
-        if (i == owner.pressedRowIndex && item.enabled)
+        if (i == owner.pressedRowIndex && item.isEnabledNow())
         {
             g.setColour (kRowPressedBg);
             g.fillRect (bounds);
@@ -882,7 +912,7 @@ void CsoundActionSheet::RowsContent::paint (juce::Graphics& g)
         // Spazio per la spunta riservato SEMPRE (anche se non ticked), cosi'
         // il testo resta allineato riga per riga nella stessa pagina.
         auto tickArea = content.removeFromLeft (28);
-        if (item.ticked)
+        if (item.isTickedNow())
         {
             auto check = makeCheckmarkPath();
             auto iconArea = tickArea.withSizeKeepingCentre (18, 18);
@@ -913,11 +943,11 @@ void CsoundActionSheet::RowsContent::paint (juce::Graphics& g)
             auto glyphArea = iconArea.withSizeKeepingCentre (18, 18);
             path.scaleToFit ((float) glyphArea.getX(), (float) glyphArea.getY(),
                                (float) glyphArea.getWidth(), (float) glyphArea.getHeight(), true);
-            g.setColour (item.enabled ? kTextMuted : kTextDisabled);
+            g.setColour (item.isEnabledNow() ? kTextMuted : kTextDisabled);
             g.fillPath (path);
         }
 
-        g.setColour (item.enabled ? kText : kTextDisabled);
+        g.setColour (item.isEnabledNow() ? kText : kTextDisabled);
         g.setFont (juce::Font (juce::FontOptions (16.0f)));
         g.drawFittedText (item.text, content, juce::Justification::centredLeft, 1);
     }

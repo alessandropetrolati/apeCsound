@@ -247,8 +247,8 @@ void CodeView::recomputeContentSize()
     contentSizeDirty = false;
 
     maxLineColumns = document.getMaximumLineLength();
-    contentWidth  = (double) (maxLineColumns + 4) * charWidth;
-    contentHeight = (double) document.getNumLines() * lineHeight + lineHeight; // un margine sotto l'ultima riga
+    contentWidth  = (double) (maxLineColumns + 4) * charWidth + textInsetLeft;
+    contentHeight = (double) document.getNumLines() * lineHeight + lineHeight + textInsetTop; // un margine sotto l'ultima riga
 }
 
 void CodeView::updateScrollBars()
@@ -343,7 +343,7 @@ int CodeView::columnOfPosition (const juce::CodeDocument::Position& pos) const
 // Geometria
 int CodeView::getFirstLineOnScreen() const
 {
-    return juce::jmax (0, (int) std::floor (scrollY / (double) lineHeight));
+    return juce::jmax (0, (int) std::floor ((scrollY - textInsetTop) / (double) lineHeight));
 }
 
 int CodeView::getNumLinesOnScreen() const
@@ -354,8 +354,8 @@ int CodeView::getNumLinesOnScreen() const
 juce::Rectangle<int> CodeView::getCharacterBounds (const juce::CodeDocument::Position& pos) const
 {
     const int col = columnOfPosition (pos);
-    const int x = gutterWidth + juce::roundToInt ((double) col * charWidth - scrollX);
-    const int y = juce::roundToInt ((double) pos.getLineNumber() * lineHeight - scrollY);
+    const int x = gutterWidth + textInsetLeft + juce::roundToInt ((double) col * charWidth - scrollX);
+    const int y = juce::roundToInt ((double) pos.getLineNumber() * lineHeight - scrollY + textInsetTop);
 
     return { x, y, juce::roundToInt (charWidth), lineHeight };
 }
@@ -364,9 +364,9 @@ juce::CodeDocument::Position CodeView::getPositionAt (int x, int y) const
 {
     const int numLines = document.getNumLines();
     const int line = juce::jlimit (0, juce::jmax (0, numLines - 1),
-                                   (int) std::floor (((double) y + scrollY) / (double) lineHeight));
+                                   (int) std::floor (((double) (y - textInsetTop) + scrollY) / (double) lineHeight));
 
-    const double colF = ((double) (x - gutterWidth) + scrollX) / (double) charWidth;
+    const double colF = ((double) (x - gutterWidth - textInsetLeft) + scrollX) / (double) charWidth;
     const int column = juce::jmax (0, juce::roundToInt (colF));
 
     const auto lineText = document.getLine (line);
@@ -535,9 +535,9 @@ juce::RectangleList<int> CodeView::getTextBounds (juce::Range<int> textRange) co
         const int a = line == start.getLineNumber() ? start.getIndexInLine() : 0;
         const int b = line == end.getLineNumber()   ? end.getIndexInLine()   : lineText.length();
 
-        const int x1 = gutterWidth + juce::roundToInt ((double) columnOfIndex (lineText, a) * charWidth - scrollX);
-        const int x2 = gutterWidth + juce::roundToInt ((double) columnOfIndex (lineText, b) * charWidth - scrollX);
-        const int y  = juce::roundToInt ((double) line * lineHeight - scrollY);
+        const int x1 = gutterWidth + textInsetLeft + juce::roundToInt ((double) columnOfIndex (lineText, a) * charWidth - scrollX);
+        const int x2 = gutterWidth + textInsetLeft + juce::roundToInt ((double) columnOfIndex (lineText, b) * charWidth - scrollX);
+        const int y  = juce::roundToInt ((double) line * lineHeight - scrollY + textInsetTop);
 
         list.add ({ x1, y, juce::jmax (1, x2 - x1), lineHeight });
     }
@@ -1626,7 +1626,7 @@ void CodeView::paintText (juce::Graphics& g, juce::Rectangle<int> area)
 
     for (int line = firstLine; line <= lastLine; ++line)
     {
-        const float y = (float) ((double) line * lineHeight - scrollY);
+        const float y = (float) ((double) line * lineHeight - scrollY + textInsetTop);
         const auto lineText = document.getLine (line);
         const int lineStartPos = juce::CodeDocument::Position (document, line, 0).getPosition();
         const int lineLen = lineText.length();
@@ -1651,8 +1651,8 @@ void CodeView::paintText (juce::Graphics& g, juce::Rectangle<int> area)
                 const bool toEndOfLine = selEnd >= lineEndPos && lineLen > 0
                                          && (lineText[lineLen - 1] == '\n' || lineText[lineLen - 1] == '\r');
 
-                const float x1 = (float) ((double) gutterWidth + columnOfIndex (lineText, a) * charWidth - scrollX);
-                float x2 = (float) ((double) gutterWidth + columnOfIndex (lineText, b) * charWidth - scrollX);
+                const float x1 = (float) ((double) (gutterWidth + textInsetLeft) + columnOfIndex (lineText, a) * charWidth - scrollX);
+                float x2 = (float) ((double) (gutterWidth + textInsetLeft) + columnOfIndex (lineText, b) * charWidth - scrollX);
 
                 if (toEndOfLine)
                     x2 = juce::jmax (x2, x1 + charWidth * 0.5f); // mostra che l'a-capo e' incluso
@@ -1705,7 +1705,7 @@ void CodeView::paintText (juce::Graphics& g, juce::Rectangle<int> area)
                 text = expanded;
             }
 
-            const float x = (float) ((double) gutterWidth + columnOfIndex (lineText, s) * charWidth - scrollX);
+            const float x = (float) ((double) (gutterWidth + textInsetLeft) + columnOfIndex (lineText, s) * charWidth - scrollX);
 
             if (x > (float) area.getRight())
                 break;
@@ -1756,7 +1756,7 @@ void CodeView::paintGutter (juce::Graphics& g)
 
     for (int line = firstLine; line <= lastLine; ++line)
     {
-        const int y = juce::roundToInt ((double) line * lineHeight - scrollY);
+        const int y = juce::roundToInt ((double) line * lineHeight - scrollY + textInsetTop);
         g.setColour (line == caretLine ? textColour.contrasting (0.3f) : textColour);
         g.drawText (juce::String (line + 1), 0, y, gutterWidth - 8, lineHeight, juce::Justification::centredRight, false);
     }

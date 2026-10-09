@@ -2668,20 +2668,21 @@ void CsoundParameterMappingPanel::showPanelMenu()
     // visibile (isParametersPanelVisible/isConsoleVisible, impostate da
     // PluginEditor). I vecchi bottoni dedicati nella toolbar principale
     // sono stati rimossi: questa e' ora l'UNICA via per queste due azioni.
-    const bool parametersVisible = isParametersPanelVisible && isParametersPanelVisible();
-    const bool consoleVisible    = isConsoleVisible && isConsoleVisible();
-
     {
         CsoundActionSheetItem item;
         item.id = 101; item.text = "Show Parameters";
-        item.enabled = onToggleParametersRequested != nullptr; item.ticked = parametersVisible;
+        item.enabled = onToggleParametersRequested != nullptr;
+        item.tickedFn = [this] { return isParametersPanelVisible && isParametersPanelVisible(); };
+        item.keepOpen = true; // il menu resta aperto (azioni multiple)
         item.icon = CsoundActionSheetIcon::sidebarPanel;
         items.push_back (item);
     }
     {
         CsoundActionSheetItem item;
         item.id = 102; item.text = "Show Console";
-        item.enabled = onToggleConsoleRequested != nullptr; item.ticked = consoleVisible;
+        item.enabled = onToggleConsoleRequested != nullptr;
+        item.tickedFn = [this] { return isConsoleVisible && isConsoleVisible(); };
+        item.keepOpen = true;
         item.icon = CsoundActionSheetIcon::console;
         items.push_back (item);
     }
@@ -2748,13 +2749,17 @@ void CsoundParameterMappingPanel::showPanelMenu()
     items.push_back (CsoundActionSheetItem::separator());
     {
         CsoundActionSheetItem item;
-        item.id = 103; item.text = "Undo"; item.enabled = undoManager.canUndo();
+        item.id = 103; item.text = "Undo";
+        item.enabledFn = [this] { return undoManager.canUndo(); };
+        item.keepOpen = true;
         item.icon = CsoundActionSheetIcon::undo;
         items.push_back (item);
     }
     {
         CsoundActionSheetItem item;
-        item.id = 104; item.text = "Redo"; item.enabled = undoManager.canRedo();
+        item.id = 104; item.text = "Redo";
+        item.enabledFn = [this] { return undoManager.canRedo(); };
+        item.keepOpen = true;
         item.icon = CsoundActionSheetIcon::redo;
         items.push_back (item);
     }
@@ -2771,7 +2776,8 @@ void CsoundParameterMappingPanel::showPanelMenu()
             CsoundActionSheetItem item;
             item.id = 114; item.text = "Modern Syntax in Help";
             item.enabled = onToggleModernSyntaxRequested != nullptr;
-            item.ticked = isModernSyntaxEnabled != nullptr && isModernSyntaxEnabled();
+            item.tickedFn = [this] { return isModernSyntaxEnabled != nullptr && isModernSyntaxEnabled(); };
+            item.keepOpen = true;
             item.icon = CsoundActionSheetIcon::codeBraces;
             config.subItems.push_back (item);
         }
@@ -2779,8 +2785,26 @@ void CsoundParameterMappingPanel::showPanelMenu()
             CsoundActionSheetItem item;
             item.id = 116; item.text = "Follow CSD nchnls";
             item.enabled = onToggleFollowCsdChannelsRequested != nullptr;
-            item.ticked = isFollowingCsdChannels != nullptr && isFollowingCsdChannels();
+            item.tickedFn = [this] { return isFollowingCsdChannels != nullptr && isFollowingCsdChannels(); };
+            item.keepOpen = true;
             item.icon = CsoundActionSheetIcon::console;
+            config.subItems.push_back (item);
+        }
+        config.subItems.push_back (CsoundActionSheetItem::separator());
+        {
+            CsoundActionSheetItem item;
+            item.id = 118; item.text = "Larger Text";
+            item.enabled = onFontSizeChangeRequested != nullptr;
+            item.keepOpen = true;
+            item.icon = CsoundActionSheetIcon::textLarger;
+            config.subItems.push_back (item);
+        }
+        {
+            CsoundActionSheetItem item;
+            item.id = 119; item.text = "Smaller Text";
+            item.enabled = onFontSizeChangeRequested != nullptr;
+            item.keepOpen = true;
+            item.icon = CsoundActionSheetIcon::textSmaller;
             config.subItems.push_back (item);
         }
         items.push_back (config);
@@ -2840,6 +2864,8 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 114: if (safeThis->onToggleModernSyntaxRequested) safeThis->onToggleModernSyntaxRequested(); break;
             case 115: if (safeThis->onOpenManualRequested) safeThis->onOpenManualRequested(); break;
             case 116: if (safeThis->onToggleFollowCsdChannelsRequested) safeThis->onToggleFollowCsdChannelsRequested(); break;
+            case 118: if (safeThis->onFontSizeChangeRequested) safeThis->onFontSizeChangeRequested (+1); break;
+            case 119: if (safeThis->onFontSizeChangeRequested) safeThis->onFontSizeChangeRequested (-1); break;
             case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
             default: break;
         }

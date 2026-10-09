@@ -445,6 +445,10 @@ private:
     KeyboardWatcher keyboardWatcher;
     int keyboardInset = 0;
     void updateKeyboardInset();
+
+    // Dimensione del font di editor e consolle (Config > Larger/Smaller
+    // Text), salvata nelle preferenze utente.
+    void applyEditorFontSize (int points);
     static constexpr int opcodeHelpBarHeight = 26;
 
     // Vedi SessionWarningBar sopra: visibile SOLO quando c'e' qualcosa da

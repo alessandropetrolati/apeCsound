@@ -27,7 +27,8 @@ enum class CsoundActionSheetIcon
     book,        // manuale online
     codeBraces,  // sintassi moderna "f(x)"
     cut, copy, paste, selectAll, indent, comment,
-    gear         // sottomenu Config
+    gear,        // sottomenu Config
+    textLarger, textSmaller // "A" grande/piccola con +/- (font dell'editor)
 };
 
 /**
@@ -51,6 +52,18 @@ struct CsoundActionSheetItem
     juce::String sectionHeader; // non vuoto = riga di intestazione, solo etichetta
     CsoundActionSheetIcon icon = CsoundActionSheetIcon::none;
     std::vector<CsoundActionSheetItem> subItems;
+
+    // keepOpen: la voce esegue la sua azione (callback onSelected con il
+    // suo id) ma il foglio RESTA aperto, per azioni ripetute o multiple
+    // (es. Config: spunte e Larger/Smaller Text). Con tickedFn impostata la
+    // spunta viene riletta a ogni ridisegno, cosi' riflette subito il nuovo
+    // stato senza chiudere e riaprire il menu.
+    bool keepOpen = false;
+    std::function<bool()> tickedFn;
+    std::function<bool()> enabledFn; // come tickedFn, per lo stato abilitato (es. Undo/Redo)
+
+    bool isEnabledNow() const  { return enabledFn != nullptr ? enabledFn() : enabled; }
+    bool isTickedNow() const   { return ticked || (tickedFn != nullptr && tickedFn()); }
 
     static CsoundActionSheetItem separator()
     {

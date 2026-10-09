@@ -138,6 +138,8 @@ namespace
     }
 
     const char* const kModernSyntaxHelpKey = "modernSyntaxHelp";
+    const char* const kEditorFontSizeKey   = "editorFontSize"; // punti; consolle = -2
+    constexpr int kDefaultEditorFontSize = 15, kMinEditorFontSize = 9, kMaxEditorFontSize = 32;
 
     // Palette della toolbar (dal mockup "R2 - Capsula centrale"): fondo
     // quasi nero, bottoni teal chiaro con icona/testo scuri, capsula
@@ -203,7 +205,6 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // pratica, ma e' piu' chiaro cosi'.
     document.addListener (this);
 
-    editor.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 15.0f, juce::Font::plain));
     addAndMakeVisible (editor);
 
     logConsole.setMultiLine (true);
@@ -220,8 +221,12 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     logConsole.setColour (juce::TextEditor::outlineColourId,        juce::Colour (0xff10181f));
     logConsole.setColour (juce::TextEditor::focusedOutlineColourId, juce::Colour (0xff10181f));
     logConsole.setBorder (juce::BorderSize<int> (0));
-    logConsole.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain));
+    logConsole.setIndents (8, 6); // inset del testo a sinistra / in alto (richiesta esplicita)
     addAndMakeVisible (logConsole);
+
+    // Dimensione del testo di editor e consolle: preferenza utente
+    // persistente (Config > Larger/Smaller Text).
+    applyEditorFontSize (getUserSettings().getIntValue (kEditorFontSizeKey, kDefaultEditorFontSize));
 
     // Il motore puo' girare da tempo con la UI chiusa: recuperiamo subito la
     // storia recente dei messaggi (buffer circolare in CsoundAudioProcessor)
@@ -385,6 +390,11 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.onLoadSessionRequested = [this] { promptLoadSession(); };
     parameterPanel.onSaveLinkedRequested  = [this] { performSaveLinked(); };
     parameterPanel.onAboutRequested       = [this] { aboutView.show(); };
+    parameterPanel.onFontSizeChangeRequested = [this] (int delta)
+    {
+        const int current = getUserSettings().getIntValue (kEditorFontSizeKey, kDefaultEditorFontSize);
+        applyEditorFontSize (juce::jlimit (kMinEditorFontSize, kMaxEditorFontSize, current + delta));
+    };
     parameterPanel.onGuideRequested       = [this] { guideView.show(); };
 
     // Sintassi moderna nella barra di help: preferenza utente persistente
@@ -709,6 +719,17 @@ void CsoundAudioProcessorEditor::bridgeCodeEditIntoSharedUndo()
         sharedUndoManager.beginNewTransaction();
         sharedUndoManager.perform (new CodeEditTransactionProxy (document, isApplyingCodeUndoRedo));
     }
+}
+
+void CsoundAudioProcessorEditor::applyEditorFontSize (int points)
+{
+    points = juce::jlimit (kMinEditorFontSize, kMaxEditorFontSize, points);
+    getUserSettings().setValue (kEditorFontSizeKey, points);
+
+    editor.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), (float) points, juce::Font::plain));
+    logConsole.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), (float) juce::jmax (8, points - 2), juce::Font::plain));
+    logConsole.applyFontToAllText (logConsole.getFont());
+    editor.scrollToKeepCaretOnScreen();
 }
 
 void CsoundAudioProcessorEditor::updateKeyboardInset()

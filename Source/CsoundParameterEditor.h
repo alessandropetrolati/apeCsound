@@ -259,6 +259,10 @@ public:
     std::function<void()> onToggleFollowCsdChannelsRequested;
     std::function<bool()> isFollowingCsdChannels;
 
+    // "Larger Text" / "Smaller Text" (sottomenu Config): +1/-1 punto al font
+    // dell'editor di codice e della consolle - vedi PluginEditor.
+    std::function<void (int)> onFontSizeChangeRequested;
+
     // Chiamata alla fine di OGNI rebuildUnifiedRows() (aggiunta/rimozione
     // di un parametro, commit di un metadata, undo/redo, refresh dopo Load/
     // ripristino): PluginEditor la usa per ricontrollare se la sessione
