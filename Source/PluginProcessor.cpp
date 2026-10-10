@@ -3776,27 +3776,35 @@ instr 2
 
     ; Delay parameters
     idelay = 1
-    
+
     ;SLIDER FLOAT: Min=0; Max=1; Skew=1; Step=0.001
     kdelay chnget "Delay"
-    
+
     ;SLIDER FLOAT: Min=0; Max=0.98; Skew=1; Step=0.001
     kfb chnget "Feedback"
 
+    ; Smoothing: niente salti quando muovi gli slider.
+    ; Tempo minimo 1 ms (deltap3 ha bisogno di un minimo di campioni),
+    ; partenza dal valore attuale per evitare la "rampa" iniziale da 0.
+    kdelay   limit   kdelay, 0.001, idelay - 0.01
+    kTime    portk   kdelay, 0.15, i(kdelay)
+    aTime    interp  kTime                   ; tempo a-rate: lettura continua
+    kfbS     portk   kfb, 0.05, i(kfb)
+
     ; Left channel delay line
     aDL delayr idelay
-    aL  deltap3 kdelay
-    delayw aInL + (aL * kfb)
+    aL  deltap3 aTime
+    delayw aInL + (aL * kfbS)
 
     ; Right channel delay line
     aDR delayr idelay
-    aR  deltap3 kdelay
-    delayw aInR + (aR * kfb)
+    aR  deltap3 aTime
+    delayw aInR + (aR * kfbS)
 
     ; Mix dry input with the delayed signal
     aOutL = aInL + (aL * 0.5)
     aOutR = aInR + (aR * 0.5)
-    
+
     ; Send the processed audio to the plugin outputs 1 and 2
     ; (outch n works up to nchnls: on a 4-channel track you can also
     ; write outch 3, aSig / outch 4, aSig)

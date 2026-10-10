@@ -448,11 +448,30 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
             item.id = 2; item.text = "Save as..."; item.icon = CsoundActionSheetIcon::save;
             items.push_back (item);
         }
+        items.push_back (CsoundActionSheetItem::separator());
         {
             CsoundActionSheetItem item;
             item.id = 3; item.text = "Load..."; item.icon = CsoundActionSheetIcon::load;
             items.push_back (item);
         }
+       #if ! JUCE_IOS
+        {
+            // Mostra il .csd collegato nel file manager di sistema (Finder /
+            // Esplora file); disabilitata se la sessione non ha un file o il
+            // file non esiste piu'. Non su iOS: non c'e' un Finder.
+            CsoundActionSheetItem item;
+           #if JUCE_MAC
+            item.id = 6; item.text = "Reveal in Finder";
+           #elif JUCE_WINDOWS
+            item.id = 6; item.text = "Show in Explorer";
+           #else
+            item.id = 6; item.text = "Show in Folder";
+           #endif
+            item.icon = CsoundActionSheetIcon::folder;
+            item.enabled = audioProcessor.getLinkedCsdFile().existsAsFile();
+            items.push_back (item);
+        }
+       #endif
         items.push_back (CsoundActionSheetItem::separator());
         {
             CsoundActionSheetItem item;
@@ -479,6 +498,15 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
                 case 3: safeThis->promptLoadSession();      break;
                 case 4: safeThis->promptInitializeSession (true);  break;
                 case 5: safeThis->promptInitializeSession (false); break;
+               #if ! JUCE_IOS
+                case 6:
+                {
+                    const auto linked = safeThis->audioProcessor.getLinkedCsdFile();
+                    if (linked.existsAsFile())
+                        linked.revealToUser();
+                    break;
+                }
+               #endif
                 default: break;
             }
         });
@@ -2325,7 +2353,7 @@ Every instance exposes a **fixed set of 144 parameters** to the DAW: **64 Float*
 
 # Toolbar
 - **Apply** - recompiles and restarts Csound with the text in the editor. A red ring means the editor text differs from the running code.
-- **File capsule** (centre) - name of the linked `.csd`, its folder and state (saved / unsaved changes / file not found, coloured dot). Click it for **Save**, **Save as...**, **Load...**, **Init Session Template** and **Init Session Clear**.
+- **File capsule** (centre) - name of the linked `.csd`, its folder and state (saved / unsaved changes / file not found, coloured dot). Click it for **Save**, **Save as...**, **Load...**, **Reveal in Finder** (desktop only), **Init Session Template** and **Init Session Clear**.
 - **Magnifier** - opens the Find / Replace bar: match case `Aa`, whole word `W`, Replace / Replace All; Enter = next match, Esc closes.
 - **Menu** - Show/Hide Parameters and Console, Undo / Redo, Config, apeCsound Guide, Csound Manual, About.
 
@@ -2351,6 +2379,14 @@ The `.csd` file on disk is the truth. A DAW project stores the path of the linke
 The 144 fixed parameters (64 Float, 32 Int, 32 Bool, 16 Choice) are mapped here to Csound channels read with `chnget`: **Float** (min/max/default/skew/step), **Int** (min/max/default), **Bool** (default), **Choice** (up to 16 options, sends the index). Use **+** on the panel title bar to add one; each row has edit, copy-`chnget` and remove buttons. Unassigned slots are hidden from the panel but still exist for the DAW. Values are pushed to Csound every block with `csoundSetControlChannel`.
 - **Drag a parameter into the code** - drag the handle on the left of a row and drop it on a line of the editor: a `chnget` line is inserted there, already indented, with the variable named after the channel (`kCutoff chnget "Cutoff"`) and, above it, a comment with the parameter configuration (`; SLIDER FLOAT: Min=20; Max=20000; Skew=0.3; Step=1`). The **copy** button puts the same text in the clipboard, for pasting by hand.
 - Files made with **Cabbage** (`<Cabbage>` section) or **CsoundQt** (`<bsbPanel>` widgets: sliders, knobs, spin boxes, scroll numbers, XY controllers, checkboxes, dropdowns, value buttons) are imported automatically on load: widgets become parameters. CsoundQt `exp` sliders get a matching skew, integer knobs step 1, checkbox `pressedValue` is respected.
+
+# Cabbage and CsoundQt files
+Porting a Cabbage or CsoundQt file to apeCsound is **not guaranteed**: whether it runs, and how well, depends on many factors, and some files need manual changes or cannot work at all.
+- **Only supported parameters are imported** - the widget types listed above become parameters (channel name, range, default, options). Everything else is ignored: GUI layout, colours, images, labels, graphs, tables, meters, scopes, displays, file browsers and buttons that trigger events.
+- **The code is not changed** - frontend-specific opcodes must be replaced by hand: `invalue` / `cabbageGetValue` with `chnget`, `outvalue` / `cabbageSet...` with `chnset` or removed. FLTK (`FL...`), Python, Lua, OSC and opcodes from plugin libraries not built into apeCsound do not work.
+- **Audio I/O** - use `inch` / `outch` (or `ins` / `outs`) for the track audio; `diskin`, `soundin`, GEN01 and other opcodes that read files need files that exist at the given path.
+- **Options** - `<CsOptions>` real-time flags (`-odac`, `-iadc`, `-M`, `-+rtaudio`...) are ignored; `sr` follows the DAW and the channel count depends on **Follow CSD nchnls**.
+- Check the console after **Apply**: compile errors and missing opcodes are reported there.
 
 # Audio, MIDI and channels
 - `sr` always follows the DAW sample rate.

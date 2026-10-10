@@ -29,7 +29,8 @@ enum class CsoundActionSheetIcon
     cut, copy, paste, selectAll, indent, comment,
     gear,        // sottomenu Config
     textLarger, textSmaller, // "A" grande/piccola con +/- (font dell'editor)
-    sun          // "Light Editor": sole (palette chiara)
+    sun,         // "Light Editor": sole (palette chiara)
+    folder       // "Reveal in Finder": cartella
 };
 
 /**

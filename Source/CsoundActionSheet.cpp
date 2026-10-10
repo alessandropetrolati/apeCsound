@@ -313,6 +313,28 @@ namespace
         return filled;
     }
 
+    // Reveal in Finder: cartella con linguetta (contorno) - il glifo
+    // universale di "mostra nella cartella".
+    juce::Path makeFolderPath()
+    {
+        juce::Path folder;
+        folder.startNewSubPath (3.0f, 6.0f);
+        folder.lineTo (9.5f, 6.0f);
+        folder.lineTo (11.5f, 8.5f);
+        folder.lineTo (21.0f, 8.5f);
+        folder.lineTo (21.0f, 19.5f);
+        folder.lineTo (3.0f, 19.5f);
+        folder.closeSubPath();
+
+        juce::Path flap;
+        flap.startNewSubPath (3.0f, 11.5f);
+        flap.lineTo (21.0f, 11.5f);
+
+        auto filled = strokeOpenPath (folder, 1.7f);
+        filled.addPath (strokeOpenPath (flap, 1.6f));
+        return filled;
+    }
+
     // Informazioni (About): cerchio con una "i" (punto + asta) - il glifo
     // universale per "informazioni sull'app".
     juce::Path makeInfoPath()
@@ -565,6 +587,7 @@ namespace
             case CsoundActionSheetIcon::textLarger:    return makeTextSizePath (true);
             case CsoundActionSheetIcon::textSmaller:   return makeTextSizePath (false);
             case CsoundActionSheetIcon::sun:           return makeSunPath();
+            case CsoundActionSheetIcon::folder:        return makeFolderPath();
             case CsoundActionSheetIcon::none:
             default:                                   return {};
         }

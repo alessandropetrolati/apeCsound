@@ -37,6 +37,7 @@ A fixed pool of host-automatable parameters can be mapped to Csound channels and
 
 - Drag a parameter onto the code editor to insert the matching `chnget` line.
 - `.csd` files made with **Cabbage** (`<Cabbage>` section) or **CsoundQt** (`<bsbPanel>` widgets: sliders, knobs, spin boxes, scroll numbers, XY controllers, checkboxes, dropdown menus) are imported automatically: widgets are mapped to parameters.
+- **Porting Cabbage / CsoundQt files is not guaranteed.** Whether a file runs depends on many factors (frontend-specific opcodes, plugin libraries, external files, real-time options). apeCsound imports **only the supported parameter widgets**; GUI layout, graphics, displays and event buttons are ignored, and the code is left untouched: `invalue` / `cabbageGetValue` must be replaced with `chnget`, `outvalue` / `cabbageSet…` with `chnset`, and FLTK, Python, Lua, OSC or non-bundled plugin opcodes do not work. See the in-app **apeCsound Guide** for details.
 - The parameter mapping is saved **inside the `.csd`** in an `<apeCsoundParams>` section after `</CsoundSynthesizer>`. Csound ignores it, so the file stays a valid, portable `.csd`.
 
 ### Sessions
