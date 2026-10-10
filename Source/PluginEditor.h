@@ -77,6 +77,11 @@ public:
     void paint (juce::Graphics& g) override;
     void resized() override;
 
+    // Standalone desktop: barra del titolo NATIVA invece di quella disegnata
+    // da JUCE (StandaloneFilterWindow). Applicata una volta, appena l'editor
+    // e' dentro la finestra - vedi l'implementazione in PluginEditor.cpp.
+    void parentHierarchyChanged() override;
+
     // Cmd+Z (Ctrl+Z su Windows)/Cmd+Shift+Z: annullano/ripetono l'ULTIMA
     // operazione in ordine CRONOLOGICO su sharedUndoManager sotto, SIA che
     // sia stata una modifica di testo nell'editor, SIA una modifica di
@@ -260,6 +265,69 @@ private:
     };
 
     GuideView guideView;
+
+    // "Audio/MIDI Settings..." (solo standalone): overlay come GuideView,
+    // con l'AudioDeviceSelectorComponent di JUCE ridipinto con i colori
+    // scuri delle schede dell'app (DarkLookAndFeel) invece del DialogWindow
+    // standard di StandalonePluginHolder::showAudioSettingsDialog().
+    struct AudioSettingsView final : public juce::Component
+    {
+        AudioSettingsView();
+        ~AudioSettingsView() override;
+        void paint (juce::Graphics& g) override;
+        void resized() override;
+        void mouseUp (const juce::MouseEvent& e) override;
+        bool keyPressed (const juce::KeyPress& key) override;
+
+        /** Crea il selettore sul deviceManager dello standalone e mostra la
+            scheda. muteInput: Value "Mute audio input" dello standalone
+            (nullptr = nessun rischio di feedback, opzione nascosta). */
+        void show (juce::AudioDeviceManager& deviceManager, int maxInputs, int maxOutputs,
+                   bool showMidiOutput, juce::Value* muteInput);
+        void hide();
+
+        // Tema scuro delle schede (About/Guide/menu) per i controlli JUCE
+        // del selettore: combo, liste dei canali, popup, bottoni, toggle.
+        struct DarkLookAndFeel final : public juce::LookAndFeel_V4
+        {
+            DarkLookAndFeel();
+        };
+
+        // Contenuto scorrevole: toggle "Mute input" + selettore. Il selettore
+        // decide da solo la propria altezza (setSize in resized()), quindi
+        // l'altezza del contenuto la segue in childBoundsChanged().
+        struct Content final : public juce::Component
+        {
+            void resized() override;
+            void childBoundsChanged (juce::Component*) override;
+            void updateHeight();
+
+            std::unique_ptr<juce::AudioDeviceSelectorComponent> selector;
+            juce::ToggleButton muteInputToggle { "Mute audio input (avoids feedback with the microphone)" };
+            bool showMute = false;
+        };
+
+        struct Card final : public juce::Component
+        {
+            Card();
+            void paint (juce::Graphics& g) override;
+            void resized() override;
+            void mouseUp (const juce::MouseEvent& e) override;
+            juce::Rectangle<int> closeButtonBounds() const;
+
+            std::function<void()> onClose;
+            juce::Viewport viewport;
+            Content content;
+        };
+
+        DarkLookAndFeel darkLookAndFeel; // prima di card: distrutto dopo
+        Card card;
+
+        static constexpr int cardMaxWidth  = 560;
+        static constexpr int cardMaxHeight = 620;
+    };
+
+    AudioSettingsView audioSettingsView;
 
     // Barra Cerca/Sostituisci (richiesta esplicita) sotto la toolbar, aperta
     // e chiusa dal bottone lente (findButton). La ricerca vera e propria e
@@ -671,6 +739,8 @@ private:
     // chooser alla volta basta, Save e Load non possono essere aperti
     // contemporaneamente dalla stessa UI.
     std::unique_ptr<juce::FileChooser> activeFileChooser;
+
+    bool nativeTitleBarApplied = false; // vedi parentHierarchyChanged()
 
     // Unico punto di scelta di un file .csd: dialogo nativo juce::FileChooser
     // con l'editor come parent (obbligatorio in AUv3, vedi il .cpp). Il

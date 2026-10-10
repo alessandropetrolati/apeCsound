@@ -253,6 +253,10 @@ public:
     // "apeCsound Guide": guida rapida interna (vedi GuideView in PluginEditor).
     std::function<void()> onGuideRequested;
 
+    // "Audio/MIDI Settings..." (solo standalone, macOS e iOS): impostata da
+    // PluginEditor solo in quel caso, altrimenti la voce non compare.
+    std::function<void()> onAudioSettingsRequested;
+
     // "Follow CSD nchnls" (spunta): Csound usa nchnls/nchnls_i del .csd
     // invece dei canali della traccia - vedi
     // CsoundAudioProcessor::setFollowCsdChannels.

@@ -2818,6 +2818,17 @@ void CsoundParameterMappingPanel::showPanelMenu()
         }
         items.push_back (config);
     }
+
+    // "Audio/MIDI Settings...": solo nella versione standalone (macOS e iOS),
+    // apre l'AudioDeviceSelectorComponent di JUCE (callback nullo negli
+    // altri formati -> voce assente).
+    if (onAudioSettingsRequested != nullptr)
+    {
+        CsoundActionSheetItem item;
+        item.id = 121; item.text = "Audio/MIDI Settings...";
+        item.icon = CsoundActionSheetIcon::sliderFloat;
+        items.push_back (item);
+    }
     
     items.push_back (CsoundActionSheetItem::separator());
     {
@@ -2877,6 +2888,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 119: if (safeThis->onFontSizeChangeRequested) safeThis->onFontSizeChangeRequested (-1); break;
             case 120: if (safeThis->onToggleDarkEditorRequested) safeThis->onToggleDarkEditorRequested(); break;
             case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
+            case 121: if (safeThis->onAudioSettingsRequested) safeThis->onAudioSettingsRequested(); break;
             default: break;
         }
     });

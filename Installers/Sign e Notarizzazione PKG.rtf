@@ -20,8 +20,8 @@ codesign --remove-signature "apeCsound.component"\
 FIRMARE I PLUGINS:\
 \pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
 
-\f1\b \cf0 codesign -s "Developer ID Application: FATAR SRL (9L4T4JL6GX)" "apeCsound.vst3"\
-codesign -s "Developer ID Application: FATAR SRL (9L4T4JL6GX)" "apeCsound.component"\
+\f1\b \cf0 codesign -s "Developer ID Application: Alessandro Petrolati (4863C638XM)" "apeCsound.vst3"\
+codesign -s "Developer ID Application: Alessandro Petrolati (4863C638XM)" "apeCsound.component"\
 \pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
 
 \f0\b0 \cf0 \
@@ -44,7 +44,7 @@ n.b. Se lo firmi con Packages non c'\'e8 bisogno di firmarlo\
 \
 \pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
 
-\f1\b \cf0 productsign --sign "Developer ID Installer: FATAR SRL (9L4T4JL6GX)" "apeCsound.pkg" "apeCsound_signed.pkg"\
+\f1\b \cf0 productsign --sign "Developer ID Installer: Alessandro Petrolati (4863C638XM)" "apeCsound.pkg" "apeCsound_signed.pkg"\
 \pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
 
 \f0\b0 \cf0 \
@@ -66,15 +66,15 @@ Apple generer\'e0 una password che puoi utilizzare per il processo di notarizzaz
 \
 Generare il profilo, saltare se gi\'e0 presente in key-chain\
 
-\f1\b xcrun notarytool store-credentials --apple-id "info@alessandro-petrolati.it" --password "cfck-zaps-brne-uboo" --team-id "9L4T4JL6GX"\
+\f1\b xcrun notarytool store-credentials --apple-id "info@alessandro-petrolati.it" --password "<password-specifica-app>" --team-id "4863C638XM"\
 \pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
 
-\f0\b0 \cf0 (inserire un nome e.g. FATAR)\
+\f0\b0 \cf0 (inserire un nome e.g. apeSoft)\
 \
 esegui questo:\
 \pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
 
-\f1\b \cf0 xcrun notarytool submit "apeCsound_signed.pkg" --keychain-profile "FATAR" --wait
+\f1\b \cf0 xcrun notarytool submit "apeCsound_signed.pkg" --keychain-profile "apeSoft" --wait
 \f0\b0 \
 \
 e poi questo:\

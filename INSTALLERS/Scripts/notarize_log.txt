@@ -1,0 +1,92 @@
+=== dom 11 ott 2026 00:02:45 CEST  macOS 26.6.2 arm64
+=== packagesbuild: apeCsoun d macOS.pkgproj
+Building Project (00:02:45) at path: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/apeCsoun d macOS.pkgproj 
+------------------------------------------------------------------------------
+
+Build Folder (done)
+
+Distribution
+
+	Package "apeCsound"
+
+		Payload
+
+			Assemble file hierarchy (done)
+			Split forks (done)
+			Create bill of material (done)
+			Create pax archive (done)
+		
+		Scripts
+
+			Assemble file hierarchy (done)
+			Split forks (done)
+			Create pax archive (done)
+		
+		PackageInfo (done)
+
+	----------------------------------------------
+
+	Package "VST3"
+
+		Payload
+
+			Assemble file hierarchy
+WARNING: Warning code (250) (done)
+			Split forks (done)
+			Create bill of material (done)
+			Create pax archive (done)
+		
+		Scripts
+
+			Assemble file hierarchy (done)
+			Split forks (done)
+			Create pax archive (done)
+		
+		PackageInfo (done)
+
+	----------------------------------------------
+
+	Package "AU"
+
+		Payload
+
+			Assemble file hierarchy
+WARNING: Warning code (250) (done)
+			Split forks (done)
+			Create bill of material (done)
+			Create pax archive (done)
+		
+		Scripts
+
+			Assemble file hierarchy (done)
+			Split forks (done)
+			Create pax archive (done)
+		
+		PackageInfo (done)
+
+	----------------------------------------------
+
+	Definition
+
+		Installation|Volume requirements (done)
+
+		Read Me (done)
+		License (done)
+		Choices hierarchies (done)
+
+		JavaScript scripts (done)
+
+	Plugins (done)
+
+	Create xar archive (done)
+
+------------------------------------------------------------------------------
+[1mBuild Successful[0m (9 seconds)
+-rw-r--r--  1 alessandropetrolati  staff  45857583 11 ott 00:02 apeCsound.pkg
+=== apeCsound.pkg e' gia' firmato da Packages con Developer ID Installer: Alessandro Petrolati (4863C638XM): copio in apeCsound_signed.pkg
+=== notarytool submit (attesa del risultato)
+Conducting pre-submission checks for apeCsound_signed.pkg and initiating connection to the Apple notary service...
+Error: No Keychain password item found for profile: apeSoft
+
+Run 'notarytool store-credentials' to create another credential profile.
+ERRORE: notarizzazione non accettata

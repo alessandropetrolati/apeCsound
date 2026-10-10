@@ -1,0 +1,63 @@
+-------------------------------------
+apeCsound - LICENSE AGREEMENT
+-------------------------------------
+
+Copyright (c) 2026 Alessandro Petrolati - apeSoft. All rights reserved.
+https://www.apesoft.it
+
+By installing or using apeCsound you agree to the following terms.
+
+1. LICENSE
+You may install and use apeCsound (standalone application, Audio Unit and
+VST3 plug-in) on computers you own or control, for personal and commercial
+music production. Audio, music and .csd files you create with apeCsound
+belong to you.
+
+2. RESTRICTIONS
+Except as allowed by this agreement or by the licenses of the third-party
+components listed below, you may not sell, rent, sublicense or redistribute
+apeCsound, modified or unmodified, without the written permission of apeSoft.
+
+3. NO WARRANTY
+apeCsound is provided "AS IS", WITHOUT ANY WARRANTY, without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+In no event shall the author or apeSoft be liable for any damage caused,
+directly or indirectly, by the use of or inability to use this software,
+including loss of data or interruption of work.
+
+4. CSOUND FILES FROM OTHER FRONTENDS
+apeCsound can import parameters from .csd files made for Cabbage or CsoundQt.
+Whether such files run in apeCsound depends on many factors and is not
+guaranteed. Example files from third parties remain under the license of
+their respective authors.
+
+-------------------------------------
+THIRD-PARTY COMPONENTS
+-------------------------------------
+
+Csound
+apeCsound includes the Csound 7 sound and music computing system
+(https://csound.com), (c) the Csound developers, distributed under the
+GNU Lesser General Public License, version 2.1 or later (LGPL).
+Csound source code is available at https://github.com/csound/csound.
+Nothing in this agreement restricts the rights granted to you by the LGPL
+for the Csound library, including modifying it and reverse engineering for
+debugging such modifications. To obtain the object files needed to relink
+apeCsound with a modified version of Csound, contact apeSoft at the address
+below.
+
+JUCE
+apeCsound is built with the JUCE framework (https://juce.com),
+(c) Raw Material Software Limited, used under the JUCE license.
+
+Opcode reference text
+The opcode descriptions shown in the editor help bar are derived from the
+CsoundQt opcode database and the Csound Reference Manual, distributed under
+the GNU Free Documentation License.
+
+VST is a registered trademark of Steinberg Media Technologies GmbH.
+Audio Unit and macOS are trademarks of Apple Inc.
+apeCsound is not affiliated with the Csound developers.
+
+-------------------------------------
+Contact: info@apesoft.it - https://www.apesoft.it

@@ -1,6 +1,13 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "NativeAlertMac.h"
+
+// Standalone (macOS e iOS): accesso a StandalonePluginHolder (dialogo
+// Audio/MIDI Settings, AudioDeviceSelectorComponent di JUCE) - vedi
+// onAudioSettingsRequested e, solo desktop, parentHierarchyChanged().
+#if JucePlugin_Build_Standalone
+ #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
+#endif
 #include <cmath>
 
 namespace
@@ -266,6 +273,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // menu hamburger tramite parameterPanel.onAboutRequested.
     addChildComponent (aboutView);
     addChildComponent (guideView);
+    addChildComponent (audioSettingsView);
 
     // Cerca/Sostituisci (vedi FindReplaceBar in PluginEditor.h). Bottone
     // lente circolare come clearConsoleButton (icona "find" in
@@ -410,6 +418,41 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
         applyEditorFontSize (juce::jlimit (kMinEditorFontSize, kMaxEditorFontSize, current + delta));
     };
     parameterPanel.onGuideRequested       = [this] { guideView.show(); };
+
+   #if JucePlugin_Build_Standalone
+    // Solo nella versione standalone (macOS e iOS): dispositivo audio,
+    // sample rate, buffer e ingressi MIDI dal menu principale (su desktop la
+    // barra del titolo e' nativa e il bottone "Options" di JUCE non c'e').
+    // In AU/VST3/AUv3 il callback resta nullo e la voce non compare.
+    if (audioProcessor.wrapperType == juce::AudioProcessor::wrapperType_Standalone)
+        parameterPanel.onAudioSettingsRequested = [this]
+        {
+            auto* holder = juce::StandalonePluginHolder::getInstance();
+
+            if (holder == nullptr || holder->processor == nullptr)
+                return;
+
+            // Stessi limiti di canali di StandalonePluginHolder::showAudioSettingsDialog().
+            int maxIns = 0, maxOuts = 0;
+
+            if (holder->channelConfiguration.size() > 0)
+            {
+                const auto& config = holder->channelConfiguration.getReference (0);
+                maxIns  = juce::jmax (0, (int) config.numIns);
+                maxOuts = juce::jmax (0, (int) config.numOuts);
+            }
+
+            if (auto* bus = holder->processor->getBus (true, 0))
+                maxIns = juce::jmax (0, bus->getDefaultLayout().size());
+
+            if (auto* bus = holder->processor->getBus (false, 0))
+                maxOuts = juce::jmax (0, bus->getDefaultLayout().size());
+
+            audioSettingsView.show (holder->deviceManager, maxIns, maxOuts,
+                                    holder->processor->producesMidi(),
+                                    holder->getProcessorHasPotentialFeedbackLoop() ? &holder->getMuteInputValue() : nullptr);
+        };
+   #endif
 
     // Sintassi moderna nella barra di help: preferenza utente persistente
     // (vedi getUserSettings()), applicata all'editor subito e a ogni toggle.
@@ -842,6 +885,7 @@ void CsoundAudioProcessorEditor::resized()
     // gia' dimensionato quando lo si apre).
     aboutView.setBounds (area);
     guideView.setBounds (area);
+    audioSettingsView.setBounds (area);
 
     toolbarBounds = area.removeFromTop (toolbarHeight);
 
@@ -1096,6 +1140,44 @@ void CsoundAudioProcessorEditor::promptSaveSession (std::function<void()> onSave
             if (ok && onSaved)
                 onSaved();
         });
+}
+
+void CsoundAudioProcessorEditor::parentHierarchyChanged()
+{
+   #if JucePlugin_Build_Standalone && ! JUCE_IOS
+    // Solo standalone desktop: StandaloneFilterWindow disegna una barra del
+    // titolo JUCE (con il bottone "Options"); la sostituiamo con quella
+    // nativa del sistema. Differita (callAsync) perche' cambiare barra
+    // ricrea il peer della finestra, e qui siamo dentro il reparenting.
+    if (nativeTitleBarApplied
+        || audioProcessor.wrapperType != juce::AudioProcessor::wrapperType_Standalone
+        || findParentComponentOfClass<juce::DocumentWindow>() == nullptr)
+        return;
+
+    nativeTitleBarApplied = true;
+    juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
+
+    juce::MessageManager::callAsync ([safeThis]
+    {
+        if (safeThis == nullptr)
+            return;
+
+        auto* window = safeThis->findParentComponentOfClass<juce::DocumentWindow>();
+
+        if (window == nullptr)
+            return;
+
+        window->setUsingNativeTitleBar (true);
+
+        // Il bottone "Options" (privato di StandaloneFilterWindow) resta
+        // figlio della finestra e finirebbe sopra la toolbar: lo nascondiamo.
+        // Le sue funzioni sono nel menu (Audio/MIDI Settings...).
+        for (auto* child : window->getChildren())
+            if (auto* button = dynamic_cast<juce::TextButton*> (child))
+                if (button->getButtonText() == "Options")
+                    button->setVisible (false);
+    });
+   #endif
 }
 
 void CsoundAudioProcessorEditor::chooseCsdFile (const juce::String& title, const juce::File& initialFile, bool saveMode,
@@ -2591,4 +2673,216 @@ void CsoundAudioProcessorEditor::updateFindCount()
     for (auto* b : { &findBar.prevButton, &findBar.nextButton,
                      &findBar.replaceButton, &findBar.replaceAllButton })
         b->setEnabled (count > 0);
+}
+
+//==============================================================================
+// "Audio/MIDI Settings..." - vedi il commento su AudioSettingsView in PluginEditor.h.
+CsoundAudioProcessorEditor::AudioSettingsView::DarkLookAndFeel::DarkLookAndFeel()
+    : juce::LookAndFeel_V4 (juce::LookAndFeel_V4::ColourScheme (
+          kAboutCardBg,        // windowBackground
+          kAboutRowBg,         // widgetBackground
+          kAboutCardBg,        // menuBackground
+          kAboutBorder,        // outline
+          kAboutText,          // defaultText
+          kAboutAccent,        // defaultFill
+          juce::Colour (0xff0b1116), // highlightedText
+          kAboutAccent,        // highlightedFill
+          kAboutText))         // menuText
+{
+    // Bottoni (Test, Control Panel, Reset Device) come i bottoni teal dell'app.
+    setColour (juce::TextButton::buttonColourId,   kAboutAccent);
+    setColour (juce::TextButton::buttonOnColourId, kAboutAccent.darker (0.2f));
+    setColour (juce::TextButton::textColourOffId,  juce::Colour (0xff0b1116));
+    setColour (juce::TextButton::textColourOnId,   juce::Colour (0xff0b1116));
+
+    setColour (juce::Label::textColourId,           kAboutTextMuted);
+    setColour (juce::ComboBox::backgroundColourId,  kAboutRowBg);
+    setColour (juce::ComboBox::textColourId,        kAboutText);
+    setColour (juce::ComboBox::outlineColourId,     kAboutBorder);
+    setColour (juce::ComboBox::arrowColourId,       kAboutTextMuted);
+    setColour (juce::ComboBox::focusedOutlineColourId, kAboutAccent);
+    setColour (juce::PopupMenu::backgroundColourId,            kAboutCardBg);
+    setColour (juce::PopupMenu::textColourId,                  kAboutText);
+    setColour (juce::PopupMenu::highlightedBackgroundColourId, kAboutRowHover);
+    setColour (juce::PopupMenu::highlightedTextColourId,       kAboutText);
+    setColour (juce::ListBox::backgroundColourId,   kAboutRowBg);
+    setColour (juce::ListBox::outlineColourId,      kAboutBorder);
+    setColour (juce::ListBox::textColourId,         kAboutText);
+    setColour (juce::TextEditor::highlightColourId, kAboutAccent.withAlpha (0.25f)); // righe selezionate nelle liste
+    setColour (juce::ToggleButton::textColourId,         kAboutText);
+    setColour (juce::ToggleButton::tickColourId,         kAboutAccent);
+    setColour (juce::ToggleButton::tickDisabledColourId, kAboutBorder);
+    setColour (juce::ScrollBar::thumbColourId,      kAboutAccent.withAlpha (0.55f));
+}
+
+void CsoundAudioProcessorEditor::AudioSettingsView::Content::resized()
+{
+    auto r = getLocalBounds();
+
+    if (showMute)
+    {
+        muteInputToggle.setBounds (r.removeFromTop (28).reduced (8, 2));
+        r.removeFromTop (8);
+    }
+
+    if (selector != nullptr)
+        selector->setBounds (r.getX(), r.getY(), r.getWidth(), juce::jmax (selector->getHeight(), 40));
+}
+
+void CsoundAudioProcessorEditor::AudioSettingsView::Content::childBoundsChanged (juce::Component*)
+{
+    updateHeight();
+}
+
+void CsoundAudioProcessorEditor::AudioSettingsView::Content::updateHeight()
+{
+    if (selector == nullptr)
+        return;
+
+    const int wanted = selector->getBottom() + 8;
+
+    if (wanted != getHeight())
+        setSize (getWidth(), wanted); // resized() non cambia l'altezza del selettore: niente ricorsione
+}
+
+CsoundAudioProcessorEditor::AudioSettingsView::Card::Card()
+{
+    viewport.setViewedComponent (&content, false);
+    viewport.setScrollBarsShown (true, false); // solo verticale
+    addAndMakeVisible (viewport);
+}
+
+void CsoundAudioProcessorEditor::AudioSettingsView::Card::paint (juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+
+    g.setColour (kAboutCardBg);
+    g.fillRoundedRectangle (bounds, 16.0f);
+    g.setColour (kAboutBorder);
+    g.drawRoundedRectangle (bounds.reduced (0.5f), 15.5f, 1.0f);
+
+    g.setColour (kAboutText);
+    g.setFont (juce::Font (juce::FontOptions (18.0f, juce::Font::bold)));
+    g.drawFittedText ("Audio/MIDI Settings", 24, 16, getWidth() - 48 - 36, 28, juce::Justification::centredLeft, 1);
+
+    g.setColour (kAboutBorder);
+    g.drawLine (16.0f, 54.5f, (float) getWidth() - 16.0f, 54.5f, 1.0f);
+
+    const auto close = closeButtonBounds().toFloat();
+    g.setColour (kAboutTextMuted);
+    juce::Path x;
+    x.startNewSubPath (close.getX() + 9.0f, close.getY() + 9.0f); x.lineTo (close.getRight() - 9.0f, close.getBottom() - 9.0f);
+    x.startNewSubPath (close.getRight() - 9.0f, close.getY() + 9.0f); x.lineTo (close.getX() + 9.0f, close.getBottom() - 9.0f);
+    g.strokePath (x, juce::PathStrokeType (1.8f));
+}
+
+juce::Rectangle<int> CsoundAudioProcessorEditor::AudioSettingsView::Card::closeButtonBounds() const
+{
+    return { getWidth() - 16 - 28, 14, 28, 28 };
+}
+
+void CsoundAudioProcessorEditor::AudioSettingsView::Card::resized()
+{
+    viewport.setBounds (getLocalBounds().withTrimmedTop (62).reduced (12, 0).withTrimmedBottom (16));
+
+    const int contentWidth = viewport.getMaximumVisibleWidth();
+    content.setSize (contentWidth, juce::jmax (content.getHeight(), 1));
+    content.resized();
+    content.updateHeight();
+}
+
+void CsoundAudioProcessorEditor::AudioSettingsView::Card::mouseUp (const juce::MouseEvent& e)
+{
+    if (closeButtonBounds().contains (e.getPosition()) && onClose)
+        onClose();
+}
+
+CsoundAudioProcessorEditor::AudioSettingsView::AudioSettingsView()
+{
+    setWantsKeyboardFocus (true);
+    card.setLookAndFeel (&darkLookAndFeel); // ereditato da viewport, selettore e popup delle combo
+    card.onClose = [this] { hide(); };
+    addAndMakeVisible (card);
+}
+
+CsoundAudioProcessorEditor::AudioSettingsView::~AudioSettingsView()
+{
+    card.content.selector.reset();
+    card.setLookAndFeel (nullptr);
+}
+
+void CsoundAudioProcessorEditor::AudioSettingsView::paint (juce::Graphics& g)
+{
+    g.fillAll (juce::Colours::black.withAlpha (0.45f));
+}
+
+void CsoundAudioProcessorEditor::AudioSettingsView::resized()
+{
+    auto area = getLocalBounds().reduced (juce::jmin (32, getWidth() / 12), juce::jmin (24, getHeight() / 12));
+    card.setBounds (area.withSizeKeepingCentre (juce::jmin (cardMaxWidth, area.getWidth()),
+                                                juce::jmin (cardMaxHeight, area.getHeight())));
+}
+
+void CsoundAudioProcessorEditor::AudioSettingsView::mouseUp (const juce::MouseEvent& e)
+{
+    if (e.eventComponent == this)
+        hide();
+}
+
+bool CsoundAudioProcessorEditor::AudioSettingsView::keyPressed (const juce::KeyPress& key)
+{
+    if (key == juce::KeyPress::escapeKey)
+    {
+        hide();
+        return true;
+    }
+
+    return false;
+}
+
+void CsoundAudioProcessorEditor::AudioSettingsView::show (juce::AudioDeviceManager& deviceManager, int maxInputs, int maxOutputs,
+                                                          bool showMidiOutput, juce::Value* muteInput)
+{
+    auto& content = card.content;
+
+    // Selettore nuovo a ogni apertura (rilegge dispositivi e canali attuali);
+    // stessi argomenti del SettingsComponent dello standalone JUCE.
+    content.selector.reset();
+    content.selector = std::make_unique<juce::AudioDeviceSelectorComponent> (deviceManager,
+                                                                             0, maxInputs,
+                                                                             0, maxOutputs,
+                                                                             true,           // ingressi MIDI
+                                                                             showMidiOutput, // uscita MIDI
+                                                                             true,           // canali come coppie stereo
+                                                                             false);         // opzioni avanzate visibili
+    content.addAndMakeVisible (*content.selector);
+
+    content.showMute = (muteInput != nullptr);
+    content.muteInputToggle.setVisible (content.showMute);
+
+    if (muteInput != nullptr)
+    {
+        if (content.muteInputToggle.getParentComponent() == nullptr)
+            content.addAndMakeVisible (content.muteInputToggle);
+
+        content.muteInputToggle.setClickingTogglesState (true);
+        content.muteInputToggle.getToggleStateValue().referTo (*muteInput);
+    }
+
+    card.resized();
+    card.viewport.setViewPosition (0, 0);
+
+    toFront (true);
+    juce::Desktop::getInstance().getAnimator().fadeIn (this, 140);
+    grabKeyboardFocus();
+}
+
+void CsoundAudioProcessorEditor::AudioSettingsView::hide()
+{
+    juce::Desktop::getInstance().getAnimator().fadeOut (this, 120);
+
+    // Rilascia il selettore (timer, meter di livello, listener sul device
+    // manager): alla prossima apertura se ne crea uno nuovo.
+    card.content.muteInputToggle.getToggleStateValue().referTo (juce::Value());
+    card.content.selector.reset();
 }

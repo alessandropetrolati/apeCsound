@@ -1,0 +1,6 @@
+=== dom 11 ott 2026 00:24:02 CEST  macOS 26.6.2 arm64
+=== Projucer: /Users/alessandropetrolati/Desktop/Advanced 2018/JUCE/Projucer.app
+Re-saving file: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/apeCsound.jucer
+Finished saving: Xcode (macOS)
+Finished saving: Xcode (iOS)
+=== xcodebuild apeCsound - Standalone Plugin (Release)

@@ -1381,7 +1381,9 @@ void CodeView::mouseUp (const juce::MouseEvent& e)
             const auto pos = getPositionAt (e.x, e.y);
             const bool onSelection = isHighlightActive() && getHighlightedRegion().contains (pos.getPosition());
 
+           #if JUCE_IOS
             const bool hadFocus = hasKeyboardFocus (true);
+           #endif
             grabKeyboardFocus();
 
            #if JUCE_IOS

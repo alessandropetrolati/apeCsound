@@ -93,7 +93,8 @@
   <EXPORTFORMATS>
     <XCODE_MAC targetFolder="Builds/MacOSX" iosDevelopmentTeamID="4863C638XM"
                smallIcon="QhPr70" bigIcon="QhPr70" externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate"
-               extraFrameworks="Accelerate" microphonePermissionNeeded="1" microphonePermissionsText="apeCsound needs the microphone for live audio input.">
+               extraFrameworks="Accelerate" microphonePermissionNeeded="1" microphonePermissionsText="apeCsound needs the microphone for live audio input."
+               hardenedRuntime="1" hardenedRuntimeOptions="com.apple.security.device.audio-input">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" headerPath="../../build/csound-install/universal/include"
                        libraryPath="../../build/csound-install/universal/lib" macOSDeploymentTarget="12"
