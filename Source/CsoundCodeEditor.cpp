@@ -1118,7 +1118,35 @@ void CsoundCodeEditor::updateOpcodeHelp()
     showSuggestions (prefixWord);
 }
 
-void CsoundCodeEditor::pushSignatureHelp (const juce::String& word)
+bool CsoundCodeEditor::hasFunctionalForm (const juce::String& word, const juce::String& category)
+{
+    // Costrutti del linguaggio (instr/endin, opcode/endop, if/then, goto,
+    // xin/xout, intestazione) non hanno una forma funzionale: restano come
+    // nel manuale anche con la sintassi moderna attiva.
+    static const juce::StringArray noFunctionalForm { "xin", "xout", "goto", "igoto", "kgoto", "tigoto",
+                                                      "cigoto", "ckgoto", "cggoto", "cngoto", "cnkgoto", "rigoto",
+                                                      "reinit", "rireturn", "timout", "loop_lt", "loop_le",
+                                                      "loop_gt", "loop_ge" };
+
+    return ! category.startsWith ("Orchestra Syntax") && ! noFunctionalForm.contains (word);
+}
+
+juce::String CsoundCodeEditor::syntaxForInsertion (const juce::String& name, const juce::String& manualSyntax) const
+{
+    // Sintassi nella forma scelta nelle impostazioni (Config > Modern
+    // Syntax): classica "outs opcode ins" o funzionale "outs:T = opcode(ins)".
+    const auto syntax = manualSyntax.trim();
+
+    if (! modernSyntaxHelp)
+        return syntax;
+
+    const auto* manual = CsoundOpcodeHelpData::find (name);
+    const juce::String category = manual != nullptr ? juce::String (manual->category) : juce::String();
+
+    return hasFunctionalForm (name, category) ? toModernSyntax (syntax, name).trim() : syntax;
+}
+
+void CsoundCodeEditor::pushSignatureHelp (const juce::String& word, const juce::String& syntaxOverride)
 {
     juce::String syntax, description, category;
 
@@ -1155,15 +1183,12 @@ void CsoundCodeEditor::pushSignatureHelp (const juce::String& word)
             syntax = word;
     }
 
-    // Costrutti del linguaggio (instr/endin, opcode/endop, if/then, goto,
-    // xin/xout, intestazione) non hanno una forma funzionale: restano come
-    // nel manuale anche con la sintassi moderna attiva.
-    static const juce::StringArray noFunctionalForm { "xin", "xout", "goto", "igoto", "kgoto", "tigoto",
-                                                      "cigoto", "ckgoto", "cggoto", "cngoto", "cnkgoto", "rigoto",
-                                                      "reinit", "rireturn", "timout", "loop_lt", "loop_le",
-                                                      "loop_gt", "loop_ge" };
+    // Variante precisa (popup dei suggerimenti) al posto del riassunto
+    // delle varianti (combineOutletVariants).
+    if (syntaxOverride.isNotEmpty())
+        syntax = syntaxOverride.trim();
 
-    if (modernSyntaxHelp && ! category.startsWith ("Orchestra Syntax") && ! noFunctionalForm.contains (word))
+    if (modernSyntaxHelp && hasFunctionalForm (word, category))
         syntax = toModernSyntax (syntax, word);
 
     helpBarHasContent = true;
@@ -1361,7 +1386,10 @@ void CsoundCodeEditor::pushSignatureHelpForSelectedSuggestion()
     // suggerimento, invece di anticipare gia' la firma di quello
     // evidenziato (esattamente come fa CsoundQt).
     if (suggestionPopup.selectedIndex >= 0 && suggestionPopup.selectedIndex < currentSuggestions.size())
-        pushSignatureHelp (currentSuggestions.getReference (suggestionPopup.selectedIndex).name);
+    {
+        const auto& s = currentSuggestions.getReference (suggestionPopup.selectedIndex);
+        pushSignatureHelp (s.name, s.syntax); // la VARIANTE evidenziata, non il riassunto
+    }
 }
 
 bool CsoundCodeEditor::forceShowSuggestions()
@@ -1446,38 +1474,36 @@ void CsoundCodeEditor::buildSuggestions (const juce::String& prefixWord, int max
     }
 }
 
-juce::String CsoundCodeEditor::makeSuggestionRow (const juce::String& name, const juce::String& syntax)
+juce::String CsoundCodeEditor::makeSuggestionRow (const juce::String& name, const juce::String& syntax) const
 {
-    // Come CsoundQt: "nome          inlet, inlet [, opz]     :rate"
+    // Solo il nome: la sintassi completa della variante evidenziata e' gia'
+    // nella barra di help (richiesta esplicita: niente doppioni nel popup).
+    // Se lo stesso opcode ha piu' varianti, il rate dell'outlet (":a", ":k",
+    // ":i"...) distingue le righe, altrimenti sarebbero identiche.
+    int variants = 0;
+    for (auto& s : currentSuggestions)
+        if (s.name == name)
+            ++variants;
+
+    if (variants <= 1)
+        return name;
+
     const auto words = juce::StringArray::fromTokens (syntax.trim(), " ", "");
-    int opcodeIdx = -1;
+    juce::String outs;
 
     for (int w = 0; w < words.size(); ++w)
-        if (words[w].equalsIgnoreCase (name)) { opcodeIdx = w; break; }
-
-    juce::String outs, ins;
-
-    if (opcodeIdx >= 0)
     {
-        for (int w = 0; w < opcodeIdx; ++w)       outs << (w > 0 ? " " : "") << words[w];
-        for (int w = opcodeIdx + 1; w < words.size(); ++w) ins << (w > opcodeIdx + 1 ? " " : "") << words[w];
+        if (words[w].equalsIgnoreCase (name))
+            break;
+
+        outs << (w > 0 ? " " : "") << words[w];
     }
 
-    juce::String row = name.length() < 14 ? name.paddedRight (' ', 14) : name + " ";
+    if (outs.isEmpty())
+        return name;
 
-    if (ins.isNotEmpty())
-        row << (ins.length() <= 30 ? ins : ins.substring (0, 29) + juce::String::charToString (0x2026));
-
-    if (outs.isNotEmpty())
-    {
-        if (row.length() < 46)
-            row = row.paddedRight (' ', 46);
-
-        const auto rate = outs.startsWith ("g") && outs.length() > 1 ? outs.substring (1, 2) : outs.substring (0, 1);
-        row << " :" << (rate == "f" ? juce::String ("pvs") : rate);
-    }
-
-    return row;
+    const auto rate = outs.startsWith ("g") && outs.length() > 1 ? outs.substring (1, 2) : outs.substring (0, 1);
+    return name + "  :" + (rate == "f" ? juce::String ("pvs") : rate);
 }
 
 void CsoundCodeEditor::enterParameterMode (int line)
@@ -1641,11 +1667,7 @@ void CsoundCodeEditor::acceptSuggestion (Suggestion suggestion)
     const int wordStartIndex = caret.getIndexInLine() - word.length();
     const bool textBefore = lineText.substring (0, wordStartIndex).trim().isNotEmpty();
 
-    juce::String syntax = suggestion.syntax.trim();
-
-    if (modernSyntaxHelp)
-        syntax = toModernSyntax (syntax, suggestion.name).trim();
-
+    const juce::String syntax = syntaxForInsertion (suggestion.name, suggestion.syntax);
     juce::String toInsert = syntax;
 
     if (textBefore)

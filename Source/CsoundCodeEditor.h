@@ -247,7 +247,7 @@ private:
     };
 
     void updateOpcodeHelp();
-    void pushSignatureHelp (const juce::String& word);
+    void pushSignatureHelp (const juce::String& word, const juce::String& syntaxOverride = {});
     void pushSignatureHelpForSelectedSuggestion();
     void showSuggestions (const juce::String& prefix);
     void hideSuggestions();
@@ -306,7 +306,13 @@ private:
     // manuale (una per variante), o firma dal motore; {name} se ignoto.
     juce::StringArray getSyntaxVariants (const juce::String& name);
     void buildSuggestions (const juce::String& prefixWord, int maxRows);
-    static juce::String makeSuggestionRow (const juce::String& name, const juce::String& syntax);
+    juce::String makeSuggestionRow (const juce::String& name, const juce::String& syntax) const;
+
+    // Sintassi (manuale) nella forma scelta in Config: classica o moderna
+    // (funzionale), usata da popup e inserimento. hasFunctionalForm: falso
+    // per i costrutti del linguaggio (goto, xin/xout, header...).
+    juce::String syntaxForInsertion (const juce::String& name, const juce::String& manualSyntax) const;
+    static bool hasFunctionalForm (const juce::String& word, const juce::String& category);
 
     // "Modalita' parametri" (CsoundQt): dopo l'inserimento di una sintassi
     // completa il primo token della riga e' selezionato; Tab/Shift+Tab

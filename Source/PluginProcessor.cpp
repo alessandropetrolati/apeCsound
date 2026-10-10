@@ -3807,6 +3807,8 @@ endin
 
 </CsInstruments>
 <CsScore>
+f 1 0 65536 10 1    ; a sine wave.
+
 ; Keep the audio effect running continuously
 i 2 0 z
 e
