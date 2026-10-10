@@ -1,6 +1,6 @@
-=== dom 11 ott 2026 00:02:45 CEST  macOS 26.6.2 arm64
+=== dom 11 ott 2026 00:34:44 CEST  macOS 26.6.2 arm64
 === packagesbuild: apeCsoun d macOS.pkgproj
-Building Project (00:02:45) at path: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/apeCsoun d macOS.pkgproj 
+Building Project (00:34:44) at path: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/apeCsoun d macOS.pkgproj 
 ------------------------------------------------------------------------------
 
 Build Folder (done)
@@ -81,12 +81,54 @@ WARNING: Warning code (250) (done)
 	Create xar archive (done)
 
 ------------------------------------------------------------------------------
-[1mBuild Successful[0m (9 seconds)
--rw-r--r--  1 alessandropetrolati  staff  45857583 11 ott 00:02 apeCsound.pkg
+[1mBuild Successful[0m (4 seconds)
+-rw-r--r--  1 alessandropetrolati  staff  45928085 11 ott 00:34 apeCsound.pkg
 === apeCsound.pkg e' gia' firmato da Packages con Developer ID Installer: Alessandro Petrolati (4863C638XM): copio in apeCsound_signed.pkg
 === notarytool submit (attesa del risultato)
 Conducting pre-submission checks for apeCsound_signed.pkg and initiating connection to the Apple notary service...
-Error: No Keychain password item found for profile: apeSoft
+Submission ID received
+  id: 71bf5106-9944-42cf-865d-a2fa0a282c4f
+Successfully uploaded file
+  id: 71bf5106-9944-42cf-865d-a2fa0a282c4f
+  path: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/build/apeCsound_signed.pkg
+Waiting for processing to complete.
+Current status: In Progress...Current status: In Progress....Current status: In Progress.....Current status: Accepted......Processing complete
+  id: 71bf5106-9944-42cf-865d-a2fa0a282c4f
+  status: Accepted
+=== stapler staple
+Processing: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/build/apeCsound_signed.pkg
+Processing: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/build/apeCsound_signed.pkg
+The staple and validate action worked!
+Processing: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/build/apeCsound_signed.pkg
+The validate action worked!
+=== pkgutil --check-signature
+Package "apeCsound_signed.pkg":
+   Status: signed by a developer certificate issued by Apple for distribution
+   Signed with a trusted timestamp on: 2026-10-10 22:34:47 +0000
+   Certificate Chain:
+    1. Developer ID Installer: Alessandro Petrolati (4863C638XM)
+       Expires: 2027-02-01 22:12:15 +0000
+       SHA256 Fingerprint:
+           F7 42 DB A1 6C FF F2 DC 65 79 3F 3E 3D 6D C7 DA AA E7 79 E5 58 96 
+           D4 4D 49 06 5E F8 FD 9F 11 47
+       ------------------------------------------------------------------------
+    2. Developer ID Certification Authority
+       Expires: 2027-02-01 22:12:15 +0000
+       SHA256 Fingerprint:
+           7A FC 9D 01 A6 2F 03 A2 DE 96 37 93 6D 4A FE 68 09 0D 2D E1 8D 03 
+           F2 9C 88 CF B0 B1 BA 63 58 7F
+       ------------------------------------------------------------------------
+    3. Apple Root CA
+       Expires: 2035-02-09 21:40:36 +0000
+       SHA256 Fingerprint:
+           B0 B1 73 0E CB C7 FF 45 05 14 2C 49 F1 29 5E 6E DA 6B CA ED 7E 2C 
+           68 C5 BE 91 B5 A1 10 01 F0 24
 
-Run 'notarytool store-credentials' to create another credential profile.
-ERRORE: notarizzazione non accettata
+=== spctl --assess
+apeCsound_signed.pkg: accepted
+source=Notarized Developer ID
+origin=Developer ID Installer: Alessandro Petrolati (4863C638XM)
+
+-rw-r--r--  1 alessandropetrolati  staff  45929896 11 ott 00:35 /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/build/apeCsound_signed.pkg
+=== RISULTATO: OK (firmato, notarizzato, staple)
+=== FINE
