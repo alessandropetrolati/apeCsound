@@ -1,0 +1,150 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2870
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fswiss\fcharset0 Helvetica-Bold;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww18140\viewh16820\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs28 \cf0 ===================\
+PLUGINS:\
+===================\
+\
+RIMUOVERE FIRMA:\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f1\b \cf0 codesign --remove-signature "apeCsound.vst3"\
+codesign --remove-signature "apeCsound.component"\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\b0 \cf0 \
+FIRMARE I PLUGINS:\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f1\b \cf0 codesign -s "Developer ID Application: FATAR SRL (9L4T4JL6GX)" "apeCsound.vst3"\
+codesign -s "Developer ID Application: FATAR SRL (9L4T4JL6GX)" "apeCsound.component"\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\b0 \cf0 \
+VERIFICARE FIRMA:\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f1\b \cf0 pkgutil --check-signature "apeCsound.vst3"\
+pkgutil --check-signature "apeCsound.component"\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\b0 \cf0 \
+===================\
+FIRMA PKG:\
+===================\
+\
+- Compilare il .pkg con Packages\
+- Se Packages da errori di compilazione, occorrer\'e0 re-installare Packages: http://s.sudre.free.fr/Software.html\
+- Firma .pkg del apeCsound\
+n.b. Se lo firmi con Packages non c'\'e8 bisogno di firmarlo\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f1\b \cf0 productsign --sign "Developer ID Installer: FATAR SRL (9L4T4JL6GX)" "apeCsound.pkg" "apeCsound_signed.pkg"\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\b0 \cf0 \
+===================\
+NOTORIZZAZIONE PKG:\
+===================\
+n.b. Se la PW non \'e8 valida vai su 
+\f1\b appleid.apple.com
+\f0\b0  e accedi con il tuo ID Apple.\
+Sotto la sezione "Sicurezza", cerca "Password specifiche per le app".\
+Clicca su "Genera password...".\
+Dai un nome alla password (ad esempio, "apeCsound") e clicca su "Crea".\
+Apple generer\'e0 una password che puoi utilizzare per il processo di notarizzazione.\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f1\b \cf0 La PW di validazione per apeCsound corrente \'e8: yfvm-pugs-cprn-bldz
+\f0\b0 \
+\
+Generare il profilo, saltare se gi\'e0 presente in key-chain\
+
+\f1\b xcrun notarytool store-credentials --apple-id "info@alessandro-petrolati.it" --password "cfck-zaps-brne-uboo" --team-id "9L4T4JL6GX"\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\b0 \cf0 (inserire un nome e.g. FATAR)\
+\
+esegui questo:\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f1\b \cf0 xcrun notarytool submit "apeCsound_signed.pkg" --keychain-profile "FATAR" --wait
+\f0\b0 \
+\
+e poi questo:\
+
+\f1\b xcrun stapler staple "apeCsound_signed.pkg"
+\f0\b0 \
+\
+===================\
+VERIFICA FINALE PKG:\
+===================\
+
+\f1\b pkgutil --check-signature "apeCsound_signed.pkg"\
+spctl --assess -vvv --type install "apeCsound_signed.pkg"\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\b0 \cf0 \
+===================\
+UTILITIES\
+===================\
+Visualizza i certificati validi\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f1\b \cf0 security find-identity -v\
+security find-identity -p basic -v\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\b0 \cf0 \
+Visualizza il package se \'e8 firmato\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f1\b \cf0 pkgutil --check-signature "apeCsound_signed.pkg"\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\b0 \cf0 \
+\
+===================\
+Per windows, bisogna ottenere un certificato a pagamento\
+https://www.digicert.com/it/compare-and-buy-ssl-certificates/?s_kwcid=AL!15928!3!553123332406!p!!g!!digicert&mkwid=s_pcrid_553123332406_pdv_c_pmt_p_pkw_digicert_slid__product__pgrid_131403106747_ptaid_kwd-28601651&gclid=Cj0KCQiAmpyRBhC-ARIsABs2EAokJgkuBbrvWQPNvH6ZMTXReW2VmV6-rrXI6mluInMyA21wuOkqE1UaAn4AEALw_wcB\
+\
+https://lorenzotorregiani.notion.site/Apple-Notarization-9d516b5d1edc420e945ab56738d8a272\
+\
+1. Controllato di avere installato il certificato di Developer ID Installer.\
+	security find-identity -v\
+\
+2. Controllato che il tuo pkg fosse firmato.\
+	pkgutil --check-signature ./SL_Editor_1.4.1.pkg\
+	pkgutil --check-signature "apeCsound 2.0 GM.pkg"\
+\
+3. Inviato il file per la notarizzazione.\
+	xcrun altool --notarize-app --primary-bundle-id com.fatar.studiologic.pkg.SLEditor -u "apple@fatar.com" -p \'93password-specifica" -f "/Users/lorenzo/Downloads/SL_Editor_1.4.1.pkg\'94\
+\
+4. Controllato l\'92esito della notorizzazione\
+	xcrun altool --notarization-info c69d1d57-59a7-4610-a42f-5d846cfe8db7 -u "apple@fatar.com" -p \'93trrp-noof-jxzb-rnxr\'94 \
+\
+5. Allegato il risultato della notorizzazione al pkg (per il funzionamento anche offline)\
+	xcrun stapler staple /Users/lorenzo/Downloads/SL_Editor_1.4.1.pkg\
+\
+6. Verificata la notorizzazione + staple sul file\
+	stapler validate "apeCsound 2.0 GM.pkg"\
+\
+\
+PROCEDURA PER FORZARE IL CODESIGN DI UN PLUGIN\
+sudo codesign \'97force \'97deep \'97sign - PATH_PLUGIN.VST3\
+\
+\
+PROCEDURA PER RIMUOVERE UN PLUGIN DALLA QUARANTENA \
+sudo xattr -rd com.apple.quarantine 
+\f1\b "apeCsound.vst3"\
+
+\f0\b0 sudo xattr -rd com.apple.quarantine 
+\f1\b "apeCsound.component\'94
+\f0\b0 \
+}

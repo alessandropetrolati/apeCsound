@@ -2,9 +2,9 @@
 
 <JUCERPROJECT id="hIifYP" name="apeCsound" projectType="audioplug" jucerFormatVersion="1"
               pluginFormats="buildAU,buildAUv3,buildStandalone,buildVST3" companyWebsite="www.apesoft.it"
-              companyEmail="apps@apesoft.it" bundleIdentifier="it.apesoft.Csound"
+              companyEmail="apps@apesoft.it" bundleIdentifier="it.apeSoft.apeCsound"
               pluginManufacturerCode="Apes" pluginCode="Csnd" pluginCharacteristicsValue="pluginWantsMidiIn,pluginEditorRequiresKeys"
-              pluginManufacturer="apeSoft" aaxIdentifier="it.apesoft.csound"
+              pluginManufacturer="apeSoft" aaxIdentifier="it.apeSoft.apeCsound"
               pluginVST3Category="Fx" pluginAUMainType="'aufx'" microphonePermissionNeeded="1"
               microphonePermissionsText="apeCsound needs the microphone for live audio input."
               pluginEditorRequiresKeys="1" pluginIsSynth="0" pluginWantsMidiIn="1"
@@ -91,7 +91,7 @@
   </MODULES>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>
   <EXPORTFORMATS>
-    <XCODE_MAC targetFolder="Builds/MacOSX" iosDevelopmentTeamID="9L4T4JL6GX"
+    <XCODE_MAC targetFolder="Builds/MacOSX" iosDevelopmentTeamID="4863C638XM"
                smallIcon="QhPr70" bigIcon="QhPr70" externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate"
                extraFrameworks="Accelerate" microphonePermissionNeeded="1" microphonePermissionsText="apeCsound needs the microphone for live audio input.">
       <CONFIGURATIONS>
@@ -121,11 +121,11 @@
         <MODULEPATH id="juce_osc" path="../JUCE/modules"/>
       </MODULEPATHS>
     </XCODE_MAC>
-    <XCODE_IPHONE targetFolder="Builds/iOS" iosDevelopmentTeamID="9L4T4JL6GX" smallIcon="QhPr70"
+    <XCODE_IPHONE targetFolder="Builds/iOS" iosDevelopmentTeamID="4863C638XM" smallIcon="QhPr70"
                   bigIcon="QhPr70" iosDeviceFamily="2" iPhoneScreenOrientation="portraitlandscape"
                   iPadScreenOrientation="UIInterfaceOrientationLandscapeLeft,UIInterfaceOrientationLandscapeRight"
                   UIFileSharingEnabled="1" UISupportsDocumentBrowser="1" iosBackgroundAudio="1"
-                  iosAppGroups="1" iosAppGroupsId="group.it.apesoft.apeCsound"
+                  iosAppGroups="1" iosAppGroupsId="group.it.apeSoft.apeCsound.gr"
                   microphonePermissionNeeded="1" microphonePermissionsText="apeCsound needs the microphone for live audio input."
                   customPList="&lt;plist version=&quot;1.0&quot;&gt;&#10;&lt;dict&gt;&#10;  &lt;key&gt;LSSupportsOpeningDocumentsInPlace&lt;/key&gt;&#10;  &lt;true/&gt;&#10;  &lt;key&gt;CFBundleDocumentTypes&lt;/key&gt;&#10;  &lt;array&gt;&#10;    &lt;dict&gt;&#10;      &lt;key&gt;CFBundleTypeName&lt;/key&gt;&#10;      &lt;string&gt;Csound Unified Document&lt;/string&gt;&#10;      &lt;key&gt;LSHandlerRank&lt;/key&gt;&#10;      &lt;string&gt;Alternate&lt;/string&gt;&#10;      &lt;key&gt;LSItemContentTypes&lt;/key&gt;&#10;      &lt;array&gt;&#10;        &lt;string&gt;it.apesoft.csd&lt;/string&gt;&#10;      &lt;/array&gt;&#10;    &lt;/dict&gt;&#10;  &lt;/array&gt;&#10;  &lt;key&gt;UTExportedTypeDeclarations&lt;/key&gt;&#10;  &lt;array&gt;&#10;    &lt;dict&gt;&#10;      &lt;key&gt;UTTypeIdentifier&lt;/key&gt;&#10;      &lt;string&gt;it.apesoft.csd&lt;/string&gt;&#10;      &lt;key&gt;UTTypeDescription&lt;/key&gt;&#10;      &lt;string&gt;Csound Unified Document&lt;/string&gt;&#10;      &lt;key&gt;UTTypeConformsTo&lt;/key&gt;&#10;      &lt;array&gt;&#10;        &lt;string&gt;public.plain-text&lt;/string&gt;&#10;      &lt;/array&gt;&#10;      &lt;key&gt;UTTypeTagSpecification&lt;/key&gt;&#10;      &lt;dict&gt;&#10;        &lt;key&gt;public.filename-extension&lt;/key&gt;&#10;        &lt;array&gt;&#10;          &lt;string&gt;csd&lt;/string&gt;&#10;        &lt;/array&gt;&#10;      &lt;/dict&gt;&#10;    &lt;/dict&gt;&#10;  &lt;/array&gt;&#10;&lt;/dict&gt;&#10;&lt;/plist&gt;"
                   externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate" extraFrameworks="Accelerate"

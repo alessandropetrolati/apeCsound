@@ -486,7 +486,7 @@ public:
 
     // App Group iOS (stesso valore di iosAppGroupsId nel .jucer): cartella
     // condivisa fra app Standalone ed estensione AUv3, vedi getBaseFolder().
-    static constexpr const char* kIOSAppGroupId = "group.it.apesoft.apeCsound";
+    static constexpr const char* kIOSAppGroupId = "group.it.apeSoft.apeCsound.gr";
     void processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) override;
 
     bool hasEditor() const override { return true; }
