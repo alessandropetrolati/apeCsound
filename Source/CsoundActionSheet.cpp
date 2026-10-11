@@ -958,7 +958,7 @@ void CsoundActionSheet::RowsContent::paint (juce::Graphics& g)
             auto content = bounds.reduced (CsoundActionSheet::rowHorizontalPadding, 0);
             g.setColour (kTextMuted);
             g.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
-            g.drawFittedText (item.sectionHeader.toUpperCase(), content, juce::Justification::centredLeft, 1);
+            g.drawFittedText (item.sectionHeaderNow().toUpperCase(), content, juce::Justification::centredLeft, 1);
             continue;
         }
 
@@ -1011,7 +1011,7 @@ void CsoundActionSheet::RowsContent::paint (juce::Graphics& g)
 
         g.setColour (item.isEnabledNow() ? kText : kTextDisabled);
         g.setFont (juce::Font (juce::FontOptions (16.0f)));
-        g.drawFittedText (item.text, content, juce::Justification::centredLeft, 1);
+        g.drawFittedText (item.textNow(), content, juce::Justification::centredLeft, 1);
     }
 }
 
@@ -1033,4 +1033,11 @@ void CsoundActionSheet::RowsContent::mouseUp (const juce::MouseEvent& event)
 void CsoundActionSheet::RowsContent::mouseExit (const juce::MouseEvent&)
 {
     owner.setPressedRow (-1);
+}
+
+void CsoundActionSheet::repaintOpenSheets (juce::Component& host)
+{
+    for (auto* child : host.getChildren())
+        if (auto* sheet = dynamic_cast<CsoundActionSheet*> (child))
+            sheet->rowsContent.repaint();
 }

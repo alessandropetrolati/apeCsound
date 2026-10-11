@@ -590,6 +590,11 @@ public:
         (file audio scritti), cosi' "loop.wav" si trova senza percorso. */
     static juce::File getSamplesFolder();
 
+    /** Cartella dei file audio SCRITTI da Csound (fout, -o file...):
+        getBaseFolder()/SFDIR, creata se non esiste. Passata come SFDIR se in
+        Config non e' stata scelta un'altra "Output Files Folder". */
+    static juce::File getOutputFilesFolder();
+
     /** Preferenze dell'UTENTE (non del progetto), condivise da tutte le
         istanze: ~/Library/Application Support/apeCsound/apeCsound.settings
         su macOS. Le usa anche l'editor (tema, font, sintassi). */
@@ -599,9 +604,17 @@ public:
     // compilazione - vedi compileAndStart:
     //   kExtraSamplesFolderKey: aggiunta in coda a SSDIR (--env:SSDIR+=...)
     //   kOutputFilesFolderKey:  cartella dei file audio scritti (SFDIR) al
-    //                           posto di apeCsound/SSDIR
-    static constexpr const char* kExtraSamplesFolderKey = "extraSamplesFolder";
-    static constexpr const char* kOutputFilesFolderKey  = "outputFilesFolder";
+    //                           posto di apeCsound/SFDIR
+    //   kExtraAnalysisFolderKey: aggiunta in coda a SADIR (file di analisi)
+    //   kExtraIncludeFolderKey:  aggiunta in coda a INCDIR (#include)
+    static constexpr const char* kExtraSamplesFolderKey  = "extraSamplesFolder";
+    static constexpr const char* kOutputFilesFolderKey   = "outputFilesFolder";
+    static constexpr const char* kExtraAnalysisFolderKey = "extraAnalysisFolder"; // SADIR +=
+    static constexpr const char* kExtraIncludeFolderKey  = "extraIncludeFolder";  // INCDIR +=
+
+    /** Sottocartella fissa di getBaseFolder() per una variabile di Csound
+        ("SSDIR", "SFDIR", "SADIR", "INCDIR"), creata se non esiste. */
+    static juce::File getCsoundFolder (const juce::String& envName);
 
     /** Cartella valida (assoluta ed esistente) salvata sotto 'key', altrimenti File{}. */
     static juce::File getUserFolderSetting (const char* key);

@@ -9,6 +9,7 @@
  #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
 #endif
 #include <cmath>
+#include <map>
 
 namespace
 {
@@ -411,20 +412,28 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.onGuideRequested       = [this] { guideView.show(); };
 
    #if ! JUCE_IOS
-    // Config > "Extra Samples Folder..." / "Output Files Folder..." (solo desktop:
-    // su iOS l'AUv3 non puo' accedere stabilmente a cartelle fuori dalla sandbox).
-    parameterPanel.onChooseExtraSamplesFolder = [this]
+    // Config > Csound Folders (solo desktop: su iOS l'AUv3 non puo' accedere
+    // stabilmente a cartelle fuori dalla sandbox).
+    parameterPanel.onChooseCsoundFolder = [this] (int which) { chooseCsoundFolder (which); };
+    parameterPanel.onRevealCsoundFolder = [] (int which)
     {
-        chooseFolderSetting (CsoundAudioProcessor::kExtraSamplesFolderKey, "Extra Samples Folder",
-                             "searched for audio files after the .csd folder and SSDIR");
+        // La cartella in uso: quella scelta, altrimenti quella di apeCsound.
+        auto folder = CsoundAudioProcessor::getUserFolderSetting (csoundFolderKey (which));
+
+        if (folder == juce::File{})
+            folder = CsoundAudioProcessor::getCsoundFolder (csoundFolderEnvName (which));
+
+        folder.revealToUser();
     };
-    parameterPanel.onChooseOutputFolder = [this]
+    parameterPanel.onRemoveCsoundFolder = [this] (int which) { setCsoundFolder (which, {}); };
+    parameterPanel.isCsoundFolderSet = [] (int which)
     {
-        chooseFolderSetting (CsoundAudioProcessor::kOutputFilesFolderKey, "Output Files Folder",
-                             "where Csound writes audio files given without a path");
+        return CsoundAudioProcessor::getUserFolderSetting (csoundFolderKey (which)) != juce::File{};
     };
-    parameterPanel.isExtraSamplesFolderSet = [] { return CsoundAudioProcessor::getUserFolderSetting (CsoundAudioProcessor::kExtraSamplesFolderKey) != juce::File{}; };
-    parameterPanel.isOutputFolderSet       = [] { return CsoundAudioProcessor::getUserFolderSetting (CsoundAudioProcessor::kOutputFilesFolderKey) != juce::File{}; };
+    parameterPanel.getCsoundFolderPath = [] (int which)
+    {
+        return CsoundAudioProcessor::getUserFolderSetting (csoundFolderKey (which)).getFullPathName();
+    };
    #endif
 
    #if JucePlugin_Build_Standalone
@@ -513,15 +522,24 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
             items.push_back (item);
         }
         {
-            // Tutte le piattaforme: copia file audio nella cartella SSDIR, dove
-            // Csound li trova per nome (diskin2 "loop.wav", GEN01...). Su iOS e'
-            // l'unico modo (il container dell'App Group non si vede in File);
-            // su desktop evita di cercare la cartella nel Finder/Esplora file.
+            // Tutte le piattaforme: copia file nelle cartelle di Csound, scelte
+            // dall'estensione (audio -> SSDIR, .udo/.inc/.orc -> INCDIR, analisi
+            // -> SADIR), dove Csound li trova per nome. Su iOS e' l'unico modo
+            // (il container dell'App Group non si vede in File).
             CsoundActionSheetItem item;
-            item.id = 7; item.text = "Import Samples...";
+            item.id = 7; item.text = "Import Files...";
             item.icon = CsoundActionSheetIcon::waveform;
             items.push_back (item);
         }
+       #if JUCE_IOS
+        {
+            // iOS: condivide i file scritti da Csound (SFDIR), che l'app File non vede.
+            CsoundActionSheetItem item;
+            item.id = 8; item.text = "Export Files...";
+            item.icon = CsoundActionSheetIcon::save;
+            items.push_back (item);
+        }
+       #endif
        #if ! JUCE_IOS
         {
             // Mostra il .csd collegato nel file manager di sistema (Finder /
@@ -567,6 +585,9 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
                 case 4: safeThis->promptInitializeSession (true);  break;
                 case 5: safeThis->promptInitializeSession (false); break;
                 case 7: safeThis->importSamples(); break;
+               #if JUCE_IOS
+                case 8: safeThis->exportFiles(); break;
+               #endif
                #if ! JUCE_IOS
                 case 6:
                 {
@@ -1260,100 +1281,111 @@ void CsoundAudioProcessorEditor::chooseCsdFile (const juce::String& title, const
     });
 }
 
-void CsoundAudioProcessorEditor::chooseFolderSetting (const char* key, const juce::String& title, const juce::String& purpose)
+const char* CsoundAudioProcessorEditor::csoundFolderKey (int which)
 {
-    const auto current = CsoundAudioProcessor::getUserFolderSetting (key);
-    const juce::String settingKey (key);
-
-    auto setFolder = [this, settingKey, title] (const juce::File& folder)
+    switch (which)
     {
-        auto& settings = CsoundAudioProcessor::getUserSettings();
-
-        if (folder == juce::File{})
-            settings.removeValue (settingKey);
-        else
-            settings.setValue (settingKey, folder.getFullPathName());
-
-        settings.saveIfNeeded();
-
-        appendToLog ("--- " + title + ": "
-                     + (folder == juce::File{} ? juce::String ("default (apeCsound SSDIR)") : folder.getFullPathName())
-                     + " - takes effect at the next Apply ---");
-    };
-
-    auto launchChooser = [this, current, title, setFolder]
-    {
-        activeFileChooser = std::make_unique<juce::FileChooser> (title,
-                                                                current != juce::File{} ? current : CsoundAudioProcessor::getSamplesFolder(),
-                                                                juce::String(), true, false, this);
-
-        activeFileChooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories,
-                                        [setFolder] (const juce::FileChooser& chooser)
-                                        {
-                                            const auto folder = chooser.getResult();
-
-                                            if (folder.isDirectory())
-                                                setFolder (folder);
-                                        });
-    };
-
-    if (current == juce::File{})
-    {
-        launchChooser();
-        return;
+        case 1:  return CsoundAudioProcessor::kOutputFilesFolderKey;
+        case 2:  return CsoundAudioProcessor::kExtraAnalysisFolderKey;
+        case 3:  return CsoundAudioProcessor::kExtraIncludeFolderKey;
+        default: return CsoundAudioProcessor::kExtraSamplesFolderKey;
     }
+}
 
-    // Gia' impostata: cambia, rimuovi (torna al default) o mostra nel Finder.
-    std::vector<CsoundActionSheetItem> items;
+juce::String CsoundAudioProcessorEditor::csoundFolderEnvName (int which)
+{
+    switch (which)
     {
-        CsoundActionSheetItem item;
-        item.sectionHeader = current.getFullPathName();
-        items.push_back (item);
+        case 1:  return "SFDIR";
+        case 2:  return "SADIR";
+        case 3:  return "INCDIR";
+        default: return "SSDIR";
     }
-    {
-        CsoundActionSheetItem item;
-        item.id = 1; item.text = "Change Folder..."; item.icon = CsoundActionSheetIcon::folder;
-        items.push_back (item);
-    }
-    {
-        CsoundActionSheetItem item;
-        item.id = 2; item.text = "Reveal in Finder"; item.icon = CsoundActionSheetIcon::folder;
-        items.push_back (item);
-    }
-    {
-        CsoundActionSheetItem item;
-        item.id = 3; item.text = "Remove (use default)"; item.icon = CsoundActionSheetIcon::trash;
-        items.push_back (item);
-    }
+}
 
-    juce::ignoreUnused (purpose);
-    juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
-
-    CsoundActionSheet::show (*this, title + " - " + purpose, std::move (items),
-                             [safeThis, current, launchChooser, setFolder] (int result)
+juce::String CsoundAudioProcessorEditor::csoundFolderTitle (int which)
+{
+    switch (which)
     {
-        if (safeThis == nullptr)
-            return;
+        case 1:  return "Output Files Folder";
+        case 2:  return "Extra Analysis Folder";
+        case 3:  return "Extra Include Folder";
+        default: return "Extra Samples Folder";
+    }
+}
 
-        switch (result)
-        {
-            case 1: launchChooser(); break;
-            case 2: current.revealToUser(); break;
-            case 3: setFolder ({}); break;
-            default: break;
-        }
-    });
+void CsoundAudioProcessorEditor::setCsoundFolder (int which, const juce::File& folder)
+{
+    auto& settings = CsoundAudioProcessor::getUserSettings();
+    const juce::String key (csoundFolderKey (which));
+
+    if (folder == juce::File{})
+        settings.removeValue (key);
+    else
+        settings.setValue (key, folder.getFullPathName());
+
+    settings.saveIfNeeded();
+
+    // Il menu Config resta aperto (voci keepOpen): percorso e spunte si aggiornano.
+    CsoundActionSheet::repaintOpenSheets (*this);
+
+    appendToLog ("--- " + csoundFolderTitle (which) + ": "
+                 + (folder == juce::File{} ? juce::String ("default (apeCsound folder)") : folder.getFullPathName())
+                 + " - takes effect at the next Apply ---");
+}
+
+void CsoundAudioProcessorEditor::chooseCsoundFolder (int which)
+{
+    // Scelta (o cambio) della cartella: le altre azioni - Reveal / Remove -
+    // stanno nella pagina del menu Config > Csound Folders > <cartella>.
+    const auto current = CsoundAudioProcessor::getUserFolderSetting (csoundFolderKey (which));
+    const auto startFolder = current != juce::File{} ? current
+                           : CsoundAudioProcessor::getCsoundFolder (csoundFolderEnvName (which));
+
+    activeFileChooser = std::make_unique<juce::FileChooser> (csoundFolderTitle (which), startFolder,
+                                                            juce::String(), true, false, this);
+
+    activeFileChooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories,
+                                    [this, which] (const juce::FileChooser& chooser)
+                                    {
+                                        const auto folder = chooser.getResult();
+
+                                        if (folder.isDirectory())
+                                            setCsoundFolder (which, folder);
+                                    });
+}
+
+juce::String CsoundAudioProcessorEditor::importDestinationFor (const juce::String& fileName)
+{
+    // Destinazione dall'estensione: audio -> SSDIR, #include -> INCDIR,
+    // file di analisi -> SADIR. Vuota = tipo non gestito (saltato).
+    const auto ext = fileName.fromLastOccurrenceOf (".", false, false).toLowerCase();
+
+    static const juce::StringArray audio    { "wav", "wave", "aif", "aiff", "aifc", "flac", "ogg", "caf", "mp3" };
+    static const juce::StringArray include  { "udo", "inc", "orc", "sco", "txt" };
+    static const juce::StringArray analysis { "pvx", "ats", "lpc", "het", "cv" };
+
+    if (audio.contains (ext))    return "SSDIR";
+    if (include.contains (ext))  return "INCDIR";
+    if (analysis.contains (ext)) return "SADIR";
+    return {};
 }
 
 void CsoundAudioProcessorEditor::importSamples()
 {
-    const auto samplesFolder = CsoundAudioProcessor::getSamplesFolder();
-
     // Stesso schema di chooseCsdFile: dialogo nativo con l'editor come parent
     // (indispensabile nell'AUv3 iOS), chooser tenuto in vita come membro.
-    activeFileChooser = std::make_unique<juce::FileChooser> ("Import Samples...", juce::File{},
-                                                            "*.wav;*.wave;*.aif;*.aiff;*.aifc;*.flac;*.ogg;*.caf",
-                                                            true, false, this);
+    // iOS: nessun filtro - le estensioni non standard (.udo, .pvx...) non
+    // hanno un tipo di file di sistema e risulterebbero non selezionabili;
+    // i tipi non gestiti vengono saltati dopo, con un messaggio.
+   #if JUCE_IOS
+    const juce::String patterns ("*");
+   #else
+    const juce::String patterns ("*.wav;*.wave;*.aif;*.aiff;*.aifc;*.flac;*.ogg;*.caf;*.mp3;"
+                                 "*.udo;*.inc;*.orc;*.sco;*.txt;*.pvx;*.ats;*.lpc;*.het;*.cv");
+   #endif
+
+    activeFileChooser = std::make_unique<juce::FileChooser> ("Import Files...", juce::File{}, patterns, true, false, this);
 
     const int flags = juce::FileBrowserComponent::openMode
                     | juce::FileBrowserComponent::canSelectFiles
@@ -1361,7 +1393,7 @@ void CsoundAudioProcessorEditor::importSamples()
 
     juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
 
-    activeFileChooser->launchAsync (flags, [safeThis, samplesFolder] (const juce::FileChooser& chooser)
+    activeFileChooser->launchAsync (flags, [safeThis] (const juce::FileChooser& chooser)
     {
         if (safeThis == nullptr)
             return;
@@ -1371,8 +1403,8 @@ void CsoundAudioProcessorEditor::importSamples()
         if (urls.isEmpty())
             return; // annullato
 
-        int imported = 0;
-        juce::StringArray failed;
+        std::map<juce::String, int> importedPerFolder;
+        juce::StringArray failed, skipped;
 
         for (const auto& url : urls)
         {
@@ -1381,7 +1413,16 @@ void CsoundAudioProcessorEditor::importSamples()
             if (name.isEmpty())
                 name = url.getLocalFile().getFileName();
 
-            const auto dest = samplesFolder.getChildFile (juce::File::createLegalFileName (name));
+            const auto folderName = importDestinationFor (name);
+
+            if (folderName.isEmpty())
+            {
+                skipped.add (name);
+                continue;
+            }
+
+            const auto dest = CsoundAudioProcessor::getCsoundFolder (folderName)
+                                  .getChildFile (juce::File::createLegalFileName (name));
 
             // La URL del picker porta l'accesso security-scoped (iCloud
             // Drive, altri provider): la si legge come stream, non come File.
@@ -1405,16 +1446,92 @@ void CsoundAudioProcessorEditor::importSamples()
             }
 
             out.flush();
-            ++imported;
+            ++importedPerFolder[folderName];
         }
 
-        safeThis->appendToLog ("--- Imported " + juce::String (imported) + " sample(s) into SSDIR ("
-                               + samplesFolder.getFullPathName() + ") ---");
+        for (const auto& [folderName, count] : importedPerFolder)
+            safeThis->appendToLog ("--- Imported " + juce::String (count) + " file(s) into " + folderName + " ("
+                                   + CsoundAudioProcessor::getCsoundFolder (folderName).getFullPathName() + ") ---");
+
+        if (! skipped.isEmpty())
+            safeThis->appendToLog ("--- Skipped (not an audio, #include or analysis file): " + skipped.joinIntoString (", ") + " ---");
 
         if (! failed.isEmpty())
             safeThis->appendToLog ("--- Could not import: " + failed.joinIntoString (", ") + " ---");
     });
 }
+
+#if JUCE_IOS
+void CsoundAudioProcessorEditor::exportFiles()
+{
+    // iOS: i file scritti da Csound (SFDIR, container dell'App Group) non si
+    // vedono nell'app File - si condividono con il pannello di sistema.
+    const auto folder = CsoundAudioProcessor::getOutputFilesFolder();
+    auto files = folder.findChildFiles (juce::File::findFiles, false);
+
+    files.removeIf ([] (const juce::File& f) { return f.isHidden(); });
+
+    if (files.isEmpty())
+    {
+        appendToLog ("--- No files in SFDIR to export (files written by Csound go there) ---");
+        return;
+    }
+
+    // Piu' recenti prima, al massimo 40 righe.
+    std::sort (files.begin(), files.end(),
+               [] (const juce::File& a, const juce::File& b) { return a.getLastModificationTime() > b.getLastModificationTime(); });
+
+    if (files.size() > 40)
+        files.removeRange (40, files.size() - 40);
+
+    std::vector<CsoundActionSheetItem> items;
+    {
+        CsoundActionSheetItem item;
+        item.id = 1;
+        item.text = "Share All (" + juce::String (files.size()) + ")";
+        item.icon = CsoundActionSheetIcon::save;
+        items.push_back (item);
+    }
+    items.push_back (CsoundActionSheetItem::separator());
+
+    for (int i = 0; i < files.size(); ++i)
+    {
+        CsoundActionSheetItem item;
+        item.id = 100 + i;
+        item.text = files[i].getFileName();
+        item.icon = CsoundActionSheetIcon::waveform;
+        items.push_back (item);
+    }
+
+    juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
+
+    CsoundActionSheet::show (*this, "Export Files (SFDIR)", std::move (items), [safeThis, files] (int result)
+    {
+        if (safeThis == nullptr || result <= 0)
+            return;
+
+        juce::Array<juce::URL> urls;
+
+        if (result == 1)
+            for (const auto& f : files)
+                urls.add (juce::URL (f));
+        else if (result - 100 < files.size())
+            urls.add (juce::URL (files[result - 100]));
+
+        if (urls.isEmpty())
+            return;
+
+        // Pannello di condivisione di iOS: salva in File, AirDrop, altre app.
+        safeThis->shareMessageBox = juce::ContentSharer::shareFilesScoped (urls,
+            [safeThis] (bool success, const juce::String& error)
+            {
+                if (safeThis != nullptr && ! success && error.isNotEmpty())
+                    safeThis->appendToLog ("--- Export: " + error + " ---");
+            },
+            safeThis.getComponent());
+    });
+}
+#endif
 
 void CsoundAudioProcessorEditor::promptLoadSession()
 {
@@ -2685,7 +2802,7 @@ Every instance exposes a **fixed set of 144 parameters** to the DAW: **64 Float*
 
 # Toolbar
 - **Apply** - recompiles and restarts Csound with the text in the editor. A red ring means the editor text differs from the running code.
-- **File capsule** (centre) - name of the linked `.csd`, its folder and state (saved / unsaved changes / file not found, coloured dot). Click it for **Save**, **Save as...**, **Load...**, **Import Samples...**, **Reveal in Finder** (desktop only), **Init Session Template** and **Init Session Clear**.
+- **File capsule** (centre) - name of the linked `.csd`, its folder and state (saved / unsaved changes / file not found, coloured dot). Click it for **Save**, **Save as...**, **Load...**, **Import Files...**, **Export Files...** (iOS only), **Reveal in Finder** (desktop only), **Init Session Template** and **Init Session Clear**.
 - **Magnifier** - opens the Find / Replace bar: match case `Aa`, whole word `W`, Replace / Replace All; Enter = next match, Esc closes.
 - **Menu** - Show/Hide Parameters and Console, Undo / Redo, Audio/MIDI Settings (standalone only), Config, apeCsound Guide, Csound Manual, About.
 - **Audio/MIDI Settings** (standalone only) - the same touch-friendly panel on every platform: Audio Driver, Output/Input Device, Output/Input Channels (stereo pairs), Sample Rate, Buffer Size (with latency in ms), Mute audio input, Control Panel (drivers that have one), MIDI Inputs, **Bluetooth MIDI...** and Reset Audio/MIDI. Tap a row to open its list; rows with a single possible value only show it.
@@ -2728,13 +2845,15 @@ Porting a Cabbage or CsoundQt file to apeCsound is **not guaranteed**: whether i
 - **Track layouts** - the track can have 1 to 16 output channels and 0 to 16 input channels (0 = input bus disabled). Surround layouts (5.1, 7.1...) are compensated so that channel numbers match the track. Changing the track channel count recompiles the engine.
 - **MIDI** - notes and controllers from the track reach Csound (`-M0`, `massign`); MIDI generated by Csound (`midiout`) goes back to the DAW.
 
-# Samples folder (SSDIR)
+# Csound folders (SSDIR, SFDIR, SADIR, INCDIR)
 apeCsound creates a fixed folder for audio files, **SSDIR**, inside the apeCsound folder: `~/Documents/apeCsound/SSDIR` on macOS; on iOS it is in the shared App Group container, so the standalone app and the AUv3 plug-in see the same files. Nothing to configure: copy your WAV/AIFF files there and use just the file name in the code - `aL, aR diskin2 "loop.wav", 1, 0, 1`, `ftgen 0, 0, 0, 1, "kick.wav", 0, 0, 0`.
-- **Import Samples...** (file capsule menu, every platform) - pick one or more audio files and copy them into SSDIR, so the code can use them by name. On iOS it is the only way to fill the folder (the App Group container is not visible in the Files app); on desktop it saves looking for the folder in Finder/Explorer. A file with the same name is replaced; the console lists what was imported.
+- **Import Files...** (file capsule menu, every platform) - pick one or more files and copy them into the right apeCsound folder, chosen by extension: audio (wav, aif, flac, ogg, caf, mp3) to **SSDIR**, `#include` files (`.udo`, `.inc`, `.orc`, `.sco`, `.txt`) to **INCDIR**, analysis files (`.pvx`, `.ats`, `.lpc`, `.het`, `.cv`) to **SADIR**; other types are skipped. On iOS it is the only way to fill these folders (the App Group container is not visible in the Files app); on desktop it saves looking for them in Finder/Explorer. A file with the same name is replaced; the console lists what was imported.
+- **Export Files...** (file capsule menu, iOS only) - lists the files Csound wrote to **SFDIR** (newest first) and shares one or all of them with the iOS share sheet: Save to Files, AirDrop, other apps.
 - Csound looks for audio files first in the folder of the linked `.csd`, then in SSDIR.
-- Audio files written by Csound (`fout`, `-o` file output) without a path go to SSDIR.
-- **Config > Extra Samples Folder...** (desktop) adds one more folder to search, after the `.csd` folder and SSDIR. **Config > Output Files Folder...** (desktop) sets where Csound writes audio files given without a path (default: SSDIR). Both are user preferences, ticked when set; choose them again to change, reveal or remove the folder. They take effect at the next Apply.
-- An `--env:SSDIR=...` / `--env:SFDIR=...` in `<CsOptions>` still overrides everything for that `.csd`.
+- Audio files written by Csound (`fout`, `-o` file output) without a path go to the **SFDIR** folder, created next to SSDIR (`~/Documents/apeCsound/SFDIR`; on iOS in the same shared container). Csound also searches it when reading, after SSDIR, so a recorded file can be played back by name.
+- apeCsound also creates **SADIR** (analysis files: pvoc, ATS, lpc) and **INCDIR** (`#include` files, e.g. shared UDOs) next to SSDIR. Like SSDIR, they are searched after the folder of the linked `.csd`.
+- **Config > Csound Folders** (desktop) - one entry per folder, ticked when set: **Samples (SSDIR)**, **Analysis Files (SADIR)** and **Include Files (INCDIR)** add one more folder to search (after the `.csd` folder and the apeCsound one); **Output Files (SFDIR)** replaces the folder where files are written (Csound always writes to the first one). Once a folder is set, its entry opens a page (with Back) showing the path, **Change Folder...**, **Reveal in Finder** and **Remove (use default)**. They are user preferences and take effect at the next Apply.
+- An `--env:NAME=...` (SSDIR, SFDIR, SADIR, INCDIR) in `<CsOptions>` still overrides everything for that `.csd`.
 
 # Errors in the editor
 When **Apply** fails, the line reported by Csound is marked in the editor: a **red dot** next to the line number, a light red background and a wavy underline. With the caret on that line the help bar turns red and shows **Error - line N** with Csound's message. The console confirms it with `--- Error marked in the editor at line N ---`.
@@ -2749,7 +2868,7 @@ Csound messages, compile errors and plugin notes (latency, channels, imports). I
 # Config (main menu)
 - **Modern Syntax in Help** - functional syntax in the opcode help bar (user preference).
 - **Follow CSD nchnls** - see "Audio, MIDI and channels" (saved with the project).
-- **Extra Samples Folder... / Output Files Folder...** (desktop) - see "Samples folder (SSDIR)" (user preferences).
+- **Csound Folders** (desktop) - the extra SSDIR/SADIR/INCDIR folders and the SFDIR output folder, see "Csound folders" (user preferences).
 
 # Shortcuts
 - **Cmd+Z / Cmd+Shift+Z (Cmd+Y)** - undo / redo

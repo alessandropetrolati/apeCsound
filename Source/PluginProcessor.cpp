@@ -878,44 +878,59 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     CsoundAPI::csoundSetOption (cs, "-d");            // niente finestre di display/grafici
     CsoundAPI::csoundSetOption (cs, "-+msg_color=0"); // niente codici colore ANSI nei messaggi (rovinerebbero la console)
 
-    // Cartelle dei file audio (vedi getSamplesFolder):
-    //   SSDIR  = cartella del .csd collegato + apeCsound/SSDIR   (fisse)
-    //   SSDIR += cartella extra scelta in Config                 (opzionale)
-    //   SFDIR  = cartella di uscita scelta in Config, altrimenti apeCsound/SSDIR
+    // Cartelle di Csound (vedi getCsoundFolder e le chiavi k...FolderKey):
+    //   SSDIR  (file audio da leggere)    cartella del .csd + apeCsound/SSDIR,  += extra da Config
+    //   SADIR  (file di analisi)          cartella del .csd + apeCsound/SADIR,  += extra da Config
+    //   INCDIR (#include)                 cartella del .csd + apeCsound/INCDIR, += extra da Config
+    //   SFDIR  (file audio scritti)       Output Files Folder da Config, altrimenti apeCsound/SFDIR
     // SFDIR non usa "+=": Csound scrive sempre nella PRIMA cartella della
-    // lista, una cartella aggiunta in coda non verrebbe mai usata per scrivere.
-    // Un "--env:..." in <CsOptions> viene letto DOPO e quindi prevale.
-    // Valori tra virgolette: csoundSetOption separa le opzioni sugli spazi.
+    // lista (la consulta anche in lettura, dopo SSDIR). Le cartelle extra
+    // (solo desktop) vanno in coda con "+=". Un "--env:..." in <CsOptions>
+    // viene letto DOPO e quindi prevale. Valori tra virgolette:
+    // csoundSetOption separa le opzioni sugli spazi.
     {
-        const auto samples = getSamplesFolder();
-        juce::StringArray searchDirs;
-
         const auto linked = getLinkedCsdFile();
+        const auto csdFolder = linked.existsAsFile() ? linked.getParentDirectory() : juce::File{};
 
-        if (linked.existsAsFile())
-            searchDirs.add (linked.getParentDirectory().getFullPathName());
+        auto setSearchPath = [cs, &csdFolder] (const char* envName, const char* extraKey)
+        {
+            juce::StringArray dirs;
 
-        if (samples.isDirectory())
-            searchDirs.addIfNotAlreadyThere (samples.getFullPathName());
+            if (csdFolder != juce::File{})
+                dirs.add (csdFolder.getFullPathName());
 
-        if (! searchDirs.isEmpty())
-            CsoundAPI::csoundSetOption (cs, ("--env:SSDIR=\"" + searchDirs.joinIntoString (";") + "\"").toRawUTF8());
+            const auto fixed = getCsoundFolder (envName);
+
+            if (fixed.isDirectory())
+                dirs.addIfNotAlreadyThere (fixed.getFullPathName());
+
+            if (! dirs.isEmpty())
+                CsoundAPI::csoundSetOption (cs, ("--env:" + juce::String (envName) + "=\"" + dirs.joinIntoString (";") + "\"").toRawUTF8());
+
+           #if ! JUCE_IOS
+            const auto extra = getUserFolderSetting (extraKey);
+
+            if (extra != juce::File{} && ! dirs.contains (extra.getFullPathName()))
+                CsoundAPI::csoundSetOption (cs, ("--env:" + juce::String (envName) + "+=\"" + extra.getFullPathName() + "\"").toRawUTF8());
+           #else
+            juce::ignoreUnused (extraKey);
+           #endif
+        };
+
+        setSearchPath ("SSDIR",  kExtraSamplesFolderKey);
+        setSearchPath ("SADIR",  kExtraAnalysisFolderKey);
+        setSearchPath ("INCDIR", kExtraIncludeFolderKey);
 
        #if ! JUCE_IOS
-        const auto extraSamples = getUserFolderSetting (kExtraSamplesFolderKey);
-
-        if (extraSamples != juce::File{} && ! searchDirs.contains (extraSamples.getFullPathName()))
-            CsoundAPI::csoundSetOption (cs, ("--env:SSDIR+=\"" + extraSamples.getFullPathName() + "\"").toRawUTF8());
-
         const auto outputFolder = getUserFolderSetting (kOutputFilesFolderKey);
        #else
         const juce::File outputFolder;
        #endif
 
-        if (outputFolder != juce::File{})
-            CsoundAPI::csoundSetOption (cs, ("--env:SFDIR=\"" + outputFolder.getFullPathName() + "\"").toRawUTF8());
-        else if (samples.isDirectory())
-            CsoundAPI::csoundSetOption (cs, ("--env:SFDIR=\"" + samples.getFullPathName() + "\"").toRawUTF8());
+        const auto writeFolder = outputFolder != juce::File{} ? outputFolder : getOutputFilesFolder();
+
+        if (writeFolder.isDirectory())
+            CsoundAPI::csoundSetOption (cs, ("--env:SFDIR=\"" + writeFolder.getFullPathName() + "\"").toRawUTF8());
     }
 
     // Forziamo sr e ksmps a coincidere con host sample rate e block size:
@@ -1482,14 +1497,24 @@ juce::File CsoundAudioProcessor::getUserFolderSetting (const char* key)
     return folder.isDirectory() ? folder : juce::File{};
 }
 
-juce::File CsoundAudioProcessor::getSamplesFolder()
+juce::File CsoundAudioProcessor::getCsoundFolder (const juce::String& envName)
 {
-    auto folder = getBaseFolder().getChildFile ("SSDIR");
+    auto folder = getBaseFolder().getChildFile (envName);
 
     if (! folder.isDirectory())
         folder.createDirectory(); // crea anche apeCsound/ se manca
 
     return folder;
+}
+
+juce::File CsoundAudioProcessor::getOutputFilesFolder()
+{
+    return getCsoundFolder ("SFDIR");
+}
+
+juce::File CsoundAudioProcessor::getSamplesFolder()
+{
+    return getCsoundFolder ("SSDIR");
 }
 
 juce::File CsoundAudioProcessor::getLinkedCsdFile() const
@@ -3970,9 +3995,12 @@ juce::String CsoundAudioProcessor::emptyCsdText()
 ; e.g. diskin2 "loop.wav". Csound looks for it in the folder of the
 ; linked .csd, then in the apeCsound SSDIR folder
 ; (macOS: ~/Documents/apeCsound/SSDIR). To copy files there use
-; "Import Samples..." in the file name menu (the only way on iOS).
-; Desktop: Menu > Config > "Extra Samples Folder..." adds one more
-; folder to search, "Output Files Folder..." sets where files are written.
+; "Import Files..." in the file name menu (the only way on iOS).
+; Files written by Csound (fout, -o file) without a path go to the
+; apeCsound SFDIR folder (macOS: ~/Documents/apeCsound/SFDIR); analysis
+; files are searched in apeCsound/SADIR, #include files in apeCsound/INCDIR.
+; Desktop: Menu > Config > Csound Folders adds more folders or changes
+; where files are written.
 </CsOptions>
 <CsInstruments>
 
@@ -4003,9 +4031,12 @@ juce::String CsoundAudioProcessor::defaultCsdText()
 ; e.g. diskin2 "loop.wav". Csound looks for it in the folder of the
 ; linked .csd, then in the apeCsound SSDIR folder
 ; (macOS: ~/Documents/apeCsound/SSDIR). To copy files there use
-; "Import Samples..." in the file name menu (the only way on iOS).
-; Desktop: Menu > Config > "Extra Samples Folder..." adds one more
-; folder to search, "Output Files Folder..." sets where files are written.
+; "Import Files..." in the file name menu (the only way on iOS).
+; Files written by Csound (fout, -o file) without a path go to the
+; apeCsound SFDIR folder (macOS: ~/Documents/apeCsound/SFDIR); analysis
+; files are searched in apeCsound/SADIR, #include files in apeCsound/INCDIR.
+; Desktop: Menu > Config > Csound Folders adds more folders or changes
+; where files are written.
 </CsOptions>
 <CsInstruments>
 

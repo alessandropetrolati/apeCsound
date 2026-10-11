@@ -64,6 +64,13 @@ struct CsoundActionSheetItem
     bool keepOpen = false;
     std::function<bool()> tickedFn;
     std::function<bool()> enabledFn; // come tickedFn, per lo stato abilitato (es. Undo/Redo)
+    // Come tickedFn, per il TESTO (riga o intestazione di sezione): riletto a
+    // ogni ridisegno, es. il percorso di una cartella appena scelta mentre
+    // il menu resta aperto.
+    std::function<juce::String()> textFn;
+
+    juce::String textNow() const          { return textFn != nullptr ? textFn() : text; }
+    juce::String sectionHeaderNow() const { return textFn != nullptr ? textFn() : sectionHeader; }
 
     bool isEnabledNow() const  { return enabledFn != nullptr ? enabledFn() : enabled; }
     bool isTickedNow() const   { return ticked || (tickedFn != nullptr && tickedFn()); }
@@ -118,6 +125,11 @@ public:
     /** Path (24x24 circa, da scalare con scaleToFit) dell'icona: le stesse
         icone dei menu, riusate da CsoundEditCallout. Vuoto per none. */
     static juce::Path getIconPath (CsoundActionSheetIcon icon);
+
+    /** Ridisegna i fogli aperti dentro 'host' (spunte/testi dinamici: tickedFn,
+        enabledFn, textFn) - per stati che cambiano fuori dal foglio, es. dopo
+        un dialogo di scelta cartella aperto da una voce keepOpen. */
+    static void repaintOpenSheets (juce::Component& host);
 
     static void show (juce::Component& host, const juce::String& title,
                        std::vector<CsoundActionSheetItem> items,

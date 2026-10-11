@@ -257,11 +257,14 @@ public:
     // PluginEditor solo in quel caso, altrimenti la voce non compare.
     std::function<void()> onAudioSettingsRequested;
 
-    // Config > "Extra Samples Folder..." / "Output Files Folder..." (solo
-    // desktop, impostati da PluginEditor; nulli -> voci assenti). is...Set
-    // disegna la spunta quando una cartella e' stata scelta.
-    std::function<void()> onChooseExtraSamplesFolder, onChooseOutputFolder;
-    std::function<bool()> isExtraSamplesFolderSet, isOutputFolderSet;
+    // Config > "Csound Folders" (solo desktop, impostati da PluginEditor;
+    // nulli -> voce assente): sottomenu con una voce per cartella di Csound.
+    // Indice: 0 = SSDIR (campioni), 1 = SFDIR (file scritti),
+    // 2 = SADIR (analisi), 3 = INCDIR (#include). isCsoundFolderSet disegna
+    // la spunta quando l'utente ha scelto una cartella.
+    std::function<void (int)> onChooseCsoundFolder, onRevealCsoundFolder, onRemoveCsoundFolder;
+    std::function<bool (int)> isCsoundFolderSet;
+    std::function<juce::String (int)> getCsoundFolderPath;
 
     // "Follow CSD nchnls" (spunta): Csound usa nchnls/nchnls_i del .csd
     // invece dei canali della traccia - vedi

@@ -2791,15 +2791,14 @@ void CsoundParameterMappingPanel::showPanelMenu()
             item.icon = CsoundActionSheetIcon::codeBraces;
             config.subItems.push_back (item);
         }
-        {
-            CsoundActionSheetItem item;
-            item.id = 116; item.text = "Follow CSD nchnls";
-            item.enabled = onToggleFollowCsdChannelsRequested != nullptr;
-            item.tickedFn = [this] { return isFollowingCsdChannels != nullptr && isFollowingCsdChannels(); };
-            item.keepOpen = true;
-            item.icon = CsoundActionSheetIcon::console;
-            config.subItems.push_back (item);
-        }
+        // "Follow CSD nchnls": in Config, subito sopra "Csound Folders" (vedi sotto).
+        CsoundActionSheetItem followItem;
+        followItem.id = 116; followItem.text = "Follow CSD nchnls";
+        followItem.enabled = onToggleFollowCsdChannelsRequested != nullptr;
+        followItem.tickedFn = [this] { return isFollowingCsdChannels != nullptr && isFollowingCsdChannels(); };
+        followItem.keepOpen = true;
+        followItem.icon = CsoundActionSheetIcon::console;
+
         {
             CsoundActionSheetItem item;
             item.id = 120; item.text = "Light Editor";
@@ -2809,27 +2808,81 @@ void CsoundParameterMappingPanel::showPanelMenu()
             item.icon = CsoundActionSheetIcon::sun;
             config.subItems.push_back (item);
         }
-        if (onChooseExtraSamplesFolder != nullptr || onChooseOutputFolder != nullptr)
+        config.subItems.push_back (CsoundActionSheetItem::separator());
+        config.subItems.push_back (followItem);
+
+        if (onChooseCsoundFolder != nullptr)
         {
-            config.subItems.push_back (CsoundActionSheetItem::separator());
+            // "Csound Folders": seconda pagina con le quattro cartelle;
+            // ogni cartella apre una terza pagina (con
+            // "Back"): percorso, Choose/Change Folder, Reveal, Remove.
+            CsoundActionSheetItem folders;
+            folders.text = "Csound Folders";
+            folders.icon = CsoundActionSheetIcon::folder;
 
-            if (onChooseExtraSamplesFolder != nullptr)
+
+            const char* const names[]    = { "Samples (SSDIR)", "Output Files (SFDIR)",
+                                             "Analysis Files (SADIR)", "Include Files (INCDIR)" };
+            const char* const defaults[] = { "SSDIR", "SFDIR", "SADIR", "INCDIR" };
+
+           #if JUCE_MAC
+            const juce::String revealText ("Reveal in Finder");
+           #elif JUCE_WINDOWS
+            const juce::String revealText ("Show in Explorer");
+           #else
+            const juce::String revealText ("Show in Folder");
+           #endif
+
+            // Ogni cartella apre la propria pagina (con Back). Tutte le voci
+            // sono keepOpen: il menu resta aperto e testi/spunte/abilitazioni
+            // si rileggono a ogni ridisegno (textFn/tickedFn/enabledFn).
+            for (int i = 0; i < 4; ++i)
             {
+                auto isSet = [this, i] { return isCsoundFolderSet != nullptr && isCsoundFolderSet (i); };
+
                 CsoundActionSheetItem item;
-                item.id = 123; item.text = "Extra Samples Folder...";
-                item.tickedFn = [this] { return isExtraSamplesFolderSet != nullptr && isExtraSamplesFolderSet(); };
+                item.text = names[i];
                 item.icon = CsoundActionSheetIcon::folder;
-                config.subItems.push_back (item);
+                item.tickedFn = isSet;
+
+                CsoundActionSheetItem pathHeader;
+                pathHeader.sectionHeader = " "; // riga di intestazione; il testo vero da textFn
+                const juce::String defaultName (defaults[i]);
+                pathHeader.textFn = [this, i, isSet, defaultName]
+                {
+                    if (isSet() && getCsoundFolderPath != nullptr)
+                        return getCsoundFolderPath (i);
+
+                    return "Default: apeCsound/" + defaultName;
+                };
+                item.subItems.push_back (pathHeader);
+
+                CsoundActionSheetItem choose;
+                choose.id = 123 + i;  // 123..126
+                choose.textFn = [isSet] { return juce::String (isSet() ? "Change Folder..." : "Choose Folder..."); };
+                choose.icon = CsoundActionSheetIcon::folder;
+                choose.keepOpen = true;
+                item.subItems.push_back (choose);
+
+                CsoundActionSheetItem reveal;
+                reveal.id = 130 + i;  // 130..133 (cartella in uso: scelta o default)
+                reveal.text = revealText;
+                reveal.icon = CsoundActionSheetIcon::folder;
+                reveal.keepOpen = true;
+                item.subItems.push_back (reveal);
+
+                CsoundActionSheetItem remove;
+                remove.id = 140 + i;  // 140..143
+                remove.text = "Remove (use default)";
+                remove.icon = CsoundActionSheetIcon::trash;
+                remove.keepOpen = true;
+                remove.enabledFn = isSet;
+                item.subItems.push_back (remove);
+
+                folders.subItems.push_back (item);
             }
 
-            if (onChooseOutputFolder != nullptr)
-            {
-                CsoundActionSheetItem item;
-                item.id = 124; item.text = "Output Files Folder...";
-                item.tickedFn = [this] { return isOutputFolderSet != nullptr && isOutputFolderSet(); };
-                item.icon = CsoundActionSheetIcon::folder;
-                config.subItems.push_back (item);
-            }
+            config.subItems.push_back (folders);
         }
         config.subItems.push_back (CsoundActionSheetItem::separator());
         {
@@ -2910,8 +2963,15 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 120: if (safeThis->onToggleDarkEditorRequested) safeThis->onToggleDarkEditorRequested(); break;
             case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
             case 121: if (safeThis->onAudioSettingsRequested) safeThis->onAudioSettingsRequested(); break;
-            case 123: if (safeThis->onChooseExtraSamplesFolder) safeThis->onChooseExtraSamplesFolder(); break;
-            case 124: if (safeThis->onChooseOutputFolder) safeThis->onChooseOutputFolder(); break;
+            case 123: case 124: case 125: case 126:
+                if (safeThis->onChooseCsoundFolder) safeThis->onChooseCsoundFolder (result - 123);
+                break;
+            case 130: case 131: case 132: case 133:
+                if (safeThis->onRevealCsoundFolder) safeThis->onRevealCsoundFolder (result - 130);
+                break;
+            case 140: case 141: case 142: case 143:
+                if (safeThis->onRemoveCsoundFolder) safeThis->onRemoveCsoundFolder (result - 140);
+                break;
             default: break;
         }
     });

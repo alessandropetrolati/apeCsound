@@ -771,13 +771,25 @@ private:
     // file audio) e copia nella cartella SSDIR (CsoundAudioProcessor::
     // getSamplesFolder), che su iOS sta nel container dell'App Group e non
     // e' raggiungibile dall'app File.
-    void importSamples();
+    void importSamples();   // "Import Files...": audio -> SSDIR, .udo/.inc/.orc -> INCDIR, analisi -> SADIR
+    static juce::String importDestinationFor (const juce::String& fileName);
 
-    // Config > "Extra Samples Folder..." / "Output Files Folder..." (solo
-    // desktop): sceglie (o cambia/rimuove) una cartella salvata nelle
-    // preferenze utente sotto 'key' - vedi CsoundAudioProcessor::
-    // kExtraSamplesFolderKey / kOutputFilesFolderKey.
-    void chooseFolderSetting (const char* key, const juce::String& title, const juce::String& purpose);
+   #if JUCE_IOS
+    // "Export Files..." (solo iOS): condivide i file di SFDIR con il pannello
+    // di sistema (ContentSharer); il box va tenuto in vita finche' e' aperto.
+    void exportFiles();
+    juce::ScopedMessageBox shareMessageBox;
+   #endif
+
+    // Config > Csound Folders (solo desktop): cartelle extra di SSDIR/SADIR/
+    // INCDIR e cartella di uscita SFDIR, salvate nelle preferenze utente -
+    // vedi CsoundAudioProcessor::k...FolderKey. which: 0 SSDIR, 1 SFDIR,
+    // 2 SADIR, 3 INCDIR. setCsoundFolder ({}) = rimuovi (torna al default).
+    void chooseCsoundFolder (int which);
+    void setCsoundFolder (int which, const juce::File& folder);
+    static const char* csoundFolderKey (int which);
+    static juce::String csoundFolderTitle (int which);
+    static juce::String csoundFolderEnvName (int which);
 
     // juce::FileDragAndDropTarget: drag and drop di un .csd dal Finder/
     // Explorer DIRETTAMENTE sull'editor, stessa destinazione finale di
