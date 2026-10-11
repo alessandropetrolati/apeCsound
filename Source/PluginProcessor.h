@@ -209,6 +209,20 @@ public:
         // per una sostituzione di sessione intera (Load/Initialize/Relocate):
         // il pannello scarta anche una riga "in sospeso".
         virtual void sessionEditedByUndoRedo (bool /*structureReplaced*/) {}
+
+        // Chiamato (sul message thread) quando l'elenco degli errori con
+        // numero di riga cambia - vedi getCodeDiagnostics().
+        virtual void csoundDiagnosticsChanged() {}
+    };
+
+    // Errore di Csound riferito a una riga del .csd compilato (1-based,
+    // contata dall'inizio del testo passato a compileAndStart). runtime =
+    // INIT/PERF ERROR arrivato mentre il motore gira, false = compilazione.
+    struct CodeDiagnostic
+    {
+        int line = 0;
+        juce::String message;
+        bool runtime = false;
     };
 
     // --- 16 "macro" parametri host (VST3/AU/Standalone) mappabili a canali
@@ -451,6 +465,16 @@ public:
         successo mentre la finestra era chiusa. */
     juce::StringArray getMessageHistory() const;
 
+    /** Errori con numero di riga dell'ultima compilazione (e INIT/PERF
+        ERROR successivi), solo message thread. L'editor li mostra come
+        segni sulle righe del codice (CodeView::setErrorMarkers). */
+    const juce::Array<CodeDiagnostic>& getCodeDiagnostics() const noexcept { return codeDiagnostics; }
+
+    /** Estrae gli errori con riga dal testo dei messaggi di Csound (pubblica
+        e statica per poterla testare). Salta quelli dentro macro/#include:
+        lì la riga non e' quella del file principale. */
+    static juce::Array<CodeDiagnostic> parseCompileErrors (const juce::String& csoundOutput);
+
     /** Elenco completo degli opcode realmente registrati nell'istanza
         Csound in esecuzione (csoundNewOpcodeList - la stessa fonte che usa
         Csound stesso, quindi sempre completa e in sincrono con la versione
@@ -558,6 +582,29 @@ public:
     // chiamata JUCE, dentro la sandbox - un App Group richiederebbe un
     // entitlement da aggiungere al progetto). Creata se manca.
     static juce::File getBaseFolder();
+
+    /** Cartella dei campioni audio: getBaseFolder()/SSDIR (macOS:
+        ~/Documents/apeCsound/SSDIR; iOS: container dell'App Group, condiviso
+        fra app e AUv3). Creata se non esiste. compileAndStart la passa a
+        Csound come SSDIR (lettura: diskin, soundin, GEN01...) e SFDIR
+        (file audio scritti), cosi' "loop.wav" si trova senza percorso. */
+    static juce::File getSamplesFolder();
+
+    /** Preferenze dell'UTENTE (non del progetto), condivise da tutte le
+        istanze: ~/Library/Application Support/apeCsound/apeCsound.settings
+        su macOS. Le usa anche l'editor (tema, font, sintassi). */
+    static juce::PropertiesFile& getUserSettings();
+
+    // Cartelle scelte dall'utente in Config (solo desktop), lette a ogni
+    // compilazione - vedi compileAndStart:
+    //   kExtraSamplesFolderKey: aggiunta in coda a SSDIR (--env:SSDIR+=...)
+    //   kOutputFilesFolderKey:  cartella dei file audio scritti (SFDIR) al
+    //                           posto di apeCsound/SSDIR
+    static constexpr const char* kExtraSamplesFolderKey = "extraSamplesFolder";
+    static constexpr const char* kOutputFilesFolderKey  = "outputFilesFolder";
+
+    /** Cartella valida (assoluta ed esistente) salvata sotto 'key', altrimenti File{}. */
+    static juce::File getUserFolderSetting (const char* key);
 
     // File .csd a cui la sessione e' collegata (Save sovrascrive QUESTO,
     // vedi CsoundAudioProcessorEditor::performSaveLinked) - juce::File{}
@@ -957,6 +1004,16 @@ private:
     //      (Listener::csoundMessagesReceived).
     void timerCallback() override;
     void flushPendingMessages();
+
+    // Errori con riga (vedi getCodeDiagnostics). Durante compileAndStart i
+    // messaggi grezzi (frammenti non spezzati/accorciati) si accumulano in
+    // compileOutput, poi parseCompileErrors li legge tutti insieme: Csound
+    // stampa "error:", "from file ...", "line N:" in chiamate separate.
+    juce::Array<CodeDiagnostic> codeDiagnostics;
+    juce::String compileOutput;
+    bool capturingCompileOutput = false;   // solo message thread
+    void finishCompileDiagnostics();
+    void scanRuntimeErrors (const juce::StringArray& messages);
 
     static constexpr int kMessageFlushIntervalMs        = 50;
     static constexpr int kRepeatWindowMs                = 1000;

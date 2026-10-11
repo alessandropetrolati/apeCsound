@@ -47,6 +47,8 @@
             file="Source/CsoundEditCallout.h"/>
       <FILE id="iKbdA" name="IOSKeyboard.mm" compile="1" resource="0" file="Source/IOSKeyboard.mm"/>
       <FILE id="iKbdB" name="IOSKeyboard.h" compile="0" resource="0" file="Source/IOSKeyboard.h"/>
+      <FILE id="cAudA" name="CsoundAudioSettings.cpp" compile="1" resource="0" file="Source/CsoundAudioSettings.cpp"/>
+      <FILE id="cAudB" name="CsoundAudioSettings.h" compile="0" resource="0" file="Source/CsoundAudioSettings.h"/>
       <FILE id="sScfH" name="SecurityScopedFile.h" compile="0" resource="0"
             file="Source/SecurityScopedFile.h"/>
       <FILE id="sScfM" name="SecurityScopedFile.mm" compile="1" resource="0"
@@ -91,7 +93,7 @@
   </MODULES>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>
   <EXPORTFORMATS>
-    <XCODE_MAC targetFolder="Builds/MacOSX" iosDevelopmentTeamID="4863C638XM"
+    <XCODE_MAC iosBluetoothPermissionNeeded="1" iosBluetoothPermissionText="apeCsound uses Bluetooth to connect wireless MIDI keyboards and controllers." targetFolder="Builds/MacOSX" iosDevelopmentTeamID="4863C638XM"
                smallIcon="QhPr70" bigIcon="QhPr70" externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate"
                extraFrameworks="Accelerate" microphonePermissionNeeded="1" microphonePermissionsText="apeCsound needs the microphone for live audio input."
                hardenedRuntime="1" hardenedRuntimeOptions="com.apple.security.device.audio-input">
@@ -122,7 +124,7 @@
         <MODULEPATH id="juce_osc" path="../JUCE/modules"/>
       </MODULEPATHS>
     </XCODE_MAC>
-    <XCODE_IPHONE targetFolder="Builds/iOS" iosDevelopmentTeamID="4863C638XM" smallIcon="QhPr70"
+    <XCODE_IPHONE iosBluetoothPermissionNeeded="1" iosBluetoothPermissionText="apeCsound uses Bluetooth to connect wireless MIDI keyboards and controllers." targetFolder="Builds/iOS" iosDevelopmentTeamID="4863C638XM" smallIcon="QhPr70"
                   bigIcon="QhPr70" iosDeviceFamily="2" iPhoneScreenOrientation="portraitlandscape"
                   iPadScreenOrientation="UIInterfaceOrientationLandscapeLeft,UIInterfaceOrientationLandscapeRight"
                   UIFileSharingEnabled="1" UISupportsDocumentBrowser="1" iosBackgroundAudio="1"

@@ -117,7 +117,7 @@ void CodeView::updateGutterWidth()
     }
 
     const int digits = juce::jmax (3, juce::String (document.getNumLines()).length());
-    gutterWidth = juce::roundToInt ((float) digits * charWidth) + 18;
+    gutterWidth = juce::roundToInt ((float) digits * charWidth) + 24; // +6: spazio per il punto rosso degli errori
 }
 
 void CodeView::lookAndFeelChanged()
@@ -150,12 +150,95 @@ void CodeView::resized()
 // Documento
 void CodeView::DocumentListener::codeDocumentTextInserted (const juce::String&, int insertIndex)
 {
-    owner.documentChanged (juce::CodeDocument::Position (owner.document, insertIndex).getLineNumber());
+    const int line = juce::CodeDocument::Position (owner.document, insertIndex).getLineNumber();
+    owner.removeErrorMarkersOnLine (line);
+    owner.documentChanged (line);
 }
 
 void CodeView::DocumentListener::codeDocumentTextDeleted (int startIndex, int)
 {
-    owner.documentChanged (juce::CodeDocument::Position (owner.document, startIndex).getLineNumber());
+    const int line = juce::CodeDocument::Position (owner.document, startIndex).getLineNumber();
+    owner.removeErrorMarkersOnLine (line);
+    owner.documentChanged (line);
+}
+
+//==============================================================================
+// Segni di errore
+void CodeView::setErrorMarkers (const juce::Array<std::pair<int, juce::String>>& lineMessages)
+{
+    errorMarkers.clear();
+
+    const int numLines = document.getNumLines();
+
+    for (const auto& lm : lineMessages)
+    {
+        if (lm.first < 0 || lm.first >= numLines || lineHasErrorMarker (lm.first))
+            continue;
+
+        auto marker = std::make_unique<ErrorMarker>();
+        marker->pos = juce::CodeDocument::Position (document, lm.first, 0);
+        marker->pos.setPositionMaintained (true);
+        marker->message = lm.second;
+        errorMarkers.push_back (std::move (marker));
+    }
+
+    repaint();
+    errorMarkersChanged();
+}
+
+void CodeView::clearErrorMarkers()
+{
+    if (errorMarkers.empty())
+        return;
+
+    errorMarkers.clear();
+    repaint();
+    errorMarkersChanged();
+}
+
+void CodeView::removeErrorMarkersOnLine (int line)
+{
+    const auto before = errorMarkers.size();
+
+    errorMarkers.erase (std::remove_if (errorMarkers.begin(), errorMarkers.end(),
+                                        [line] (const std::unique_ptr<ErrorMarker>& m) { return m->pos.getLineNumber() == line; }),
+                        errorMarkers.end());
+
+    if (errorMarkers.size() != before)
+        errorMarkersChanged();
+}
+
+bool CodeView::lineHasErrorMarker (int line) const
+{
+    for (const auto& m : errorMarkers)
+        if (m->pos.getLineNumber() == line)
+            return true;
+
+    return false;
+}
+
+juce::String CodeView::getErrorMessageForLine (int line) const
+{
+    for (const auto& m : errorMarkers)
+        if (m->pos.getLineNumber() == line)
+            return m->message;
+
+    return {};
+}
+
+int CodeView::getFirstErrorLine() const
+{
+    int first = -1;
+
+    for (const auto& m : errorMarkers)
+    {
+        const int line = m->pos.getLineNumber();
+
+        if (first < 0 || line < first)
+            first = line;
+    }
+
+    return first;
 }
 
 void CodeView::documentChanged (int fromLine)
@@ -1640,6 +1723,15 @@ void CodeView::paintText (juce::Graphics& g, juce::Rectangle<int> area)
             g.fillRect ((float) area.getX(), y, (float) area.getWidth(), (float) lineHeight);
         }
 
+        // Riga con errore Csound: sfondo rosso tenue
+        const bool lineHasError = ! errorMarkers.empty() && lineHasErrorMarker (line);
+
+        if (lineHasError)
+        {
+            g.setColour (juce::Colour (kErrorColour).withAlpha (0.10f));
+            g.fillRect ((float) area.getX(), y, (float) area.getWidth(), (float) lineHeight);
+        }
+
         // Selezione
         if (hasSelection)
         {
@@ -1719,6 +1811,36 @@ void CodeView::paintText (juce::Graphics& g, juce::Rectangle<int> area)
             g.setColour (colour);
             g.drawSingleLineText (text.trimEnd(), juce::roundToInt (x), juce::roundToInt (baseline));
         }
+
+        // Riga con errore: sottolineatura ondulata dal primo carattere non
+        // vuoto alla fine del testo (commenti compresi).
+        if (lineHasError)
+        {
+            const auto trimmed = lineText.trimEnd();
+            int firstNonSpace = 0;
+
+            while (firstNonSpace < trimmed.length() && juce::CharacterFunctions::isWhitespace (trimmed[firstNonSpace]))
+                ++firstNonSpace;
+
+            const float textLeft = (float) (gutterWidth + textInsetLeft) - (float) scrollX;
+            float x1 = textLeft + (float) columnOfIndex (lineText, firstNonSpace) * charWidth;
+            float x2 = textLeft + (float) columnOfIndex (lineText, trimmed.length()) * charWidth;
+
+            if (x2 - x1 < charWidth * 2.0f) // riga vuota o quasi: segno comunque visibile
+                x2 = x1 + charWidth * 2.0f;
+
+            const float waveY = juce::jmin (y + (float) lineHeight - 2.0f, baseline + 3.0f);
+            const float step = 2.5f;
+
+            juce::Path wave;
+            wave.startNewSubPath (x1, waveY);
+
+            for (float wx = x1 + step, up = -1.0f; wx <= x2 + step * 0.5f; wx += step, up = -up)
+                wave.lineTo (wx, waveY + up * 1.5f);
+
+            g.setColour (juce::Colour (kErrorColour));
+            g.strokePath (wave, juce::PathStrokeType (1.2f));
+        }
     }
 
     // Caret
@@ -1740,9 +1862,6 @@ void CodeView::paintGutter (juce::Graphics& g)
     g.setColour (findColour (lineNumberBackgroundId));
     g.fillRect (gutter);
 
-    if (! showLineNumbers)
-        return;
-
     const int numLines = document.getNumLines();
     const int firstLine = getFirstLineOnScreen();
     const int lastLine  = juce::jmin (numLines - 1, firstLine + getNumLinesOnScreen() + 1);
@@ -1750,6 +1869,23 @@ void CodeView::paintGutter (juce::Graphics& g)
 
     juce::Graphics::ScopedSaveState ss (g);
     g.reduceClipRegion (gutter);
+
+    // Punto rosso a sinistra del numero sulle righe con errore Csound.
+    for (const auto& m : errorMarkers)
+    {
+        const int line = m->pos.getLineNumber();
+
+        if (line < firstLine || line > lastLine)
+            continue;
+
+        const float d = juce::jlimit (5.0f, 9.0f, (float) lineHeight * 0.45f);
+        const float cy = (float) ((double) line * lineHeight - scrollY + textInsetTop) + (float) lineHeight * 0.5f;
+        g.setColour (juce::Colour (kErrorColour));
+        g.fillEllipse (4.0f, cy - d * 0.5f, d, d);
+    }
+
+    if (! showLineNumbers)
+        return;
 
     const auto numberFont = font.withHeight (font.getHeight() * 0.85f);
     g.setFont (numberFont);

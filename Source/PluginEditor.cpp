@@ -130,18 +130,9 @@ namespace
     // (path, codice, parametri) va qui: quello sta nello stato del progetto.
     juce::PropertiesFile& getUserSettings()
     {
-        static std::unique_ptr<juce::PropertiesFile> settings = []
-        {
-            juce::PropertiesFile::Options options;
-            options.applicationName     = ProjectInfo::projectName;
-            options.filenameSuffix      = "settings";
-            options.folderName          = ProjectInfo::projectName;
-            options.osxLibrarySubFolder = "Application Support";
-            options.storageFormat       = juce::PropertiesFile::storeAsXML;
-            return std::make_unique<juce::PropertiesFile> (options);
-        }();
-
-        return *settings;
+        // Un solo PropertiesFile per processo, condiviso con il processor
+        // (che ci legge le cartelle SSDIR/SFDIR scelte in Config).
+        return CsoundAudioProcessor::getUserSettings();
     }
 
     const char* const kModernSyntaxHelpKey = "modernSyntaxHelp";
@@ -419,6 +410,23 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     };
     parameterPanel.onGuideRequested       = [this] { guideView.show(); };
 
+   #if ! JUCE_IOS
+    // Config > "Extra Samples Folder..." / "Output Files Folder..." (solo desktop:
+    // su iOS l'AUv3 non puo' accedere stabilmente a cartelle fuori dalla sandbox).
+    parameterPanel.onChooseExtraSamplesFolder = [this]
+    {
+        chooseFolderSetting (CsoundAudioProcessor::kExtraSamplesFolderKey, "Extra Samples Folder",
+                             "searched for audio files after the .csd folder and SSDIR");
+    };
+    parameterPanel.onChooseOutputFolder = [this]
+    {
+        chooseFolderSetting (CsoundAudioProcessor::kOutputFilesFolderKey, "Output Files Folder",
+                             "where Csound writes audio files given without a path");
+    };
+    parameterPanel.isExtraSamplesFolderSet = [] { return CsoundAudioProcessor::getUserFolderSetting (CsoundAudioProcessor::kExtraSamplesFolderKey) != juce::File{}; };
+    parameterPanel.isOutputFolderSet       = [] { return CsoundAudioProcessor::getUserFolderSetting (CsoundAudioProcessor::kOutputFilesFolderKey) != juce::File{}; };
+   #endif
+
    #if JucePlugin_Build_Standalone
     // Solo nella versione standalone (macOS e iOS): dispositivo audio,
     // sample rate, buffer e ingressi MIDI dal menu principale (su desktop la
@@ -449,8 +457,15 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
                 maxOuts = juce::jmax (0, bus->getDefaultLayout().size());
 
             audioSettingsView.show (holder->deviceManager, maxIns, maxOuts,
-                                    holder->processor->producesMidi(),
-                                    holder->getProcessorHasPotentialFeedbackLoop() ? &holder->getMuteInputValue() : nullptr);
+                                    holder->getProcessorHasPotentialFeedbackLoop() ? &holder->getMuteInputValue() : nullptr,
+                                    []
+                                    {
+                                        // Salva subito dispositivo/canali/buffer/MIDI (come
+                                        // SLSettings::updateAudioSetupSettings): su iOS l'app puo'
+                                        // essere chiusa senza passare dal salvataggio in uscita.
+                                        if (auto* h = juce::StandalonePluginHolder::getInstance())
+                                            h->saveAudioDeviceState();
+                                    });
         };
    #endif
 
@@ -497,6 +512,16 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
             item.id = 3; item.text = "Load..."; item.icon = CsoundActionSheetIcon::load;
             items.push_back (item);
         }
+        {
+            // Tutte le piattaforme: copia file audio nella cartella SSDIR, dove
+            // Csound li trova per nome (diskin2 "loop.wav", GEN01...). Su iOS e'
+            // l'unico modo (il container dell'App Group non si vede in File);
+            // su desktop evita di cercare la cartella nel Finder/Esplora file.
+            CsoundActionSheetItem item;
+            item.id = 7; item.text = "Import Samples...";
+            item.icon = CsoundActionSheetIcon::waveform;
+            items.push_back (item);
+        }
        #if ! JUCE_IOS
         {
             // Mostra il .csd collegato nel file manager di sistema (Finder /
@@ -541,6 +566,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
                 case 3: safeThis->promptLoadSession();      break;
                 case 4: safeThis->promptInitializeSession (true);  break;
                 case 5: safeThis->promptInitializeSession (false); break;
+                case 7: safeThis->importSamples(); break;
                #if ! JUCE_IOS
                 case 6:
                 {
@@ -616,6 +642,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     dropHighlightOverlay.toFront (false);
 
     audioProcessor.addListener (this);
+    refreshErrorMarkers (false); // errori della compilazione in corso, se l'editor viene riaperto
 
     // false = niente ResizableCornerComponent in basso a destra: il
     // ridimensionamento resta comunque possibile, ma tramite il bordo
@@ -1230,6 +1257,162 @@ void CsoundAudioProcessorEditor::chooseCsdFile (const juce::String& title, const
 
         if (onResult)
             onResult (file);
+    });
+}
+
+void CsoundAudioProcessorEditor::chooseFolderSetting (const char* key, const juce::String& title, const juce::String& purpose)
+{
+    const auto current = CsoundAudioProcessor::getUserFolderSetting (key);
+    const juce::String settingKey (key);
+
+    auto setFolder = [this, settingKey, title] (const juce::File& folder)
+    {
+        auto& settings = CsoundAudioProcessor::getUserSettings();
+
+        if (folder == juce::File{})
+            settings.removeValue (settingKey);
+        else
+            settings.setValue (settingKey, folder.getFullPathName());
+
+        settings.saveIfNeeded();
+
+        appendToLog ("--- " + title + ": "
+                     + (folder == juce::File{} ? juce::String ("default (apeCsound SSDIR)") : folder.getFullPathName())
+                     + " - takes effect at the next Apply ---");
+    };
+
+    auto launchChooser = [this, current, title, setFolder]
+    {
+        activeFileChooser = std::make_unique<juce::FileChooser> (title,
+                                                                current != juce::File{} ? current : CsoundAudioProcessor::getSamplesFolder(),
+                                                                juce::String(), true, false, this);
+
+        activeFileChooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories,
+                                        [setFolder] (const juce::FileChooser& chooser)
+                                        {
+                                            const auto folder = chooser.getResult();
+
+                                            if (folder.isDirectory())
+                                                setFolder (folder);
+                                        });
+    };
+
+    if (current == juce::File{})
+    {
+        launchChooser();
+        return;
+    }
+
+    // Gia' impostata: cambia, rimuovi (torna al default) o mostra nel Finder.
+    std::vector<CsoundActionSheetItem> items;
+    {
+        CsoundActionSheetItem item;
+        item.sectionHeader = current.getFullPathName();
+        items.push_back (item);
+    }
+    {
+        CsoundActionSheetItem item;
+        item.id = 1; item.text = "Change Folder..."; item.icon = CsoundActionSheetIcon::folder;
+        items.push_back (item);
+    }
+    {
+        CsoundActionSheetItem item;
+        item.id = 2; item.text = "Reveal in Finder"; item.icon = CsoundActionSheetIcon::folder;
+        items.push_back (item);
+    }
+    {
+        CsoundActionSheetItem item;
+        item.id = 3; item.text = "Remove (use default)"; item.icon = CsoundActionSheetIcon::trash;
+        items.push_back (item);
+    }
+
+    juce::ignoreUnused (purpose);
+    juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
+
+    CsoundActionSheet::show (*this, title + " - " + purpose, std::move (items),
+                             [safeThis, current, launchChooser, setFolder] (int result)
+    {
+        if (safeThis == nullptr)
+            return;
+
+        switch (result)
+        {
+            case 1: launchChooser(); break;
+            case 2: current.revealToUser(); break;
+            case 3: setFolder ({}); break;
+            default: break;
+        }
+    });
+}
+
+void CsoundAudioProcessorEditor::importSamples()
+{
+    const auto samplesFolder = CsoundAudioProcessor::getSamplesFolder();
+
+    // Stesso schema di chooseCsdFile: dialogo nativo con l'editor come parent
+    // (indispensabile nell'AUv3 iOS), chooser tenuto in vita come membro.
+    activeFileChooser = std::make_unique<juce::FileChooser> ("Import Samples...", juce::File{},
+                                                            "*.wav;*.wave;*.aif;*.aiff;*.aifc;*.flac;*.ogg;*.caf",
+                                                            true, false, this);
+
+    const int flags = juce::FileBrowserComponent::openMode
+                    | juce::FileBrowserComponent::canSelectFiles
+                    | juce::FileBrowserComponent::canSelectMultipleItems;
+
+    juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
+
+    activeFileChooser->launchAsync (flags, [safeThis, samplesFolder] (const juce::FileChooser& chooser)
+    {
+        if (safeThis == nullptr)
+            return;
+
+        const auto urls = chooser.getURLResults();
+
+        if (urls.isEmpty())
+            return; // annullato
+
+        int imported = 0;
+        juce::StringArray failed;
+
+        for (const auto& url : urls)
+        {
+            auto name = juce::URL::removeEscapeChars (url.getFileName());
+
+            if (name.isEmpty())
+                name = url.getLocalFile().getFileName();
+
+            const auto dest = samplesFolder.getChildFile (juce::File::createLegalFileName (name));
+
+            // La URL del picker porta l'accesso security-scoped (iCloud
+            // Drive, altri provider): la si legge come stream, non come File.
+            std::unique_ptr<juce::InputStream> in (url.createInputStream (
+                juce::URL::InputStreamOptions (juce::URL::ParameterHandling::inAddress)));
+
+            if (in == nullptr)
+            {
+                failed.add (name);
+                continue;
+            }
+
+            dest.deleteFile(); // stesso nome: sostituisce
+
+            juce::FileOutputStream out (dest);
+
+            if (! out.openedOk() || out.writeFromInputStream (*in, -1) < 0)
+            {
+                failed.add (name);
+                continue;
+            }
+
+            out.flush();
+            ++imported;
+        }
+
+        safeThis->appendToLog ("--- Imported " + juce::String (imported) + " sample(s) into SSDIR ("
+                               + samplesFolder.getFullPathName() + ") ---");
+
+        if (! failed.isEmpty())
+            safeThis->appendToLog ("--- Could not import: " + failed.joinIntoString (", ") + " ---");
     });
 }
 
@@ -1899,6 +2082,32 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::paint (juce::Graphics& g)
 
     auto area = bounds.reduced (10, 0);
 
+    // Errore Csound sulla riga del caret (vedi CsoundCodeEditor::kErrorHelpCategory):
+    // barra rossa con "Error - line N" e il messaggio di Csound.
+    if (categoryText == CsoundCodeEditor::kErrorHelpCategory)
+    {
+        g.setColour (juce::Colour (0xfffdecec));
+        g.fillRect (bounds);
+        g.setColour (juce::Colour (0xffe5484d));
+        g.fillRect (bounds.removeFromLeft (4));
+        g.drawLine (0.0f, (float) getHeight() - 0.5f, (float) getWidth(), (float) getHeight() - 0.5f, 1.0f);
+
+        const auto boldFont = juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::bold));
+        juce::GlyphArrangement glyphs;
+        glyphs.addLineOfText (boldFont, syntaxText, 0.0f, 0.0f);
+        const int titleWidth = juce::jmin ((int) std::ceil (glyphs.getBoundingBox (0, -1, true).getWidth()) + 2, area.getWidth() / 3);
+
+        g.setFont (boldFont);
+        g.setColour (juce::Colour (0xffb3261e));
+        g.drawFittedText (syntaxText, area.removeFromLeft (titleWidth), juce::Justification::centredLeft, 1);
+        area.removeFromLeft (10);
+
+        g.setFont (juce::Font (juce::FontOptions (13.0f)));
+        g.setColour (juce::Colour (0xff5c1a16));
+        g.drawFittedText (descriptionText, area, juce::Justification::centredLeft, 1);
+        return;
+    }
+
     if (syntaxText.isEmpty() && descriptionText.isEmpty())
     {
         g.setColour (juce::Colour (0xff8a7a55));
@@ -1961,6 +2170,47 @@ void CsoundAudioProcessorEditor::csoundMessagesReceived (const juce::StringArray
 {
     if (! messages.isEmpty())
         appendToLog (messages.joinIntoString ("\n"));
+}
+
+void CsoundAudioProcessorEditor::csoundDiagnosticsChanged()
+{
+    refreshErrorMarkers (true);
+}
+
+void CsoundAudioProcessorEditor::refreshErrorMarkers (bool scrollToFirst)
+{
+    const auto& diagnostics = audioProcessor.getCodeDiagnostics();
+
+    if (diagnostics.isEmpty())
+    {
+        editor.clearErrorMarkers();
+        return;
+    }
+
+    // Le righe di Csound si riferiscono al testo compilato: se nel frattempo
+    // l'editor e' stato modificato non corrispondono piu' (restano in console).
+    if (document.getAllContent() != audioProcessor.getCsdText())
+        return;
+
+    const bool hadMarkers = editor.hasErrorMarkers();
+
+    juce::Array<std::pair<int, juce::String>> markers;
+
+    for (const auto& d : diagnostics)
+        markers.add ({ d.line - 1, d.message }); // Csound: 1-based, CodeView: 0-based
+
+    editor.setErrorMarkers (markers);
+
+    // Porta in vista il primo errore solo se prima non c'erano segni (dopo
+    // Apply), per non far saltare la vista a ogni PERF ERROR successivo.
+    if (scrollToFirst && ! hadMarkers)
+    {
+        const int first = editor.getFirstErrorLine();
+
+        if (first >= 0 && (first < editor.getFirstLineOnScreen()
+                           || first >= editor.getFirstLineOnScreen() + editor.getNumLinesOnScreen() - 1))
+            editor.scrollToLine (juce::jmax (0, first - 3));
+    }
 }
 
 void CsoundAudioProcessorEditor::csoundEngineStarted()
@@ -2435,9 +2685,10 @@ Every instance exposes a **fixed set of 144 parameters** to the DAW: **64 Float*
 
 # Toolbar
 - **Apply** - recompiles and restarts Csound with the text in the editor. A red ring means the editor text differs from the running code.
-- **File capsule** (centre) - name of the linked `.csd`, its folder and state (saved / unsaved changes / file not found, coloured dot). Click it for **Save**, **Save as...**, **Load...**, **Reveal in Finder** (desktop only), **Init Session Template** and **Init Session Clear**.
+- **File capsule** (centre) - name of the linked `.csd`, its folder and state (saved / unsaved changes / file not found, coloured dot). Click it for **Save**, **Save as...**, **Load...**, **Import Samples...**, **Reveal in Finder** (desktop only), **Init Session Template** and **Init Session Clear**.
 - **Magnifier** - opens the Find / Replace bar: match case `Aa`, whole word `W`, Replace / Replace All; Enter = next match, Esc closes.
-- **Menu** - Show/Hide Parameters and Console, Undo / Redo, Config, apeCsound Guide, Csound Manual, About.
+- **Menu** - Show/Hide Parameters and Console, Undo / Redo, Audio/MIDI Settings (standalone only), Config, apeCsound Guide, Csound Manual, About.
+- **Audio/MIDI Settings** (standalone only) - the same touch-friendly panel on every platform: Audio Driver, Output/Input Device, Output/Input Channels (stereo pairs), Sample Rate, Buffer Size (with latency in ms), Mute audio input, Control Panel (drivers that have one), MIDI Inputs, **Bluetooth MIDI...** and Reset Audio/MIDI. Tap a row to open its list; rows with a single possible value only show it.
 
 # Session and files
 The `.csd` file on disk is the truth. A DAW project stores the path of the linked file, an embedded copy of the code and the parameter mapping, plus the current parameter values.
@@ -2477,12 +2728,28 @@ Porting a Cabbage or CsoundQt file to apeCsound is **not guaranteed**: whether i
 - **Track layouts** - the track can have 1 to 16 output channels and 0 to 16 input channels (0 = input bus disabled). Surround layouts (5.1, 7.1...) are compensated so that channel numbers match the track. Changing the track channel count recompiles the engine.
 - **MIDI** - notes and controllers from the track reach Csound (`-M0`, `massign`); MIDI generated by Csound (`midiout`) goes back to the DAW.
 
+# Samples folder (SSDIR)
+apeCsound creates a fixed folder for audio files, **SSDIR**, inside the apeCsound folder: `~/Documents/apeCsound/SSDIR` on macOS; on iOS it is in the shared App Group container, so the standalone app and the AUv3 plug-in see the same files. Nothing to configure: copy your WAV/AIFF files there and use just the file name in the code - `aL, aR diskin2 "loop.wav", 1, 0, 1`, `ftgen 0, 0, 0, 1, "kick.wav", 0, 0, 0`.
+- **Import Samples...** (file capsule menu, every platform) - pick one or more audio files and copy them into SSDIR, so the code can use them by name. On iOS it is the only way to fill the folder (the App Group container is not visible in the Files app); on desktop it saves looking for the folder in Finder/Explorer. A file with the same name is replaced; the console lists what was imported.
+- Csound looks for audio files first in the folder of the linked `.csd`, then in SSDIR.
+- Audio files written by Csound (`fout`, `-o` file output) without a path go to SSDIR.
+- **Config > Extra Samples Folder...** (desktop) adds one more folder to search, after the `.csd` folder and SSDIR. **Config > Output Files Folder...** (desktop) sets where Csound writes audio files given without a path (default: SSDIR). Both are user preferences, ticked when set; choose them again to change, reveal or remove the folder. They take effect at the next Apply.
+- An `--env:SSDIR=...` / `--env:SFDIR=...` in `<CsOptions>` still overrides everything for that `.csd`.
+
+# Errors in the editor
+When **Apply** fails, the line reported by Csound is marked in the editor: a **red dot** next to the line number, a light red background and a wavy underline. With the caret on that line the help bar turns red and shows **Error - line N** with Csound's message. The console confirms it with `--- Error marked in the editor at line N ---`.
+- The mark disappears as soon as you edit that line; all marks are cleared on the next Apply. Lines added or removed above keep the mark on the right line.
+- Syntax errors: Csound stops at the **first** one, so fix it and Apply again to see the next. Errors found after parsing (unknown opcodes, wrong argument types) can be marked several at a time.
+- `INIT ERROR` / `PERF ERROR` arriving while the code runs are marked too, once per line.
+- Errors inside macros or `#include` files, or without a line number, stay in the console only. If the code was edited after Apply, new runtime errors are not marked (the line numbers would no longer match).
+
 # Console
 Csound messages, compile errors and plugin notes (latency, channels, imports). Identical messages repeated more than three times per second are summarised to keep the UI responsive. **Clear** empties it; it is also cleared on every Apply.
 
 # Config (main menu)
 - **Modern Syntax in Help** - functional syntax in the opcode help bar (user preference).
 - **Follow CSD nchnls** - see "Audio, MIDI and channels" (saved with the project).
+- **Extra Samples Folder... / Output Files Folder...** (desktop) - see "Samples folder (SSDIR)" (user preferences).
 
 # Shortcuts
 - **Cmd+Z / Cmd+Shift+Z (Cmd+Y)** - undo / redo
@@ -2717,38 +2984,29 @@ CsoundAudioProcessorEditor::AudioSettingsView::DarkLookAndFeel::DarkLookAndFeel(
 
 void CsoundAudioProcessorEditor::AudioSettingsView::Content::resized()
 {
-    auto r = getLocalBounds();
-
-    if (showMute)
-    {
-        muteInputToggle.setBounds (r.removeFromTop (28).reduced (8, 2));
-        r.removeFromTop (8);
-    }
-
-    if (selector != nullptr)
-        selector->setBounds (r.getX(), r.getY(), r.getWidth(), juce::jmax (selector->getHeight(), 40));
-}
-
-void CsoundAudioProcessorEditor::AudioSettingsView::Content::childBoundsChanged (juce::Component*)
-{
-    updateHeight();
+    if (settings != nullptr)
+        settings->setBounds (0, 0, getWidth(), settings->getIdealHeight (getWidth()));
 }
 
 void CsoundAudioProcessorEditor::AudioSettingsView::Content::updateHeight()
 {
-    if (selector == nullptr)
+    if (settings == nullptr)
         return;
 
-    const int wanted = selector->getBottom() + 8;
+    const int wanted = settings->getIdealHeight (getWidth());
 
     if (wanted != getHeight())
-        setSize (getWidth(), wanted); // resized() non cambia l'altezza del selettore: niente ricorsione
+        setSize (getWidth(), wanted);
 }
 
 CsoundAudioProcessorEditor::AudioSettingsView::Card::Card()
 {
     viewport.setViewedComponent (&content, false);
     viewport.setScrollBarsShown (true, false); // solo verticale
+   #if JUCE_IOS
+    viewport.setScrollBarThickness (6);
+    viewport.setScrollOnDragMode (juce::Viewport::ScrollOnDragMode::all); // scorrimento col dito anche partendo da una riga
+   #endif
     addAndMakeVisible (viewport);
 }
 
@@ -2807,7 +3065,7 @@ CsoundAudioProcessorEditor::AudioSettingsView::AudioSettingsView()
 
 CsoundAudioProcessorEditor::AudioSettingsView::~AudioSettingsView()
 {
-    card.content.selector.reset();
+    card.content.settings.reset();
     card.setLookAndFeel (nullptr);
 }
 
@@ -2818,9 +3076,15 @@ void CsoundAudioProcessorEditor::AudioSettingsView::paint (juce::Graphics& g)
 
 void CsoundAudioProcessorEditor::AudioSettingsView::resized()
 {
+   #if JUCE_IOS
+    // iOS: scheda quasi a tutto schermo (righe grandi, contenuto lungo).
+    auto area = getLocalBounds().reduced (juce::jmin (24, getWidth() / 20), juce::jmin (16, getHeight() / 20));
+    card.setBounds (area.withSizeKeepingCentre (juce::jmin (680, area.getWidth()), area.getHeight()));
+   #else
     auto area = getLocalBounds().reduced (juce::jmin (32, getWidth() / 12), juce::jmin (24, getHeight() / 12));
     card.setBounds (area.withSizeKeepingCentre (juce::jmin (cardMaxWidth, area.getWidth()),
                                                 juce::jmin (cardMaxHeight, area.getHeight())));
+   #endif
 }
 
 void CsoundAudioProcessorEditor::AudioSettingsView::mouseUp (const juce::MouseEvent& e)
@@ -2841,33 +3105,23 @@ bool CsoundAudioProcessorEditor::AudioSettingsView::keyPressed (const juce::KeyP
 }
 
 void CsoundAudioProcessorEditor::AudioSettingsView::show (juce::AudioDeviceManager& deviceManager, int maxInputs, int maxOutputs,
-                                                          bool showMidiOutput, juce::Value* muteInput)
+                                                          juce::Value* muteInput, std::function<void()> onSetupChanged)
 {
     auto& content = card.content;
 
-    // Selettore nuovo a ogni apertura (rilegge dispositivi e canali attuali);
-    // stessi argomenti del SettingsComponent dello standalone JUCE.
-    content.selector.reset();
-    content.selector = std::make_unique<juce::AudioDeviceSelectorComponent> (deviceManager,
-                                                                             0, maxInputs,
-                                                                             0, maxOutputs,
-                                                                             true,           // ingressi MIDI
-                                                                             showMidiOutput, // uscita MIDI
-                                                                             true,           // canali come coppie stereo
-                                                                             false);         // opzioni avanzate visibili
-    content.addAndMakeVisible (*content.selector);
-
-    content.showMute = (muteInput != nullptr);
-    content.muteInputToggle.setVisible (content.showMute);
-
-    if (muteInput != nullptr)
+    // Pannello nuovo a ogni apertura (rilegge dispositivi e canali attuali):
+    // stesso componente su macOS, iOS, Windows e Linux (vedi CsoundAudioSettings).
+    content.settings.reset();
+    content.settings = std::make_unique<CsoundAudioSettings> (deviceManager, maxInputs, maxOutputs, muteInput);
+    content.settings->onSetupChanged = std::move (onSetupChanged);
+    content.settings->onLayoutChanged = [this]
     {
-        if (content.muteInputToggle.getParentComponent() == nullptr)
-            content.addAndMakeVisible (content.muteInputToggle);
-
-        content.muteInputToggle.setClickingTogglesState (true);
-        content.muteInputToggle.getToggleStateValue().referTo (*muteInput);
-    }
+        // Pagina diversa: altezza nuova e ritorno in cima.
+        card.content.updateHeight();
+        card.content.resized();
+        card.viewport.setViewPosition (0, 0);
+    };
+    content.addAndMakeVisible (*content.settings);
 
     card.resized();
     card.viewport.setViewPosition (0, 0);
@@ -2883,6 +3137,5 @@ void CsoundAudioProcessorEditor::AudioSettingsView::hide()
 
     // Rilascia il selettore (timer, meter di livello, listener sul device
     // manager): alla prossima apertura se ne crea uno nuovo.
-    card.content.muteInputToggle.getToggleStateValue().referTo (juce::Value());
-    card.content.selector.reset();
+    card.content.settings.reset();
 }

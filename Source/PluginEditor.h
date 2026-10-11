@@ -8,6 +8,7 @@
 #include "CsoundLookAndFeel.h"
 #include "CsoundParameterEditor.h"
 #include "IOSKeyboard.h"
+#include "CsoundAudioSettings.h"
 
 /**
     Editor del plugin/standalone (juce::AudioProcessorEditor): editor con
@@ -111,6 +112,12 @@ private:
     // per blocco invece che uno per messaggio.
     void csoundMessagesReceived (const juce::StringArray& messages) override;
     void csoundEngineStarted() override;
+    void csoundDiagnosticsChanged() override;
+
+    // Errori di Csound con riga -> segni nell'editor (CodeView::setErrorMarkers),
+    // solo se il testo dell'editor e' quello compilato (altrimenti le righe
+    // non corrispondono piu'). scrollToFirst: porta in vista il primo errore.
+    void refreshErrorMarkers (bool scrollToFirst);
     void csoundEngineStopped() override;
 
     // L'host ha ripristinato una sessione (setStateInformation) mentre
@@ -279,11 +286,12 @@ private:
         void mouseUp (const juce::MouseEvent& e) override;
         bool keyPressed (const juce::KeyPress& key) override;
 
-        /** Crea il selettore sul deviceManager dello standalone e mostra la
+        /** Crea il pannello sul deviceManager dello standalone e mostra la
             scheda. muteInput: Value "Mute audio input" dello standalone
-            (nullptr = nessun rischio di feedback, opzione nascosta). */
+            (nullptr = nessun rischio di feedback, opzione nascosta).
+            onSetupChanged: salvataggio dello stato audio (holder). */
         void show (juce::AudioDeviceManager& deviceManager, int maxInputs, int maxOutputs,
-                   bool showMidiOutput, juce::Value* muteInput);
+                   juce::Value* muteInput, std::function<void()> onSetupChanged);
         void hide();
 
         // Tema scuro delle schede (About/Guide/menu) per i controlli JUCE
@@ -291,20 +299,22 @@ private:
         struct DarkLookAndFeel final : public juce::LookAndFeel_V4
         {
             DarkLookAndFeel();
+            // Testo dei bottoni proporzionale all'altezza: grande sui bottoni
+            // "da dito" del pannello iOS, normale su quelli del selettore desktop.
+            juce::Font getTextButtonFont (juce::TextButton&, int buttonHeight) override
+            {
+                return juce::Font (juce::FontOptions (juce::jmin (20.0f, (float) buttonHeight * 0.55f)));
+            }
         };
 
-        // Contenuto scorrevole: toggle "Mute input" + selettore. Il selettore
-        // decide da solo la propria altezza (setSize in resized()), quindi
-        // l'altezza del contenuto la segue in childBoundsChanged().
+        // Contenuto scorrevole: il pannello CsoundAudioSettings (uguale su
+        // tutte le piattaforme), alto quanto la pagina che mostra.
         struct Content final : public juce::Component
         {
             void resized() override;
-            void childBoundsChanged (juce::Component*) override;
             void updateHeight();
 
-            std::unique_ptr<juce::AudioDeviceSelectorComponent> selector;
-            juce::ToggleButton muteInputToggle { "Mute audio input (avoids feedback with the microphone)" };
-            bool showMute = false;
+            std::unique_ptr<CsoundAudioSettings> settings;
         };
 
         struct Card final : public juce::Component
@@ -756,6 +766,18 @@ private:
     // default nullptr), nessun comportamento diverso per lui.
     void promptSaveSession (std::function<void()> onSaved = nullptr);
     void promptLoadSession();
+
+    // "Import Samples..." (tutte le piattaforme): selettore di file (selezione multipla,
+    // file audio) e copia nella cartella SSDIR (CsoundAudioProcessor::
+    // getSamplesFolder), che su iOS sta nel container dell'App Group e non
+    // e' raggiungibile dall'app File.
+    void importSamples();
+
+    // Config > "Extra Samples Folder..." / "Output Files Folder..." (solo
+    // desktop): sceglie (o cambia/rimuove) una cartella salvata nelle
+    // preferenze utente sotto 'key' - vedi CsoundAudioProcessor::
+    // kExtraSamplesFolderKey / kOutputFilesFolderKey.
+    void chooseFolderSetting (const char* key, const juce::String& title, const juce::String& purpose);
 
     // juce::FileDragAndDropTarget: drag and drop di un .csd dal Finder/
     // Explorer DIRETTAMENTE sull'editor, stessa destinazione finale di

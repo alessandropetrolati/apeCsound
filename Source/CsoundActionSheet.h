@@ -30,7 +30,8 @@ enum class CsoundActionSheetIcon
     gear,        // sottomenu Config
     textLarger, textSmaller, // "A" grande/piccola con +/- (font dell'editor)
     sun,         // "Light Editor": sole (palette chiara)
-    folder       // "Reveal in Finder": cartella
+    folder,      // "Reveal in Finder": cartella
+    waveform     // "Import Samples...": forma d'onda
 };
 
 /**

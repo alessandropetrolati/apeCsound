@@ -313,6 +313,24 @@ namespace
         return filled;
     }
 
+    // Import Samples: forma d'onda (barre verticali di altezza diversa,
+    // simmetriche) - il glifo comune per "file audio".
+    juce::Path makeWaveformPath()
+    {
+        juce::Path bars;
+        const float heights[] = { 4.0f, 9.0f, 15.0f, 7.0f, 12.0f, 17.0f, 10.0f, 5.0f };
+        float x = 3.5f;
+
+        for (auto h : heights)
+        {
+            bars.startNewSubPath (x, 12.0f - h * 0.5f);
+            bars.lineTo (x, 12.0f + h * 0.5f);
+            x += 2.4f;
+        }
+
+        return strokeOpenPath (bars, 1.6f);
+    }
+
     // Reveal in Finder: cartella con linguetta (contorno) - il glifo
     // universale di "mostra nella cartella".
     juce::Path makeFolderPath()
@@ -588,6 +606,7 @@ namespace
             case CsoundActionSheetIcon::textSmaller:   return makeTextSizePath (false);
             case CsoundActionSheetIcon::sun:           return makeSunPath();
             case CsoundActionSheetIcon::folder:        return makeFolderPath();
+            case CsoundActionSheetIcon::waveform:      return makeWaveformPath();
             case CsoundActionSheetIcon::none:
             default:                                   return {};
         }

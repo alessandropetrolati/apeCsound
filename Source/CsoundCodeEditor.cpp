@@ -1051,11 +1051,35 @@ juce::String CsoundCodeEditor::formatSignatureLine (const CsoundLiveOpcodeInfo& 
     return line;
 }
 
+void CsoundCodeEditor::errorMarkersChanged()
+{
+    updateOpcodeHelp();
+}
+
 void CsoundCodeEditor::updateOpcodeHelp()
 {
     auto& doc = getDocument();
     const auto caret = getCaretPos();
     const int line = caret.getLineNumber();
+
+    // Caret su una riga con un errore Csound (vedi CodeView::setErrorMarkers):
+    // la barra mostra l'errore invece dell'help dell'opcode. Il segno
+    // sparisce appena si modifica la riga, e allora torna l'help normale.
+    if (! parameterMode)
+    {
+        const auto errorMessage = getErrorMessageForLine (line);
+
+        if (errorMessage.isNotEmpty())
+        {
+            hideSuggestions();
+            helpBarHasContent = true;
+
+            if (onOpcodeHelpChanged)
+                onOpcodeHelpChanged ("Error - line " + juce::String (line + 1), errorMessage, kErrorHelpCategory);
+
+            return;
+        }
+    }
 
     const auto lineText = doc.getLine (line);
     const auto fullWord   = wordAroundCaret (lineText, caret.getIndexInLine());

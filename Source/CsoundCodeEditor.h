@@ -69,6 +69,7 @@ public:
     void resized() override;
     void focusLost (juce::Component::FocusChangeType cause) override;
     void caretPositionMoved() override;
+    void errorMarkersChanged() override; // aggiorna la barra di help se il caret e' su una riga con errore
 
     // juce::DragAndDropTarget - vedi il commento in testa alla classe.
     bool isInterestedInDragSource (const SourceDetails& dragSourceDetails) override;
@@ -107,6 +108,12 @@ public:
         Oscillators"), "User-defined opcode" per le UDO del .csd corrente,
         vuota se sconosciuta (opcode riportato solo dal motore). */
     std::function<void (const juce::String& syntax, const juce::String& description, const juce::String& category)> onOpcodeHelpChanged;
+
+    /** Categoria passata a onOpcodeHelpChanged quando la barra mostra un
+        ERRORE Csound (caret su una riga segnalata, vedi setErrorMarkers in
+        CodeView): syntax = "Error - line N", description = messaggio. La
+        barra di help la riconosce e si colora di rosso. */
+    static constexpr const char* kErrorHelpCategory = "Csound error";
 
     /** Cronologia undo/redo UNICA condivisa con il pannello Parametri (vedi
         sharedUndoManager in PluginEditor): Cmd+Z/Cmd+Shift+Z vengono

@@ -2767,6 +2767,16 @@ void CsoundParameterMappingPanel::showPanelMenu()
     // Sezione help: sintassi moderna nella barra di help (spunta) e
     // manuale Csound online, poi "About" (vedi i callback nel .h).
     items.push_back (CsoundActionSheetItem::separator());
+    // "Audio/MIDI Settings...": solo nella versione standalone (macOS e iOS),
+    // apre l'AudioDeviceSelectorComponent di JUCE (callback nullo negli
+    // altri formati -> voce assente).
+    if (onAudioSettingsRequested != nullptr)
+    {
+        CsoundActionSheetItem item;
+        item.id = 121; item.text = "Audio/MIDI Settings...";
+        item.icon = CsoundActionSheetIcon::sliderFloat;
+        items.push_back (item);
+    }
     // "Config": sottomenu (drill-down) con le opzioni con spunta.
     {
         CsoundActionSheetItem config;
@@ -2799,6 +2809,28 @@ void CsoundParameterMappingPanel::showPanelMenu()
             item.icon = CsoundActionSheetIcon::sun;
             config.subItems.push_back (item);
         }
+        if (onChooseExtraSamplesFolder != nullptr || onChooseOutputFolder != nullptr)
+        {
+            config.subItems.push_back (CsoundActionSheetItem::separator());
+
+            if (onChooseExtraSamplesFolder != nullptr)
+            {
+                CsoundActionSheetItem item;
+                item.id = 123; item.text = "Extra Samples Folder...";
+                item.tickedFn = [this] { return isExtraSamplesFolderSet != nullptr && isExtraSamplesFolderSet(); };
+                item.icon = CsoundActionSheetIcon::folder;
+                config.subItems.push_back (item);
+            }
+
+            if (onChooseOutputFolder != nullptr)
+            {
+                CsoundActionSheetItem item;
+                item.id = 124; item.text = "Output Files Folder...";
+                item.tickedFn = [this] { return isOutputFolderSet != nullptr && isOutputFolderSet(); };
+                item.icon = CsoundActionSheetIcon::folder;
+                config.subItems.push_back (item);
+            }
+        }
         config.subItems.push_back (CsoundActionSheetItem::separator());
         {
             CsoundActionSheetItem item;
@@ -2817,17 +2849,6 @@ void CsoundParameterMappingPanel::showPanelMenu()
             config.subItems.push_back (item);
         }
         items.push_back (config);
-    }
-
-    // "Audio/MIDI Settings...": solo nella versione standalone (macOS e iOS),
-    // apre l'AudioDeviceSelectorComponent di JUCE (callback nullo negli
-    // altri formati -> voce assente).
-    if (onAudioSettingsRequested != nullptr)
-    {
-        CsoundActionSheetItem item;
-        item.id = 121; item.text = "Audio/MIDI Settings...";
-        item.icon = CsoundActionSheetIcon::sliderFloat;
-        items.push_back (item);
     }
     
     items.push_back (CsoundActionSheetItem::separator());
@@ -2889,6 +2910,8 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 120: if (safeThis->onToggleDarkEditorRequested) safeThis->onToggleDarkEditorRequested(); break;
             case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
             case 121: if (safeThis->onAudioSettingsRequested) safeThis->onAudioSettingsRequested(); break;
+            case 123: if (safeThis->onChooseExtraSamplesFolder) safeThis->onChooseExtraSamplesFolder(); break;
+            case 124: if (safeThis->onChooseOutputFolder) safeThis->onChooseOutputFolder(); break;
             default: break;
         }
     });

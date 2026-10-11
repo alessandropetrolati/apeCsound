@@ -878,6 +878,46 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     CsoundAPI::csoundSetOption (cs, "-d");            // niente finestre di display/grafici
     CsoundAPI::csoundSetOption (cs, "-+msg_color=0"); // niente codici colore ANSI nei messaggi (rovinerebbero la console)
 
+    // Cartelle dei file audio (vedi getSamplesFolder):
+    //   SSDIR  = cartella del .csd collegato + apeCsound/SSDIR   (fisse)
+    //   SSDIR += cartella extra scelta in Config                 (opzionale)
+    //   SFDIR  = cartella di uscita scelta in Config, altrimenti apeCsound/SSDIR
+    // SFDIR non usa "+=": Csound scrive sempre nella PRIMA cartella della
+    // lista, una cartella aggiunta in coda non verrebbe mai usata per scrivere.
+    // Un "--env:..." in <CsOptions> viene letto DOPO e quindi prevale.
+    // Valori tra virgolette: csoundSetOption separa le opzioni sugli spazi.
+    {
+        const auto samples = getSamplesFolder();
+        juce::StringArray searchDirs;
+
+        const auto linked = getLinkedCsdFile();
+
+        if (linked.existsAsFile())
+            searchDirs.add (linked.getParentDirectory().getFullPathName());
+
+        if (samples.isDirectory())
+            searchDirs.addIfNotAlreadyThere (samples.getFullPathName());
+
+        if (! searchDirs.isEmpty())
+            CsoundAPI::csoundSetOption (cs, ("--env:SSDIR=\"" + searchDirs.joinIntoString (";") + "\"").toRawUTF8());
+
+       #if ! JUCE_IOS
+        const auto extraSamples = getUserFolderSetting (kExtraSamplesFolderKey);
+
+        if (extraSamples != juce::File{} && ! searchDirs.contains (extraSamples.getFullPathName()))
+            CsoundAPI::csoundSetOption (cs, ("--env:SSDIR+=\"" + extraSamples.getFullPathName() + "\"").toRawUTF8());
+
+        const auto outputFolder = getUserFolderSetting (kOutputFilesFolderKey);
+       #else
+        const juce::File outputFolder;
+       #endif
+
+        if (outputFolder != juce::File{})
+            CsoundAPI::csoundSetOption (cs, ("--env:SFDIR=\"" + outputFolder.getFullPathName() + "\"").toRawUTF8());
+        else if (samples.isDirectory())
+            CsoundAPI::csoundSetOption (cs, ("--env:SFDIR=\"" + samples.getFullPathName() + "\"").toRawUTF8());
+    }
+
     // Forziamo sr e ksmps a coincidere con host sample rate e block size:
     // cosi' non serve resampling e il ciclo in processBlock() e' quasi
     // sempre un singolo passaggio. Il .csd puo' comunque dichiarare valori
@@ -941,6 +981,19 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     // testuale, non un path di file), async=0 perche' qui csoundStart viene
     // chiamata DOPO (vedi la doc di csoundCompileCSD in csound.h: in questo
     // ordine <CsOptions>/<CsScore> vengono preprocessati normalmente).
+    // Errori con riga: si raccolgono i messaggi di compilazione e avvio
+    // (anche quelli dell'instr 0 in csoundStart) e si analizzano all'uscita
+    // da questa funzione, qualunque sia il punto di uscita.
+    codeDiagnostics.clear();
+    compileOutput.clear();
+    capturingCompileOutput = true;
+
+    struct DiagnosticsScope
+    {
+        CsoundAudioProcessor& owner;
+        ~DiagnosticsScope() { owner.finishCompileDiagnostics(); }
+    } diagnosticsScope { *this };
+
     const int compileResult = CsoundAPI::csoundCompileCSD (cs, newCsdText.toRawUTF8(), 1, 0);
 
     if (compileResult != CSOUND_SUCCESS)
@@ -1399,6 +1452,43 @@ juce::File CsoundAudioProcessor::getBaseFolder()
 
     // NON la crea qui (punto 10): la crea il file chooser dell'editor quando
     // serve (vedi getCsdChooserStartDirectory in PluginEditor.cpp).
+    return folder;
+}
+
+juce::PropertiesFile& CsoundAudioProcessor::getUserSettings()
+{
+    static std::unique_ptr<juce::PropertiesFile> settings = []
+    {
+        juce::PropertiesFile::Options options;
+        options.applicationName     = ProjectInfo::projectName;
+        options.filenameSuffix      = "settings";
+        options.folderName          = ProjectInfo::projectName;
+        options.osxLibrarySubFolder = "Application Support";
+        options.storageFormat       = juce::PropertiesFile::storeAsXML;
+        return std::make_unique<juce::PropertiesFile> (options);
+    }();
+
+    return *settings;
+}
+
+juce::File CsoundAudioProcessor::getUserFolderSetting (const char* key)
+{
+    const auto path = getUserSettings().getValue (key);
+
+    if (path.isEmpty() || ! juce::File::isAbsolutePath (path))
+        return {};
+
+    const juce::File folder (path);
+    return folder.isDirectory() ? folder : juce::File{};
+}
+
+juce::File CsoundAudioProcessor::getSamplesFolder()
+{
+    auto folder = getBaseFolder().getChildFile ("SSDIR");
+
+    if (! folder.isDirectory())
+        folder.createDirectory(); // crea anche apeCsound/ se manca
+
     return folder;
 }
 
@@ -3389,6 +3479,13 @@ void CsoundAudioProcessor::messageCallback (CSOUND* cs, int /*attr*/, const char
     {
         char buffer[2048];
         vsnprintf (buffer, sizeof (buffer), fmt, args);
+
+        // Compilazione (message thread, dentro compileAndStart): testo grezzo
+        // per l'analisi degli errori con riga - vedi parseCompileErrors.
+        if (self->capturingCompileOutput && juce::MessageManager::existsAndIsCurrentThread()
+            && self->compileOutput.length() < 200000)
+            self->compileOutput << juce::String::fromUTF8 (buffer);
+
         self->handleMessage (juce::String (buffer).trimEnd());
     }
 }
@@ -3430,6 +3527,9 @@ void CsoundAudioProcessor::flushPendingMessages()
         dropped = droppedMessages;
         droppedMessages = 0;
     }
+
+    if (! incoming.isEmpty())
+        scanRuntimeErrors (incoming);
 
     const auto now = juce::Time::getMillisecondCounter();
     juce::StringArray out;
@@ -3500,6 +3600,207 @@ void CsoundAudioProcessor::flushPendingMessages()
     }
 
     listeners.call ([&out] (Listener& l) { l.csoundMessagesReceived (out); });
+}
+
+//==============================================================================
+// Errori con numero di riga (segni nell'editor) - vedi getCodeDiagnostics().
+juce::Array<CsoundAudioProcessor::CodeDiagnostic> CsoundAudioProcessor::parseCompileErrors (const juce::String& csoundOutput)
+{
+    // Csound stampa gli errori in formati diversi a seconda della versione:
+    //   Csound 6:  "error: syntax error, unexpected ')' ... from file x.csd (1), line 232:"
+    //   Csound 7:  "syntax error, unexpected ')', expecting ... (token ")"),"
+    //              " line 12, columns 16,16"
+    //              "from file *string* (1)"
+    //   semantica: "error:  Unable to find opcode entry for 'x' ..." ... "Line: 17"
+    // Si cerca quindi riga per riga un "line N" / "Line: N" e, nelle righe
+    // appena precedenti (o nella stessa), il testo dell'errore.
+    juce::Array<CodeDiagnostic> result;
+
+    const auto lines = juce::StringArray::fromLines (csoundOutput);
+
+    static const std::regex lineRe  (R"(\b(?:line\s+|Line:\s*)(\d+))");
+    static const std::regex levelRe (R"(from file [^\n]*?\((\d+)\))");
+
+    auto isErrorText = [] (const juce::String& t)
+    {
+        return t.containsIgnoreCase ("error") || t.contains ("unexpected") || t.contains ("Unable to find")
+            || t.contains ("not found") || t.containsIgnoreCase ("undefined") || t.contains ("used before defined");
+    };
+
+    auto nestingLevelAbove1 = [] (const juce::String& t)
+    {
+        const auto str = t.toStdString();
+
+        for (std::sregex_iterator it (str.begin(), str.end(), levelRe), stop; it != stop; ++it)
+            if (std::stoi ((*it)[1].str()) > 1)
+                return true;
+
+        return false;
+    };
+
+    for (int i = 0; i < lines.size(); ++i)
+    {
+        const auto& current = lines[i];
+
+        // INIT/PERF ERROR: gestiti da scanRuntimeErrors.
+        if (current.contains (" ERROR in instr ") || current.startsWith ("---"))
+            continue;
+
+        const auto str = current.toStdString();
+        std::smatch lineMatch;
+
+        if (! std::regex_search (str, lineMatch, lineRe))
+            continue;
+
+        const int line = std::stoi (lineMatch[1].str());
+
+        if (line <= 0)
+            continue;
+
+        // Testo dell'errore: la stessa riga (parte prima di "line N") se ne
+        // contiene uno, altrimenti la riga d'errore piu' vicina sopra (max 4).
+        juce::String message;
+        int messageIndex = -1;
+
+        const auto before = juce::String (str.substr (0, (size_t) lineMatch.position (0)));
+
+        if (isErrorText (before))
+        {
+            message = before;
+            messageIndex = i;
+        }
+        else
+        {
+            for (int k = i - 1; k >= juce::jmax (0, i - 4); --k)
+            {
+                if (lines[k].contains (" ERROR in instr ") || lines[k].startsWith ("---"))
+                    break;
+
+                if (isErrorText (lines[k]))
+                {
+                    message = lines[k];
+                    messageIndex = k;
+                    break;
+                }
+            }
+        }
+
+        if (messageIndex < 0)
+            continue; // "line N" che non appartiene a un errore
+
+        // Dentro una macro o un #include la riga non e' del file principale:
+        // controlla le righe "from file ... (n)" attorno all'errore.
+        bool nested = false;
+
+        for (int k = messageIndex; k <= juce::jmin (lines.size() - 1, i + 2); ++k)
+            if (nestingLevelAbove1 (lines[k]))
+                nested = true;
+
+        if (nested)
+            continue;
+
+        message = message.upToFirstOccurrenceOf ("from file", false, false).trim();
+
+        if (message.startsWithIgnoreCase ("error:"))
+            message = message.substring (6).trim();
+
+        while (message.endsWithChar (',') || message.endsWithChar (';'))
+            message = message.dropLastCharacters (1).trim();
+
+        // "...matching argument types:" -> aggiunge la riga seguente ("Found: outch ak")
+        if (message.endsWithChar (':') && messageIndex + 1 < lines.size() && messageIndex + 1 != i)
+        {
+            const auto next = lines[messageIndex + 1].trim();
+
+            if (next.isNotEmpty() && ! next.startsWith ("from file") && ! next.startsWith (">>>"))
+                message << " " << next;
+        }
+
+        if (message.isEmpty())
+            message = "Csound error";
+
+        bool duplicate = false;
+
+        for (const auto& d : result)
+            if (d.line == line)
+                duplicate = true;
+
+        if (! duplicate)
+            result.add ({ line, message, false });
+    }
+
+    return result;
+}
+
+void CsoundAudioProcessor::finishCompileDiagnostics()
+{
+    capturingCompileOutput = false;
+    codeDiagnostics = parseCompileErrors (compileOutput);
+
+    // Riscontro in console: quali righe sono state segnate nell'editor, o
+    // perche' nessuna (errore senza numero di riga, o dentro una macro).
+    if (! codeDiagnostics.isEmpty())
+    {
+        juce::StringArray lines;
+
+        for (const auto& d : codeDiagnostics)
+            lines.add (juce::String (d.line));
+
+        handleMessage ("--- Error marked in the editor at line " + lines.joinIntoString (", ") + " ---");
+    }
+    else if (compileOutput.containsIgnoreCase ("error"))
+    {
+        handleMessage ("--- Error without a usable line number (or inside a macro/#include): see the messages above ---");
+    }
+
+    compileOutput.clear();
+
+    listeners.call ([] (Listener& l) { l.csoundDiagnosticsChanged(); });
+}
+
+void CsoundAudioProcessor::scanRuntimeErrors (const juce::StringArray& messages)
+{
+    // "INIT ERROR in instr 2 (opcode oscili.kk) line 23: " seguito (spesso
+    // in un messaggio a parte) dalla spiegazione; idem "PERF ERROR".
+    static const std::regex runtimeRe (R"((INIT|PERF) ERROR in instr [^\n]*?line (\d+))");
+
+    bool changed = false;
+
+    for (int i = 0; i < messages.size(); ++i)
+    {
+        const auto& m = messages[i];
+
+        if (! m.contains (" ERROR in instr "))
+            continue;
+
+        const auto str = m.toStdString();
+        std::smatch match;
+
+        if (! std::regex_search (str, match, runtimeRe))
+            continue;
+
+        const int line = std::stoi (match[2].str());
+
+        bool known = false;
+
+        for (const auto& d : codeDiagnostics)
+            if (d.line == line)
+                known = true;
+
+        if (known || line <= 0 || codeDiagnostics.size() >= 64)
+            continue;
+
+        auto message = m.trim();
+
+        if (message.endsWithChar (':') && i + 1 < messages.size() && ! messages[i + 1].contains (" ERROR "))
+            message << " " << messages[i + 1].trim();
+
+        codeDiagnostics.add ({ line, message.substring (0, 300), true });
+        changed = true;
+    }
+
+    if (changed)
+        listeners.call ([] (Listener& l) { l.csoundDiagnosticsChanged(); });
 }
 
 juce::StringArray CsoundAudioProcessor::getMessageHistory() const
@@ -3664,6 +3965,14 @@ juce::String CsoundAudioProcessor::emptyCsdText()
     return R"CSD(<CsoundSynthesizer>
 <CsOptions>
 -m0 -Ma
+;
+; Audio files (diskin2, soundin, GEN01...): just write the file name,
+; e.g. diskin2 "loop.wav". Csound looks for it in the folder of the
+; linked .csd, then in the apeCsound SSDIR folder
+; (macOS: ~/Documents/apeCsound/SSDIR). To copy files there use
+; "Import Samples..." in the file name menu (the only way on iOS).
+; Desktop: Menu > Config > "Extra Samples Folder..." adds one more
+; folder to search, "Output Files Folder..." sets where files are written.
 </CsOptions>
 <CsInstruments>
 
@@ -3689,6 +3998,14 @@ juce::String CsoundAudioProcessor::defaultCsdText()
     return R"CSD(<CsoundSynthesizer>
 <CsOptions>
 -m0 -Ma
+;
+; Audio files (diskin2, soundin, GEN01...): just write the file name,
+; e.g. diskin2 "loop.wav". Csound looks for it in the folder of the
+; linked .csd, then in the apeCsound SSDIR folder
+; (macOS: ~/Documents/apeCsound/SSDIR). To copy files there use
+; "Import Samples..." in the file name menu (the only way on iOS).
+; Desktop: Menu > Config > "Extra Samples Folder..." adds one more
+; folder to search, "Output Files Folder..." sets where files are written.
 </CsOptions>
 <CsInstruments>
 

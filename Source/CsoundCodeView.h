@@ -3,6 +3,8 @@
 #include <JuceHeader.h>
 #include <vector>
 #include <functional>
+#include <memory>
+#include <algorithm>
 
 /**
     Editor di codice scritto da zero in JUCE puro: sostituisce
@@ -142,12 +144,28 @@ public:
     void scrollToKeepCaretOnScreen();
 
     //==========================================================================
+    // Segnalazioni di errore (Csound): punto rosso nel margine, sfondo
+    // tenue e sottolineatura ondulata sulla riga. Le righe sono 0-based; la
+    // posizione segue le modifiche (righe inserite/cancellate sopra) e il
+    // segno sparisce appena si modifica la riga stessa.
+    void setErrorMarkers (const juce::Array<std::pair<int, juce::String>>& lineMessages);
+    void clearErrorMarkers();
+    bool hasErrorMarkers() const noexcept                   { return ! errorMarkers.empty(); }
+    /** Messaggio dell'errore sulla riga (0-based), vuoto se non c'e'. */
+    juce::String getErrorMessageForLine (int line) const;
+    /** Prima riga (0-based) con un errore, -1 se nessuna. */
+    int getFirstErrorLine() const;
+
+    //==========================================================================
     // Hook per le sottoclassi
     /** Tasto destro, ctrl-click, rilascio dopo una selezione touch, tap su
         una selezione. localPos = punto in coordinate del componente. */
     virtual void showContextMenu (juce::Point<int> localPos)  { juce::ignoreUnused (localPos); }
     virtual void caretPositionMoved() {}
     virtual void editorViewportPositionChanged() {}
+    /** Chiamato quando l'insieme dei segni di errore cambia (impostati,
+        cancellati, o rimossi da una modifica della riga). */
+    virtual void errorMarkersChanged() {}
 
     // [EDIT-CALLOUT] Menu di editing per il TOUCH (rilascio dopo pressione
     // prolungata/maniglie, tap sulla selezione): default = lo stesso menu
@@ -186,7 +204,20 @@ private:
         void timerCallback() override { if (onTick) onTick(); }
     };
 
-    struct LineTokens
+    // Segno di errore: la Position e' "mantenuta" (segue inserimenti e
+    // cancellazioni nel documento), per questo vive in un unique_ptr - una
+    // copia di Position perde il mantenimento.
+    struct ErrorMarker
+    {
+        juce::CodeDocument::Position pos;
+        juce::String message;
+    };
+
+    std::vector<std::unique_ptr<ErrorMarker>> errorMarkers;
+    void removeErrorMarkersOnLine (int line);
+    bool lineHasErrorMarker (int line) const;
+
+        struct LineTokens
     {
         struct Segment { int type; int start, end; }; // indici nella riga [start, end)
         std::vector<Segment> segments;
@@ -279,6 +310,7 @@ private:
     // Inset del testo rispetto ai bordi (richiesta esplicita): in alto e a
     // sinistra (dopo il gutter). Scorrono col contenuto.
     static constexpr int textInsetTop  = 6;
+    static constexpr juce::uint32 kErrorColour = 0xffe5484d; // segni di errore Csound
     static constexpr int textInsetLeft = 6;
     int tabSize = 4;
     bool useSpacesForTabs = true;
