@@ -77,6 +77,8 @@ public:
 
     void paint (juce::Graphics& g) override;
     void resized() override;
+    // Riporta in cima le viste sovrapposte aperte e i menu (vedi resized()).
+    void keepOverlaysOnTop();
 
     // Standalone desktop: barra del titolo NATIVA invece di quella disegnata
     // da JUCE (StandaloneFilterWindow). Applicata una volta, appena l'editor
@@ -540,6 +542,37 @@ private:
     // Vedi SessionWarningBar sopra: visibile SOLO quando c'e' qualcosa da
     // segnalare, altrimenti non occupa spazio (vedi resized()).
     SessionWarningBar sessionWarningBar;
+
+    // Standalone: barra "ingresso audio muto" in stile apeCsound al posto
+    // della NotificationArea gialla di JUCE (StandaloneFilterWindow), che
+    // viene disattivata nel costruttore. Visibile finche' il "Mute audio
+    // input" dello standalone e' attivo; "Unmute" lo spegne, un tocco sul
+    // messaggio apre il nostro pannello (CsoundAudioSettings).
+    struct InputMutedBar final : public juce::Component,
+                                 private juce::Value::Listener
+    {
+        InputMutedBar();
+        ~InputMutedBar() override;
+        void paint (juce::Graphics& g) override;
+        void resized() override;
+
+        void mouseUp (const juce::MouseEvent& e) override;
+
+        /** Collega il Value "mute input" dello standalone (nullptr = nessuno). */
+        void attach (juce::Value* muteValue);
+        std::function<void()> onVisibilityChanged;
+        std::function<void()> onMessageClicked; // tocco sul messaggio: Audio/MIDI Settings
+
+        juce::Label messageLabel;
+        juce::TextButton unmuteButton { "Unmute" };
+
+    private:
+        void valueChanged (juce::Value&) override;
+        juce::Value muted;
+    };
+
+    InputMutedBar inputMutedBar;
+    bool standaloneInputMayFeedback = false; // valore originale di processorHasPotentialFeedbackLoop
     static constexpr int sessionWarningBarHeight = 34;
 
     // Nella toolbar, tra Apply e il burger - vedi SessionFileLabel.

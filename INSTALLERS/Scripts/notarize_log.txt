@@ -1,6 +1,6 @@
-=== dom 11 ott 2026 00:34:44 CEST  macOS 26.6.2 arm64
+=== dom 11 ott 2026 08:34:08 CEST  macOS 26.6.2 arm64
 === packagesbuild: apeCsoun d macOS.pkgproj
-Building Project (00:34:44) at path: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/apeCsoun d macOS.pkgproj 
+Building Project (08:34:08) at path: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/apeCsoun d macOS.pkgproj 
 ------------------------------------------------------------------------------
 
 Build Folder (done)
@@ -81,19 +81,19 @@ WARNING: Warning code (250) (done)
 	Create xar archive (done)
 
 ------------------------------------------------------------------------------
-[1mBuild Successful[0m (4 seconds)
--rw-r--r--  1 alessandropetrolati  staff  45928085 11 ott 00:34 apeCsound.pkg
+[1mBuild Successful[0m (3 seconds)
+-rw-r--r--  1 alessandropetrolati  staff  46208217 11 ott 08:34 apeCsound.pkg
 === apeCsound.pkg e' gia' firmato da Packages con Developer ID Installer: Alessandro Petrolati (4863C638XM): copio in apeCsound_signed.pkg
 === notarytool submit (attesa del risultato)
 Conducting pre-submission checks for apeCsound_signed.pkg and initiating connection to the Apple notary service...
 Submission ID received
-  id: 71bf5106-9944-42cf-865d-a2fa0a282c4f
+  id: d54d2917-8b69-4f39-a3c6-b596c223205f
 Successfully uploaded file
-  id: 71bf5106-9944-42cf-865d-a2fa0a282c4f
+  id: d54d2917-8b69-4f39-a3c6-b596c223205f
   path: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/build/apeCsound_signed.pkg
 Waiting for processing to complete.
 Current status: In Progress...Current status: In Progress....Current status: In Progress.....Current status: Accepted......Processing complete
-  id: 71bf5106-9944-42cf-865d-a2fa0a282c4f
+  id: d54d2917-8b69-4f39-a3c6-b596c223205f
   status: Accepted
 === stapler staple
 Processing: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/build/apeCsound_signed.pkg
@@ -104,7 +104,7 @@ The validate action worked!
 === pkgutil --check-signature
 Package "apeCsound_signed.pkg":
    Status: signed by a developer certificate issued by Apple for distribution
-   Signed with a trusted timestamp on: 2026-10-10 22:34:47 +0000
+   Signed with a trusted timestamp on: 2026-10-11 06:34:11 +0000
    Certificate Chain:
     1. Developer ID Installer: Alessandro Petrolati (4863C638XM)
        Expires: 2027-02-01 22:12:15 +0000
@@ -129,6 +129,6 @@ apeCsound_signed.pkg: accepted
 source=Notarized Developer ID
 origin=Developer ID Installer: Alessandro Petrolati (4863C638XM)
 
--rw-r--r--  1 alessandropetrolati  staff  45929896 11 ott 00:35 /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/build/apeCsound_signed.pkg
+-rw-r--r--  1 alessandropetrolati  staff  46210028 11 ott 08:34 /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/INSTALLERS/build/apeCsound_signed.pkg
 === RISULTATO: OK (firmato, notarizzato, staple)
 === FINE

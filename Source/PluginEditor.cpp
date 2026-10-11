@@ -437,6 +437,41 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
    #endif
 
    #if JucePlugin_Build_Standalone
+    // Standalone: la barra gialla di JUCE "Audio input is muted to avoid
+    // feedback loop" (NotificationArea di StandaloneFilterWindow, con il
+    // bottone che apre il vecchio dialogo audio) viene sostituita dalla
+    // nostra InputMutedBar. MainContentComponent crea QUESTO editor e solo
+    // DOPO legge getProcessorHasPotentialFeedbackLoop() per decidere se
+    // mostrare la sua barra: azzerando il flag qui la barra JUCE non compare
+    // mai. Il "mute" resta attivo e funzionante (lo applica lo holder).
+    // z-order 0 (in fondo): la barra occupa solo la sua striscia sotto la
+    // toolbar, e cosi' le viste sovrapposte (Audio/MIDI Settings, About,
+    // Guide, menu) restano SOPRA anche quando compare mentre sono aperte.
+    addChildComponent (inputMutedBar, 0);
+    inputMutedBar.onVisibilityChanged = [this] { resized(); };
+
+    if (audioProcessor.wrapperType == juce::AudioProcessor::wrapperType_Standalone)
+    {
+        if (auto* holder = juce::StandalonePluginHolder::getInstance())
+        {
+            // Valore originale ricordato per tutto il processo: se l'editor
+            // viene ricreato il flag dello holder e' gia' stato azzerato.
+            static const bool originalFeedbackFlag = holder->getProcessorHasPotentialFeedbackLoop();
+            standaloneInputMayFeedback = originalFeedbackFlag;
+            holder->processorHasPotentialFeedbackLoop = false;
+
+            if (standaloneInputMayFeedback)
+            {
+                inputMutedBar.onMessageClicked = [this]
+                {
+                    if (parameterPanel.onAudioSettingsRequested)
+                        parameterPanel.onAudioSettingsRequested();
+                };
+                inputMutedBar.attach (&holder->getMuteInputValue());
+            }
+        }
+    }
+
     // Solo nella versione standalone (macOS e iOS): dispositivo audio,
     // sample rate, buffer e ingressi MIDI dal menu principale (su desktop la
     // barra del titolo e' nativa e il bottone "Options" di JUCE non c'e').
@@ -466,7 +501,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
                 maxOuts = juce::jmax (0, bus->getDefaultLayout().size());
 
             audioSettingsView.show (holder->deviceManager, maxIns, maxOuts,
-                                    holder->getProcessorHasPotentialFeedbackLoop() ? &holder->getMuteInputValue() : nullptr,
+                                    standaloneInputMayFeedback ? &holder->getMuteInputValue() : nullptr,
                                     []
                                     {
                                         // Salva subito dispositivo/canali/buffer/MIDI (come
@@ -988,6 +1023,10 @@ void CsoundAudioProcessorEditor::resized()
     if (sessionWarningBar.isVisible())
         sessionWarningBar.setBounds (area.removeFromTop (sessionWarningBarHeight));
 
+    // Barra "ingresso audio muto" (solo standalone, vedi InputMutedBar).
+    if (inputMutedBar.isVisible())
+        inputMutedBar.setBounds (area.removeFromTop (sessionWarningBarHeight));
+
     // Barra Cerca/Sostituisci, solo quando aperta.
     if (findBar.isVisible())
         findBar.setBounds (area.removeFromTop (findBarHeight));
@@ -1079,6 +1118,27 @@ void CsoundAudioProcessorEditor::resized()
     // coerenti anche quando sidebar/consolle si ridimensionano - visibile
     // solo mentre fileDragEnter() l'ha attivato (vedi .h).
     dropHighlightOverlay.setBounds (editor.getBounds());
+
+    // I divisori qui sopra fanno toFront() a ogni layout: le viste
+    // sovrapposte aperte (Audio/MIDI Settings, About, Guide, menu) vanno
+    // riportate sopra, altrimenti un resized() mentre sono aperte - es. la
+    // barra "input muted" che compare dopo Mute dal pannello audio - le
+    // lascerebbe sotto ai divisori.
+    keepOverlaysOnTop();
+}
+
+void CsoundAudioProcessorEditor::keepOverlaysOnTop()
+{
+    for (juce::Component* overlay : { static_cast<juce::Component*> (&aboutView),
+                                      static_cast<juce::Component*> (&guideView),
+                                      static_cast<juce::Component*> (&audioSettingsView) })
+        if (overlay->isVisible())
+            overlay->toFront (false);
+
+    // Menu (CsoundActionSheet) aperti: sempre in cima a tutto.
+    for (auto* child : getChildren())
+        if (dynamic_cast<CsoundActionSheet*> (child) != nullptr)
+            child->toFront (false);
 }
 
 void CsoundAudioProcessorEditor::toggleParameterPanel()
@@ -1250,7 +1310,7 @@ void CsoundAudioProcessorEditor::chooseCsdFile (const juce::String& title, const
            | juce::FileBrowserComponent::warnAboutOverwriting)
         : (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles);
 
-    const auto proposedName = initialFile.isDirectory() ? juce::String ("Untitled.csd") : initialFile.getFileName();
+    const auto proposedName = initialFile.isD   irectory() ? juce::String ("Untitled.csd") : initialFile.getFileName();
 
     activeFileChooser->launchAsync (flags, [this, onResult, saveMode, proposedName] (const juce::FileChooser& chooser)
     {
@@ -1838,6 +1898,79 @@ void CsoundAudioProcessorEditor::SessionWarningBar::resized()
     saveAsButton.setBounds (area.removeFromRight (saveAsButton.getBestWidthForHeight (area.getHeight()) + 12));
     area.removeFromRight (6);
     relocateButton.setBounds (area.removeFromRight (relocateButton.getBestWidthForHeight (area.getHeight()) + 12));
+    area.removeFromRight (10);
+    messageLabel.setBounds (area);
+}
+
+CsoundAudioProcessorEditor::InputMutedBar::InputMutedBar()
+{
+    messageLabel.setText ("Audio input is muted to avoid feedback.  Audio/MIDI Settings " + juce::String::charToString ((juce::juce_wchar) 0x203a),
+                          juce::dontSendNotification);
+    messageLabel.setInterceptsMouseClicks (false, false); // il tocco arriva alla barra (mouseUp)
+    setMouseCursor (juce::MouseCursor::PointingHandCursor);
+    unmuteButton.setMouseCursor (juce::MouseCursor::NormalCursor);
+    messageLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
+    messageLabel.setColour (juce::Label::textColourId, juce::Colour (0xff3a2a00));
+    messageLabel.setJustificationType (juce::Justification::centredLeft);
+    messageLabel.setMinimumHorizontalScale (0.7f);
+    addAndMakeVisible (messageLabel);
+
+    unmuteButton.onClick = [this] { muted.setValue (false); };
+    addAndMakeVisible (unmuteButton);
+}
+
+void CsoundAudioProcessorEditor::InputMutedBar::mouseUp (const juce::MouseEvent& e)
+{
+    // Tocco sulla barra (fuori da "Unmute"): apre Audio/MIDI Settings.
+    if (e.mouseWasClicked() && onMessageClicked)
+        onMessageClicked();
+}
+
+CsoundAudioProcessorEditor::InputMutedBar::~InputMutedBar()
+{
+    muted.removeListener (this);
+}
+
+void CsoundAudioProcessorEditor::InputMutedBar::attach (juce::Value* muteValue)
+{
+    muted.removeListener (this);
+
+    if (muteValue == nullptr)
+    {
+        setVisible (false);
+        return;
+    }
+
+    muted.referTo (*muteValue);
+    muted.addListener (this);
+    valueChanged (muted);
+}
+
+void CsoundAudioProcessorEditor::InputMutedBar::valueChanged (juce::Value&)
+{
+    const bool show = (bool) muted.getValue();
+
+    if (show != isVisible())
+    {
+        setVisible (show);
+
+        if (onVisibilityChanged)
+            onVisibilityChanged();
+    }
+}
+
+void CsoundAudioProcessorEditor::InputMutedBar::paint (juce::Graphics& g)
+{
+    // Stesso stile della SessionWarningBar: giallo tenue + riga sotto.
+    g.fillAll (juce::Colour (0xfffff3c4));
+    g.setColour (juce::Colour (0xffe0c56a));
+    g.drawLine (0.0f, (float) getHeight() - 0.5f, (float) getWidth(), (float) getHeight() - 0.5f, 1.0f);
+}
+
+void CsoundAudioProcessorEditor::InputMutedBar::resized()
+{
+    auto area = getLocalBounds().reduced (10, 5);
+    unmuteButton.setBounds (area.removeFromRight (unmuteButton.getBestWidthForHeight (area.getHeight()) + 12));
     area.removeFromRight (10);
     messageLabel.setBounds (area);
 }
