@@ -492,15 +492,15 @@ public:
     bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
 
     //==========================================================================
-    // Canali audio. Default (followCsdChannels = true): Csound usa nchnls /
-    // nchnls_i DICHIARATI nel .csd, cosi' il codice gira identico su
-    // qualunque traccia; processBlock adatta per canale e quelli in piu' da
-    // una parte o dall'altra restano muti. Se il .csd NON dichiara nchnls
-    // (o nchnls_i) quel valore viene preso dalla traccia. Con
-    // followCsdChannels = false Csound segue sempre la traccia (--nchnls /
-    // --nchnls_i dai bus, min 2 in uscita perche' quasi tutti i .csd usano
-    // "outs"). In entrambi i casi una differenza tra .csd e DAW viene
-    // segnalata in console.
+    // Canali audio. Default (followCsdChannels = false): Csound segue sempre
+    // la traccia (--nchnls / --nchnls_i dai bus, che prevalgono anche su
+    // nchnls/nchnls_i dichiarati nel .csd; min 2 in uscita perche' quasi
+    // tutti i .csd usano "outs"), e prepareToPlay ricompila quando i canali
+    // della traccia cambiano. Con followCsdChannels = true Csound usa
+    // nchnls / nchnls_i DICHIARATI nel .csd, cosi' il codice gira identico
+    // su qualunque traccia; processBlock adatta per canale e quelli in piu'
+    // restano muti (se il .csd non li dichiara si usa la traccia). In
+    // entrambi i casi una differenza tra .csd e DAW viene segnalata in console.
     void setFollowCsdChannels (bool shouldFollow);
     bool isFollowingCsdChannels() const noexcept { return followCsdChannels.load(); }
 
@@ -1083,7 +1083,7 @@ private:
     // Latenza risultante: csKsmps campioni (riportata all'host).
     int ksmpsPos           = 0;
 
-    std::atomic<bool> followCsdChannels { true };
+    std::atomic<bool> followCsdChannels { false };
 
     // Ordine FISICO dei canali della traccia -> indice nel buffer JUCE.
     // JUCE ordina i canali di un layout "con nome" (5.1, 7.1...) nel SUO

@@ -2077,7 +2077,7 @@ void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInByte
     // --- 1. Risolve il file collegato ---------------------------------
     const auto csdPath = xml->getStringAttribute ("csd");
     const bool isRelative = xml->getIntAttribute ("csdIsRelative", 1) != 0;
-    followCsdChannels.store (xml->getIntAttribute ("followCsdChannels", 1) != 0);
+    followCsdChannels.store (xml->getIntAttribute ("followCsdChannels", 0) != 0);
 
     juce::File linked;
     if (csdPath.isNotEmpty())
