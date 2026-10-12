@@ -49,6 +49,7 @@
       <FILE id="iKbdB" name="IOSKeyboard.h" compile="0" resource="0" file="Source/IOSKeyboard.h"/>
       <FILE id="cAudA" name="CsoundAudioSettings.cpp" compile="1" resource="0" file="Source/CsoundAudioSettings.cpp"/>
       <FILE id="cAudB" name="CsoundAudioSettings.h" compile="0" resource="0" file="Source/CsoundAudioSettings.h"/>
+      <FILE id="pFbkA" name="PlatformFallbacks.cpp" compile="1" resource="0" file="Source/PlatformFallbacks.cpp"/>
       <FILE id="sScfH" name="SecurityScopedFile.h" compile="0" resource="0"
             file="Source/SecurityScopedFile.h"/>
       <FILE id="sScfM" name="SecurityScopedFile.mm" compile="1" resource="0"
@@ -91,7 +92,8 @@
     <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_osc" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
   </MODULES>
-  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>
+  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0" JUCE_WEB_BROWSER="0"
+               JUCE_USE_CURL="0"/>
   <EXPORTFORMATS>
     <XCODE_MAC iosBluetoothPermissionNeeded="1" iosBluetoothPermissionText="apeCsound uses Bluetooth to connect wireless MIDI keyboards and controllers." targetFolder="Builds/MacOSX" iosDevelopmentTeamID="4863C638XM"
                smallIcon="QhPr70" bigIcon="QhPr70" externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate"
@@ -160,5 +162,32 @@
         <MODULEPATH id="juce_osc" path="../JUCE/modules"/>
       </MODULEPATHS>
     </XCODE_IPHONE>
+    <LINUX_MAKE targetFolder="Builds/LinuxMakefile" smallIcon="QhPr70" bigIcon="QhPr70"
+                externalLibraries="csound64&#10;sndfile&#10;samplerate" extraLinkerFlags="-ldl -lpthread -lm">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" headerPath="../../build/csound-install/linux/include"
+                       libraryPath="../../build/csound-install/linux/lib"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="apeCsound" headerPath="../../build/csound-install/linux/include"
+                       libraryPath="../../build/csound-install/linux/lib"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_audio_basics" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_plugin_client" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors_headless" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_core" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_cryptography" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_dsp" path="../JUCE/modules"/>
+        <MODULEPATH id="juce_osc" path="../JUCE/modules"/>
+      </MODULEPATHS>
+    </LINUX_MAKE>
   </EXPORTFORMATS>
 </JUCERPROJECT>

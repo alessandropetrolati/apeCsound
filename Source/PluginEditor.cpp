@@ -1310,7 +1310,7 @@ void CsoundAudioProcessorEditor::chooseCsdFile (const juce::String& title, const
            | juce::FileBrowserComponent::warnAboutOverwriting)
         : (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles);
 
-    const auto proposedName = initialFile.isD   irectory() ? juce::String ("Untitled.csd") : initialFile.getFileName();
+    const auto proposedName = initialFile.isDirectory() ? juce::String ("Untitled.csd") : initialFile.getFileName();
 
     activeFileChooser->launchAsync (flags, [this, onResult, saveMode, proposedName] (const juce::FileChooser& chooser)
     {
