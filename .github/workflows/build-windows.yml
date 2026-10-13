@@ -19,7 +19,7 @@ on:
 
 env:
   # JUCE version: keep it equal to the one used on the Mac (Projucer > About).
-  JUCE_REF: "master"
+  JUCE_REF: "9.0.4"
 
 jobs:
   windows:
