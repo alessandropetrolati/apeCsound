@@ -1,0 +1,116 @@
+# apeCsound - Windows build (x64): Csound 7 static -> Projucer -> VST3 + Standalone
+#
+# 1. builds Csound 7 + libsndfile + libsamplerate as static libraries with
+#    scripts/build_csound_static_windows.ps1 (cached between runs)
+# 2. builds Projucer from JUCE, sets the global JUCE module path and
+#    re-saves apeCsound.jucer (Builds/ and JuceLibraryCode/ are not in git)
+# 3. builds Builds/VisualStudio2022/apeCsound.sln (Release, x64)
+# 4. uploads apeCsound.vst3 and apeCsound.exe as an artifact (and attaches
+#    a zip to the GitHub Release when the run comes from a "v*" tag)
+#
+# Run it from the "Actions" tab (Run workflow), or push a tag: git tag v1.0.0 && git push --tags
+
+name: Build Windows
+
+on:
+  workflow_dispatch:
+  push:
+    tags: [ "v*" ]
+
+env:
+  # JUCE version: keep it equal to the one used on the Mac (Projucer > About).
+  JUCE_REF: "master"
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout apeCsound
+        uses: actions/checkout@v4
+
+      - name: Checkout JUCE
+        uses: actions/checkout@v4
+        with:
+          repository: juce-framework/JUCE
+          ref: ${{ env.JUCE_REF }}
+          path: JUCE
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      # ------------------------------------------------------------------
+      # 1. Csound static (Debug + Release libs, static MSVC runtime)
+      # ------------------------------------------------------------------
+      - name: Cache Csound static build
+        id: csound-cache
+        uses: actions/cache@v4
+        with:
+          path: build/csound-install/windows
+          key: csound-windows-${{ hashFiles('scripts/build_csound_static_windows.ps1') }}
+
+      - name: Build Csound (static)
+        if: steps.csound-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: ./scripts/build_csound_static_windows.ps1
+
+      # ------------------------------------------------------------------
+      # 2. Projucer -> Builds/VisualStudio2022
+      # ------------------------------------------------------------------
+      - name: Build Projucer
+        shell: pwsh
+        run: |
+          msbuild JUCE/extras/Projucer/Builds/VisualStudio2022/Projucer.sln /p:Configuration=Release /p:Platform=x64 /m /v:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Generate Visual Studio project
+        shell: pwsh
+        run: |
+          $projucer = Get-ChildItem -Recurse -Filter Projucer.exe JUCE/extras/Projucer/Builds/VisualStudio2022 | Select-Object -First 1
+          if (-not $projucer) { throw "Projucer.exe not found" }
+          $modules = (Resolve-Path JUCE/modules).Path
+          # The .jucer uses the global JUCE path (useGlobalPath="1"): point it at the checkout.
+          & $projucer.FullName --set-global-search-path windows defaultJuceModulePath "$modules"
+          & $projucer.FullName --resave apeCsound.jucer
+          if (-not (Test-Path Builds/VisualStudio2022/apeCsound.sln)) { throw "Projucer did not create Builds/VisualStudio2022/apeCsound.sln" }
+
+      # ------------------------------------------------------------------
+      # 3. VST3 + Standalone
+      # ------------------------------------------------------------------
+      - name: Build apeCsound (Release x64)
+        shell: pwsh
+        run: |
+          msbuild Builds/VisualStudio2022/apeCsound.sln /p:Configuration=Release /p:Platform=x64 /m /v:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Collect binaries
+        shell: pwsh
+        run: |
+          $rel = "Builds/VisualStudio2022/x64/Release"
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $vst3 = Get-ChildItem -Recurse -Directory -Filter apeCsound.vst3 $rel | Select-Object -First 1
+          $exe  = Get-ChildItem -Recurse -File -Filter apeCsound.exe $rel | Select-Object -First 1
+          if (-not $vst3) { throw "apeCsound.vst3 not found under $rel" }
+          if (-not $exe)  { throw "apeCsound.exe not found under $rel" }
+          Copy-Item -Recurse $vst3.FullName dist/
+          Copy-Item $exe.FullName dist/
+          Copy-Item README.md dist/
+          Get-ChildItem -Recurse dist | Format-Table FullName, Length
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apeCsound-windows-x64
+          path: dist/
+
+      - name: Zip for release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: Compress-Archive -Path dist/* -DestinationPath "apeCsound-${{ github.ref_name }}-windows-x64.zip"
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: apeCsound-${{ github.ref_name }}-windows-x64.zip
