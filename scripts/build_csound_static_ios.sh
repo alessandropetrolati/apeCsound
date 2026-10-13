@@ -2,7 +2,7 @@
 #
 # Static iOS build of Csound 7 + libsndfile + libsamplerate, for the
 # XCODE_IPHONE exporter in apeCsound.jucer. Companion of
-# build_csound_static.sh (macOS): same sources, same CMake options, but
+# build_csound_static_macos.sh (macOS): same sources, same CMake options, but
 # cross-compiled with the iOS toolchain. Run the macOS script FIRST - it
 # clones the sources and installs the headers that the iOS target shares
 # (build/csound-install/universal/include).
@@ -37,7 +37,7 @@ CSOUND_SRC="$BUILD_ROOT/csound-static/src"
 
 for d in "$SNDFILE_SRC" "$SAMPLERATE_SRC" "$CSOUND_SRC"; do
   if [ ! -d "$d" ]; then
-    echo "ERROR: $d not found - run ./build_csound_static.sh (macOS) first, it clones the sources."
+    echo "ERROR: $d not found - run ./build_csound_static_macos.sh (macOS) first, it clones the sources."
     exit 1
   fi
 done

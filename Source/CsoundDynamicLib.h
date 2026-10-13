@@ -9,7 +9,7 @@
 /**
     Csound 7 LINKATA STATICAMENTE (build/csound-install/universal/lib/
     libCsoundLib64.a + libsndfile.a + libsamplerate.a, vedi
-    scripts/build_csound_static.sh): nessuna .dylib/.framework da copiare
+    scripts/build_csound_static_macos.sh): nessuna .dylib/.framework da copiare
     nel bundle, nessun dlopen, nessuna firma separata - e soprattutto
     funziona anche su iOS, dove le librerie dinamiche caricate a runtime
     non sono ammesse.

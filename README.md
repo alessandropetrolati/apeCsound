@@ -60,7 +60,7 @@ A fixed pool of host-automatable parameters can be mapped to Csound channels and
 
 - macOS 12 or later, with Xcode.
 - [JUCE 8](https://juce.com) and the Projucer.
-- **Csound 7**, built as a static library by `scripts/build_csound_static.sh` (Homebrew `cmake`, `bison`, `flex`).
+- **Csound 7**, built as a static library by `scripts/build_csound_static_macos.sh` (Homebrew `cmake`, `bison`, `flex`).
 
 Csound is **linked statically**: `libCsoundLib64.a` + `libsndfile.a` + `libsamplerate.a` (universal arm64/x86_64, all opcodes in the core, no plugin `.dylib`s, no realtime audio/MIDI backends since the host provides audio and MIDI). The plugin bundle has no external dependency and the same approach works on iOS, where runtime-loaded libraries are not allowed. `Source/CsoundDynamicLib.*` keeps a thin function-pointer layer over the C API (a leftover of the previous `dlopen` design) so the rest of the code did not change.
 
@@ -76,7 +76,7 @@ Csound is **linked statically**: `libCsoundLib64.a` + `libsndfile.a` + `libsampl
 
 2. **Build Csound 7 as a static library**
    ```sh
-   cd scripts && ./build_csound_static.sh
+   cd scripts && ./build_csound_static_macos.sh
    ```
    This clones Csound (`develop` branch), libsndfile and libsamplerate, builds them for arm64 and x86_64 and installs headers and universal `.a` files in `build/csound-install/universal/{include,lib}`. The folder is ignored by git. The Xcode project reads headers and libraries from there and links `Accelerate.framework` (Csound's FFT).
 
@@ -86,7 +86,11 @@ Csound is **linked statically**: `libCsoundLib64.a` + `libsndfile.a` + `libsampl
 
 4. **Build in Xcode.** Open `Builds/MacOSX/apeCsound.xcodeproj` and build the **VST3**, **AUv3** or **Standalone** target; for iOS open `Builds/iOS/apeCsound.xcodeproj` (AUv3 + Standalone). Nothing else to embed: Csound is inside the binary.
 
-> `scripts/build_csound_static.sh` is an experimental script for building Csound 7 as static universal libraries (arm64 + x86_64). It is not used by the current Xcode project.
+> Static Csound 7 build scripts, one per platform (all produce `build/csound-install/...`, the paths used by the `.jucer` exporters):
+> - `scripts/build_csound_static_macos.sh` - macOS, universal (arm64 + x86_64)
+> - `scripts/build_csound_static_ios.sh` - iOS device + simulator (run the macOS script first: it clones the sources)
+> - `scripts/build_csound_static_linux.sh` - Linux (Ubuntu/Debian), x86_64 or aarch64
+> - `scripts/build_csound_static_windows.ps1` - Windows x64, Visual Studio 2022 (Debug + Release, static runtime)
 
 ---
 

@@ -7,7 +7,7 @@
 #include <cstdarg>
 
 // Csound 7 e' linkata STATICAMENTE (build/csound-install/universal/lib,
-// vedi scripts/build_csound_static.sh e CsoundDynamicLib.h). Qui servono
+// vedi scripts/build_csound_static_macos.sh e CsoundDynamicLib.h). Qui servono
 // "csound.h"/"csound_misc.h" per i TIPI (CSOUND, MYFLT/cs_float,
 // opcodeListEntry...); tutte le chiamate nel .cpp passano da
 // CsoundAPI::csoundXxx (puntatori agganciati da CsoundAPI::load() ai

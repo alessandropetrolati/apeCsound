@@ -30,7 +30,7 @@
 # fix the script from the real error, the same way we've been doing with
 # the Xcode build errors.
 #
-# Usage:  cd "scripts" && ./build_csound_static.sh
+# Usage:  cd "scripts" && ./build_csound_static_macos.sh
 # Output: build/csound-install/universal/{lib,include}
 #   - lib/libCsoundLib64.a, lib/libsndfile.a, lib/libsamplerate.a
 #   - include/csound.h and friends

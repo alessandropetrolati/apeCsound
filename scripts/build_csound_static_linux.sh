@@ -3,7 +3,7 @@
 # Static build of Csound 7 for Linux (Ubuntu/Debian): core + libsndfile +
 # libsamplerate, no realtime audio/MIDI backends, no OSC/csbeats/DSSI, no
 # separate opcode plugins - the same "monolithic" setup as the macOS/iOS
-# scripts (build_csound_static.sh / build_csound_static_ios.sh): apeCsound
+# scripts (build_csound_static_macos.sh / build_csound_static_ios.sh): apeCsound
 # drives Csound through the C API with its own audio/MIDI I/O, and Csound is
 # linked statically into the VST3 and the Standalone.
 #
