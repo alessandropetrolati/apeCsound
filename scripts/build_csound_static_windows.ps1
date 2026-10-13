@@ -43,7 +43,11 @@ $Work        = Join-Path $BuildRoot "windows-x64"
 $Stage       = Join-Path $BuildRoot "csound-install\windows-x64"
 $Out         = Join-Path $BuildRoot "csound-install\windows"
 $Configs     = @("Debug", "Release")
-$Generator   = @("-G", "Visual Studio 17 2022", "-A", "x64")
+# Generatore CMake: Visual Studio 2022 (lo stesso dell'exporter VS2022 del
+# .jucer). Si puo' cambiare con la variabile d'ambiente CSOUND_CMAKE_GENERATOR,
+# es. "Visual Studio 18 2026" su una macchina con solo VS 2026.
+$GeneratorName = if ($env:CSOUND_CMAKE_GENERATOR) { $env:CSOUND_CMAKE_GENERATOR } else { "Visual Studio 17 2022" }
+$Generator   = @("-G", $GeneratorName, "-A", "x64")
 
 function Need($tool) {
     if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {

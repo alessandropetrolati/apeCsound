@@ -19,10 +19,19 @@ on:
 
 env:
   # JUCE version: keep it equal to the one used on the Mac (Projucer > About).
-  JUCE_REF: "master"
+  JUCE_REF: "9.0.4"
+  # Visual Studio 2026 (vedi il commento su runs-on)
+  CSOUND_CMAKE_GENERATOR: "Visual Studio 18 2026"
+  VS_TOOLSET: "v145"
 
 jobs:
   windows:
+    # windows-latest: Visual Studio 18 (2026). Csound viene configurato con il
+    # generatore CMake "Visual Studio 18 2026"; i progetti Visual Studio
+    # (Projucer e apeCsound, generati dall'exporter VS2022 del .jucer) vengono
+    # compilati con il toolset di VS 2026 (v145) tramite /p:PlatformToolset.
+    # Per tornare a VS 2022: runs-on: windows-2022, CSOUND_CMAKE_GENERATOR
+    # "Visual Studio 17 2022" e VS_TOOLSET v143.
     runs-on: windows-latest
     timeout-minutes: 120
 
@@ -40,6 +49,10 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      # Il generatore "Visual Studio 18 2026" richiede CMake 4.2 o successivo.
+      - name: Setup CMake (latest)
+        uses: lukka/get-cmake@latest
+
       # ------------------------------------------------------------------
       # 1. Csound static (Debug + Release libs, static MSVC runtime)
       # ------------------------------------------------------------------
@@ -48,7 +61,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build/csound-install/windows
-          key: csound-windows-${{ hashFiles('scripts/build_csound_static_windows.ps1') }}
+          key: csound-windows-${{ env.VS_TOOLSET }}-${{ hashFiles('scripts/build_csound_static_windows.ps1') }}
 
       - name: Build Csound (static)
         if: steps.csound-cache.outputs.cache-hit != 'true'
@@ -61,13 +74,19 @@ jobs:
       - name: Build Projucer
         shell: pwsh
         run: |
-          msbuild JUCE/extras/Projucer/Builds/VisualStudio2022/Projucer.sln /p:Configuration=Release /p:Platform=x64 /m /v:minimal
+          # JUCE recenti hanno anche Builds/VisualStudio2026: si usa quello se c'e'.
+          $sln = @("VisualStudio2026", "VisualStudio2022") |
+                 ForEach-Object { "JUCE/extras/Projucer/Builds/$_/Projucer.sln" } |
+                 Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $sln) { throw "Projucer.sln not found" }
+          Write-Host "Projucer solution: $sln"
+          msbuild $sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=$env:VS_TOOLSET /m /v:minimal
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Generate Visual Studio project
         shell: pwsh
         run: |
-          $projucer = Get-ChildItem -Recurse -Filter Projucer.exe JUCE/extras/Projucer/Builds/VisualStudio2022 | Select-Object -First 1
+          $projucer = Get-ChildItem -Recurse -Filter Projucer.exe JUCE/extras/Projucer/Builds | Select-Object -First 1
           if (-not $projucer) { throw "Projucer.exe not found" }
           $modules = (Resolve-Path JUCE/modules).Path
           # The .jucer uses the global JUCE path (useGlobalPath="1"): point it at the checkout.
@@ -81,7 +100,7 @@ jobs:
       - name: Build apeCsound (Release x64)
         shell: pwsh
         run: |
-          msbuild Builds/VisualStudio2022/apeCsound.sln /p:Configuration=Release /p:Platform=x64 /m /v:minimal
+          msbuild Builds/VisualStudio2022/apeCsound.sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=$env:VS_TOOLSET /m /v:minimal
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Collect binaries
