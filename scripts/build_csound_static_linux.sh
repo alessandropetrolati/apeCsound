@@ -61,7 +61,7 @@ if [ "$INSTALL_DEPS" -eq 1 ]; then
       libasound2-dev libjack-jackd2-dev \
       libfreetype-dev libfontconfig1-dev \
       libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
-      libxrandr-dev libxrender-dev \
+      libxrandr-dev libxrender-dev libxi-dev \
       libglu1-mesa-dev mesa-common-dev \
       libcurl4-openssl-dev
   else
