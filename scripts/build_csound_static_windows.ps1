@@ -144,6 +144,12 @@ function FindLib($dir, $patterns) {
 $CsoundSrc = Join-Path $Work "csound\src"
 CloneOnce $CsoundRepo $CsoundBranch $CsoundSrc
 
+# MSVC has no dirent.h. Csound's CMake only find_file()s it (configure-time
+# checks), it does not add its folder to the compiler include path, so
+# new_orc_parser.c fails with C1083. Csound's H/ folder is always on the
+# include path of csound64 / csound64-static: put the header there.
+Copy-Item -Force (Join-Path $DirentInclude "dirent.h") (Join-Path $CsoundSrc "H\dirent.h")
+
 foreach ($cfg in $Configs) {
     $sndfileLib    = FindLib (Join-Path $Stage "sndfile-$cfg\lib")    @("sndfile.lib", "libsndfile*.lib")
     $samplerateLib = FindLib (Join-Path $Stage "samplerate-$cfg\lib") @("samplerate.lib", "libsamplerate*.lib")
