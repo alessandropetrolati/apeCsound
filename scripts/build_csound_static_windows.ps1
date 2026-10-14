@@ -177,11 +177,25 @@ foreach ($cfg in $Configs) {
         "-DUSE_PORTAUDIO=OFF", "-DUSE_PORTMIDI=OFF", "-DUSE_JACK=OFF", "-DUSE_ALSA=OFF",
         "-DUSE_PULSEAUDIO=OFF", "-DUSE_PIPEWIRE=OFF", "-DUSE_IPMIDI=OFF",
         "-DUSE_COREMIDI=OFF", "-DUSE_AUDIOUNIT=OFF",
-        "-DBUILD_OSC_OPCODES=OFF", "-DBUILD_CSBEATS=OFF", "-DBUILD_DSSI_OPCODES=OFF"))
+        "-DBUILD_OSC_OPCODES=OFF", "-DBUILD_CSBEATS=OFF", "-DBUILD_DSSI_OPCODES=OFF",
+        "-DBUILD_CSOUND_COMMAND=OFF", "-DUSE_ASA=OFF", "-DUSE_GIT_COMMIT=OFF"))
 
     Write-Host "==> building Csound ($cfg)"
-    Run cmake @("--build", $csoundBuild, "--config", $cfg, "--parallel")
-    Run cmake @("--install", $csoundBuild, "--config", $cfg, "--prefix", (Join-Path $Stage "csound-$cfg"))
+    # Only the static library: the DLL, csound.exe, csdebugger, utilities... are
+    # not needed by apeCsound (and "cmake --install" would need all of them).
+    Run cmake @("--build", $csoundBuild, "--config", $cfg, "--parallel", "--target", "csound64-static")
+
+    # Manual "install": libcsound64.lib + public headers (src\include + generated version headers)
+    $csoundStage = Join-Path $Stage "csound-$cfg"
+    if (Test-Path $csoundStage) { Remove-Item -Recurse -Force $csoundStage }
+    New-Item -ItemType Directory -Force -Path (Join-Path $csoundStage "lib"), (Join-Path $csoundStage "include\csound") | Out-Null
+    $staticLib = Get-ChildItem -Path $csoundBuild -Recurse -Filter "libcsound64.lib" |
+                 Where-Object { $_.FullName -match "\\$cfg\\" } | Select-Object -First 1
+    if (-not $staticLib) { throw "libcsound64.lib ($cfg) not found under $csoundBuild" }
+    Copy-Item $staticLib.FullName (Join-Path $csoundStage "lib\libcsound64.lib")
+    Copy-Item (Join-Path $CsoundSrc "include\*.h")   (Join-Path $csoundStage "include\csound")
+    Copy-Item (Join-Path $CsoundSrc "include\*.hpp") (Join-Path $csoundStage "include\csound") -ErrorAction SilentlyContinue
+    Copy-Item (Join-Path $csoundBuild "include\*.h") (Join-Path $csoundStage "include\csound")
 }
 
 # ---------------------------------------------------------------------
