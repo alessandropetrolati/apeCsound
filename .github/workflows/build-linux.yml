@@ -71,7 +71,7 @@ jobs:
 
       - name: Build Csound (static)
         if: steps.csound-cache.outputs.cache-hit != 'true'
-        run: ./scripts/build_csound_static_linux.sh --no-apt
+        run: bash ./scripts/build_csound_static_linux.sh --no-apt
 
       - name: Save Csound static build
         if: steps.csound-cache.outputs.cache-hit != 'true'
