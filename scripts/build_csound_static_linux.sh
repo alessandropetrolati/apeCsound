@@ -187,8 +187,22 @@ cmake -S "$CSOUND_SRC" -B "$WORK/csound/build" "${COMMON_CMAKE[@]}" \
   -DINSTALL_PYTHON_INTERFACE=OFF
 # INSTALL_PYTHON_INTERFACE=OFF: otherwise "cmake --install" copies ctcsound.py
 # into the system Python site-packages (/usr/local/...) -> Permission denied.
-cmake --build "$WORK/csound/build" -j"$JOBS"
-cmake --install "$WORK/csound/build"
+#
+# Only the static library is built, and there is no "cmake --install": the
+# install step also copies the shared lib, the plugins, the csound command and
+# (depending on the Csound version) ctcsound.py into the system Python
+# site-packages, which fails without root. The library and the public headers
+# are staged by hand, like in build_csound_static_windows.ps1.
+cmake --build "$WORK/csound/build" -j"$JOBS" --target csound64-static
+
+rm -rf "$CSOUND_PREFIX"
+mkdir -p "$CSOUND_PREFIX/lib" "$CSOUND_PREFIX/include/csound"
+STATIC_A="$(find "$WORK/csound/build" -name 'libcsound64.a' -type f | head -1)"
+[ -n "$STATIC_A" ] || { echo "ERROR: libcsound64.a not found in $WORK/csound/build"; exit 1; }
+cp "$STATIC_A" "$CSOUND_PREFIX/lib/libcsound64.a"
+cp "$CSOUND_SRC"/include/*.h          "$CSOUND_PREFIX/include/csound/"
+cp "$CSOUND_SRC"/include/*.hpp        "$CSOUND_PREFIX/include/csound/" 2>/dev/null || true
+cp "$WORK/csound/build"/include/*.h   "$CSOUND_PREFIX/include/csound/"   # version.h, float-version.h
 
 # ---------------------------------------------------------------------
 # 4. flatten into build/csound-install/linux/{lib,include}
