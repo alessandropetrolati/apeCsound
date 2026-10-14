@@ -90,7 +90,20 @@ jobs:
           if (-not $projucer) { throw "Projucer.exe not found" }
           $modules = (Resolve-Path JUCE/modules).Path
           # The .jucer uses the global JUCE path (useGlobalPath="1"): point it at the checkout.
-          & $projucer.FullName --set-global-search-path windows defaultJuceModulePath "$modules"
+          # "--set-global-search-path" only edits an EXISTING Projucer.settings, which a fresh
+          # runner does not have, so the settings file is written here directly.
+          $settingsDir = Join-Path $env:APPDATA "Projucer"
+          New-Item -ItemType Directory -Force -Path $settingsDir | Out-Null
+          $xml = @"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <PROPERTIES>
+            <VALUE name="PROJECT_DEFAULT_SETTINGS">
+              <PROJECT_DEFAULT_SETTINGS defaultJuceModulePath="$modules"/>
+            </VALUE>
+          </PROPERTIES>
+          "@
+          Set-Content -Path (Join-Path $settingsDir "Projucer.settings") -Value $xml.Trim() -Encoding UTF8
+          Get-Content (Join-Path $settingsDir "Projucer.settings")
           & $projucer.FullName --resave apeCsound.jucer
           if (-not (Test-Path Builds/VisualStudio2022/apeCsound.sln)) { throw "Projucer did not create Builds/VisualStudio2022/apeCsound.sln" }
 
