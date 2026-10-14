@@ -178,7 +178,10 @@ foreach ($cfg in $Configs) {
         "-DUSE_PULSEAUDIO=OFF", "-DUSE_PIPEWIRE=OFF", "-DUSE_IPMIDI=OFF",
         "-DUSE_COREMIDI=OFF", "-DUSE_AUDIOUNIT=OFF",
         "-DBUILD_OSC_OPCODES=OFF", "-DBUILD_CSBEATS=OFF", "-DBUILD_DSSI_OPCODES=OFF",
-        "-DBUILD_CSOUND_COMMAND=OFF", "-DUSE_ASA=OFF", "-DUSE_GIT_COMMIT=OFF"))
+        "-DUSE_ASA=OFF", "-DUSE_GIT_COMMIT=OFF"))
+    # NB: keep BUILD_CSOUND_COMMAND ON: tests/commandline references the
+    # csound-bin target unconditionally (generate step fails without it).
+    # It is not built anyway: only the csound64-static target is built below.
 
     Write-Host "==> building Csound ($cfg)"
     # Only the static library: the DLL, csound.exe, csdebugger, utilities... are
