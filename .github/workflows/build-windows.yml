@@ -56,9 +56,11 @@ jobs:
       # ------------------------------------------------------------------
       # 1. Csound static (Debug + Release libs, static MSVC runtime)
       # ------------------------------------------------------------------
-      - name: Cache Csound static build
+      # restore + save separati: la cache viene salvata subito dopo la build di
+      # Csound, anche se un passo successivo (Projucer, apeCsound) fallisce.
+      - name: Restore Csound static build
         id: csound-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: build/csound-install/windows
           key: csound-windows-${{ env.VS_TOOLSET }}-${{ hashFiles('scripts/build_csound_static_windows.ps1') }}
@@ -67,6 +69,13 @@ jobs:
         if: steps.csound-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: ./scripts/build_csound_static_windows.ps1
+
+      - name: Save Csound static build
+        if: steps.csound-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build/csound-install/windows
+          key: ${{ steps.csound-cache.outputs.cache-primary-key }}
 
       # ------------------------------------------------------------------
       # 2. Projucer -> Builds/VisualStudio2022

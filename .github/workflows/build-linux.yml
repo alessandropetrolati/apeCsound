@@ -1,0 +1,159 @@
+# apeCsound - Linux build (x86_64): Csound 7 static -> Projucer -> VST3 + Standalone -> zip
+#
+# 1. builds Csound 7 + libsndfile + libsamplerate as static libraries with
+#    scripts/build_csound_static_linux.sh (cached between runs)
+# 2. builds Projucer from JUCE, sets the global JUCE module path and
+#    re-saves apeCsound.jucer (Builds/ and JuceLibraryCode/ are not in git)
+# 3. builds Builds/LinuxMakefile (Release)
+# 4. packs apeCsound.vst3 + apeCsound (Standalone) + README into
+#    apeCsound-linux-x64.zip, uploaded as an artifact (and attached to the
+#    GitHub Release when the run comes from a "v*" tag)
+#
+# Run it from the "Actions" tab (Run workflow), or push a tag: git tag v1.0.0 && git push --tags
+
+name: Build Linux
+
+on:
+  workflow_dispatch:
+  push:
+    tags: [ "v*" ]
+
+env:
+  # JUCE version: keep it equal to the one used on the Mac and Windows builds.
+  JUCE_REF: "9.0.4"
+
+jobs:
+  linux:
+    # 22.04 (glibc 2.35): the binaries also run on older/other distributions
+    # than they would if built on 24.04.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout apeCsound
+        uses: actions/checkout@v4
+
+      - name: Checkout JUCE
+        uses: actions/checkout@v4
+        with:
+          repository: juce-framework/JUCE
+          ref: ${{ env.JUCE_REF }}
+          path: JUCE
+
+      # Csound develop and JUCE want a recent CMake (22.04 ships 3.22).
+      - name: Setup CMake (latest)
+        uses: lukka/get-cmake@latest
+
+      # Same package list as build_csound_static_linux.sh (needed even when
+      # Csound comes from the cache: JUCE/Projucer/apeCsound need them) + xvfb + zip.
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential git pkg-config bison flex zip xvfb \
+            libasound2-dev libjack-jackd2-dev \
+            libfreetype-dev libfontconfig1-dev \
+            libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev \
+            libxrandr-dev libxrender-dev \
+            libglu1-mesa-dev mesa-common-dev \
+            libcurl4-openssl-dev
+
+      # ------------------------------------------------------------------
+      # 1. Csound static (restore + save separati: la cache viene salvata
+      #    subito, anche se un passo successivo fallisce)
+      # ------------------------------------------------------------------
+      - name: Restore Csound static build
+        id: csound-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: build/csound-install/linux
+          key: csound-linux-ubuntu2204-${{ hashFiles('scripts/build_csound_static_linux.sh') }}
+
+      - name: Build Csound (static)
+        if: steps.csound-cache.outputs.cache-hit != 'true'
+        run: ./scripts/build_csound_static_linux.sh --no-apt
+
+      - name: Save Csound static build
+        if: steps.csound-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build/csound-install/linux
+          key: ${{ steps.csound-cache.outputs.cache-primary-key }}
+
+      # ------------------------------------------------------------------
+      # 2. Projucer -> Builds/LinuxMakefile
+      # ------------------------------------------------------------------
+      - name: Build Projucer
+        run: make -C JUCE/extras/Projucer/Builds/LinuxMakefile CONFIG=Release -j"$(nproc)"
+
+      - name: Generate Makefile
+        run: |
+          PROJUCER="$PWD/JUCE/extras/Projucer/Builds/LinuxMakefile/build/Projucer"
+          MODULES="$PWD/JUCE/modules"
+          test -x "$PROJUCER" || { echo "Projucer not found"; exit 1; }
+
+          # The .jucer uses the global JUCE path (useGlobalPath="1").
+          # "--set-global-search-path" only edits an EXISTING settings file,
+          # which a fresh runner does not have: write it directly.
+          mkdir -p ~/.config/Projucer
+          cat > ~/.config/Projucer/Projucer.settings <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <PROPERTIES>
+            <VALUE name="PROJECT_DEFAULT_SETTINGS">
+              <PROJECT_DEFAULT_SETTINGS defaultJuceModulePath="$MODULES"/>
+            </VALUE>
+          </PROPERTIES>
+          EOF
+          cat ~/.config/Projucer/Projucer.settings
+
+          # xvfb-run: no display on the runner.
+          xvfb-run -a "$PROJUCER" --resave apeCsound.jucer
+          test -f Builds/LinuxMakefile/Makefile || { echo "Projucer did not create Builds/LinuxMakefile/Makefile"; exit 1; }
+
+      # ------------------------------------------------------------------
+      # 3. VST3 + Standalone
+      # ------------------------------------------------------------------
+      - name: Build apeCsound (Release)
+        run: make -C Builds/LinuxMakefile CONFIG=Release -j"$(nproc)"
+
+      # ------------------------------------------------------------------
+      # 4. zip (own zip: keeps the executable permissions, which GitHub
+      #    artifacts would lose)
+      # ------------------------------------------------------------------
+      - name: Package zip
+        run: |
+          OUT=Builds/LinuxMakefile/build
+          ls -la "$OUT"
+          test -d "$OUT/apeCsound.vst3" || { echo "apeCsound.vst3 not found in $OUT"; exit 1; }
+          test -f "$OUT/apeCsound"      || { echo "apeCsound (Standalone) not found in $OUT"; exit 1; }
+
+          PKG=apeCsound-linux-x64
+          rm -rf dist && mkdir -p "dist/$PKG"
+          cp -R "$OUT/apeCsound.vst3" "dist/$PKG/"
+          cp    "$OUT/apeCsound"      "dist/$PKG/"
+          strip "dist/$PKG/apeCsound" "dist/$PKG/apeCsound.vst3/Contents/x86_64-linux/"*.so || true
+          cp README.md "dist/$PKG/"
+          cat > "dist/$PKG/INSTALL.txt" <<'EOF'
+          apeCsound for Linux (x86_64)
+
+          VST3:       copy apeCsound.vst3 to ~/.vst3/  (or /usr/lib/vst3/ for all users)
+          Standalone: run ./apeCsound  (chmod +x apeCsound if needed)
+          EOF
+
+          ZIP="apeCsound-${GITHUB_REF_NAME//\//-}-linux-x64.zip"
+          [[ "$GITHUB_REF" == refs/tags/v* ]] || ZIP="$PKG.zip"
+          (cd dist && zip -r -y "../$ZIP" "$PKG")
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+          unzip -l "$ZIP"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apeCsound-linux-x64
+          path: ${{ env.ZIP }}
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP }}
