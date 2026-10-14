@@ -183,7 +183,10 @@ cmake -S "$CSOUND_SRC" -B "$WORK/csound/build" "${COMMON_CMAKE[@]}" \
   -DUSE_AUDIOUNIT=OFF \
   -DBUILD_OSC_OPCODES=OFF \
   -DBUILD_CSBEATS=OFF \
-  -DBUILD_DSSI_OPCODES=OFF
+  -DBUILD_DSSI_OPCODES=OFF \
+  -DINSTALL_PYTHON_INTERFACE=OFF
+# INSTALL_PYTHON_INTERFACE=OFF: otherwise "cmake --install" copies ctcsound.py
+# into the system Python site-packages (/usr/local/...) -> Permission denied.
 cmake --build "$WORK/csound/build" -j"$JOBS"
 cmake --install "$WORK/csound/build"
 
