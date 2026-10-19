@@ -51,6 +51,8 @@
             file="Source/CsoundAudioSettings.cpp"/>
       <FILE id="cAudB" name="CsoundAudioSettings.h" compile="0" resource="0"
             file="Source/CsoundAudioSettings.h"/>
+      <FILE id="cShcH" name="CsoundShortcuts.h" compile="0" resource="0"
+            file="Source/CsoundShortcuts.h"/>
       <FILE id="cGrfA" name="CsoundGraphs.cpp" compile="1" resource="0"
             file="Source/CsoundGraphs.cpp"/>
       <FILE id="cGrfB" name="CsoundGraphs.h" compile="0" resource="0"

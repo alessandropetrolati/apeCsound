@@ -3605,6 +3605,26 @@ void CsoundAudioProcessor::applyParamsStructureTree (const juce::ValueTree& stat
             }
         }
 
+        // Nomi, range e testi dei parametri sono cambiati tutti insieme: la DAW
+        // va avvisata, come fanno i singoli set*ParamSlot. Mancava: con Load
+        // o drag & drop di un .csd la DAW continuava a mostrare i nomi della
+        // sessione precedente (funzionava solo all'apertura del plugin,
+        // quando l'host legge i parametri dopo setStateInformation).
+        // Sul thread dei messaggi: setStateInformation puo' arrivare da un
+        // altro thread.
+        if (juce::MessageManager::existsAndIsCurrentThread())
+        {
+            updateHostDisplay (juce::AudioProcessor::ChangeDetails().withParameterInfoChanged (true));
+        }
+        else
+        {
+            juce::MessageManager::callAsync ([this, alive = aliveFlag]
+            {
+                if (alive->load())
+                    updateHostDisplay (juce::AudioProcessor::ChangeDetails().withParameterInfoChanged (true));
+            });
+        }
+
         // NIENTE ricompilazione qui (a differenza della versione precedente):
         // questa funzione serve sia a setStateInformation (che DEVE
         // ricompilare, vedi scheduleRecompileAfterRestore chiamata li') sia

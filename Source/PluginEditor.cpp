@@ -1,6 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "NativeAlertMac.h"
+#include "CsoundShortcuts.h"
 
 // Standalone (macOS e iOS): accesso a StandalonePluginHolder (dialogo
 // Audio/MIDI Settings, AudioDeviceSelectorComponent di JUCE) - vedi
@@ -554,17 +555,20 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
         {
             CsoundActionSheetItem item;
             item.id = 1; item.text = "Save"; item.icon = CsoundActionSheetIcon::save;
+            item.shortcut = CsoundShortcuts::label (CsoundShortcuts::save());
             items.push_back (item);
         }
         {
             CsoundActionSheetItem item;
             item.id = 2; item.text = "Save as..."; item.icon = CsoundActionSheetIcon::save;
+            item.shortcut = CsoundShortcuts::label (CsoundShortcuts::saveAs());
             items.push_back (item);
         }
         items.push_back (CsoundActionSheetItem::separator());
         {
             CsoundActionSheetItem item;
             item.id = 3; item.text = "Load..."; item.icon = CsoundActionSheetIcon::load;
+            item.shortcut = CsoundShortcuts::label (CsoundShortcuts::load());
             items.push_back (item);
         }
         {
@@ -607,12 +611,13 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
         items.push_back (CsoundActionSheetItem::separator());
         {
             CsoundActionSheetItem item;
-            item.id = 4; item.text = "Init Session Template"; item.icon = CsoundActionSheetIcon::newDocument;
+            item.id = 5; item.text = "Init Session Clear"; item.icon = CsoundActionSheetIcon::newDocument;
+            item.shortcut = CsoundShortcuts::label (CsoundShortcuts::newSession());
             items.push_back (item);
         }
         {
             CsoundActionSheetItem item;
-            item.id = 5; item.text = "Init Session Clear"; item.icon = CsoundActionSheetIcon::newDocument;
+            item.id = 4; item.text = "Init Session Template"; item.icon = CsoundActionSheetIcon::newDocument;
             items.push_back (item);
         }
 
@@ -805,9 +810,36 @@ bool CsoundAudioProcessorEditor::keyPressed (const juce::KeyPress& key)
         return true;
     }
 
-    // NIENTE Cmd+S qui (rimosso, richiesta esplicita): collide con il Save
-    // del progetto della DAW. Il salvataggio del .csd e' SOLO la voce "Save"
-    // del menu hamburger.
+    // Scorciatoie (vedi CsoundShortcuts.h). Risalgono fin qui dal campo
+    // focalizzato (editor di codice, campi dei parametri): CodeView non
+    // consuma i tasti con Cmd/Ctrl.
+    namespace SC = CsoundShortcuts;
+
+    if (key == SC::apply())          { performApply(); return true; }
+    if (key == SC::find())           { openFindBar(); return true; }
+    if (key == SC::showParameters()) { toggleParameterPanel(); return true; }
+    if (key == SC::showConsole())    { toggleConsole(); return true; }
+    if (key == SC::showGraphs())     { toggleGraphs(); return true; }
+
+    if (key == SC::largerText() || key == SC::cmd ('+') || key == SC::cmd ('=', true))
+    {
+        if (parameterPanel.onFontSizeChangeRequested) parameterPanel.onFontSizeChangeRequested (+1);
+        return true;
+    }
+
+    if (key == SC::smallerText())
+    {
+        if (parameterPanel.onFontSizeChangeRequested) parameterPanel.onFontSizeChangeRequested (-1);
+        return true;
+    }
+
+    // File: come tutte le altre, in standalone E nei plugin. Arrivano qui
+    // solo se la finestra di apeCsound ha il focus e l'host le passa al
+    // plugin; altrimenti restano alla DAW.
+    if (key == SC::save())       { performSaveLinked(); return true; }
+    if (key == SC::saveAs())     { promptSaveSession(); return true; }
+    if (key == SC::load())       { promptLoadSession(); return true; }
+    if (key == SC::newSession()) { promptInitializeSession (false); return true; } // Init Session Clear
 
     // Esc toglie il focus da tastiera da QUALUNQUE componente lo abbia
     // (campo nome di un parametro, editor di codice...) - richiesto
@@ -3063,11 +3095,20 @@ A panel docked at the bottom, next to the console (or in its place when the cons
 - **Csound Folders** (desktop) - the extra SSDIR/SADIR/INCDIR folders and the SFDIR output folder, see "Csound folders" (user preferences).
 
 # Shortcuts
+Cmd on macOS, Ctrl on Windows and Linux. Shown on the right of the menu items.
+- **Cmd+Return** - Apply
+- **Cmd+F** - Find / Replace
+- **Cmd+1 / Cmd+2 / Cmd+3** - show/hide Parameters, Console, Graphs
+- **Cmd+= / Cmd+-** - larger / smaller editor text
 - **Cmd+Z / Cmd+Shift+Z (Cmd+Y)** - undo / redo
+- **Cmd+/** - comment / uncomment the selected lines (`;`)
+- **Ctrl+I** - re-indent the selected lines
+- **Cmd+[ / Cmd+]** - shift the selection left / right
+- **Cmd+S** Save, **Cmd+Shift+S** Save as, **Cmd+O** Load, **Cmd+N** Init Session Clear
 - **Esc** - autocompletion list, close the Find bar or an overlay
 - **Tab / Enter** - accept a suggestion
 - **Right-click or long press** - editor menu
-- No Cmd+S on purpose: it would collide with the DAW. Use the file capsule or the menu.
+- In a DAW the plug-in only receives keys the host passes on (in REAPER: "Send all keyboard input to plug-in" in the FX window menu).
 )GUIDE";
 }
 

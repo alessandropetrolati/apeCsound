@@ -1,4 +1,5 @@
 #include "CsoundParameterEditor.h"
+#include "CsoundShortcuts.h"
 #include "NativeAlertMac.h"
 
 namespace
@@ -2684,7 +2685,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
     // sono stati rimossi: questa e' ora l'UNICA via per queste due azioni.
     {
         CsoundActionSheetItem item;
-        item.id = 101; item.text = "Show Parameters";
+        item.id = 101; item.text = "Show Parameters"; item.shortcut = CsoundShortcuts::label (CsoundShortcuts::showParameters());
         item.enabled = onToggleParametersRequested != nullptr;
         item.tickedFn = [this] { return isParametersPanelVisible && isParametersPanelVisible(); };
         item.keepOpen = true; // il menu resta aperto (azioni multiple)
@@ -2693,7 +2694,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
     }
     {
         CsoundActionSheetItem item;
-        item.id = 102; item.text = "Show Console";
+        item.id = 102; item.text = "Show Console"; item.shortcut = CsoundShortcuts::label (CsoundShortcuts::showConsole());
         item.enabled = onToggleConsoleRequested != nullptr;
         item.tickedFn = [this] { return isConsoleVisible && isConsoleVisible(); };
         item.keepOpen = true;
@@ -2702,7 +2703,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
     }
     {
         CsoundActionSheetItem item;
-        item.id = 150; item.text = "Show Graphs";
+        item.id = 150; item.text = "Show Graphs"; item.shortcut = CsoundShortcuts::label (CsoundShortcuts::showGraphs());
         item.enabled = onToggleGraphsRequested != nullptr;
         item.tickedFn = [this] { return isGraphsVisible && isGraphsVisible(); };
         item.keepOpen = true;
@@ -2772,7 +2773,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
     items.push_back (CsoundActionSheetItem::separator());
     {
         CsoundActionSheetItem item;
-        item.id = 103; item.text = "Undo";
+        item.id = 103; item.text = "Undo"; item.shortcut = CsoundShortcuts::label (CsoundShortcuts::undo());
         item.enabledFn = [this] { return undoManager.canUndo(); };
         item.keepOpen = true;
         item.icon = CsoundActionSheetIcon::undo;
@@ -2780,7 +2781,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
     }
     {
         CsoundActionSheetItem item;
-        item.id = 104; item.text = "Redo";
+        item.id = 104; item.text = "Redo"; item.shortcut = CsoundShortcuts::label (CsoundShortcuts::redo());
         item.enabledFn = [this] { return undoManager.canRedo(); };
         item.keepOpen = true;
         item.icon = CsoundActionSheetIcon::redo;
@@ -2910,7 +2911,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
         config.subItems.push_back (CsoundActionSheetItem::separator());
         {
             CsoundActionSheetItem item;
-            item.id = 118; item.text = "Larger Text";
+            item.id = 118; item.text = "Larger Text"; item.shortcut = CsoundShortcuts::label (CsoundShortcuts::largerText());
             item.enabled = onFontSizeChangeRequested != nullptr;
             item.keepOpen = true;
             item.icon = CsoundActionSheetIcon::textLarger;
@@ -2918,7 +2919,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
         }
         {
             CsoundActionSheetItem item;
-            item.id = 119; item.text = "Smaller Text";
+            item.id = 119; item.text = "Smaller Text"; item.shortcut = CsoundShortcuts::label (CsoundShortcuts::smallerText());
             item.enabled = onFontSizeChangeRequested != nullptr;
             item.keepOpen = true;
             item.icon = CsoundActionSheetIcon::textSmaller;

@@ -1,5 +1,6 @@
 #include "CsoundCodeEditor.h"
 #include "CsoundActionSheet.h"
+#include "CsoundShortcuts.h"
 #include "IOSKeyboard.h"
 #include "CsoundEditCallout.h" // [EDIT-CALLOUT]
 #include <cmath>
@@ -167,6 +168,14 @@ void CsoundCodeEditor::handleReturnKey()
 
 bool CsoundCodeEditor::keyPressed (const juce::KeyPress& key)
 {
+    // Scorciatoie come Xcode: Cmd+/ commenta/decommenta le righe selezionate,
+    // Ctrl+I re-indenta (Cmd+] / Cmd+[ indent/unindent sono in CodeView).
+    if (! isReadOnly())
+    {
+        if (CsoundShortcuts::isToggleComment (key)) { toggleCommentOnSelectedLines(); return true; }
+        if (key == CsoundShortcuts::reindent())     { indentSelectedLines(); return true; }
+    }
+
     // Cmd+Z / Cmd+Shift+Z: intercettati QUI, PRIMA di passare alla classe
     // base, perche' CodeEditorComponent::keyPressed (tramite
     // TextEditorKeyMapper::invokeKeyFunction) li consumerebbe da solo per
@@ -297,8 +306,23 @@ void CsoundCodeEditor::showContextMenu (juce::Point<int>)
 
     auto add = [&items] (int id, const juce::String& text, CsoundActionSheetIcon icon, bool enabled = true)
     {
+        namespace SC = CsoundShortcuts;
         CsoundActionSheetItem item;
         item.id = id; item.text = text; item.icon = icon; item.enabled = enabled;
+
+        switch (id)
+        {
+            case ctxCut:       item.shortcut = SC::label (SC::cmd ('X')); break;
+            case ctxCopy:      item.shortcut = SC::label (SC::cmd ('C')); break;
+            case ctxPaste:     item.shortcut = SC::label (SC::cmd ('V')); break;
+            case ctxSelectAll: item.shortcut = SC::label (SC::cmd ('A')); break;
+            case ctxUndo:      item.shortcut = SC::label (SC::undo()); break;
+            case ctxRedo:      item.shortcut = SC::label (SC::redo()); break;
+            case ctxIndent:    item.shortcut = SC::label (SC::reindent()); break;
+            case ctxComment:   item.shortcut = SC::label (SC::toggleComment()); break;
+            default: break;
+        }
+
         items.push_back (item);
     };
 

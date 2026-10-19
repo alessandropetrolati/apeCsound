@@ -69,6 +69,10 @@ struct CsoundActionSheetItem
     // il menu resta aperto.
     std::function<juce::String()> textFn;
 
+    // Scorciatoia da tastiera mostrata a destra della riga (solo testo,
+    // grigio): la scorciatoia vera e' gestita altrove (keyPressed).
+    juce::String shortcut;
+
     juce::String textNow() const          { return textFn != nullptr ? textFn() : text; }
     juce::String sectionHeaderNow() const { return textFn != nullptr ? textFn() : sectionHeader; }
 

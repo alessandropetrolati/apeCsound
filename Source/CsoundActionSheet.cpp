@@ -1009,6 +1009,15 @@ void CsoundActionSheet::RowsContent::paint (juce::Graphics& g)
             g.fillPath (path);
         }
 
+        if (item.shortcut.isNotEmpty())
+        {
+            g.setColour (kTextMuted);
+            g.setFont (juce::Font (juce::FontOptions (13.0f)));
+            const int w = juce::jmin (content.getWidth() / 2, 90);
+            g.drawFittedText (item.shortcut, content.removeFromRight (w).withTrimmedRight (6),
+                              juce::Justification::centredRight, 1);
+        }
+
         g.setColour (item.isEnabledNow() ? kText : kTextDisabled);
         g.setFont (juce::Font (juce::FontOptions (16.0f)));
         g.drawFittedText (item.textNow(), content, juce::Justification::centredLeft, 1);
