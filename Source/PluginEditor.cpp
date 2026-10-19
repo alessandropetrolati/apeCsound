@@ -325,7 +325,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
 
     clearConsoleButton.setName ("clear");
     clearConsoleButton.getProperties().set ("circular", true);
-    clearConsoleButton.onClick = [this] { logConsole.clear(); };
+    clearConsoleButton.onClick = [this] { logConsole.clear(); consoleLineCount = 0; };
     addAndMakeVisible (clearConsoleButton);
 
     // Sidebar + divisore: aperti di default (showingParameterPanel = true),
@@ -370,6 +370,17 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     consoleDivider.onDrag = [this] (int newHeight)
     {
         consoleHeight = newHeight;
+        resized();
+    };
+
+    // Pannello Graphs (nascosto di default) e divisore verticale tra
+    // consolle e grafici - vedi showingGraphs in PluginEditor.h.
+    addChildComponent (graphsPanel);
+    addChildComponent (graphsDivider);
+    graphsDivider.getCurrentWidth = [this] { return graphsWidth; };
+    graphsDivider.onDrag = [this] (int newWidth)
+    {
+        graphsWidth = newWidth;
         resized();
     };
 
@@ -653,6 +664,8 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.onToggleConsoleRequested    = [this] { toggleConsole(); };
     parameterPanel.isParametersPanelVisible    = [this] { return showingParameterPanel; };
     parameterPanel.isConsoleVisible            = [this] { return showingConsole; };
+    parameterPanel.onToggleGraphsRequested     = [this] { toggleGraphs(); };
+    parameterPanel.isGraphsVisible             = [this] { return showingGraphs; };
 
     // Apre la sidebar Parametri se e' chiusa quando si aggiunge un nuovo
     // parametro (vedi il commento su onEnsurePanelVisible in
@@ -1060,13 +1073,15 @@ void CsoundAudioProcessorEditor::resized()
         sidebarDivider.toFront (false);
     }
 
-    // Consolle nascosta (showingConsole = false, vedi toggleConsole()):
-    // editor/opcodeHelpBar recuperano TUTTO lo spazio altrimenti occupato da
-    // consolle + divisore, niente di quello spazio resta riservato/vuoto.
-    if (showingConsole)
+    // Fascia in basso: consolle e/o pannello Graphs (a destra della
+    // consolle). Nascosti entrambi: editor/opcodeHelpBar recuperano TUTTO lo
+    // spazio, niente resta riservato/vuoto.
+    clearConsoleButton.setVisible (showingConsole);
+    graphsDivider.setVisible (showingConsole && showingGraphs);
+
+    if (showingConsole || showingGraphs)
     {
-        // Altezza della consolle ridimensionabile (richiesto esplicitamente),
-        // stesso schema di clamp della sidebar sopra: mai sotto
+        // Altezza ridimensionabile (consoleDivider), mai sotto
         // consoleMinHeight, mai cosi' alta da lasciare a editor/opcodeHelpBar
         // meno di consoleEditorMinHeight.
         const int maxConsoleHeight = juce::jmax (consoleMinHeight,
@@ -1076,25 +1091,38 @@ void CsoundAudioProcessorEditor::resized()
         auto bottomArea = area.removeFromBottom (consoleHeight);
         auto consoleDividerArea = area.removeFromBottom (consoleDividerHeight);
 
-        logConsole.setBounds (bottomArea);
         consoleDivider.setBounds (consoleDividerArea.expanded (0, dividerGrabMargin)); // presa alta, striscia stretta
         consoleDivider.toFront (false);
 
-        // clearConsoleButton galleggia in overlap sopra l'angolo in alto a
-        // destra di logConsole (richiesto esplicitamente, al posto del
-        // posto fisso che aveva nella toolbar): centrato esattamente sul
-        // bordo superiore della consolle (meta' dentro, meta' fuori), come
-        // un badge - toFront() nel costruttore lo tiene sempre sopra al
-        // testo della consolle sotto.
-        const auto consoleTopRight = bottomArea.getTopRight();
-        clearConsoleButton.setBounds (consoleTopRight.x - clearConsoleButtonMargin*2 - clearConsoleButtonDiameter,
-                                      consoleTopRight.y + clearConsoleButtonMargin*2,
-                                      clearConsoleButtonDiameter, clearConsoleButtonDiameter);
-        clearConsoleButton.setVisible (true);
-    }
-    else
-    {
-        clearConsoleButton.setVisible (false);
+        if (showingGraphs)
+        {
+            if (showingConsole)
+            {
+                const int maxGraphsWidth = juce::jmax (graphsMinWidth,
+                                                        bottomArea.getWidth() - graphsConsoleMinWidth - sidebarDividerWidth);
+                graphsWidth = juce::jlimit (graphsMinWidth, maxGraphsWidth, graphsWidth);
+
+                graphsPanel.setBounds (bottomArea.removeFromRight (graphsWidth));
+                graphsDivider.setBounds (bottomArea.removeFromRight (sidebarDividerWidth).expanded (dividerGrabMargin, 0));
+                graphsDivider.toFront (false);
+            }
+            else
+            {
+                graphsPanel.setBounds (bottomArea);
+            }
+        }
+
+        if (showingConsole)
+        {
+            logConsole.setBounds (bottomArea);
+
+            // clearConsoleButton galleggia in overlap sopra l'angolo in alto
+            // a destra di logConsole (richiesto esplicitamente).
+            const auto consoleTopRight = bottomArea.getTopRight();
+            clearConsoleButton.setBounds (consoleTopRight.x - clearConsoleButtonMargin*2 - clearConsoleButtonDiameter,
+                                          consoleTopRight.y + clearConsoleButtonMargin*2,
+                                          clearConsoleButtonDiameter, clearConsoleButtonDiameter);
+        }
     }
 
     // Tastiera a schermo (iOS, vedi keyboardInset): si contrae SOLO il
@@ -1162,7 +1190,20 @@ void CsoundAudioProcessorEditor::toggleConsole()
     // Stesso schema di toggleParameterPanel() sopra: editor/opcodeHelpBar si
     // allargano per recuperare lo spazio (vedi resized()), nessun overlay.
     logConsole.setVisible (showingConsole);
-    consoleDivider.setVisible (showingConsole);
+    consoleDivider.setVisible (showingConsole || showingGraphs);
+
+    resized();
+    repaint();
+}
+
+void CsoundAudioProcessorEditor::toggleGraphs()
+{
+    showingGraphs = ! showingGraphs;
+
+    // visible/hidden: il pannello avvia/ferma da se' la registrazione di
+    // display/dispfft (CsoundGraphsPanel::visibilityChanged).
+    graphsPanel.setVisible (showingGraphs);
+    consoleDivider.setVisible (showingConsole || showingGraphs);
 
     resized();
     repaint();
@@ -2477,22 +2518,37 @@ void CsoundAudioProcessorEditor::csoundEngineStopped()
 
 void CsoundAudioProcessorEditor::appendToLog (const juce::String& text)
 {
+    // Consolle svuotata (Clear, Apply): si riparte da zero.
+    if (logConsole.isEmpty())
+        consoleLineCount = 0;
+
     logConsole.moveCaretToEnd();
     logConsole.insertTextAtCaret (text + "\n");
 
-    // Tiene la console a un numero limitato di righe: in sessioni lunghe
-    // con molti messaggi un TextEditor che cresce senza limite diventa via
-    // via piu' lento da ridisegnare/scrollare (indipendentemente dal buffer
-    // circolare lato processore, che limita solo quanto viene ricaricato
-    // alla (ri)apertura dell'editor, non quanto si accumula mentre e' aperto).
-    constexpr int maxLines = 1000;
-    auto lines = juce::StringArray::fromLines (logConsole.getText());
+    for (auto p = text.getCharPointer(); ! p.isEmpty(); ++p)
+        if (*p == '\n')
+            ++consoleLineCount;
+    ++consoleLineCount;
 
-    if (lines.size() > maxLines)
+    // Numero di righe limitato (un TextEditor che cresce senza limite
+    // diventa sempre piu' lento). Prima il testo intero veniva riletto e
+    // spezzato in righe a OGNI aggiunta e, oltre il limite, riscritto a
+    // ogni aggiunta: con molti print/printk il thread dei messaggi restava
+    // occupato di continuo e REAPER si bloccava. Ora le righe si contano
+    // man mano e la potatura (una sola riscrittura) avviene solo quando si
+    // supera il limite di kConsoleTrimSlack righe.
+    if (consoleLineCount > kConsoleMaxLines + kConsoleTrimSlack)
     {
-        lines.removeRange (0, lines.size() - maxLines);
+        auto lines = juce::StringArray::fromLines (logConsole.getText());
+        while (lines.size() > 0 && lines[lines.size() - 1].isEmpty())
+            lines.remove (lines.size() - 1);
+
+        if (lines.size() > kConsoleMaxLines)
+            lines.removeRange (0, lines.size() - kConsoleMaxLines);
+
         logConsole.setText (lines.joinIntoString ("\n") + "\n", false);
         logConsole.moveCaretToEnd();
+        consoleLineCount = lines.size();
     }
 }
 
@@ -2959,7 +3015,7 @@ The `.csd` file on disk is the truth. A DAW project stores the path of the linke
 - **Undo / Redo** - Cmd+Z, Cmd+Shift+Z (or Cmd+Y) and the menu share one linear history between the editor and the Parameters panel; it survives closing and reopening the plugin window.
 
 # Parameters panel
-The 144 fixed parameters (64 Float, 32 Int, 32 Bool, 16 Choice) are mapped here to Csound channels read with `chnget`: **Float** (min/max/default/skew/step), **Int** (min/max/default), **Bool** (default), **Choice** (up to 16 options, sends the index). Use **+** on the panel title bar to add one; each row has edit, copy-`chnget` and remove buttons. Unassigned slots are hidden from the panel but still exist for the DAW. Values are pushed to Csound every block with `csoundSetControlChannel`.
+The 144 fixed parameters (64 Float, 32 Int, 32 Bool, 16 Choice) are mapped here to Csound channels read with `chnget`: **Float** (min/max/default/skew/step), **Int** (min/max/default), **Bool** (default), **Choice** (up to 16 options, sends the index). Use **+** on the panel title bar to add one; each row has edit, copy-`chnget` and remove buttons. Unassigned slots are hidden from the panel but still exist for the DAW. Values are sent to Csound when they change. It also works the other way: `chnset` on a mapped channel moves the parameter (slider, DAW automation lane), e.g. `chnset kValue, "Cutoff"`. Choice channels take 1..N, as in Cabbage.
 - **Drag a parameter into the code** - drag the handle on the left of a row and drop it on a line of the editor: a `chnget` line is inserted there, already indented, with the variable named after the channel (`kCutoff chnget "Cutoff"`) and, above it, a comment with the parameter configuration (`; SLIDER FLOAT: Min=20; Max=20000; Skew=0.3; Step=1`). The **copy** button puts the same text in the clipboard, for pasting by hand.
 - Files made with **Cabbage** (`<Cabbage>` section) or **CsoundQt** (`<bsbPanel>` widgets: sliders, knobs, spin boxes, scroll numbers, XY controllers, checkboxes, dropdowns, value buttons) are imported automatically on load: widgets become parameters. CsoundQt `exp` sliders get a matching skew, integer knobs step 1, checkbox `pressedValue` is respected.
 
@@ -2997,6 +3053,9 @@ When **Apply** fails, the line reported by Csound is marked in the editor: a **r
 
 # Console
 Csound messages, compile errors and plugin notes (latency, channels, imports). Identical messages repeated more than three times per second are summarised to keep the UI responsive. **Clear** empties it; it is also cleared on every Apply.
+
+# Graphs (main menu > Show Graphs)
+A panel docked at the bottom, next to the console (or in its place when the console is hidden), like Parameters and Console: drag the dividers to resize it. It draws Csound's function tables and signal displays, without ASCII output in the console. Every ftable appears when it is created (f statements, `ftgen`, GEN routines; long tables are drawn as a min/max band). `display` and `dispfft` are drawn while the panel is visible, e.g. `display aSig, 0.1` or `dispfft aSig, 0.1, 1024`. Displays are always enabled, even with `-d` in `<CsOptions>`. The panel is cleared on every Apply.
 
 # Config (main menu)
 - **Modern Syntax in Help** - functional syntax in the opcode help bar (user preference).

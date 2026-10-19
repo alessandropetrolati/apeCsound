@@ -1,6 +1,9 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "csound_graph_display.h" // callback grafici (vedi compileAndStart)
+#include "cwindow.h"
 #include <cstdlib>
+#include <cstring>
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -25,6 +28,35 @@ namespace
         dir.createDirectory();
         return dir.getFullPathName();
     }
+
+    // Callback grafici di Csound -> pannello "Graphs" (CsoundGraphStore).
+    // windid del WINDAT = indice dello slot + 1 (0 = nessuno slot libero).
+    CsoundGraphStore* graphStoreOf (CSOUND* cs)
+    {
+        auto* p = static_cast<CsoundAudioProcessor*> (CsoundAPI::csoundGetHostData (cs));
+        return p != nullptr ? &p->getGraphStore() : nullptr;
+    }
+
+    void makeGraphCallback (CSOUND* cs, WINDAT* w, const char*)
+    {
+        if (auto* store = graphStoreOf (cs))
+            w->windid = (uintptr_t) store->open (w->caption);
+    }
+
+    void drawGraphCallback (CSOUND* cs, WINDAT* w)
+    {
+        if (w == nullptr || w->windid == 0)
+            return;
+        if (auto* store = graphStoreOf (cs))
+            store->draw ((int) w->windid, w->fdata, (int) w->npts,
+                         (double) (w->oabsmax > 0 ? w->oabsmax : w->absmax), (int) w->polarity);
+    }
+
+    void killGraphCallback (CSOUND*, WINDAT* w)
+    {
+        if (w != nullptr)
+            w->windid = 0;
+    }
 }
 
 CsoundAudioProcessor::CsoundAudioProcessor()
@@ -35,6 +67,12 @@ CsoundAudioProcessor::CsoundAudioProcessor()
 {
     // Svuotamento periodico della coda dei messaggi Csound, filtrata (vedi
     // il commento sul filtro della consolle in PluginProcessor.h).
+    for (auto& v : syncFromCsound)
+        v.store (-1.0f);
+
+    for (auto& b : pendingBuffers)
+        b.reset (new PendingMessage[(size_t) kMaxPendingMessages]);
+
     startTimer (kMessageFlushIntervalMs);
 
     for (int i = 0; i < kMaxBusChannels; ++i)
@@ -504,8 +542,86 @@ float CsoundAudioProcessor::normalizeChannelParam (const ChannelParamSlot& slot,
     return (float) shaped;
 }
 
+// Sincronizzazione parametri <-> canali Csound, una volta per blocco (thread
+// audio). Host -> Csound: il valore del parametro viene scritto nel canale
+// solo quando cambia. Csound -> host (chnset): se il canale non contiene piu'
+// l'ultimo valore scritto da qui, l'ha cambiato il codice Csound; il valore
+// NON viene sovrascritto e viene passato al thread dei messaggi
+// (applyChannelValuesFromCsound), che aggiorna il parametro: slider della
+// UI, host e automazione lo vedono. Finche' il parametro non e' aggiornato
+// il canale resta com'e' (syncHold).
+// Prima di questa modifica il valore del parametro veniva riscritto nel
+// canale a ogni blocco: un chnset su un canale mappato veniva cancellato
+// subito e la UI non si muoveva mai.
+template <typename ToNormalized>
+void CsoundAudioProcessor::syncChannel (CSOUND* cs, int index, const juce::String& name,
+                                        cs_float hostValue, ToNormalized toNormalized)
+{
+    int err = 0;
+    const cs_float current = CsoundAPI::csoundGetControlChannel (cs, name.toRawUTF8(), &err);
+    const bool readable = (err == CSOUND_SUCCESS);
+
+    // Csound ha scritto il canale (chnset):
+    //  - dopo l'ultimo valore scritto da qui, oppure
+    //  - prima del primo blocco (codice globale / instr 0 in csoundStart:
+    //    "chnset 0.5, \"Cutoff\"" fuori dagli strumenti). Un canale appena
+    //    creato vale 0: un valore diverso da 0 e da quello dell'host e' una
+    //    scrittura di Csound.
+    const bool csoundWrote = readable
+                          && (syncHasSent[(size_t) index] ? current != syncLastSent[(size_t) index]
+                                                          : (current != 0 && current != hostValue));
+    if (csoundWrote)
+    {
+        syncLastSent[(size_t) index] = current;
+        syncHasSent[(size_t) index] = true;
+        syncHold[(size_t) index] = true;
+        syncFromCsound[(size_t) index].store (juce::jlimit (0.0f, 1.0f, toNormalized (current)));
+        return;
+    }
+
+    if (syncHold[(size_t) index])
+    {
+        if (syncFromCsound[(size_t) index].load() >= 0.0f)
+            return; // il thread dei messaggi non ha ancora aggiornato il parametro
+
+        syncHold[(size_t) index] = false;
+    }
+
+    if (! syncHasSent[(size_t) index])
+    {
+        CsoundAPI::csoundSetControlChannel (cs, name.toRawUTF8(), hostValue);
+        syncLastSent[(size_t) index] = hostValue;
+        syncHasSent[(size_t) index] = true;
+        return;
+    }
+
+    // Host cambiato? Confronto sui valori normalizzati: dopo un chnset il
+    // parametro segue il valore di Csound, ma denormalizzarlo di nuovo puo'
+    // dare un numero di pochissimo diverso (precisione float, step, skew).
+    // Non e' un cambiamento dell'host e il canale non va riscritto,
+    // altrimenti un chnset continuo e l'host si alternerebbero a ogni blocco.
+    if (hostValue != syncLastSent[(size_t) index]
+        && std::abs (toNormalized (hostValue) - toNormalized (syncLastSent[(size_t) index])) > 1.0e-5f)
+    {
+        CsoundAPI::csoundSetControlChannel (cs, name.toRawUTF8(), hostValue);
+        syncLastSent[(size_t) index] = hostValue;
+    }
+}
+
 void CsoundAudioProcessor::pushChannelParametersToCsound (CSOUND* cs)
 {
+    // Nuovo motore: tutti i canali vanno riscritti dall'host.
+    if (cs != syncEngine)
+    {
+        syncEngine = cs;
+        syncHasSent.fill (false);
+        syncHold.fill (false);
+        for (auto& v : syncFromCsound)
+            v.store (-1.0f);
+    }
+
+    int base = 0;
+
     {
         const juce::ScopedLock sl (channelParamSlotsLock);
 
@@ -517,18 +633,16 @@ void CsoundAudioProcessor::pushChannelParametersToCsound (CSOUND* cs)
                 continue;
 
             if (auto* rawValue = apvts.getRawParameterValue (getChannelParamID (i)))
-            {
-                const double value = denormalizeChannelParam (slot, rawValue->load());
-                CsoundAPI::csoundSetControlChannel (cs, slot.channelName.toRawUTF8(), (cs_float) value);
-            }
+                syncChannel (cs, base + i, slot.channelName,
+                             (cs_float) denormalizeChannelParam (slot, rawValue->load()),
+                             [&slot] (cs_float v) { return normalizeChannelParam (slot, (double) v); });
         }
     }
+    base += numChannelParams;
 
     // Interi: apvts.getRawParameterValue() per un AudioParameterInt torna il
-    // valore NATIVO gia' denormalizzato nel range nativo 0..intHostRangeMax
-    // (non 0..1) - va prima rinormalizzato a 0..1 (nativeMin e' sempre 0, la
-    // divisione basta) e poi smontato nel range reale dello slot, con la
-    // stessa formula di IntHostParameter::getText.
+    // valore NATIVO 0..intHostRangeMax (non 0..1): va rinormalizzato a 0..1
+    // e poi smontato nel range reale dello slot (come IntHostParameter::getText).
     {
         const juce::ScopedLock sl (intParamSlotsLock);
 
@@ -542,14 +656,15 @@ void CsoundAudioProcessor::pushChannelParametersToCsound (CSOUND* cs)
             if (auto* rawValue = apvts.getRawParameterValue (getIntParamID (i)))
             {
                 const float normalized = rawValue->load() / (float) intHostRangeMax;
-                const int value = denormalizeIntParam (slot, normalized);
-                CsoundAPI::csoundSetControlChannel (cs, slot.channelName.toRawUTF8(), (cs_float) value);
+                syncChannel (cs, base + i, slot.channelName,
+                             (cs_float) denormalizeIntParam (slot, normalized),
+                             [&slot] (cs_float v) { return normalizeIntParam (slot, (double) v); });
             }
         }
     }
+    base += numIntParams;
 
-    // Booleani: 0.0/1.0 diretto, nessuna denormalizzazione (apvts gia' li
-    // tiene come 0.0f/1.0f per un AudioParameterBool).
+    // Booleani: 0.0/1.0 diretto.
     {
         const juce::ScopedLock sl (boolParamSlotsLock);
 
@@ -561,21 +676,16 @@ void CsoundAudioProcessor::pushChannelParametersToCsound (CSOUND* cs)
                 continue;
 
             if (auto* rawValue = apvts.getRawParameterValue (getBoolParamID (i)))
-                CsoundAPI::csoundSetControlChannel (cs, slot.channelName.toRawUTF8(), (cs_float) rawValue->load());
+                syncChannel (cs, base + i, slot.channelName, (cs_float) rawValue->load(),
+                             [] (cs_float v) { return v != 0 ? 1.0f : 0.0f; });
         }
     }
+    base += numBoolParams;
 
-    // Scelta multipla: il canale riceve l'INDICE selezionato (0..maxChoiceOptions-1).
-    // apvts.getRawParameterValue() per un juce::AudioParameterChoice NON e' il
-    // valore normalizzato 0..1 (a differenza di Channel/Bool, il cui range
-    // nativo e' gia' 0..1): AudioParameterChoice ha un NormalisableRange
-    // nativo (0, numChoices-1, 1), quindi getRawParameterValue() restituisce
-    // GIA' l'indice intero scelto. Moltiplicarlo di nuovo per
-    // (maxChoiceOptions - 1), come faceva la versione precedente, produceva
-    // 0,7,14,21,28,35,42,49 invece di 0..7 (indice gia' corretto moltiplicato
-    // per 7 una seconda volta). getText() faceva la conversione giusta solo
-    // perche' riceve un vero valore normalizzato 0..1 come parametro, non da
-    // getRawParameterValue().
+    // Scelta multipla: getRawParameterValue() di un AudioParameterChoice e'
+    // gia' l'INDICE (0..maxChoiceOptions-1). Nel canale va indice + 1, come
+    // in Cabbage (opzioni numerate da 1, vedi importCabbageParameters): un
+    // .csd scritto per Cabbage confronta il canale con 1..N.
     {
         const juce::ScopedLock sl (choiceParamSlotsLock);
 
@@ -589,25 +699,40 @@ void CsoundAudioProcessor::pushChannelParametersToCsound (CSOUND* cs)
             if (auto* rawValue = apvts.getRawParameterValue (getChoiceParamID (i)))
             {
                 const int optionIndex = juce::jlimit (0, maxChoiceOptions - 1, juce::roundToInt (rawValue->load()));
-
-                // +1: Cabbage stesso numera le opzioni del combobox a
-                // partire da 1 (stessa convenzione gia' verificata per
-                // value() nell'import - vedi importCabbageParameters),
-                // quindi un .csd scritto per Cabbage ha il codice Csound
-                // (if/elseif su chnget di questo canale) che si aspetta
-                // 1..N, non 0..N-1. optionIndex resta 0-based ovunque
-                // ALTROVE (array optionLabels, ID del combobox nel Generic
-                // Editor, defaultIndex) - solo il valore scritto nel
-                // canale Csound e' spostato di 1, qui, al limite esatto in
-                // cui serve. Prima di questo fix, selezionare la PRIMA
-                // opzione (indice 0) mandava un channel value di 0, che
-                // nel codice Csound (scritto assumendo 1..N) non
-                // combinava con nessun "if kChan == 1 ... N" e cadeva
-                // nell'ultimo ramo "else" - il sintomo esatto segnalato
-                // (selezionando la prima voce partiva l'ultimo ramo).
-                CsoundAPI::csoundSetControlChannel (cs, slot.channelName.toRawUTF8(), (cs_float) (optionIndex + 1));
+                syncChannel (cs, base + i, slot.channelName, (cs_float) (optionIndex + 1),
+                             [] (cs_float v)
+                             {
+                                 const int index = juce::jlimit (0, maxChoiceOptions - 1, (int) std::lround ((double) v) - 1);
+                                 return (float) index / (float) (maxChoiceOptions - 1);
+                             });
             }
         }
+    }
+}
+
+// Thread dei messaggi (timerCallback): valori scritti da Csound con chnset
+// -> parametri (UI, host, automazione).
+void CsoundAudioProcessor::applyChannelValuesFromCsound()
+{
+    for (int index = 0; index < numSyncSlots; ++index)
+    {
+        const float normalized = syncFromCsound[(size_t) index].load();
+        if (normalized < 0.0f)
+            continue;
+
+        juce::String id;
+        if (index < numChannelParams)                                        id = getChannelParamID (index);
+        else if (index < numChannelParams + numIntParams)                    id = getIntParamID (index - numChannelParams);
+        else if (index < numChannelParams + numIntParams + numBoolParams)    id = getBoolParamID (index - numChannelParams - numIntParams);
+        else                                                                 id = getChoiceParamID (index - numChannelParams - numIntParams - numBoolParams);
+
+        if (auto* param = apvts.getParameter (id))
+            if (! juce::approximatelyEqual (param->getValue(), normalized))
+                param->setValueNotifyingHost (normalized);
+
+        // Solo se nel frattempo Csound non ha scritto un valore piu' nuovo.
+        auto expected = normalized;
+        syncFromCsound[(size_t) index].compare_exchange_strong (expected, -1.0f);
     }
 }
 
@@ -843,6 +968,17 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     CsoundAPI::csoundSetHostData (cs, this);
     CsoundAPI::csoundSetMessageCallback (cs, messageCallback);
 
+    // Grafici (ftable, display, dispfft...) -> pannello "Graphs" del menu
+    // principale. Senza callback dell'host Csound stamperebbe i grafici come
+    // testo ASCII nella console (con --displays), intasandola fino a bloccare
+    // la DAW. I display vengono poi attivati SEMPRE (dopo la compilazione,
+    // vedi sotto), qualunque -d contengano le <CsOptions>.
+    graphStore.clear();
+    ::csoundSetIsGraphable (cs, 1);
+    ::csoundSetMakeGraphCallback (cs, makeGraphCallback);
+    ::csoundSetDrawGraphCallback (cs, drawGraphCallback);
+    ::csoundSetKillGraphCallback (cs, killGraphCallback);
+
     // Dice a Csound che l'I/O audio e' gestito dall'host (noi, tramite
     // processBlock/spin/spout), non da un device che Csound apre da solo.
     // In Csound 7 questa funzione non prende piu' argomenti extra.
@@ -1019,6 +1155,14 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
         return;
     }
 
+    // Display sempre attivi per il pannello "Graphs", anche con -d nelle
+    // <CsOptions> (molto comune: "-odac -d"). csoundSetOption non e' piu'
+    // accettata dopo la compilazione, ma i display vengono inizializzati
+    // solo in csoundStart (csoundInitDisplay): si scrive il flag direttamente
+    // nelle opzioni del motore (csoundGetParams restituisce quelle vive).
+    if (auto* params = const_cast<OPARMS*> (::csoundGetParams (cs)))
+        params->displays = 1;
+
     if (CsoundAPI::csoundStart (cs) != CSOUND_SUCCESS)
     {
         handleMessage ("Could not start the Csound engine.");
@@ -1032,6 +1176,11 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     csKsmps            = CsoundAPI::csoundGetKsmps (cs);
     csNumChannels      = (int) CsoundAPI::csoundGetChannels (cs, 0);
     csInputChannels    = (int) CsoundAPI::csoundGetChannels (cs, 1);
+    {
+        const double zeroDbfs = (double) ::csoundGet0dBFS (cs);
+        csInScale  = (float) (zeroDbfs > 0 ? zeroDbfs : 1.0);
+        csOutScale = (float) (zeroDbfs > 0 ? 1.0 / zeroDbfs : 1.0);
+    }
     ksmpsPos           = 0;
 
     if (csKsmps <= 0 || csNumChannels <= 0)
@@ -1165,7 +1314,7 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
             const float* src = hostCh >= 0 && hostCh < numIn ? buffer.getReadPointer (hostCh, written) : nullptr;
 
             for (int i = 0; i < frames; ++i)
-                spin[(size_t) (ksmpsPos + i) * (size_t) csInputChannels + (size_t) ch] = src != nullptr ? (cs_float) src[i] : (cs_float) 0;
+                spin[(size_t) (ksmpsPos + i) * (size_t) csInputChannels + (size_t) ch] = src != nullptr ? (cs_float) (src[i] * csInScale) : (cs_float) 0;
         }
 
         // 2) spout (calcolato al tick precedente) -> output host.
@@ -1188,7 +1337,7 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
             }
 
             for (int i = 0; i < frames; ++i)
-                dest[i] = (float) spout[(size_t) (ksmpsPos + i) * (size_t) csNumChannels + (size_t) ch];
+                dest[i] = (float) spout[(size_t) (ksmpsPos + i) * (size_t) csNumChannels + (size_t) ch] * csOutScale;
         }
 
         ksmpsPos += frames;
@@ -3511,46 +3660,83 @@ void CsoundAudioProcessor::messageCallback (CSOUND* cs, int /*attr*/, const char
             && self->compileOutput.length() < 200000)
             self->compileOutput << juce::String::fromUTF8 (buffer);
 
-        self->handleMessage (juce::String (buffer).trimEnd());
+        // Thread audio (print, printk, prints... a ogni nota o k-cycle):
+        // niente juce::String, solo una copia in un buffer fisso.
+        self->enqueueMessage (buffer);
     }
 }
 
 void CsoundAudioProcessor::handleMessage (const juce::String& msg)
 {
-    if (msg.isEmpty())
+    enqueueMessage (msg.toRawUTF8());
+}
+
+void CsoundAudioProcessor::enqueueMessage (const char* text)
+{
+    if (text == nullptr)
         return;
 
-    // Thread AUDIO (dentro csoundPerformKsmps): SOLO accodamento, niente
-    // callAsync per messaggio (vedi il commento sul filtro nel .h).
+    // Spazi/a capo finali tolti (come trimEnd), riga vuota ignorata.
+    size_t len = std::strlen (text);
+    while (len > 0 && (text[len - 1] == '\n' || text[len - 1] == '\r' || text[len - 1] == ' ' || text[len - 1] == '\t'))
+        --len;
+
+    if (len == 0)
+        return;
+
+    len = juce::jmin (len, (size_t) kPendingMessageChars - 1);
+
     const juce::SpinLock::ScopedLockType sl (pendingMessagesLock);
+    auto& count = pendingCounts[pendingWriteIndex];
 
-    // Banner di avvio del motore: versione/precisione/data di build e
-    // commit della libreria (vedi getCsoundBuildInfo).
-    if (msg.startsWith ("Csound version"))
-        csoundBannerLine = msg;
-    else if (msg.contains ("[commit:"))
-        csoundCommitLine = msg.trim();
-
-    if (pendingMessages.size() < kMaxPendingMessages)
-        pendingMessages.add (msg);
+    if (count < kMaxPendingMessages)
+    {
+        auto& slot = pendingBuffers[pendingWriteIndex][(size_t) count++];
+        std::memcpy (slot.text, text, len);
+        slot.text[len] = 0;
+    }
     else
+    {
         ++droppedMessages;
+    }
 }
 
 void CsoundAudioProcessor::timerCallback()
 {
+    applyChannelValuesFromCsound();
     flushPendingMessages();
 }
 
 void CsoundAudioProcessor::flushPendingMessages()
 {
-    juce::StringArray incoming;
-    int dropped = 0;
+    int readIndex = 0, count = 0, dropped = 0;
     {
         const juce::SpinLock::ScopedLockType sl (pendingMessagesLock);
-        incoming.swapWith (pendingMessages);
+        readIndex = pendingWriteIndex;
+        count = pendingCounts[readIndex];
+        pendingWriteIndex = 1 - readIndex;
+        pendingCounts[pendingWriteIndex] = 0;
         dropped = droppedMessages;
         droppedMessages = 0;
+    }
+
+    juce::StringArray incoming;
+    incoming.ensureStorageAllocated (count);
+
+    for (int i = 0; i < count; ++i)
+    {
+        const auto msg = juce::String::fromUTF8 (pendingBuffers[readIndex][(size_t) i].text);
+
+        // Banner di avvio del motore: versione/precisione/data di build e
+        // commit della libreria (vedi getCsoundBuildInfo).
+        if (msg.startsWith ("Csound version") || msg.contains ("[commit:"))
+        {
+            const juce::SpinLock::ScopedLockType sl (pendingMessagesLock);
+            if (msg.startsWith ("Csound version")) csoundBannerLine = msg;
+            else                                   csoundCommitLine = msg.trim();
+        }
+
+        incoming.add (msg);
     }
 
     if (! incoming.isEmpty())
@@ -3586,6 +3772,23 @@ void CsoundAudioProcessor::flushPendingMessages()
 
     for (auto& m : incoming)
     {
+        // Flood: oltre il limite di righe per blocco i messaggi si contano
+        // soltanto (niente filtro ripetizioni, che costerebbe una ricerca
+        // nella mappa per ogni messaggio).
+        if (out.size() >= kMaxLinesPerFlush)
+        {
+            ++floodSuppressed;
+            continue;
+        }
+
+        // Troppi testi diversi in finestra (es. print/printk con valori che
+        // cambiano): niente nuove finestre, la riga passa e basta.
+        if (repeatWindows.find (m) == repeatWindows.end() && (int) repeatWindows.size() >= kMaxRepeatWindows)
+        {
+            out.add (m);
+            continue;
+        }
+
         auto& w = repeatWindows[m];
 
         if (w.shown == 0 && w.suppressed == 0)

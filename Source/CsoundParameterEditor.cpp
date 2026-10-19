@@ -2151,8 +2151,22 @@ void CsoundParameterMappingPanel::GenericParamRow::refreshRangeDisplay()
     // sul bottone occhio... la UI non si aggiorna").
     if (sliderToReal)
     {
-        minLabel.setText (juce::String ((int) std::round (sliderToReal (slider.getMinimum()))), juce::dontSendNotification);
-        maxLabel.setText (juce::String ((int) std::round (sliderToReal (slider.getMaximum()))), juce::dontSendNotification);
+        // Int: intero. Float: fino a 3 decimali, senza zeri finali
+        // (0.2 -> "0.2", 1 -> "1", 0.125 -> "0.125"); prima veniva
+        // arrotondato a intero anche per gli slider Float (0.2 -> "0").
+        auto format = [this] (double v)
+        {
+            if (isIntegerLike)
+                return juce::String ((int) std::round (v));
+
+            auto s = juce::String (v, 3);
+            if (s.containsChar ('.'))
+                s = s.trimCharactersAtEnd ("0").trimCharactersAtEnd (".");
+            return s == "-0" ? juce::String ("0") : s;
+        };
+
+        minLabel.setText (format (sliderToReal (slider.getMinimum())), juce::dontSendNotification);
+        maxLabel.setText (format (sliderToReal (slider.getMaximum())), juce::dontSendNotification);
     }
 
     updateValueReadout();
@@ -2686,6 +2700,15 @@ void CsoundParameterMappingPanel::showPanelMenu()
         item.icon = CsoundActionSheetIcon::console;
         items.push_back (item);
     }
+    {
+        CsoundActionSheetItem item;
+        item.id = 150; item.text = "Show Graphs";
+        item.enabled = onToggleGraphsRequested != nullptr;
+        item.tickedFn = [this] { return isGraphsVisible && isGraphsVisible(); };
+        item.keepOpen = true;
+        item.icon = CsoundActionSheetIcon::waveform;
+        items.push_back (item);
+    }
 
     // Load/Save CSD: richiamano le stesse funzioni dei vecchi bottoni
     // "Load..."/"Save as..." nella toolbar PRINCIPALE di PluginEditor, ora
@@ -2962,6 +2985,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 119: if (safeThis->onFontSizeChangeRequested) safeThis->onFontSizeChangeRequested (-1); break;
             case 120: if (safeThis->onToggleDarkEditorRequested) safeThis->onToggleDarkEditorRequested(); break;
             case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
+            case 150: if (safeThis->onToggleGraphsRequested) safeThis->onToggleGraphsRequested(); break;
             case 121: if (safeThis->onAudioSettingsRequested) safeThis->onAudioSettingsRequested(); break;
             case 123: case 124: case 125: case 126:
                 if (safeThis->onChooseCsoundFolder) safeThis->onChooseCsoundFolder (result - 123);

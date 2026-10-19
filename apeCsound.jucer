@@ -51,6 +51,10 @@
             file="Source/CsoundAudioSettings.cpp"/>
       <FILE id="cAudB" name="CsoundAudioSettings.h" compile="0" resource="0"
             file="Source/CsoundAudioSettings.h"/>
+      <FILE id="cGrfA" name="CsoundGraphs.cpp" compile="1" resource="0"
+            file="Source/CsoundGraphs.cpp"/>
+      <FILE id="cGrfB" name="CsoundGraphs.h" compile="0" resource="0"
+            file="Source/CsoundGraphs.h"/>
       <FILE id="pFbkA" name="PlatformFallbacks.cpp" compile="1" resource="0"
             file="Source/PlatformFallbacks.cpp"/>
       <FILE id="sScfH" name="SecurityScopedFile.h" compile="0" resource="0"

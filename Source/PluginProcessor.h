@@ -27,6 +27,7 @@
 #include "csound_misc.h"
 #include "CsoundDynamicLib.h"
 #include "CsoundOpcodeHelp.h"
+#include "CsoundGraphs.h"
 #include "SecurityScopedFile.h"
 
 class CsoundAudioProcessor; // vedi ChannelHostParameter sotto
@@ -469,6 +470,9 @@ public:
         ERROR successivi), solo message thread. L'editor li mostra come
         segni sulle righe del codice (CodeView::setErrorMarkers). */
     const juce::Array<CodeDiagnostic>& getCodeDiagnostics() const noexcept { return codeDiagnostics; }
+
+    // Grafici di Csound per il pannello "Graphs" (vedi CsoundGraphs.h).
+    CsoundGraphStore& getGraphStore() noexcept { return graphStore; }
 
     /** Estrae gli errori con riga dal testo dei messaggi di Csound (pubblica
         e statica per poterla testare). Salta quelli dentro macro/#include:
@@ -1023,6 +1027,24 @@ private:
     // compileOutput, poi parseCompileErrors li legge tutti insieme: Csound
     // stampa "error:", "from file ...", "line N:" in chiamate separate.
     juce::Array<CodeDiagnostic> codeDiagnostics;
+    CsoundGraphStore graphStore;
+
+    // Sincronizzazione parametri <-> canali (chnset dal codice Csound), vedi
+    // pushChannelParametersToCsound/syncChannel. Indici: float, int, bool,
+    // choice in sequenza. syncLastSent/syncHasSent/syncHold: solo thread
+    // audio. syncFromCsound: valore normalizzato scritto da Csound in attesa
+    // di essere applicato al parametro dal thread dei messaggi (-1 = nessuno).
+    static constexpr int numSyncSlots = numChannelParams + numIntParams + numBoolParams + numChoiceParams;
+    std::array<cs_float, numSyncSlots> syncLastSent {};
+    std::array<bool, numSyncSlots> syncHasSent {};
+    std::array<bool, numSyncSlots> syncHold {};
+    std::array<std::atomic<float>, numSyncSlots> syncFromCsound;
+    CSOUND* syncEngine = nullptr;
+
+    template <typename ToNormalized>
+    void syncChannel (CSOUND* cs, int index, const juce::String& name,
+                      cs_float hostValue, ToNormalized toNormalized);
+    void applyChannelValuesFromCsound();
     juce::String compileOutput;
     bool capturingCompileOutput = false;   // solo message thread
     void finishCompileDiagnostics();
@@ -1031,11 +1053,22 @@ private:
     static constexpr int kMessageFlushIntervalMs        = 50;
     static constexpr int kRepeatWindowMs                = 1000;
     static constexpr int kMaxIdenticalMessagesPerWindow = 3;
-    static constexpr int kMaxLinesPerFlush              = 40;
-    static constexpr int kMaxPendingMessages            = 4096;
+    static constexpr int kMaxLinesPerFlush              = 20;
+    static constexpr int kMaxPendingMessages            = 1024;
+    static constexpr int kPendingMessageChars           = 512;
+    static constexpr int kMaxRepeatWindows              = 512;
 
-    juce::StringArray pendingMessages;     // scritto dal thread audio
+    // Coda dal thread audio: due buffer fissi di messaggi (char[], niente
+    // juce::String/allocazioni nel thread audio). Il thread audio scrive in
+    // pendingBuffers[pendingWriteIndex]; il flush scambia l'indice sotto
+    // lock (O(1)) e legge l'altro buffer fuori dal lock. Messaggi piu' lunghi
+    // di kPendingMessageChars vengono troncati.
+    struct PendingMessage { char text[kPendingMessageChars]; };
+    std::unique_ptr<PendingMessage[]> pendingBuffers[2];
+    int pendingCounts[2] { 0, 0 };
+    int pendingWriteIndex = 0;
     int droppedMessages = 0;               // coda piena
+    void enqueueMessage (const char* text);
     mutable juce::SpinLock pendingMessagesLock; // mutable: letto anche da getCsoundBuildInfo() const
 
     struct RepeatWindow
@@ -1077,6 +1110,12 @@ private:
     int csKsmps            = 0;
     int csNumChannels      = 0; // canali di output (nchnls) - dimensione di spout
     int csInputChannels    = 0; // canali di input (nchnls_i) - dimensione di spin
+    // spin/spout sono nella scala dell'orchestra (0dbfs): l'uscita va divisa
+    // per 0dbfs, l'ingresso moltiplicato. Con 0dbfs = 32767 (il default di
+    // Csound se il .csd non dichiara 0dbfs = 1) senza questa scala l'audio
+    // usciva 32767 volte (90 dB) troppo forte.
+    float csOutScale = 1.0f; // 1 / 0dbfs
+    float csInScale  = 1.0f; // 0dbfs
     // Posizione corrente (0..csKsmps-1) dentro il tick ksmps: lo stesso indice
     // serve per scrivere l'input host in spin e leggere l'output da spout.
     // Quando arriva a csKsmps, spin e' pieno -> csoundPerformKsmps().

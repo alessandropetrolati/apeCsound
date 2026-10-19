@@ -9,6 +9,7 @@
 #include "CsoundParameterEditor.h"
 #include "IOSKeyboard.h"
 #include "CsoundAudioSettings.h"
+#include "CsoundGraphs.h"
 
 /**
     Editor del plugin/standalone (juce::AudioProcessorEditor): editor con
@@ -478,6 +479,12 @@ private:
 
     void appendToLog (const juce::String& text);
 
+    // Righe nella consolle (contate in appendToLog) e limite: oltre
+    // kConsoleMaxLines + kConsoleTrimSlack si tagliano le piu' vecchie.
+    int consoleLineCount = 0;
+    static constexpr int kConsoleMaxLines  = 1000;
+    static constexpr int kConsoleTrimSlack = 500;
+
     // Barra fissa (non un popup) tra l'editor e la consolle: mostra
     // sintassi + descrizione dell'opcode su cui si trova il caret
     // (digitato, cliccato, o raggiunto con le freccie), alimentata da
@@ -712,6 +719,20 @@ private:
         int heightAtDragStart = 0;
     };
     ConsoleDivider consoleDivider;
+
+    // Pannello "Graphs" (ftable, display, dispfft - vedi CsoundGraphs.h):
+    // agganciato come Parametri e Console, voce spuntabile "Show Graphs"
+    // del menu principale. Sta nella fascia in basso della consolle (stessa
+    // altezza, consoleHeight/consoleDivider), a destra della consolle; con
+    // la consolle nascosta occupa tutta la fascia. graphsDivider (verticale,
+    // tra consolle e grafici) ne regola la larghezza.
+    CsoundGraphsPanel graphsPanel { audioProcessor.getGraphStore() };
+    bool showingGraphs = false;
+    void toggleGraphs();
+    int graphsWidth = 460;
+    static constexpr int graphsMinWidth = 240;
+    static constexpr int graphsConsoleMinWidth = 200;
+    SidebarDivider graphsDivider;
 
     // La toolbar e' una barra dedicata (sfondo + separatore disegnati in
     // paint(), bounds calcolati in resized()) che contiene questi bottoni,

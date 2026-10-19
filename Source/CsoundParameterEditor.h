@@ -243,6 +243,12 @@ public:
     // mostra la vista informazioni (vedi AboutView in PluginEditor.h).
     std::function<void()> onAboutRequested;
 
+    // "Show Graphs": mostra/nasconde il pannello dei grafici di Csound
+    // (ftable, display, dispfft - vedi CsoundGraphsPanel), come "Show
+    // Console". Impostate da PluginEditor.
+    std::function<void()> onToggleGraphsRequested;
+    std::function<bool()> isGraphsVisible;
+
     // "Modern syntax in help" (spunta) e "Csound Manual (online)": entrambe
     // impostate da PluginEditor. isModernSyntaxEnabled serve solo a
     // disegnare la spunta nel menu.

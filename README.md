@@ -36,6 +36,7 @@ A fixed pool of host-automatable parameters can be mapped to Csound channels and
 | Menu | 16 | up to 16 labelled options, default |
 
 - Drag a parameter onto the code editor to insert the matching `chnget` line.
+- Two-way: `chnset` on a mapped channel updates the parameter (UI slider, host, automation); the value is not overwritten by the host until the parameter has followed it.
 - `.csd` files made with **Cabbage** (`<Cabbage>` section) or **CsoundQt** (`<bsbPanel>` widgets: sliders, knobs, spin boxes, scroll numbers, XY controllers, checkboxes, dropdown menus) are imported automatically: widgets are mapped to parameters.
 - **Porting Cabbage / CsoundQt files is not guaranteed.** Whether a file runs depends on many factors (frontend-specific opcodes, plugin libraries, external files, real-time options). apeCsound imports **only the supported parameter widgets**; GUI layout, graphics, displays and event buttons are ignored, and the code is left untouched: `invalue` / `cabbageGetValue` must be replaced with `chnget`, `outvalue` / `cabbageSet…` with `chnset`, and FLTK, Python, Lua, OSC or non-bundled plugin opcodes do not work. See the in-app **apeCsound Guide** for details.
 - The parameter mapping is saved **inside the `.csd`** in an `<apeCsoundParams>` section after `</CsoundSynthesizer>`. Csound ignores it, so the file stays a valid, portable `.csd`.
@@ -49,6 +50,9 @@ A fixed pool of host-automatable parameters can be mapped to Csound channels and
 ### Samples folder and errors
 - **SSDIR folder**: apeCsound creates `~/Documents/apeCsound/SSDIR` (iOS: in the App Group container shared by app and AUv3) and passes it to Csound as `SSDIR`, after the folder of the linked `.csd`; files written by Csound go to `~/Documents/apeCsound/SFDIR` (`SFDIR`). Copy audio files there and refer to them by name only (`diskin2 "loop.wav"`, GEN01). `SADIR` (analysis files) and `INCDIR` (`#include`) get their own `apeCsound/SADIR` and `apeCsound/INCDIR` folders too. On desktop, **Config > Csound Folders** adds an extra folder to SSDIR/SADIR/INCDIR and chooses the SFDIR output folder. `--env:SSDIR=` in `<CsOptions>` overrides it. **Import Files...** (file capsule menu, every platform) copies files into the right folder by extension (audio to SSDIR, `.udo`/`.inc`/`.orc` to INCDIR, analysis files to SADIR); on iOS it is the only way, since the App Group folder is not visible in the Files app, and **Export Files...** (iOS) shares the files written to SFDIR via the share sheet.
 - **Inline errors**: the line of a Csound compile error (and of INIT/PERF errors at run time) is marked in the editor with a red dot, red background and wavy underline; the help bar shows the message when the caret is on that line. Marks clear when the line is edited or on the next Apply.
+
+### Graphs
+- **Show Graphs** (main menu) opens a panel docked at the bottom next to the console, like Parameters and Console. It draws Csound's function tables and signal displays instead of printing ASCII graphs in the console: every ftable when it is created (long tables as a min/max band), and `display` / `dispfft` while the panel is visible. Displays are always enabled, even with `-d` in `<CsOptions>`; the panel is cleared on every Apply.
 
 ### Audio and MIDI
 - Audio input is passed to Csound, so the plugin can process live input as an effect.
