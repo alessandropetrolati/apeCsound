@@ -123,6 +123,11 @@ public:
         assegnati, il comportamento di default di CodeEditorComponent resta
         inalterato (vedi il fallback in keyPressed()). */
     std::function<void()> onUndoRequested;
+
+    // Esc senza popup di autocompletamento aperto: se impostata e restituisce
+    // true (es. chiusa la barra Cerca/Sostituisci) il tasto e' consumato e
+    // NON apre l'autocompletamento.
+    std::function<bool()> onEscapeKey;
     std::function<void()> onRedoRequested;
 
     // --- Cerca / Sostituisci (richiesta esplicita) ---------------------

@@ -232,6 +232,9 @@ bool CsoundCodeEditor::keyPressed (const juce::KeyPress& key)
             return true;
         }
 
+        if (onEscapeKey != nullptr && onEscapeKey())
+            return true;
+
         return forceShowSuggestions();
     }
 

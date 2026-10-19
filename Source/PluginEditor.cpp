@@ -296,6 +296,17 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
             appendToLog ("--- Replaced " + juce::String (replaced) + " occurrence(s) ---");
     };
     findBar.closeButton.onClick       = [this] { closeFindBar(); };
+
+    // Esc chiude la barra Cerca/Sostituisci anche con il focus nell'editor
+    // di codice (dove altrimenti aprirebbe l'autocompletamento).
+    editor.onEscapeKey = [this]
+    {
+        if (! findBar.isVisible())
+            return false;
+
+        closeFindBar();
+        return true;
+    };
     editor.onSearchResultsChanged     = [this] { updateFindCount(); };
     updateSessionStatus();
 
@@ -851,6 +862,14 @@ bool CsoundAudioProcessorEditor::keyPressed (const juce::KeyPress& key)
     // popup/help piu' aperto) arriva fino a qui e sposta via il focus.
     if (key == juce::KeyPress::escapeKey)
     {
+        // Barra Cerca/Sostituisci aperta: Esc la chiude, da qualunque punto
+        // (campi, bottoni Match case/Whole word...).
+        if (findBar.isVisible())
+        {
+            closeFindBar();
+            return true;
+        }
+
         juce::Component::unfocusAllComponents();
         return true;
     }
