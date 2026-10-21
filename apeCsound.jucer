@@ -9,7 +9,7 @@
               microphonePermissionsText="apeCsound needs the microphone for live audio input."
               pluginEditorRequiresKeys="1" pluginIsSynth="0" pluginWantsMidiIn="1"
               pluginProducesMidiOut="0" pluginIsMidiEffectPlugin="0" pluginAAXDisableBypass="0"
-              pluginAAXDisableMultiMono="0">
+              pluginAAXDisableMultiMono="0" version="1.0.1">
   <MAINGROUP id="tNvtiW" name="apeCsound">
     <GROUP id="{9680A1AA-7764-28DB-226D-D2086CE2E1B8}" name="Resources">
       <FILE id="QhPr70" name="cs-icon.png" compile="0" resource="1" file="Resources/cs-icon.png"/>
@@ -53,10 +53,8 @@
             file="Source/CsoundAudioSettings.h"/>
       <FILE id="cShcH" name="CsoundShortcuts.h" compile="0" resource="0"
             file="Source/CsoundShortcuts.h"/>
-      <FILE id="cGrfA" name="CsoundGraphs.cpp" compile="1" resource="0"
-            file="Source/CsoundGraphs.cpp"/>
-      <FILE id="cGrfB" name="CsoundGraphs.h" compile="0" resource="0"
-            file="Source/CsoundGraphs.h"/>
+      <FILE id="cGrfA" name="CsoundGraphs.cpp" compile="1" resource="0" file="Source/CsoundGraphs.cpp"/>
+      <FILE id="cGrfB" name="CsoundGraphs.h" compile="0" resource="0" file="Source/CsoundGraphs.h"/>
       <FILE id="pFbkA" name="PlatformFallbacks.cpp" compile="1" resource="0"
             file="Source/PlatformFallbacks.cpp"/>
       <FILE id="sScfH" name="SecurityScopedFile.h" compile="0" resource="0"

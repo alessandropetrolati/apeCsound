@@ -999,7 +999,7 @@ void CsoundActionSheet::RowsContent::paint (juce::Graphics& g)
         // anche quando alcune righe della stessa pagina non hanno icona
         // (icon == none).
         auto iconArea = content.removeFromLeft (CsoundActionSheet::iconAreaWidth);
-        if (item.icon != CsoundActionSheetIcon::none)
+        if (CsoundActionSheet::showsIcons && item.icon != CsoundActionSheetIcon::none)
         {
             auto path = makeSheetIconPath (item.icon);
             auto glyphArea = iconArea.withSizeKeepingCentre (18, 18);
@@ -1009,7 +1009,7 @@ void CsoundActionSheet::RowsContent::paint (juce::Graphics& g)
             g.fillPath (path);
         }
 
-        if (item.shortcut.isNotEmpty())
+        if (CsoundActionSheet::showsShortcuts && item.shortcut.isNotEmpty())
         {
             g.setColour (kTextMuted);
             g.setFont (juce::Font (juce::FontOptions (13.0f)));
