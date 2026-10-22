@@ -180,7 +180,9 @@ private:
 
         void paint (juce::Graphics& g) override;
         void mouseDown (const juce::MouseEvent& event) override;
+        void mouseDrag (const juce::MouseEvent& event) override;
         void mouseUp (const juce::MouseEvent& event) override;
+        static constexpr int dragThreshold = 8; // px: oltre e' scorrimento, non tocco
         void mouseExit (const juce::MouseEvent&) override;
 
     private:

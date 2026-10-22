@@ -2095,6 +2095,7 @@ CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
             comboBox.setColour (juce::PopupMenu::textColourId,                  kText);
             comboBox.setColour (juce::PopupMenu::highlightedBackgroundColourId, accentColour);
             comboBox.setColour (juce::PopupMenu::highlightedTextColourId,       kOnAccent);
+            comboBox.setPopupTitle (parameter.getName (64));
             addAndMakeVisible (comboBox);
             comboAttachment = std::make_unique<juce::ComboBoxParameterAttachment> (parameter, comboBox, nullptr);
             break;

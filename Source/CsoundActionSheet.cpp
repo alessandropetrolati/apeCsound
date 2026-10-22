@@ -657,6 +657,9 @@ CsoundActionSheet::CsoundActionSheet (const juce::String& title, std::vector<Cso
 
     rowsViewport.setViewedComponent (&rowsContent, false);
     rowsViewport.setScrollBarsShown (true, false);
+    // Scorrimento trascinando con il dito (iOS) o il mouse: menu lunghi
+    // (es. Parametri) restano navigabili su schermi piccoli.
+    rowsViewport.setScrollOnDragMode (juce::Viewport::ScrollOnDragMode::all);
     addAndMakeVisible (rowsViewport);
 }
 
@@ -1029,11 +1032,22 @@ void CsoundActionSheet::RowsContent::mouseDown (const juce::MouseEvent& event)
     owner.setPressedRow (owner.findRowAt (event.getPosition()));
 }
 
+void CsoundActionSheet::RowsContent::mouseDrag (const juce::MouseEvent& event)
+{
+    // Trascinamento = scorrimento del menu, non selezione: la riga premuta
+    // perde l'evidenziazione e al rilascio non viene attivata.
+    if (event.getDistanceFromDragStart() > dragThreshold)
+        owner.setPressedRow (-1);
+}
+
 void CsoundActionSheet::RowsContent::mouseUp (const juce::MouseEvent& event)
 {
     const int rowIndex = owner.findRowAt (event.getPosition());
     const int pressed = owner.pressedRowIndex;
     owner.setPressedRow (-1);
+
+    if (event.getDistanceFromDragStart() > dragThreshold)
+        return;
 
     if (rowIndex == pressed && rowIndex >= 0)
         owner.activateRow (rowIndex);

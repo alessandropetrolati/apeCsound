@@ -2847,7 +2847,7 @@ CsoundAudioProcessorEditor::GuideView::Card::Card()
 {
     text.setMultiLine (true);
     text.setReadOnly (true);
-    text.setScrollbarsShown (true);
+    text.setScrollbarsShown (false);
     text.setCaretVisible (false);
     text.setPopupMenuEnabled (false);
     text.setColour (juce::TextEditor::backgroundColourId, kAboutCardBg);
@@ -2857,7 +2857,13 @@ CsoundAudioProcessorEditor::GuideView::Card::Card()
     text.setColour (juce::TextEditor::highlightColourId, kAboutAccent.withAlpha (0.35f));
     text.setLineSpacing (1.3f);
     text.setWantsKeyboardFocus (false);
-    addAndMakeVisible (text);
+    text.setInterceptsMouseClicks (false, false); // i tocchi vanno al Viewport (scorrimento)
+    textHolder.addAndMakeVisible (text);
+
+    viewport.setViewedComponent (&textHolder, false);
+    viewport.setScrollBarsShown (true, false);
+    viewport.setScrollOnDragMode (juce::Viewport::ScrollOnDragMode::all);
+    addAndMakeVisible (viewport);
 
     // Mini-markup di guideText(): "# Titolo" sezione, "## Titolo"
     // sottosezione, "**grassetto**", `codice` (monospace, accento),
@@ -2949,12 +2955,8 @@ CsoundAudioProcessorEditor::GuideView::Card::Card()
 
 void CsoundAudioProcessorEditor::GuideView::Card::paint (juce::Graphics& g)
 {
-    auto bounds = getLocalBounds().toFloat();
-
-    g.setColour (kAboutCardBg);
-    g.fillRoundedRectangle (bounds, 16.0f);
-    g.setColour (kAboutBorder);
-    g.drawRoundedRectangle (bounds.reduced (0.5f), 15.5f, 1.0f);
+    // A tutto schermo: niente angoli arrotondati ne' bordo.
+    g.fillAll (kAboutCardBg);
 
     g.setColour (kAboutText);
     g.setFont (juce::Font (juce::FontOptions (18.0f, juce::Font::bold)));
@@ -2979,7 +2981,15 @@ juce::Rectangle<int> CsoundAudioProcessorEditor::GuideView::Card::closeButtonBou
 
 void CsoundAudioProcessorEditor::GuideView::Card::resized()
 {
-    text.setBounds (getLocalBounds().withTrimmedTop (62).reduced (16, 0).withTrimmedBottom (16));
+    viewport.setBounds (getLocalBounds().withTrimmedTop (62).reduced (16, 0).withTrimmedBottom (16));
+
+    // Testo largo quanto il viewport (meno la scrollbar) e alto quanto il
+    // suo contenuto: e' il Viewport a scorrere, non il TextEditor.
+    const int w = juce::jmax (100, viewport.getWidth() - viewport.getScrollBarThickness() - 4);
+    text.setSize (w, 100);
+    const int h = text.getTextHeight() + 32;
+    text.setSize (w, h);
+    textHolder.setSize (w, h);
 }
 
 void CsoundAudioProcessorEditor::GuideView::Card::mouseUp (const juce::MouseEvent& e)
@@ -2997,13 +3007,35 @@ CsoundAudioProcessorEditor::GuideView::GuideView()
 
 void CsoundAudioProcessorEditor::GuideView::paint (juce::Graphics& g)
 {
-    g.fillAll (juce::Colours::black.withAlpha (0.45f));
+    // A tutto schermo: lo stesso fondo della scheda anche nelle fasce
+    // dell'area non sicura (iOS), niente velo scuro sull'editor sotto.
+    g.fillAll (kAboutCardBg);
 }
 
 void CsoundAudioProcessorEditor::GuideView::resized()
 {
-    // Scheda grande quanto la finestra meno un margine (il testo scorre).
-    card.setBounds (getLocalBounds().reduced (juce::jmin (40, getWidth() / 10), juce::jmin (32, getHeight() / 10)));
+    // A tutto schermo (richiesta esplicita, macOS e iOS). Su iOS si resta
+    // dentro l'area sicura (notch, barra di stato, indicatore home).
+    auto area = getLocalBounds();
+
+   #if JUCE_IOS
+    // Si toglie SOLO la parte della vista che cade davvero sotto notch,
+    // barra di stato o indicatore home: area sicura dello schermo
+    // intersecata con la posizione della vista. Prima gli insets dello
+    // schermo venivano tolti per intero anche quando la vista era gia'
+    // dentro l'area sicura, lasciando bordi vuoti (la guida non sembrava
+    // a tutto schermo).
+    if (auto* display = juce::Desktop::getInstance().getDisplays().getDisplayForRect (getScreenBounds()))
+    {
+        const auto safeOnScreen = display->safeAreaInsets.subtractedFrom (display->totalArea);
+        const auto safeLocal = getLocalArea (nullptr, safeOnScreen).getIntersection (area);
+
+        if (! safeLocal.isEmpty())
+            area = safeLocal;
+    }
+   #endif
+
+    card.setBounds (area);
 }
 
 void CsoundAudioProcessorEditor::GuideView::mouseUp (const juce::MouseEvent& e)
@@ -3025,6 +3057,7 @@ bool CsoundAudioProcessorEditor::GuideView::keyPressed (const juce::KeyPress& ke
 
 void CsoundAudioProcessorEditor::GuideView::show()
 {
+    card.viewport.setViewPosition (0, 0);
     toFront (true);
     juce::Desktop::getInstance().getAnimator().fadeIn (this, 140);
     grabKeyboardFocus();

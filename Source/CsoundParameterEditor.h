@@ -7,6 +7,7 @@
 #include <vector>
 #include "PluginProcessor.h"
 #include "CsoundActionSheet.h"
+#include "CsoundComboBox.h" // ComboBox con il menu di apeCsound (anche su iOS)
 
 /**
     LookAndFeel dedicata al pannello parametri (CsoundParameterMappingPanel):
@@ -879,7 +880,7 @@ private:
         juce::TextEditor optionsEditor;      // etichette separate da virgole
 
         juce::Label defaultCaption;
-        juce::ComboBox defaultIndexCombo;    // popolato dalle etichette di optionsEditor
+        CsoundComboBox defaultIndexCombo;    // popolato dalle etichette di optionsEditor
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChoiceParamRow)
     };
@@ -997,7 +998,7 @@ private:
         juce::TextEditor valueReadout;   // editabile da tastiera, non un semplice readout - niente didascalia sopra (riga compatta)
 
         juce::ToggleButton toggle;
-        juce::ComboBox comboBox;
+        CsoundComboBox comboBox;
 
         // Dichiarati DOPO i widget che referenziano: distrutti PRIMA di essi.
         std::unique_ptr<juce::SliderParameterAttachment> sliderAttachment;

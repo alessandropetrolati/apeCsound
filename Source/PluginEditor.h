@@ -267,6 +267,13 @@ private:
             juce::Rectangle<int> closeButtonBounds() const;
 
             std::function<void()> onClose;
+
+            // Il testo (TextEditor in sola lettura, alto quanto il suo
+            // contenuto) sta dentro un Viewport: scorre con rotellina,
+            // trackpad e trascinamento con il dito (su iOS un TextEditor
+            // trascinato seleziona il testo invece di scorrere).
+            juce::Viewport viewport;
+            juce::Component textHolder;
             juce::TextEditor text;
         };
 
