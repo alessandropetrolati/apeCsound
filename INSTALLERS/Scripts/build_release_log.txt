@@ -1,8 +1,13 @@
-=== dom 11 ott 2026 08:29:33 CEST  macOS 26.6.2 arm64
+=== gio 22 ott 2026 12:45:08 CEST  macOS 27.0.1 arm64
 === Projucer: /Users/alessandropetrolati/Desktop/Advanced 2018/JUCE/Projucer.app
 Re-saving file: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/apeCsound.jucer
 Finished saving: Xcode (macOS)
 Finished saving: Xcode (iOS)
+Finished saving: Linux Makefile
+Finished saving: Visual Studio 2022
+rimosso link simbolico (Archive): Builds/MacOSX/build/Release/apeCsound.app
+rimosso link simbolico (Archive): Builds/MacOSX/build/Release/apeCsound.appex
+rimosso link simbolico (Archive): Builds/MacOSX/build/Release/libapeCsound.a
 === xcodebuild apeCsound - Standalone Plugin (Release)
 warning: Building targets in manual order is deprecated - check "Parallelize build for command-line builds" in the project editor, or set DISABLE_MANUAL_TARGET_ORDER_BUILD_WARNING in any of the targets in the current build to suppress this warning
 note: Target dependency graph (3 targets)
@@ -35,9 +40,9 @@ xcodebuild apeCsound - VST3 exit: 0
 === verifica moduleinfo.json
 Bundle       : /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/Builds/MacOSX/build/Release/apeCsound.vst3
 Manifest     : Contents/Resources/moduleinfo.json
-Binary       : Contents/MacOS/apeCsound  (30,330,736 bytes)
+Binary       : Contents/MacOS/apeCsound  (30,290,784 bytes)
 Plugin Name  : apeCsound
-Version      : 1.0.0
+Version      : 1.0.1
 SDK Version  : apeCsound
 
 #  Category                        CID (hex)                         ASCII             found-in-bin
@@ -57,27 +62,27 @@ rimossa estensione AUv3 dall'app: Installers/NOTORIZED/apeCsound.app/Contents/Pl
 === verifica: apeCsound.app
 Installers/NOTORIZED/apeCsound.app: valid on disk
 Installers/NOTORIZED/apeCsound.app: satisfies its Designated Requirement
-CodeDirectory v=20500 size=28320 flags=0x10000(runtime) hashes=874+7 location=embedded
-Timestamp=11 Oct 2026 at 08:33:08
+CodeDirectory v=20500 size=28288 flags=0x10000(runtime) hashes=873+7 location=embedded
+Timestamp=22 Oct 2026 at 12:48:20
 TeamIdentifier=4863C638XM
 === verifica: apeCsound.component
 Installers/NOTORIZED/apeCsound.component: valid on disk
 Installers/NOTORIZED/apeCsound.component: satisfies its Designated Requirement
-CodeDirectory v=20500 size=28384 flags=0x10000(runtime) hashes=880+3 location=embedded
-Timestamp=11 Oct 2026 at 08:33:08
+CodeDirectory v=20500 size=28288 flags=0x10000(runtime) hashes=877+3 location=embedded
+Timestamp=22 Oct 2026 at 12:48:19
 TeamIdentifier=4863C638XM
 === verifica: apeCsound.vst3
 Installers/NOTORIZED/apeCsound.vst3: valid on disk
 Installers/NOTORIZED/apeCsound.vst3: satisfies its Designated Requirement
-CodeDirectory v=20500 size=28416 flags=0x10000(runtime) hashes=881+3 location=embedded
-Timestamp=11 Oct 2026 at 08:33:07
+CodeDirectory v=20500 size=28352 flags=0x10000(runtime) hashes=879+3 location=embedded
+Timestamp=22 Oct 2026 at 12:48:18
 TeamIdentifier=4863C638XM
 
 total 16
-drwxr-xr-x   6 alessandropetrolati  staff   192 11 ott 08:33 .
-drwxr-xr-x  12 alessandropetrolati  staff   384 11 ott 00:24 ..
--rw-r--r--@  1 alessandropetrolati  staff  6148 11 ott 08:29 .DS_Store
-drwxr-xr-x   3 alessandropetrolati  staff    96 11 ott 08:31 apeCsound.app
+drwxr-xr-x   6 alessandropetrolati  staff   192 22 ott 12:48 .
+drwxr-xr-x  13 alessandropetrolati  staff   416 13 ott 23:27 ..
+-rw-r--r--@  1 alessandropetrolati  staff  6148 22 ott 12:45 .DS_Store
+drwxr-xr-x   3 alessandropetrolati  staff    96 22 ott 12:46 apeCsound.app
 drwxr-xr-x   3 alessandropetrolati  staff    96 11 ott 00:00 apeCsound.component
 drwxr-xr-x   3 alessandropetrolati  staff    96 11 ott 00:00 apeCsound.vst3
 
