@@ -9,7 +9,7 @@
 #    apeCsound-linux-x64.zip, uploaded as an artifact (and attached to the
 #    GitHub Release when the run comes from a "v*" tag)
 #
-# Run it from the "Actions" tab (Run workflow), or push a tag: git tag v1.0.0 && git push --tags
+# Run it from the "Actions" tab (Run workflow), or push a tag: git tag v1.0.1 && git push --tags
 
 name: Build Linux
 
