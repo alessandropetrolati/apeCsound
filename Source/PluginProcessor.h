@@ -646,8 +646,18 @@ public:
         ("SSDIR", "SFDIR", "SADIR", "INCDIR"), creata se non esiste. */
     static juce::File getCsoundFolder (const juce::String& envName);
 
-    /** Cartella valida (assoluta ed esistente) salvata sotto 'key', altrimenti File{}. */
+    /** Cartella salvata sotto 'key', altrimenti File{}. Desktop: solo se
+        assoluta ed esistente. iOS: solo se c'e' anche il bookmark del picker
+        (la cartella e' fuori dalla sandbox: senza accesso aperto non si puo'
+        nemmeno verificare che esista - vedi openUserFolder). */
     static juce::File getUserFolderSetting (const char* key);
+
+    /** Salva (o, con File{}, rimuove) la cartella scelta in Config. iOS:
+        anche il bookmark security-scoped della URL del picker (base64 sotto
+        key + "Bookmark"), senza il quale la cartella non e' accessibile in
+        una sessione successiva. */
+    static void setUserFolderSetting (const char* key, const juce::File& folder,
+                                      const juce::MemoryBlock& bookmark = {});
 
     // File .csd a cui la sessione e' collegata (Save sovrascrive QUESTO,
     // vedi CsoundAudioProcessorEditor::performSaveLinked) - juce::File{}
@@ -671,6 +681,15 @@ public:
     // bookmark per la persistenza (setFileBookmark).
     void setFileURL (const juce::File& file, const juce::URL& url);
     std::unique_ptr<SecurityScopedFile::ScopedAccess> accessFile (const juce::File& file) const;
+
+    // Cartelle di Config (SSDIR/SADIR/INCDIR extra, SFDIR) per il motore
+    // corrente. Desktop: getUserFolderSetting. iOS: risolve il bookmark e
+    // APRE l'accesso security-scoped, tenuto aperto (folderAccess) finche'
+    // il motore gira - Csound legge/scrive con fopen sui path, fuori dal
+    // controllo di JUCE. File{} se non impostata o non accessibile (con un
+    // avviso in console).
+    juce::File openUserFolder (const char* key);
+    std::vector<std::unique_ptr<SecurityScopedFile::ScopedAccess>> folderAccess;
     juce::URL makeFileURL (const juce::File& file) const; // URL con bookmark per createInput/OutputStream
     bool isSessionLinked() const { return getLinkedCsdFile() != juce::File{}; }
 

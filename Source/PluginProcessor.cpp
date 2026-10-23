@@ -1028,6 +1028,10 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
         CsoundAPI::csoundDestroy (old);
     }
 
+    // Accessi alle cartelle di Config del motore appena distrutto (iOS):
+    // chiusi qui, riaperti sotto da openUserFolder per il nuovo motore.
+    folderAccess.clear();
+
     setCsdText (newCsdText);
 
     // CsoundAPI::csoundInitialize() e' idempotente: e' sicuro chiamarla ogni volta che
@@ -1119,7 +1123,7 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
         const auto linked = getLinkedCsdFile();
         const auto csdFolder = linked.existsAsFile() ? linked.getParentDirectory() : juce::File{};
 
-        auto setSearchPath = [cs, &csdFolder] (const char* envName, const char* extraKey)
+        auto setSearchPath = [this, cs, &csdFolder] (const char* envName, const char* extraKey)
         {
             juce::StringArray dirs;
 
@@ -1134,25 +1138,17 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
             if (! dirs.isEmpty())
                 CsoundAPI::csoundSetOption (cs, ("--env:" + juce::String (envName) + "=\"" + dirs.joinIntoString (";") + "\"").toRawUTF8());
 
-           #if ! JUCE_IOS
-            const auto extra = getUserFolderSetting (extraKey);
+            const auto extra = openUserFolder (extraKey);
 
             if (extra != juce::File{} && ! dirs.contains (extra.getFullPathName()))
                 CsoundAPI::csoundSetOption (cs, ("--env:" + juce::String (envName) + "+=\"" + extra.getFullPathName() + "\"").toRawUTF8());
-           #else
-            juce::ignoreUnused (extraKey);
-           #endif
         };
 
         setSearchPath ("SSDIR",  kExtraSamplesFolderKey);
         setSearchPath ("SADIR",  kExtraAnalysisFolderKey);
         setSearchPath ("INCDIR", kExtraIncludeFolderKey);
 
-       #if ! JUCE_IOS
-        const auto outputFolder = getUserFolderSetting (kOutputFilesFolderKey);
-       #else
-        const juce::File outputFolder;
-       #endif
+        const auto outputFolder = openUserFolder (kOutputFilesFolderKey);
 
         const auto writeFolder = outputFolder != juce::File{} ? outputFolder : getOutputFilesFolder();
 
@@ -1793,15 +1789,225 @@ juce::PropertiesFile& CsoundAudioProcessor::getUserSettings()
     return *settings;
 }
 
+//==============================================================================
+// Cartelle di Config > Extra Folders.
+//
+// Desktop: nelle impostazioni utente (getUserSettings), solo il path.
+//
+// iOS: in un file di impostazioni CONDIVISO nel contenitore dell'App Group
+// (folderSettings), cosi' app Standalone ed estensione AUv3 usano la stessa
+// cartella. Per ogni cartella:
+//   <key>                 path scelto
+//   <key>Bookmark.app     bookmark security-scoped creato dall'app
+//   <key>Bookmark.auv3    bookmark creato dall'estensione
+// Il bookmark e' per processo: quello creato dall'app potrebbe non
+// risolversi nell'estensione (o viceversa). openUserFolder prova prima il
+// proprio, poi quello dell'altro processo; se funziona ne crea uno proprio,
+// altrimenti avvisa di scegliere la cartella anche qui.
+// Due processi possono scrivere lo stesso file: reload() prima di ogni
+// lettura e scrittura, e lock fra processi (InterProcessLock).
+namespace
+{
+   #if JUCE_IOS
+    const char* const kFolderKeys[] = { CsoundAudioProcessor::kExtraSamplesFolderKey,
+                                        CsoundAudioProcessor::kOutputFilesFolderKey,
+                                        CsoundAudioProcessor::kExtraAnalysisFolderKey,
+                                        CsoundAudioProcessor::kExtraIncludeFolderKey };
+
+    juce::String ownBookmarkKey (const juce::String& key)
+    {
+        return key + (juce::JUCEApplicationBase::isStandaloneApp() ? "Bookmark.app" : "Bookmark.auv3");
+    }
+
+    juce::String otherBookmarkKey (const juce::String& key)
+    {
+        return key + (juce::JUCEApplicationBase::isStandaloneApp() ? "Bookmark.auv3" : "Bookmark.app");
+    }
+
+    juce::PropertiesFile& folderSettings()
+    {
+        static juce::InterProcessLock lock ("apeCsoundFolderSettings");
+
+        static std::unique_ptr<juce::PropertiesFile> settings = []
+        {
+            juce::PropertiesFile::Options options;
+            options.storageFormat = juce::PropertiesFile::storeAsXML;
+            options.processLock   = &lock;
+
+            // Accanto a apeCsound/ (non dentro: non e' un dato dell'utente).
+            const auto file = CsoundAudioProcessor::getBaseFolder().getParentDirectory()
+                                  .getChildFile ("apeCsound-folders.settings");
+
+            auto props = std::make_unique<juce::PropertiesFile> (file, options);
+
+            // Migrazione: impostazioni salvate prima, per processo.
+            auto& old = CsoundAudioProcessor::getUserSettings();
+            bool changed = false;
+
+            for (auto* key : kFolderKeys)
+            {
+                const auto oldBookmark = old.getValue (juce::String (key) + "Bookmark");
+
+                if (old.getValue (key).isNotEmpty() && oldBookmark.isNotEmpty()
+                    && props->getValue (key).isEmpty())
+                {
+                    props->setValue (key, old.getValue (key));
+                    props->setValue (ownBookmarkKey (key), oldBookmark);
+                    changed = true;
+                }
+
+                old.removeValue (key);
+                old.removeValue (juce::String (key) + "Bookmark");
+            }
+
+            if (changed)
+                props->saveIfNeeded();
+
+            old.saveIfNeeded();
+            return props;
+        }();
+
+        return *settings;
+    }
+
+    // Rilettura dal disco. PropertiesFile::reload() AGGIUNGE/aggiorna le
+    // chiavi lette ma non toglie quelle che l'altro processo ha cancellato:
+    // senza clear() un bookmark rimosso dall'AUv3 resterebbe nella cache
+    // dell'app e verrebbe riscritto al suo prossimo salvataggio.
+    juce::PropertiesFile& reloadedFolderSettings()
+    {
+        auto& settings = folderSettings();
+        settings.getAllProperties().clear();
+        settings.reload();
+        return settings;
+    }
+   #endif
+}
+
 juce::File CsoundAudioProcessor::getUserFolderSetting (const char* key)
 {
-    const auto path = getUserSettings().getValue (key);
+   #if JUCE_IOS
+    auto& settings = reloadedFolderSettings(); // l'altro processo (app / AUv3) puo' averla cambiata
+   #else
+    auto& settings = getUserSettings();
+   #endif
+
+    const auto path = settings.getValue (key);
 
     if (path.isEmpty() || ! juce::File::isAbsolutePath (path))
         return {};
 
     const juce::File folder (path);
+
+   #if JUCE_IOS
+    // Fuori dalla sandbox: senza accesso aperto non si puo' verificare che
+    // esista. Basta un bookmark (di uno dei due processi).
+    return settings.getValue (ownBookmarkKey (key)).isNotEmpty()
+        || settings.getValue (otherBookmarkKey (key)).isNotEmpty() ? folder : juce::File{};
+   #else
     return folder.isDirectory() ? folder : juce::File{};
+   #endif
+}
+
+void CsoundAudioProcessor::setUserFolderSetting (const char* key, const juce::File& folder,
+                                                 const juce::MemoryBlock& bookmark)
+{
+   #if JUCE_IOS
+    auto& settings = reloadedFolderSettings();
+
+    if (folder == juce::File{})
+    {
+        settings.removeValue (key);
+        settings.removeValue (ownBookmarkKey (key));
+        settings.removeValue (otherBookmarkKey (key));
+    }
+    else
+    {
+        // Cartella NUOVA (path diverso): il bookmark dell'altro processo
+        // punta alla vecchia e va tolto. Stesso path (bookmark rinnovato): resta.
+        if (settings.getValue (key) != folder.getFullPathName())
+            settings.removeValue (otherBookmarkKey (key));
+
+        settings.setValue (key, folder.getFullPathName());
+
+        if (bookmark.getSize() > 0)
+            settings.setValue (ownBookmarkKey (key), bookmark.toBase64Encoding());
+        else
+            settings.removeValue (ownBookmarkKey (key));
+    }
+   #else
+    juce::ignoreUnused (bookmark);
+    auto& settings = getUserSettings();
+
+    if (folder == juce::File{})
+        settings.removeValue (key);
+    else
+        settings.setValue (key, folder.getFullPathName());
+   #endif
+
+    settings.saveIfNeeded();
+}
+
+juce::File CsoundAudioProcessor::openUserFolder (const char* key)
+{
+   #if JUCE_IOS
+    const auto folder = getUserFolderSetting (key); // fa gia' reload()
+
+    if (folder == juce::File{})
+        return {};
+
+    auto& settings = folderSettings();
+
+    auto tryBookmark = [&folder] (const juce::String& base64) -> std::unique_ptr<SecurityScopedFile::ScopedAccess>
+    {
+        if (base64.isEmpty())
+            return {};
+
+        juce::MemoryBlock bookmark;
+        bookmark.fromBase64Encoding (base64);
+
+        auto access = std::make_unique<SecurityScopedFile::ScopedAccess> (bookmark, folder);
+
+        if (! access->active || ! access->resolvedFile.isDirectory())
+            return {};
+
+        return access;
+    };
+
+    bool own = true;
+    auto access = tryBookmark (settings.getValue (ownBookmarkKey (key)));
+
+    if (access == nullptr)
+    {
+        own = false;
+        access = tryBookmark (settings.getValue (otherBookmarkKey (key)));
+    }
+
+    if (access == nullptr)
+    {
+        handleMessage ("Warning: the folder " + folder.getFullPathName()
+                       + " (Config > Extra Folders) is not accessible from "
+                       + (juce::JUCEApplicationBase::isStandaloneApp() ? "the app" : "the plug-in")
+                       + ", using the default one. Choose it again in Config > Extra Folders.");
+        return {};
+    }
+
+    // Bookmark proprio mancante (cartella scelta dall'altro processo) o da
+    // rinnovare (cartella spostata o rinominata): l'accesso adesso e'
+    // aperto, se ne crea uno di questo processo.
+    if (! own || access->stale)
+    {
+        const auto fresh = SecurityScopedFile::makeBookmark (access->resolvedFile);
+        if (fresh.getSize() > 0)
+            setUserFolderSetting (key, access->resolvedFile, fresh);
+    }
+
+    auto resolved = access->resolvedFile;
+    folderAccess.push_back (std::move (access));
+    return resolved;
+   #else
+    return getUserFolderSetting (key);
+   #endif
 }
 
 juce::File CsoundAudioProcessor::getCsoundFolder (const juce::String& envName)
@@ -4376,11 +4582,11 @@ juce::String CsoundAudioProcessor::emptyCsdText()
 ; e.g. diskin2 "loop.wav". Csound looks for it in the folder of the
 ; linked .csd, then in the apeCsound SSDIR folder
 ; (macOS: ~/Documents/apeCsound/SSDIR). To copy files there use
-; "Import Files..." in the file name menu (the only way on iOS).
+; "Import Files..." in the file name menu (iOS: also "Manage Files...").
 ; Files written by Csound (fout, -o file) without a path go to the
 ; apeCsound SFDIR folder (macOS: ~/Documents/apeCsound/SFDIR); analysis
 ; files are searched in apeCsound/SADIR, #include files in apeCsound/INCDIR.
-; Desktop: Menu > Config > Csound Folders adds more folders or changes
+; Menu > Config > Extra Folders adds more folders or changes
 ; where files are written.
 </CsOptions>
 <CsInstruments>
@@ -4412,11 +4618,11 @@ juce::String CsoundAudioProcessor::defaultCsdText()
 ; e.g. diskin2 "loop.wav". Csound looks for it in the folder of the
 ; linked .csd, then in the apeCsound SSDIR folder
 ; (macOS: ~/Documents/apeCsound/SSDIR). To copy files there use
-; "Import Files..." in the file name menu (the only way on iOS).
+; "Import Files..." in the file name menu (iOS: also "Manage Files...").
 ; Files written by Csound (fout, -o file) without a path go to the
 ; apeCsound SFDIR folder (macOS: ~/Documents/apeCsound/SFDIR); analysis
 ; files are searched in apeCsound/SADIR, #include files in apeCsound/INCDIR.
-; Desktop: Menu > Config > Csound Folders adds more folders or changes
+; Menu > Config > Extra Folders adds more folders or changes
 ; where files are written.
 </CsOptions>
 <CsInstruments>

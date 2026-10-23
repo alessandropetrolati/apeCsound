@@ -128,14 +128,12 @@ public:
     // scegliere nulla (tap sullo scrim).
     /** Path (24x24 circa, da scalare con scaleToFit) dell'icona: le stesse
         icone dei menu, riusate da CsoundEditCallout. Vuoto per none. */
-    // Icone e scorciatoie nelle voci: solo desktop. Su iOS i menu sono solo
-    // testo (come i menu di sistema senza tastiera) e lo spazio non viene
-    // riservato.
+    // Icone su tutte le piattaforme; scorciatoie (Cmd+S...) solo desktop:
+    // su iOS non c'e' (di solito) una tastiera, lo spazio non viene riservato.
+    static constexpr bool showsIcons     = true;
    #if JUCE_IOS
-    static constexpr bool showsIcons     = false;
     static constexpr bool showsShortcuts = false;
    #else
-    static constexpr bool showsIcons     = true;
     static constexpr bool showsShortcuts = true;
    #endif
     static juce::Path getIconPath (CsoundActionSheetIcon icon);

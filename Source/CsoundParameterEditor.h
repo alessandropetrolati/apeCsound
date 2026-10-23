@@ -264,7 +264,7 @@ public:
     // PluginEditor solo in quel caso, altrimenti la voce non compare.
     std::function<void()> onAudioSettingsRequested;
 
-    // Config > "Csound Folders" (solo desktop, impostati da PluginEditor;
+    // Config > "Extra Folders" (solo desktop, impostati da PluginEditor;
     // nulli -> voce assente): sottomenu con una voce per cartella di Csound.
     // Indice: 0 = SSDIR (campioni), 1 = SFDIR (file scritti),
     // 2 = SADIR (analisi), 3 = INCDIR (#include). isCsoundFolderSet disegna

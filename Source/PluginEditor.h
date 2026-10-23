@@ -10,6 +10,92 @@
 #include "IOSKeyboard.h"
 #include "CsoundAudioSettings.h"
 #include "CsoundGraphs.h"
+#include "CsdBrowserView.h"
+
+/**
+    Console (log di Csound): TextEditor in sola lettura che con il DITO
+    scorre invece di selezionare. Un juce::TextEditor trascinato sposta il
+    cursore/la selezione e il suo Viewport interno non scorre col
+    trascinamento: su iOS la console non si poteva scorrere. Con il touch
+    (qualunque piattaforma) il trascinamento sposta la vista, con un po' di
+    inerzia; mouse e trackpad restano come prima (selezione, rotellina).
+    Doppio tocco: seleziona la parola (comportamento normale).
+*/
+struct ConsoleTextEditor final : public juce::TextEditor,
+                                 private juce::Timer
+{
+    void mouseDown (const juce::MouseEvent& e) override
+    {
+        if (! e.source.isTouch())
+            return juce::TextEditor::mouseDown (e);
+
+        stopTimer();
+        velocity = 0.0;
+
+        if (auto* vp = innerViewport())
+            dragStartY = vp->getViewPositionY();
+
+        lastY = e.position.y;
+        lastTime = juce::Time::getMillisecondCounterHiRes();
+    }
+
+    void mouseDrag (const juce::MouseEvent& e) override
+    {
+        if (! e.source.isTouch())
+            return juce::TextEditor::mouseDrag (e);
+
+        if (auto* vp = innerViewport())
+            vp->setViewPosition (vp->getViewPositionX(), dragStartY - e.getDistanceFromDragStartY());
+
+        const auto now = juce::Time::getMillisecondCounterHiRes();
+        const auto dt = juce::jmax (1.0, now - lastTime);
+        velocity = 0.8 * velocity + 0.2 * ((lastY - e.position.y) / dt); // px/ms, verso il basso positivo
+        lastY = e.position.y;
+        lastTime = now;
+    }
+
+    void mouseUp (const juce::MouseEvent& e) override
+    {
+        if (! e.source.isTouch())
+            return juce::TextEditor::mouseUp (e);
+
+        // Inerzia: solo dopo uno "swipe" (dito ancora in movimento).
+        if (e.mouseWasDraggedSinceMouseDown() && std::abs (velocity) > 0.05
+            && juce::Time::getMillisecondCounterHiRes() - lastTime < 80.0)
+            startTimerHz (60);
+    }
+
+private:
+    juce::Viewport* innerViewport()
+    {
+        for (auto* c : getChildren())
+            if (auto* vp = dynamic_cast<juce::Viewport*> (c))
+                return vp;
+        return nullptr;
+    }
+
+    void timerCallback() override
+    {
+        auto* vp = innerViewport();
+
+        if (vp == nullptr || std::abs (velocity) < 0.02)
+        {
+            stopTimer();
+            return;
+        }
+
+        const int before = vp->getViewPositionY();
+        vp->setViewPosition (vp->getViewPositionX(), before + juce::roundToInt (velocity * 16.7));
+        velocity *= 0.93;
+
+        if (vp->getViewPositionY() == before) // arrivati in cima o in fondo
+            stopTimer();
+    }
+
+    int dragStartY = 0;
+    double velocity = 0.0, lastTime = 0.0;
+    float lastY = 0.0f;
+};
 
 /**
     Editor del plugin/standalone (juce::AudioProcessorEditor): editor con
@@ -287,6 +373,10 @@ private:
     };
 
     GuideView guideView;
+
+    // Browser interno dei .csd in apeCsound/CSD, usato su iOS al posto del
+    // document picker (vedi CsdBrowserView.h).
+    CsdBrowserView csdBrowser;
 
     // "Audio/MIDI Settings..." (solo standalone): overlay come GuideView,
     // con l'AudioDeviceSelectorComponent di JUCE ridipinto con i colori
@@ -608,7 +698,7 @@ private:
     // finche' non viene aperto dal menu.
     AboutView aboutView;
 
-    juce::TextEditor logConsole;
+    ConsoleTextEditor logConsole;
 
     // Cronologia di Undo/Redo UNICA e CONDIVISA fra l'editor di codice e il
     // pannello Parametri (richiesta esplicita, vedi il commento su
@@ -839,6 +929,10 @@ private:
     void promptSaveSession (std::function<void()> onSaved = nullptr);
     void promptLoadSession();
     void promptOpenExample();     // Load aperto in apeCsound/CSD/Examples
+    // iOS: browser interno (csdBrowser); altrove: dialogo nativo.
+    void openCsdWithBrowserOrPicker (const juce::String& title, const juce::File& startDir);
+    // Scrive la sessione in file (Save as, picker o browser), poi onSaved.
+    void saveSessionTo (const juce::File& file, std::function<void()> onSaved);
     void promptRestoreExamples(); // riestrae gli esempi di fabbrica (con conferma)
     juce::File getCsdChooserStartDirectory (bool forSave) const;
 
@@ -846,22 +940,26 @@ private:
     // file audio) e copia nella cartella SSDIR (CsoundAudioProcessor::
     // getSamplesFolder), che su iOS sta nel container dell'App Group e non
     // e' raggiungibile dall'app File.
-    void importSamples();   // "Import Files...": audio -> SSDIR, .udo/.inc/.orc -> INCDIR, analisi -> SADIR
+    // "Import Files...": audio -> SSDIR, .udo/.inc -> INCDIR, analisi -> SADIR, .csd -> CSD/User.
+    // intoFolder (Manage Files, iOS): tutto in quella cartella, qualunque tipo.
+    void importSamples (const juce::File& intoFolder = {});
     static juce::String importDestinationFor (const juce::String& fileName);
 
    #if JUCE_IOS
-    // "Export Files..." (solo iOS): condivide i file di SFDIR con il pannello
-    // di sistema (ContentSharer); il box va tenuto in vita finche' e' aperto.
-    void exportFiles();
-    juce::ScopedMessageBox shareMessageBox;
+    // "Manage Files..." (solo iOS): browser sulla cartella apeCsound
+    // (CsdBrowserView, modalita' manage) con Import / Export / Delete.
+    void manageFiles();
+    void copyFilesToChosenFolder (const juce::Array<juce::File>& files);
    #endif
 
-    // Config > Csound Folders (solo desktop): cartelle extra di SSDIR/SADIR/
+
+
+    // Config > Extra Folders (solo desktop): cartelle extra di SSDIR/SADIR/
     // INCDIR e cartella di uscita SFDIR, salvate nelle preferenze utente -
     // vedi CsoundAudioProcessor::k...FolderKey. which: 0 SSDIR, 1 SFDIR,
     // 2 SADIR, 3 INCDIR. setCsoundFolder ({}) = rimuovi (torna al default).
     void chooseCsoundFolder (int which);
-    void setCsoundFolder (int which, const juce::File& folder);
+    void setCsoundFolder (int which, const juce::File& folder, const juce::MemoryBlock& bookmark = {});
     static const char* csoundFolderKey (int which);
     static juce::String csoundFolderTitle (int which);
     static juce::String csoundFolderEnvName (int which);

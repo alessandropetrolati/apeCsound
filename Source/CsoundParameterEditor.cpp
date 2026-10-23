@@ -2816,7 +2816,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             item.icon = CsoundActionSheetIcon::codeBraces;
             config.subItems.push_back (item);
         }
-        // "Follow CSD nchnls": in Config, subito sopra "Csound Folders" (vedi sotto).
+        // "Follow CSD nchnls": in Config, subito sopra "Extra Folders" (vedi sotto).
         CsoundActionSheetItem followItem;
         followItem.id = 116; followItem.text = "Follow CSD nchnls";
         followItem.enabled = onToggleFollowCsdChannelsRequested != nullptr;
@@ -2838,16 +2838,19 @@ void CsoundParameterMappingPanel::showPanelMenu()
 
         if (onChooseCsoundFolder != nullptr)
         {
-            // "Csound Folders": seconda pagina con le quattro cartelle;
+            // "Extra Folders": seconda pagina con le quattro cartelle;
             // ogni cartella apre una terza pagina (con
             // "Back"): percorso, Choose/Change Folder, Reveal, Remove.
             CsoundActionSheetItem folders;
-            folders.text = "Csound Folders";
+            folders.text = "Extra Folders";
             folders.icon = CsoundActionSheetIcon::folder;
 
 
-            const char* const names[]    = { "Samples (SSDIR)", "Output Files (SFDIR)",
-                                             "Analysis Files (SADIR)", "Include Files (INCDIR)" };
+            // Le cartelle di apeCsound (SSDIR, SFDIR...) ci sono sempre: qui
+            // se ne AGGIUNGONO altre in cui Csound cerca (SSDIR/SADIR/INCDIR)
+            // e si sceglie dove scrive (SFDIR, al posto di quella di default).
+            const char* const names[]    = { "Extra Samples (SSDIR)", "Output Files (SFDIR)",
+                                             "Extra Analysis Files (SADIR)", "Extra Include Files (INCDIR)" };
             const char* const defaults[] = { "SSDIR", "SFDIR", "SADIR", "INCDIR" };
 
            #if JUCE_MAC
@@ -2889,12 +2892,15 @@ void CsoundParameterMappingPanel::showPanelMenu()
                 choose.keepOpen = true;
                 item.subItems.push_back (choose);
 
-                CsoundActionSheetItem reveal;
-                reveal.id = 130 + i;  // 130..133 (cartella in uso: scelta o default)
-                reveal.text = revealText;
-                reveal.icon = CsoundActionSheetIcon::folder;
-                reveal.keepOpen = true;
-                item.subItems.push_back (reveal);
+                if (onRevealCsoundFolder != nullptr) // non su iOS
+                {
+                    CsoundActionSheetItem reveal;
+                    reveal.id = 130 + i;  // 130..133 (cartella in uso: scelta o default)
+                    reveal.text = revealText;
+                    reveal.icon = CsoundActionSheetIcon::folder;
+                    reveal.keepOpen = true;
+                    item.subItems.push_back (reveal);
+                }
 
                 CsoundActionSheetItem remove;
                 remove.id = 140 + i;  // 140..143

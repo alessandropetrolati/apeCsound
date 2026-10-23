@@ -1,4 +1,4 @@
-apeCsound v. 1.0.0 for macOS
+apeCsound v. 1.0.2 for macOS
 by Alessandro Petrolati - apeSoft
 
 Csound 7 inside your DAW: write or load a .csd, press Apply, and play it
