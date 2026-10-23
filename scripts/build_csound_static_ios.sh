@@ -8,7 +8,7 @@
 # (build/csound-install/universal/include).
 #
 # Output (what the .jucer expects, "$(PLATFORM_NAME)" resolved by Xcode):
-#   build/csound-install/ios/iphoneos/lib/{libCsoundLib64,libsndfile,libsamplerate}.a   (arm64 device)
+#   build/csound-install/ios/iphoneos/lib/{libCsoundLib64,libsndfile,libsamplerate,liblo,libcsoundosc}.a   (arm64 device)
 #   build/csound-install/ios/iphonesimulator/lib/...                                      (arm64 + x86_64 simulator, lipo)
 #
 # Csound's sources guard the iOS-unavailable calls (system(), fork()...)
@@ -34,8 +34,9 @@ IOS_MIN="14.0"
 SNDFILE_SRC="$BUILD_ROOT/sndfile-static/src"
 SAMPLERATE_SRC="$BUILD_ROOT/samplerate-static/src"
 CSOUND_SRC="$BUILD_ROOT/csound-static/src"
+LIBLO_SRC="$BUILD_ROOT/liblo-static/src"   # OSC (vedi build_csound_static_macos.sh, sezione 3b)
 
-for d in "$SNDFILE_SRC" "$SAMPLERATE_SRC" "$CSOUND_SRC"; do
+for d in "$SNDFILE_SRC" "$SAMPLERATE_SRC" "$CSOUND_SRC" "$LIBLO_SRC"; do
   if [ ! -d "$d" ]; then
     echo "ERROR: $d not found - run ./build_csound_static_macos.sh (macOS) first, it clones the sources."
     exit 1
@@ -45,6 +46,9 @@ done
 BISON_BIN="$(brew --prefix bison)/bin/bison"
 FLEX_BIN="$(brew --prefix flex)/bin/flex"
 NCPU="$(sysctl -n hw.ncpu)"
+
+# OSC statico: plugin "osc" di Csound come libreria statica (patch condivisa).
+python3 "$SCRIPT_DIR/patch_csound_static_osc.py" "$CSOUND_SRC"
 
 # platform = iphoneos | iphonesimulator ; arch = arm64 | x86_64
 build_one() {
@@ -83,6 +87,25 @@ build_one() {
   cmake --build "$BUILD_ROOT/samplerate-static/build-$tag" --config Release -j"$NCPU"
   cmake --install "$BUILD_ROOT/samplerate-static/build-$tag" --config Release
 
+  echo "==> liblo $tag"
+  cmake -S "$LIBLO_SRC/cmake" -B "$BUILD_ROOT/liblo-static/build-$tag" "${common[@]}" \
+    -DCMAKE_INSTALL_PREFIX="$deps/liblo" \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+    -DWITH_STATIC=ON -DWITH_TOOLS=OFF -DWITH_TESTS=OFF -DWITH_EXAMPLES=OFF -DWITH_CPP_TESTS=OFF \
+    -DTHREADING=ON
+  cmake --build "$BUILD_ROOT/liblo-static/build-$tag" --config Release -j"$NCPU"
+  cmake --install "$BUILD_ROOT/liblo-static/build-$tag" --config Release
+  local lo_a
+  lo_a="$(find "$deps/liblo" "$BUILD_ROOT/liblo-static/build-$tag" -name 'liblo*.a' -type f | head -1)"
+  [ -n "$lo_a" ] || { echo "ERROR: static liblo not found for $tag"; exit 1; }
+  mkdir -p "$deps/liblo/lib"
+  [ "$lo_a" = "$deps/liblo/lib/liblo.a" ] || cp "$lo_a" "$deps/liblo/lib/liblo.a"
+  if [ ! -f "$deps/liblo/include/lo/lo.h" ]; then
+    mkdir -p "$deps/liblo/include/lo"
+    cp "$LIBLO_SRC"/lo/*.h "$deps/liblo/include/lo/"
+    find "$BUILD_ROOT/liblo-static/build-$tag" -path '*lo/*.h' -exec cp {} "$deps/liblo/include/lo/" \;
+  fi
+
   echo "==> Csound $tag"
   cmake -S "$CSOUND_SRC" -B "$BUILD_ROOT/csound-static/build-$tag" "${common[@]}" \
     -DCMAKE_INSTALL_PREFIX="$IOS_ROOT/$tag" \
@@ -103,14 +126,23 @@ build_one() {
     -DUSE_DOUBLE=ON -DFAIL_MISSING=OFF \
     -DUSE_PORTAUDIO=OFF -DUSE_PORTMIDI=OFF -DUSE_JACK=OFF -DUSE_COREMIDI=OFF -DUSE_AUDIOUNIT=OFF \
     -DUSE_IPMIDI=OFF -DUSE_PULSEAUDIO=OFF -DUSE_PIPEWIRE=OFF \
-    -DBUILD_OSC_OPCODES=OFF -DBUILD_CSBEATS=OFF -DBUILD_DSSI_OPCODES=OFF
+    -DBUILD_OSC_OPCODES=ON -DAPECSOUND_STATIC_PLUGINS=ON \
+    -DLibLO_LIBRARY="$deps/liblo/lib/liblo.a" -DLibLO_INCLUDE_DIR="$deps/liblo/include" \
+    -DBUILD_CSBEATS=OFF -DBUILD_DSSI_OPCODES=OFF
   # Solo la libreria statica: i frontend (csound-bin, csdebugger) e il
   # plugin "deprecated" non servono e su iOS non compilano/linkano
   # (cercano csound.h fuori dall'albero, producono .dylib). Niente
   # "cmake --install" (costruirebbe tutto): la .a si copia dal build dir.
-  cmake --build "$BUILD_ROOT/csound-static/build-$tag" --config Release -j"$NCPU" --target CsoundLib64-static
+  cmake --build "$BUILD_ROOT/csound-static/build-$tag" --config Release -j"$NCPU" --target CsoundLib64-static osc
   mkdir -p "$IOS_ROOT/$tag/lib"
   cp "$BUILD_ROOT/csound-static/build-$tag/libCsoundLib64.a" "$IOS_ROOT/$tag/lib/libCsoundLib64.a"
+
+  # Opcode OSC statici (libosc.a, vedi patch_csound_static_osc.py)
+  local osc_a
+  osc_a="$(find "$BUILD_ROOT/csound-static/build-$tag" -name 'libosc.a' -type f | head -1)"
+  [ -n "$osc_a" ] || { echo "ERROR: libosc.a not found for $tag (is liblo found?)"; exit 1; }
+  mkdir -p "$deps/csoundosc/lib"
+  cp "$osc_a" "$deps/csoundosc/lib/libcsoundosc.a"
 }
 
 build_one iphoneos        arm64
@@ -139,6 +171,8 @@ for platform in iphoneos iphonesimulator; do
   collect_lib "$platform" libCsoundLib64.a ""
   collect_lib "$platform" libsndfile.a     "-deps/sndfile"
   collect_lib "$platform" libsamplerate.a  "-deps/samplerate"
+  collect_lib "$platform" liblo.a          "-deps/liblo"
+  collect_lib "$platform" libcsoundosc.a   "-deps/csoundosc"
 done
 
 echo ""
