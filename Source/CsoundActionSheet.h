@@ -247,7 +247,7 @@ private:
     static constexpr int titleAreaHeight       = 32;
     static constexpr float sheetCornerRadius   = 14.0f;
     static constexpr int rowHorizontalPadding  = 16;
-    static constexpr int iconAreaWidth         = showsIcons ? 26 : 0; // spazio riservato all'icona (vedi CsoundActionSheetItem::icon), SEMPRE, anche se none (allineamento uniforme tra righe)
+    static constexpr int iconAreaWidth         = showsIcons ? 32 : 0; // icona 18 px allineata a sinistra + 14 px di spazio prima del testo; // spazio riservato all'icona (vedi CsoundActionSheetItem::icon), SEMPRE, anche se none (allineamento uniforme tra righe)
     static constexpr int maxSheetHeightPercent = 92; // rispetto all'altezza dell'overlay (= host): il menu principale (11 voci + 4 separatori = 538 px) deve starci senza scrollbar in una finestra normale
 
     // Dimensioni del popup CENTRATO (richiesta esplicita: "ragionevolmente

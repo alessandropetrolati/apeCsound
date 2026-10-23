@@ -1,5 +1,7 @@
 // [EDIT-CALLOUT] vedi CsoundEditCallout.h
 #include "CsoundEditCallout.h"
+
+namespace { constexpr int kIconTextGap = 9; } // spazio tra icona e testo (era 6: troppo vicini)
 #include <cmath>
 
 namespace
@@ -29,7 +31,7 @@ int CsoundEditCallout::itemWidth (const Item& item) const
     // Larghezza misurata + margine: la misura di GlyphArrangement e il
     // rendering (font bold, hinting) possono differire di 1-2 px e
     // drawText tronca l'ultima lettera ("Cu" invece di "Cut").
-    const int iconSpace = (CsoundActionSheet::showsIcons && item.icon != CsoundActionSheetIcon::none) ? iconSize + 6 : 0;
+    const int iconSpace = (CsoundActionSheet::showsIcons && item.icon != CsoundActionSheetIcon::none) ? iconSize + kIconTextGap : 0;
     const int textWidth = (int) std::ceil (juce::GlyphArrangement::getStringWidth (itemFont, item.text)) + 4;
     return textWidth + kItemPadding * 2 + iconSpace;
 }
@@ -290,7 +292,7 @@ void CsoundEditCallout::paint (juce::Graphics& g)
             {
                 auto path = CsoundActionSheet::getIconPath (item.icon);
                 const auto iconArea = textArea.removeFromLeft (iconSize).withSizeKeepingCentre (iconSize, iconSize);
-                textArea.removeFromLeft (6);
+                textArea.removeFromLeft (kIconTextGap);
                 path.scaleToFit ((float) iconArea.getX(), (float) iconArea.getY(),
                                  (float) iconArea.getWidth(), (float) iconArea.getHeight(), true);
                 g.setColour (item.enabled ? kCalloutAccent : kCalloutMuted);

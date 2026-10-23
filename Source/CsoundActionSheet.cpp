@@ -1005,7 +1005,9 @@ void CsoundActionSheet::RowsContent::paint (juce::Graphics& g)
         if (CsoundActionSheet::showsIcons && item.icon != CsoundActionSheetIcon::none)
         {
             auto path = makeSheetIconPath (item.icon);
-            auto glyphArea = iconArea.withSizeKeepingCentre (18, 18);
+            // A sinistra nell'area (non centrata): lo spazio resta tutto tra
+            // icona e testo, che prima erano troppo vicini.
+            auto glyphArea = iconArea.removeFromLeft (18).withSizeKeepingCentre (18, 18);
             path.scaleToFit ((float) glyphArea.getX(), (float) glyphArea.getY(),
                                (float) glyphArea.getWidth(), (float) glyphArea.getHeight(), true);
             g.setColour (item.isEnabledNow() ? kTextMuted : kTextDisabled);
