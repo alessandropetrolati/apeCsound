@@ -5,7 +5,7 @@
               companyEmail="apps@apesoft.it" bundleIdentifier="it.apeSoft.apeCsound"
               pluginManufacturerCode="Apes" pluginCode="Csnd" pluginCharacteristicsValue="pluginWantsMidiIn,pluginProducesMidiOut,pluginEditorRequiresKeys"
               pluginManufacturer="apeSoft" aaxIdentifier="it.apeSoft.apeCsound"
-              pluginVST3Category="Fx" pluginAUMainType="'aufx'" microphonePermissionNeeded="1"
+              pluginVST3Category="Fx" pluginAUMainType="'aumf'" microphonePermissionNeeded="1"
               microphonePermissionsText="apeCsound needs the microphone for live audio input."
               pluginEditorRequiresKeys="1" pluginIsSynth="0" pluginWantsMidiIn="1"
               pluginProducesMidiOut="1" pluginIsMidiEffectPlugin="0" pluginAAXDisableBypass="0"

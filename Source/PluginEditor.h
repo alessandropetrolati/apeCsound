@@ -359,13 +359,33 @@ private:
 
             std::function<void()> onClose;
 
-            // Il testo (TextEditor in sola lettura, alto quanto il suo
-            // contenuto) sta dentro un Viewport: scorre con rotellina,
-            // trackpad e trascinamento con il dito (su iOS un TextEditor
-            // trascinato seleziona il testo invece di scorrere).
+            // Testo della guida impaginato a blocchi (vedi Content): titoli,
+            // paragrafi, elenchi con rientro sospeso, colonna di lettura a
+            // larghezza massima. Dentro un Viewport: scorre con rotellina,
+            // trackpad e trascinamento con il dito.
+            struct Content final : public juce::Component
+            {
+                Content();
+                void paint (juce::Graphics& g) override;
+                /** Impagina per la larghezza data e ritorna l'altezza totale. */
+                int layoutForWidth (int width);
+
+                struct Block
+                {
+                    enum class Type { h1, h2, para, bullet } type = Type::para;
+                    int level = 0;            // bullet: 0, 1 (sotto-elenco)
+                    juce::AttributedString text;
+                    juce::TextLayout layout;
+                    juce::Rectangle<float> area; // area del testo (dopo il rientro)
+                };
+
+                std::vector<Block> blocks;
+                int laidOutWidth = -1;
+                float columnX = 0.0f, columnWidth = 0.0f;
+            };
+
             juce::Viewport viewport;
-            juce::Component textHolder;
-            juce::TextEditor text;
+            Content content;
         };
 
         Card card;

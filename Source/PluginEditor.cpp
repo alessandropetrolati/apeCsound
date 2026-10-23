@@ -3088,47 +3088,45 @@ void CsoundAudioProcessorEditor::AboutView::hide()
 // Guida rapida - vedi GuideView in PluginEditor.h.
 CsoundAudioProcessorEditor::GuideView::Card::Card()
 {
-    text.setMultiLine (true);
-    text.setReadOnly (true);
-    text.setScrollbarsShown (false);
-    text.setCaretVisible (false);
-    text.setPopupMenuEnabled (false);
-    text.setColour (juce::TextEditor::backgroundColourId, kAboutCardBg);
-    text.setColour (juce::TextEditor::textColourId, kAboutText);
-    text.setColour (juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
-    text.setColour (juce::TextEditor::focusedOutlineColourId, juce::Colours::transparentBlack);
-    text.setColour (juce::TextEditor::highlightColourId, kAboutAccent.withAlpha (0.35f));
-    text.setLineSpacing (1.3f);
-    text.setWantsKeyboardFocus (false);
-    text.setInterceptsMouseClicks (false, false); // i tocchi vanno al Viewport (scorrimento)
-    textHolder.addAndMakeVisible (text);
-
-    viewport.setViewedComponent (&textHolder, false);
+    viewport.setViewedComponent (&content, false);
     viewport.setScrollBarsShown (true, false);
     viewport.setScrollOnDragMode (juce::Viewport::ScrollOnDragMode::all);
     addAndMakeVisible (viewport);
+}
 
-    // Mini-markup di guideText(): "# Titolo" sezione, "## Titolo"
-    // sottosezione, "**grassetto**", `codice` (monospace, accento),
-    // "- " elenco puntato. Reso con le run di stile di juce::TextEditor
-    // (font/colore impostati prima di ogni insertTextAtCaret): niente
-    // WebView, che in un plugin e' fragile e pesante.
-    const auto bodyFont  = juce::Font (juce::FontOptions (13.5f));
-    const auto boldFont  = juce::Font (juce::FontOptions (13.5f, juce::Font::bold));
-    const auto h1Font    = juce::Font (juce::FontOptions (17.0f, juce::Font::bold));
-    const auto h2Font    = juce::Font (juce::FontOptions (14.0f, juce::Font::bold));
-    const auto codeFont  = juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.5f, juce::Font::plain));
+//==============================================================================
+// Testo della guida, impaginato a blocchi.
+//
+// Mini-markup di guideText():
+//   "# Titolo"     sezione            "## Titolo"   sottosezione
+//   "- voce"       elenco             "  - voce"    sotto-elenco
+//   riga normale   paragrafo          riga vuota    (ignorata: la spaziatura
+//                                                    la decidono i blocchi)
+//   "**grassetto**" e `codice` dentro le righe.
+// Ogni blocco e' un juce::TextLayout con la propria larghezza: gli elenchi
+// hanno il rientro sospeso (le righe a capo restano allineate al testo, non
+// al pallino) e la colonna di lettura ha una larghezza massima, centrata,
+// cosi' a tutto schermo le righe non diventano lunghissime.
+namespace
+{
+    constexpr float kGuideBodySize   = 14.5f;
+    constexpr float kGuideCodeSize   = 13.5f;
+    constexpr float kGuideH1Size     = 19.0f;
+    constexpr float kGuideH2Size     = 15.5f;
+    constexpr float kGuideLineGap    = 3.5f;   // spazio extra fra le righe di un blocco
+    constexpr float kGuideMaxColumn  = 760.0f; // larghezza massima della colonna di testo
+    constexpr float kGuideBulletIndent = 22.0f;
+    constexpr float kGuideSubIndent    = 20.0f;
 
-    auto append = [this] (const juce::String& run, const juce::Font& font, juce::Colour colour)
+    juce::Colour guideBodyColour() { return kAboutText.withAlpha (0.86f); }
+
+    // **grassetto** e `codice` in un AttributedString.
+    void appendGuideInline (juce::AttributedString& as, const juce::String& line,
+                            const juce::Font& font, juce::Colour colour)
     {
-        text.setFont (font);
-        text.setColour (juce::TextEditor::textColourId, colour);
-        text.insertTextAtCaret (run);
-    };
+        const juce::Font bold { juce::FontOptions (font.getHeight(), juce::Font::bold) };
+        const juce::Font code { juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), kGuideCodeSize, juce::Font::plain) };
 
-    // Testo inline: **bold** e `code` dentro una riga normale.
-    auto appendInline = [&] (const juce::String& line, const juce::Font& font, juce::Colour colour)
-    {
         int i = 0;
 
         while (i < line.length())
@@ -3143,57 +3141,168 @@ CsoundAudioProcessorEditor::GuideView::Card::Card()
 
             if (next < 0)
             {
-                append (line.substring (i), font, colour);
+                as.append (line.substring (i), font, colour);
                 break;
             }
 
             if (next > i)
-                append (line.substring (i, next), font, colour);
+                as.append (line.substring (i, next), font, colour);
 
             if (isBold)
             {
                 const int end = line.indexOf (next + 2, "**");
-                if (end < 0) { append (line.substring (next), font, colour); break; }
-                append (line.substring (next + 2, end), boldFont, kAboutText);
+                if (end < 0) { as.append (line.substring (next), font, colour); break; }
+                as.append (line.substring (next + 2, end), bold, kAboutText);
                 i = end + 2;
             }
             else
             {
                 const int end = line.indexOfChar (next + 1, '`');
-                if (end < 0) { append (line.substring (next), font, colour); break; }
-                append (line.substring (next + 1, end), codeFont, kAboutAccent);
+                if (end < 0) { as.append (line.substring (next), font, colour); break; }
+                as.append (line.substring (next + 1, end), code, kAboutAccent.brighter (0.15f));
                 i = end + 1;
             }
         }
-    };
+    }
+}
+
+CsoundAudioProcessorEditor::GuideView::Card::Content::Content()
+{
+    // Il contenuto DEVE ricevere gli eventi: il Viewport di JUCE non li
+    // intercetta (setInterceptsMouseClicks (false, true)), e la rotellina /
+    // trackpad arriva al Viewport solo risalendo da un figlio che la riceve
+    // (Component::mouseWheelMove la passa al parent). Con il contenuto
+    // "trasparente" la rotellina finiva alla scheda e non scorreva.
+    // Il trascinamento col dito resta gestito dal Viewport (ScrollOnDragMode).
+
+    const juce::Font body { juce::FontOptions (kGuideBodySize) };
+    const juce::Font h1   { juce::FontOptions (kGuideH1Size, juce::Font::bold) };
+    const juce::Font h2   { juce::FontOptions (kGuideH2Size, juce::Font::bold) };
 
     juce::StringArray lines;
-    lines.addLines (guideText());
+    lines.addLines (GuideView::guideText());
 
     for (const auto& raw : lines)
     {
+        if (raw.trim().isEmpty())
+            continue;
+
+        Block block;
+
         if (raw.startsWith ("## "))
         {
-            append (raw.substring (3) + "\n", h2Font, kAboutText);
+            block.type = Block::Type::h2;
+            appendGuideInline (block.text, raw.substring (3), h2, kAboutText);
         }
         else if (raw.startsWith ("# "))
         {
-            append ("\n" + raw.substring (2).toUpperCase() + "\n", h1Font, kAboutAccent);
+            block.type = Block::Type::h1;
+            appendGuideInline (block.text, raw.substring (2), h1, kAboutAccent);
         }
-        else if (raw.startsWith ("- "))
+        else if (raw.trimStart().startsWith ("- "))
         {
-            append (juce::String::charToString (0x2022) + "  ", bodyFont, kAboutAccent);
-            appendInline (raw.substring (2), bodyFont, kAboutText);
-            append ("\n", bodyFont, kAboutText);
+            block.type = Block::Type::bullet;
+            block.level = raw.startsWith (" ") ? 1 : 0;
+            appendGuideInline (block.text, raw.trimStart().substring (2), body, guideBodyColour());
         }
         else
         {
-            appendInline (raw, bodyFont, raw.isEmpty() ? kAboutText : kAboutTextMuted.brighter (0.35f));
-            append ("\n", bodyFont, kAboutText);
+            block.type = Block::Type::para;
+            appendGuideInline (block.text, raw, body, guideBodyColour());
         }
+
+        block.text.setLineSpacing (kGuideLineGap);
+        block.text.setWordWrap (juce::AttributedString::byWord);
+        blocks.push_back (std::move (block));
+    }
+}
+
+int CsoundAudioProcessorEditor::GuideView::Card::Content::layoutForWidth (int width)
+{
+    columnWidth = juce::jmin ((float) width - 8.0f, kGuideMaxColumn);
+    columnX = juce::jmax (4.0f, ((float) width - columnWidth) * 0.5f);
+
+    float y = 6.0f;
+    const Block* prev = nullptr;
+
+    for (auto& block : blocks)
+    {
+        // Spazio prima del blocco, secondo il tipo e il blocco precedente.
+        float gap = 0.0f;
+        using T = Block::Type;
+
+        if (prev != nullptr)
+        {
+            switch (block.type)
+            {
+                case T::h1:     gap = 34.0f; break;
+                case T::h2:     gap = 20.0f; break;
+                case T::para:   gap = prev->type == T::h1 || prev->type == T::h2 ? 10.0f : 12.0f; break;
+                case T::bullet: gap = prev->type == T::bullet ? (block.level > 0 ? 4.0f : 8.0f)
+                                                              : 10.0f; break;
+            }
+        }
+
+        y += gap;
+
+        float indent = 0.0f;
+        if (block.type == T::bullet)
+            indent = kGuideBulletIndent + (float) block.level * kGuideSubIndent;
+
+        const float w = juce::jmax (40.0f, columnWidth - indent);
+        block.layout.createLayout (block.text, w);
+        block.area = { columnX + indent, y, w, block.layout.getHeight() };
+
+        y += block.layout.getHeight();
+
+        // Titolo di sezione: linea sottile sotto, con un po' d'aria.
+        if (block.type == T::h1)
+            y += 10.0f;
+
+        prev = &block;
     }
 
-    text.moveCaretToTop (false);
+    laidOutWidth = width;
+    return (int) std::ceil (y + 40.0f);
+}
+
+void CsoundAudioProcessorEditor::GuideView::Card::Content::paint (juce::Graphics& g)
+{
+    using T = Block::Type;
+    const auto clip = g.getClipBounds().toFloat();
+
+    for (const auto& block : blocks)
+    {
+        if (block.area.getBottom() + 12.0f < clip.getY() || block.area.getY() - 12.0f > clip.getBottom())
+            continue;
+
+        if (block.type == T::bullet && block.layout.getNumLines() > 0)
+        {
+            // Pallino (o trattino per il sotto-elenco) allineato alla prima riga.
+            const auto& firstLine = block.layout.getLine (0);
+            const float baseline = block.area.getY() + firstLine.lineOrigin.y;
+            const float cx = block.area.getX() - 12.0f;
+
+            if (block.level == 0)
+            {
+                g.setColour (kAboutAccent);
+                g.fillEllipse (cx - 2.5f, baseline - firstLine.ascent * 0.42f - 2.5f, 5.0f, 5.0f);
+            }
+            else
+            {
+                g.setColour (kAboutTextMuted);
+                g.fillRect (cx - 3.5f, baseline - firstLine.ascent * 0.40f - 0.75f, 7.0f, 1.5f);
+            }
+        }
+
+        block.layout.draw (g, block.area);
+
+        if (block.type == T::h1)
+        {
+            g.setColour (kAboutBorder);
+            g.fillRect (columnX, block.area.getBottom() + 5.0f, columnWidth, 1.0f);
+        }
+    }
 }
 
 void CsoundAudioProcessorEditor::GuideView::Card::paint (juce::Graphics& g)
@@ -3226,13 +3335,11 @@ void CsoundAudioProcessorEditor::GuideView::Card::resized()
 {
     viewport.setBounds (getLocalBounds().withTrimmedTop (62).reduced (16, 0).withTrimmedBottom (16));
 
-    // Testo largo quanto il viewport (meno la scrollbar) e alto quanto il
-    // suo contenuto: e' il Viewport a scorrere, non il TextEditor.
+    // Contenuto largo quanto il viewport (meno la scrollbar) e alto quanto
+    // il testo impaginato: e' il Viewport a scorrere.
     const int w = juce::jmax (100, viewport.getWidth() - viewport.getScrollBarThickness() - 4);
-    text.setSize (w, 100);
-    const int h = text.getTextHeight() + 32;
-    text.setSize (w, h);
-    textHolder.setSize (w, h);
+    const int h = content.layoutForWidth (w);
+    content.setSize (w, h);
 }
 
 void CsoundAudioProcessorEditor::GuideView::Card::mouseUp (const juce::MouseEvent& e)
@@ -3313,98 +3420,124 @@ void CsoundAudioProcessorEditor::GuideView::hide()
 
 juce::String CsoundAudioProcessorEditor::GuideView::guideText()
 {
-    return R"GUIDE(**apeCsound** runs Csound 7 code live inside the DAW. It is a **multichannel effect and instrument at the same time**: the track audio reaches the code through `inch`, MIDI notes through `massign` / `notnum`, and whatever the code writes with `outs` / `outch` goes back to the track, on as many channels as the track has. Write or load a `.csd` in the editor, press **Apply**, and the engine recompiles in place while the track keeps playing.
-Every instance exposes a **fixed set of 144 parameters** to the DAW: **64 Float**, **32 Int**, **32 Bool** and **16 Choice** (up to 16 options each). Their indices are fixed - the DAW always sees "Float 1 ... Float 64" and so on - but each one can be configured from the Parameters panel: Csound channel name, range, default, skew, step or options. This is what makes them automatable and recallable like any other plugin parameter.
+    return R"GUIDE(**apeCsound** runs Csound 7 code live inside the DAW. Write or load a `.csd`, press **Apply**, and the engine recompiles while the track keeps playing.
+The track audio reaches the code through `inch`, MIDI through `massign` / `notnum`, and what the code writes with `outs` / `outch` goes back to the track, on as many channels as the track has.
+
+# Using apeCsound in a DAW
+apeCsound is a **MIDI effect**: an audio effect that also receives MIDI (Audio Unit / AUv3 "Music Effect", VST3 "Fx"). There is one plug-in for every use, so it is **always loaded as an effect**, also when the `.csd` is an instrument.
+- **As an effect** - insert it on an audio track. The track audio arrives through `inch`.
+- **As an instrument** - insert it as an effect on a track and send it MIDI notes. An empty audio track is fine: the code generates the sound from MIDI.
+## Sending MIDI to it
+- **Logic Pro** - Audio FX slot of any track, or the Instrument slot of a Software Instrument track under "AU MIDI-controlled Effects" (it then receives the track's MIDI).
+- **Ableton Live** - put it on a track as an audio effect; on a MIDI track set **MIDI To** to that track, then choose apeCsound in the second menu.
+- **Cubase / Nuendo** - insert it on an audio track; on a MIDI track choose apeCsound as the MIDI output.
+- **REAPER, Bitwig, Studio One** - the MIDI of the track it is on reaches it.
+- **iOS** (AUM, Loopy Pro, Drambo, Cubasis...) - load it in an effect slot and select it as a MIDI destination.
+- **Standalone** - choose the MIDI inputs (also Bluetooth MIDI) in Audio/MIDI Settings.
 
 # Toolbar
-- **Apply** - recompiles and restarts Csound with the text in the editor. A red ring means the editor text differs from the running code.
-- **File capsule** (centre) - name of the linked `.csd`, its folder and state (saved / unsaved changes / file not found, coloured dot). Click it for the File menu, in groups: **Init Session Clear** / **Init Session Template** - **Load...** / **Open Example...** - **Save** / **Save as...** / **Reveal in Finder** (the linked `.csd`, desktop only) - **Import Files...** / **Manage Files...** - **Restore Examples**.
-- **Magnifier** - opens the Find / Replace bar: match case `Aa`, whole word `W`, Replace / Replace All; Enter = next match, Esc closes.
-- **Menu** - Show/Hide Parameters and Console, Undo / Redo, Audio/MIDI Settings (standalone only), Config, apeCsound Guide, Csound Manual, About.
-- **Audio/MIDI Settings** (standalone only) - the same touch-friendly panel on every platform: Audio Driver, Output/Input Device, Output/Input Channels (stereo pairs), Sample Rate, Buffer Size (with latency in ms), Mute audio input, Control Panel (drivers that have one), MIDI Inputs, **Bluetooth MIDI...** and Reset Audio/MIDI. Tap a row to open its list; rows with a single possible value only show it.
+- **Apply** - recompiles and restarts Csound with the editor text. A red ring means the editor differs from the running code.
+- **Pause** - pauses Csound (the audio passes through); Apply restarts it.
+- **File capsule** (centre) - name, folder and state of the linked `.csd` (coloured dot: saved, unsaved changes, file not found). Tap it for the File menu.
+- **Magnifier** - Find / Replace: match case `Aa`, whole word `W`, Replace, Replace All. Enter = next match, Esc closes.
+- **Menu** - Parameters, Console, Graphs, Undo / Redo, Audio/MIDI Settings (standalone), Config, this guide, Csound Manual, About.
 
-# Session and files
-The `.csd` file on disk is the truth. A DAW project stores the path of the linked file, an embedded copy of the code and the parameter mapping, plus the current parameter values.
-- **Save** - writes the editor text and the parameter structure (an `<apeCsoundParams>` block after `</CsoundSynthesizer>`) to the linked file.
-- **Save as...** - chooses a new file (default folder `~/Documents/apeCsound`) and links it.
-- **Load...** - opens a `.csd`; you can also drop a `.csd` on the window. Unsaved changes are protected by a dialog.
-- **On iOS**, Load, Open Example and Save as open apeCsound's own file browser on the `CSD` folder (`Examples` and `User`), which the Files app cannot see. Tap a folder to enter it, a file to open it; in Save as, type the name and tap Save (tap Replace to overwrite). Files in `User` can be deleted with the bin icon (tap Delete to confirm). **Other Locations...** opens the system picker for iCloud Drive and other providers.
-- **Init Session Template** - unlinks the file and loads the built-in template (synth + delay with its parameters).
-- **Init Session Clear** - unlinks the file and starts from an empty `.csd` (header only, no parameters).
-- If the linked file is missing when a project reopens, the embedded copy is used and a yellow bar offers **Relocate...** / **Save As...**.
-- The editor shows only the `<CsoundSynthesizer>` block; anything before or after it (Cabbage, CsoundQt panels) is preserved.
+# File menu (file capsule)
+- **Init Session Clear** - empty `.csd`, no parameters, no linked file.
+- **Init Session Template** - the built-in template (synth + delay with its parameters).
+- **Load...** - opens a `.csd`. You can also drop a `.csd` on the window.
+- **Open Example...** - opens one of the factory examples (`CSD/Examples`).
+- **Save** - writes the linked file.
+- **Save as...** - saves to a new file and links it. It starts in `CSD/User`.
+- **Reveal in Finder** (desktop) - shows the linked `.csd` in Finder / Explorer.
+- **Import Files...** - copies files into the apeCsound folders, chosen by type:
+  - `.csd` to `CSD/User`
+  - audio (wav, aif, flac, ogg, caf, mp3) to `SSDIR`
+  - `.udo`, `.inc`, `.txt` to `INCDIR`
+  - analysis files (pvx, ats, lpc, het, cv) to `SADIR`
+- **Manage Files...** - the apeCsound folder. On desktop it opens in Finder / Explorer; on iOS see "Files on iOS".
+- **Restore Examples** - copies the factory examples again (your files in `CSD/User` are not touched).
+
+# Sessions
+The `.csd` file on disk is the reference. A DAW project stores the path of the linked file, an embedded copy of the code and of the parameter mapping, and the parameter values.
+- **Save** writes the code and the parameter structure (an `<apeCsoundParams>` block after `</CsoundSynthesizer>`).
+- Unsaved changes are protected by a dialog before Load or Init.
+- If the linked file is missing when a project reopens, the embedded copy is used and a yellow bar offers **Relocate...** and **Save As...**.
+- The editor shows only the `<CsoundSynthesizer>` block; anything before or after it (Cabbage, CsoundQt panels) is kept.
+
+# The apeCsound folder
+`~/Documents/apeCsound` on desktop; on iOS a folder shared by the app and the AUv3 plug-in.
+- `CSD/Examples` - factory examples. `CSD/User` - your sessions.
+- `SSDIR` - audio files to read: `diskin2 "loop.wav"`, GEN01. Use just the file name.
+- `SFDIR` - files written by Csound (`fout`, `-o`) without a path.
+- `SADIR` - analysis files (pvoc, ATS, lpc). `INCDIR` - `#include` files, e.g. shared UDOs.
+- Csound first looks in the folder of the linked `.csd`, then in these folders.
+- `--env:SSDIR=...` (or SFDIR, SADIR, INCDIR) in `<CsOptions>` overrides them for that `.csd`.
+## Config > Extra Folders
+Folders of your choice, used together with the apeCsound ones. They take effect at the next Apply.
+- **Extra Samples (SSDIR)**, **Extra Analysis Files (SADIR)**, **Extra Include Files (INCDIR)** - one more folder to search.
+- **Output Files (SFDIR)** - where Csound writes, instead of `apeCsound/SFDIR`.
+- Each entry shows the path, **Change Folder...**, **Reveal in Finder** (desktop) and **Remove (use default)**.
+- On iOS the folder is chosen with the system picker (On My iPad, iCloud Drive...). With Output Files set there, recordings appear directly in the Files app.
+## Files on iOS
+On iOS the apeCsound folder is not visible in the Files app. **Load**, **Open Example** and **Save as** use apeCsound's own browser:
+- tap a folder to enter it, a file to open it;
+- in Save as, type the name and tap **Save** (tap **Replace** to overwrite);
+- the bin icon deletes a file in `CSD/User` (tap **Delete** to confirm);
+- **Other Locations...** opens the system picker (iCloud Drive and other providers).
+**Manage Files...** shows the whole apeCsound folder:
+- tap files to select them, then **Export** copies them to a folder chosen with the system picker (all files of the folder if none is selected);
+- **Import Files Here...** copies files into the open folder, of any type;
+- the bin icon deletes a file (factory examples excepted).
 
 # Code editor
-- **Auto-indent** for `instr`/`endin`, `opcode`/`endop`, `if`/`then`, `while`/`do`, `until`, loops. Tab = 4 spaces.
-- **Right-click** (long press on touch) - Cut, Copy, Paste, Delete, Select All, Undo, Redo, **Indent** (re-indents the selected lines) and **Comment / Uncomment** (toggles `;` at the start of the lines).
-- **Opcode help bar** - syntax, description and manual category of the opcode under the caret, for every opcode of the Csound Reference Manual (text from CsoundQt's opcode database, GNU FDL), for the user-defined opcodes of the current file (`opcode Name, outs, ins`) and, for anything else, the type signature reported by the engine.
-- **Autocompletion** - type two letters and suggestions appear: Up/Down to choose, Tab or Enter to accept, Esc opens/closes the list.
-- **Config > Modern Syntax in Help** - every synopsis in Csound 7 functional form with type annotations, e.g. `ares:a = oscil(xamp, xcps)`.
-- **Undo / Redo** - Cmd+Z, Cmd+Shift+Z (or Cmd+Y) and the menu share one linear history between the editor and the Parameters panel; it survives closing and reopening the plugin window.
+- **Auto-indent** for `instr`/`endin`, `opcode`/`endop`, `if`/`then`, loops. Tab = 4 spaces.
+- **Right-click** (long press on touch) - Cut, Copy, Paste, Delete, Select All, Undo, Redo, **Indent**, **Comment / Uncomment**.
+- **Help bar** - syntax and description of the opcode under the caret, also for the UDOs of the file.
+- **Autocompletion** - type two letters: Up/Down to choose, Tab or Enter to accept, Esc to close.
+- **Config > Modern Syntax in Help** - shows the Csound 7 functional form, e.g. `ares:a = oscil(xamp, xcps)`.
+- **Undo / Redo** - one history shared by the editor and the Parameters panel; it survives closing the plug-in window.
+## Errors
+When Apply fails, the line reported by Csound gets a red dot, a red background and a wavy underline; with the caret on it, the help bar shows the message.
+- The mark goes away when you edit the line, and all marks are cleared at the next Apply.
+- Csound stops at the first syntax error: fix it and Apply again to see the next one.
+- `INIT ERROR` / `PERF ERROR` while running are marked too. Errors in macros or `#include` files stay in the console.
 
-# Parameters panel
-The 144 fixed parameters (64 Float, 32 Int, 32 Bool, 16 Choice) are mapped here to Csound channels read with `chnget`: **Float** (min/max/default/skew/step), **Int** (min/max/default), **Bool** (default), **Choice** (up to 16 options, sends the index). Use **+** on the panel title bar to add one; each row has edit, copy-`chnget` and remove buttons. Unassigned slots are hidden from the panel but still exist for the DAW. Values are sent to Csound when they change. It also works the other way: `chnset` on a mapped channel moves the parameter (slider, DAW automation lane), e.g. `chnset kValue, "Cutoff"`. Choice channels take 1..N, as in Cabbage.
-- **Drag a parameter into the code** - drag the handle on the left of a row and drop it on a line of the editor: a `chnget` line is inserted there, already indented, with the variable named after the channel (`kCutoff chnget "Cutoff"`) and, above it, a comment with the parameter configuration (`; SLIDER FLOAT: Min=20; Max=20000; Skew=0.3; Step=1`). The **copy** button puts the same text in the clipboard, for pasting by hand.
-- Files made with **Cabbage** (`<Cabbage>` section) or **CsoundQt** (`<bsbPanel>` widgets: sliders, knobs, spin boxes, scroll numbers, XY controllers, checkboxes, dropdowns, value buttons) are imported automatically on load: widgets become parameters. CsoundQt `exp` sliders get a matching skew, integer knobs step 1, checkbox `pressedValue` is respected.
-
-# Cabbage and CsoundQt files
-Porting a Cabbage or CsoundQt file to apeCsound is **not guaranteed**: whether it runs, and how well, depends on many factors, and some files need manual changes or cannot work at all.
-- **Only supported parameters are imported** - the widget types listed above become parameters (channel name, range, default, options). Everything else is ignored: GUI layout, colours, images, labels, graphs, tables, meters, scopes, displays, file browsers and buttons that trigger events.
-- **The code is not changed** - frontend-specific opcodes must be replaced by hand: `invalue` / `cabbageGetValue` with `chnget`, `outvalue` / `cabbageSet...` with `chnset` or removed. FLTK (`FL...`), Python, Lua, OSC and opcodes from plugin libraries not built into apeCsound do not work.
-- **Audio I/O** - use `inch` / `outch` (or `ins` / `outs`) for the track audio; `diskin`, `soundin`, GEN01 and other opcodes that read files need files that exist at the given path.
-- **Options** - `<CsOptions>` real-time flags (`-odac`, `-iadc`, `-M`, `-+rtaudio`...) are ignored; `sr` follows the DAW and the channel count depends on **Follow CSD nchnls**.
-- Check the console after **Apply**: compile errors and missing opcodes are reported there.
+# Parameters
+Every instance offers the DAW **144 fixed parameters**: 64 Float, 32 Int, 32 Bool and 16 Choice. The DAW always sees "Float 1 ... Float 64" and so on; in the Parameters panel you give each one a Csound channel name and its range.
+- **Float** (min, max, default, skew, step), **Int** (min, max, default), **Bool** (default), **Choice** (up to 16 options; the channel gets 1..N, as in Cabbage).
+- **+** on the panel title adds one. Each row has edit, copy and remove buttons.
+- The code reads them with `chnget`. `chnset` on the same channel moves the parameter (slider and DAW automation).
+- **Drag a row into the code** - drop it on a line of the editor to insert `kCutoff chnget "Cutoff"` with a comment describing the parameter. **Copy** puts the same text in the clipboard.
+- A parameter channel is a control channel: do not use the same name with audio variables (`a...`) - the console warns about it.
+## Cabbage and CsoundQt files
+Their widgets (sliders, knobs, checkboxes, menus, XY...) become parameters when the file is loaded. The rest of their GUI is ignored, and the code is not changed:
+- replace `invalue` / `cabbageGetValue` with `chnget`, `outvalue` / `cabbageSet...` with `chnset`;
+- FLTK, Python, Lua and opcodes not built into apeCsound do not work;
+- check the console after Apply. Some files need manual changes, a few cannot work.
 
 # Audio, MIDI and channels
-- `sr` always follows the DAW sample rate.
-- `ksmps` is respected and equals the plugin latency (reported to the DAW, which compensates it): keep it small (16-64) for live input.
-- **Config > Follow CSD nchnls** (default OFF) - OFF: Csound always follows the track - `nchnls` / `nchnls_i` are set to the track's output/input channels (minimum 2 outputs) even if the `.csd` declares other values, and the orchestra is recompiled when the track's channel count changes. ON: Csound runs with the `nchnls` / `nchnls_i` declared in the `.csd` header, so the code behaves the same on any track (`outch n` is channel n of the track, channels missing on either side are silent); if the header does not declare them, the track count is used. Mismatches are reported in the console.
-- **Track layouts** - the track can have 1 to 16 output channels and 0 to 16 input channels (0 = input bus disabled). Surround layouts (5.1, 7.1...) are compensated so that channel numbers match the track. Changing the track channel count recompiles the engine.
-- **MIDI** - notes and controllers from the track reach Csound (`-M0`, `massign`); MIDI generated by Csound (`midiout`) goes back to the DAW.
+- `sr` always follows the DAW. `ksmps` is respected and equals the plug-in latency (compensated by the DAW): keep it small (16-64) for live input.
+- **Channels** - by default Csound follows the track: `nchnls` / `nchnls_i` are the track's outputs / inputs (at least 2 outputs). Tracks can have 1-16 outputs and 0-16 inputs.
+- **Config > Follow CSD nchnls** - uses the `nchnls` / `nchnls_i` of the `.csd` instead, so the code behaves the same on any track (missing channels are silent). Saved with the project.
+- **MIDI** - notes and controllers reach Csound; MIDI written by Csound (`midiout`) goes back to the DAW.
+- **OSC** - the OSC opcodes (`oscinit`, `osclisten`, `oscsend`...) are built in.
 
-# Csound folders (SSDIR, SFDIR, SADIR, INCDIR)
-apeCsound creates a fixed folder for audio files, **SSDIR**, inside the apeCsound folder: `~/Documents/apeCsound/SSDIR` on macOS; on iOS it is in the shared App Group container, so the standalone app and the AUv3 plug-in see the same files. Nothing to configure: copy your WAV/AIFF files there and use just the file name in the code - `aL, aR diskin2 "loop.wav", 1, 0, 1`, `ftgen 0, 0, 0, 1, "kick.wav", 0, 0, 0`.
-- **Import Files...** (file capsule menu, every platform) - pick one or more files and copy them into the right apeCsound folder, chosen by extension: `.csd` sessions to **CSD/User**, audio (wav, aif, flac, ogg, caf, mp3) to **SSDIR**, `#include` files (`.udo`, `.inc`, `.txt`) to **INCDIR**, analysis files (`.pvx`, `.ats`, `.lpc`, `.het`, `.cv`) to **SADIR**; other types are skipped. On iOS it is the only way to fill these folders (the App Group container is not visible in the Files app); on desktop it saves looking for them in Finder/Explorer. A file with the same name is replaced; the console lists what was imported.
-- Csound looks for audio files first in the folder of the linked `.csd`, then in SSDIR.
-- Audio files written by Csound (`fout`, `-o` file output) without a path go to the **SFDIR** folder, created next to SSDIR (`~/Documents/apeCsound/SFDIR`; on iOS in the same shared container). Csound also searches it when reading, after SSDIR, so a recorded file can be played back by name.
-- apeCsound also creates **SADIR** (analysis files: pvoc, ATS, lpc) and **INCDIR** (`#include` files, e.g. shared UDOs) next to SSDIR. Like SSDIR, they are searched after the folder of the linked `.csd`.
-- **Manage Files...** (file capsule menu) - on desktop it opens the apeCsound folder (`CSD`, `SSDIR`, `SFDIR`, `SADIR`, `INCDIR`) in Finder / Explorer / the file manager. On iOS the folder is in the App Group container, which the Files app does not show: this is the way in and out. Tap a folder to open it, tap files to select them (with their size). **Import Files Here...** copies files chosen with the system picker into the open folder; **Export** (the selected files, or all those in the folder) copies them to a folder chosen with the picker (On My iPad, iCloud Drive...). The bin icon deletes a file (factory examples excepted). Same in the app and in the AUv3.
-- **Config > Extra Folders** - one entry per folder, ticked when set. apeCsound's own SSDIR/SFDIR/SADIR/INCDIR folders are always used; here you add your own: **Extra Samples (SSDIR)**, **Extra Analysis Files (SADIR)** and **Extra Include Files (INCDIR)** add one more folder to search (after the `.csd` folder and the apeCsound one); **Output Files (SFDIR)** replaces the folder where files are written (Csound always writes to the first one). Once a folder is set, its entry opens a page (with Back) showing the path, **Change Folder...**, **Reveal in Finder** and **Remove (use default)**. They are user preferences and take effect at the next Apply. **On iOS** the folder is picked with the system picker (iCloud Drive, On My iPad, other providers) and apeCsound keeps access to it; with **Output Files (SFDIR)** set there, the files written by Csound appear directly in the Files app. There is no Reveal on iOS. The setting is shared by the app and the AUv3; if the plug-in cannot open a folder chosen in the app (or vice versa), the console says so and it can be chosen again there.
-- An `--env:NAME=...` (SSDIR, SFDIR, SADIR, INCDIR) in `<CsOptions>` still overrides everything for that `.csd`.
-
-# Errors in the editor
-When **Apply** fails, the line reported by Csound is marked in the editor: a **red dot** next to the line number, a light red background and a wavy underline. With the caret on that line the help bar turns red and shows **Error - line N** with Csound's message. The console confirms it with `--- Error marked in the editor at line N ---`.
-- The mark disappears as soon as you edit that line; all marks are cleared on the next Apply. Lines added or removed above keep the mark on the right line.
-- Syntax errors: Csound stops at the **first** one, so fix it and Apply again to see the next. Errors found after parsing (unknown opcodes, wrong argument types) can be marked several at a time.
-- `INIT ERROR` / `PERF ERROR` arriving while the code runs are marked too, once per line.
-- Errors inside macros or `#include` files, or without a line number, stay in the console only. If the code was edited after Apply, new runtime errors are not marked (the line numbers would no longer match).
-
-# Console
-Csound messages, compile errors and plugin notes (latency, channels, imports). Identical messages repeated more than three times per second are summarised to keep the UI responsive. **Clear** empties it; it is also cleared on every Apply.
-
-# Graphs (main menu > Show Graphs)
-A panel docked at the bottom, next to the console (or in its place when the console is hidden), like Parameters and Console: drag the dividers to resize it. It draws Csound's function tables and signal displays, without ASCII output in the console. Every ftable appears when it is created (f statements, `ftgen`, GEN routines; long tables are drawn as a min/max band). `display` and `dispfft` are drawn while the panel is visible, e.g. `display aSig, 0.1` or `dispfft aSig, 0.1, 1024`. Displays are always enabled, even with `-d` in `<CsOptions>`. The panel is cleared on every Apply.
-
-# Config (main menu)
-- **Modern Syntax in Help** - functional syntax in the opcode help bar (user preference).
-- **Follow CSD nchnls** (off by default: channels follow the track) - see "Audio, MIDI and channels" (saved with the project).
-- **Extra Folders** - folders of your choice added to SSDIR/SADIR/INCDIR, and the SFDIR output folder (user preferences).
+# Console and Graphs
+- **Console** - Csound messages, compile errors and apeCsound notes. Repeated messages are summarised to keep the DAW responsive. Clear empties it; it is also cleared at every Apply.
+- **Graphs** (menu > Show Graphs) - function tables (f statements, `ftgen`) and `display` / `dispfft` signals, in a panel docked at the bottom. Cleared at every Apply.
 
 # Shortcuts
-Cmd on macOS, Ctrl on Windows and Linux. Shown on the right of the menu items.
+Cmd on macOS, Ctrl on Windows and Linux.
 - **Cmd+Return** - Apply
-- **Cmd+F** - Find / Replace
-- **Cmd+1 / Cmd+2 / Cmd+3** - show/hide Parameters, Console, Graphs
-- **Cmd+= / Cmd+-** - larger / smaller editor text
-- **Cmd+Z / Cmd+Shift+Z (Cmd+Y)** - undo / redo
-- **Cmd+/** - comment / uncomment the selected lines (`;`)
-- **Ctrl+I** - re-indent the selected lines
-- **Cmd+[ / Cmd+]** - shift the selection left / right
 - **Cmd+S** Save, **Cmd+Shift+S** Save as, **Cmd+O** Load, **Cmd+N** Init Session Clear
-- **Esc** - autocompletion list, close the Find bar or an overlay
-- **Tab / Enter** - accept a suggestion
-- **Right-click or long press** - editor menu
-- In a DAW the plug-in only receives keys the host passes on (in REAPER: "Send all keyboard input to plug-in" in the FX window menu).
+- **Cmd+F** - Find / Replace
+- **Cmd+1 / 2 / 3** - Parameters, Console, Graphs
+- **Cmd+= / Cmd+-** - larger / smaller text
+- **Cmd+Z / Cmd+Shift+Z** - Undo / Redo
+- **Cmd+/** - comment / uncomment, **Ctrl+I** - re-indent, **Cmd+[ / ]** - shift left / right
+- **Esc** - close the autocompletion list, the Find bar or this guide
+- In a DAW the plug-in only gets the keys the host passes on (REAPER: "Send all keyboard input to plug-in" in the FX window menu).
 )GUIDE";
 }
 
