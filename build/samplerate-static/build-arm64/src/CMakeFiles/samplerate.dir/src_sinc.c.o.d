@@ -1,7 +1,7 @@
 src/CMakeFiles/samplerate.dir/src_sinc.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/src/src_sinc.c \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/build-arm64/config.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/src/src_sinc.c \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/build-arm64/config.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/assert.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_symbol_aliasing.h \
@@ -98,9 +98,9 @@ src/CMakeFiles/samplerate.dir/src_sinc.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/math.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/float.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/src/common.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/src/common.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/stdbool.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/include/samplerate.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/src/fastest_coeffs.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/src/mid_qual_coeffs.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/src/high_qual_coeffs.h
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/include/samplerate.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/src/fastest_coeffs.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/src/mid_qual_coeffs.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/src/high_qual_coeffs.h

@@ -1,6 +1,6 @@
-prefix=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64
+prefix=/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64
 exec_prefix=${prefix}
-libdir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/lib
+libdir=/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/lib
 includedir=${prefix}/include/csound
 
 Name: Csound

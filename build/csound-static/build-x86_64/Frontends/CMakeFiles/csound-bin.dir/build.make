@@ -53,10 +53,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64"
 
 # Include any dependencies generated for this target.
 include Frontends/CMakeFiles/csound-bin.dir/depend.make
@@ -73,18 +73,18 @@ Frontends/CMakeFiles/csound-bin.dir/codegen:
 .PHONY : Frontends/CMakeFiles/csound-bin.dir/codegen
 
 Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o: Frontends/CMakeFiles/csound-bin.dir/flags.make
-Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/Frontends/csound/csound_main.c
+Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Frontends/csound/csound_main.c
 Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o: Frontends/CMakeFiles/csound-bin.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building C object Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Frontends" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o -MF CMakeFiles/csound-bin.dir/csound/csound_main.c.o.d -o CMakeFiles/csound-bin.dir/csound/csound_main.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Frontends/csound/csound_main.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building C object Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Frontends" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o -MF CMakeFiles/csound-bin.dir/csound/csound_main.c.o.d -o CMakeFiles/csound-bin.dir/csound/csound_main.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Frontends/csound/csound_main.c"
 
 Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/csound-bin.dir/csound/csound_main.c.i"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Frontends" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Frontends/csound/csound_main.c" > CMakeFiles/csound-bin.dir/csound/csound_main.c.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Frontends" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Frontends/csound/csound_main.c" > CMakeFiles/csound-bin.dir/csound/csound_main.c.i
 
 Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/csound-bin.dir/csound/csound_main.c.s"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Frontends" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Frontends/csound/csound_main.c" -o CMakeFiles/csound-bin.dir/csound/csound_main.c.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Frontends" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Frontends/csound/csound_main.c" -o CMakeFiles/csound-bin.dir/csound/csound_main.c.s
 
 # Object files for target csound-bin
 csound__bin_OBJECTS = \
@@ -98,18 +98,18 @@ csound: Frontends/CMakeFiles/csound-bin.dir/build.make
 csound: CsoundLib64.framework/Versions/7.0/CsoundLib64
 csound: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libm.tbd
 csound: Frontends/CMakeFiles/csound-bin.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Linking C executable ../csound"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Frontends" && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/csound-bin.dir/link.txt --verbose=$(VERBOSE)
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Linking C executable ../csound"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Frontends" && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/csound-bin.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 Frontends/CMakeFiles/csound-bin.dir/build: csound
 .PHONY : Frontends/CMakeFiles/csound-bin.dir/build
 
 Frontends/CMakeFiles/csound-bin.dir/clean:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Frontends" && $(CMAKE_COMMAND) -P CMakeFiles/csound-bin.dir/cmake_clean.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Frontends" && $(CMAKE_COMMAND) -P CMakeFiles/csound-bin.dir/cmake_clean.cmake
 .PHONY : Frontends/CMakeFiles/csound-bin.dir/clean
 
 Frontends/CMakeFiles/csound-bin.dir/depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Frontends" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Frontends" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Frontends/CMakeFiles/csound-bin.dir/DependInfo.cmake" "--color=$(COLOR)"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Frontends" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Frontends" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Frontends/CMakeFiles/csound-bin.dir/DependInfo.cmake" "--color=$(COLOR)"
 .PHONY : Frontends/CMakeFiles/csound-bin.dir/depend
 

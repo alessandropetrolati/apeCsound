@@ -150,6 +150,22 @@ namespace
         return filled;
     }
 
+    // Pausa: due barre verticali. Play (ripresa): triangolo.
+    juce::Path makePauseIconPath()
+    {
+        juce::Path p;
+        p.addRoundedRectangle (5.0f, 4.0f, 5.0f, 16.0f, 1.2f);
+        p.addRoundedRectangle (14.0f, 4.0f, 5.0f, 16.0f, 1.2f);
+        return p;
+    }
+
+    juce::Path makePlayIconPath()
+    {
+        juce::Path p;
+        p.addTriangle (6.0f, 4.0f, 6.0f, 20.0f, 20.0f, 12.0f);
+        return p;
+    }
+
     juce::Path getIconPathForButtonName (const juce::String& name)
     {
         if (name == "find")
@@ -157,6 +173,12 @@ namespace
 
         if (name == "apply")
             return makeAudioEngineIconPath();
+
+        if (name == "pause")
+            return makePauseIconPath();
+
+        if (name == "resume")
+            return makePlayIconPath();
 
         if (name == "clear")
             return makeTrashIconPath();

@@ -53,10 +53,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64"
 
 # Utility rule file for tags.
 
@@ -67,7 +67,7 @@ include CMakeFiles/tags.dir/compiler_depend.make
 include CMakeFiles/tags.dir/progress.make
 
 CMakeFiles/tags:
-	etags `find /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src -name \*.cc -or -name \*.hh -or -name \*.cpp -or -name \*.h -or -name \*.c | grep -v \  `
+	etags `find /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src -name \*.cc -or -name \*.hh -or -name \*.cpp -or -name \*.h -or -name \*.c | grep -v \  `
 
 CMakeFiles/tags.dir/codegen:
 .PHONY : CMakeFiles/tags.dir/codegen
@@ -85,6 +85,6 @@ CMakeFiles/tags.dir/clean:
 .PHONY : CMakeFiles/tags.dir/clean
 
 CMakeFiles/tags.dir/depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/CMakeFiles/tags.dir/DependInfo.cmake" "--color=$(COLOR)"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/CMakeFiles/tags.dir/DependInfo.cmake" "--color=$(COLOR)"
 .PHONY : CMakeFiles/tags.dir/depend
 

@@ -57,10 +57,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64"
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -68,7 +68,7 @@ CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/buil
 # Special rule for the target package
 package: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool..."
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && /opt/homebrew/bin/cpack --config ./CPackConfig.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && /opt/homebrew/bin/cpack --config ./CPackConfig.cmake
 .PHONY : package
 
 # Special rule for the target package
@@ -78,7 +78,7 @@ package/fast: package
 # Special rule for the target package_source
 package_source:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool for source..."
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && /opt/homebrew/bin/cpack --config ./CPackSourceConfig.cmake /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/build-arm64/CPackSourceConfig.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && /opt/homebrew/bin/cpack --config ./CPackSourceConfig.cmake /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/build-arm64/CPackSourceConfig.cmake
 .PHONY : package_source
 
 # Special rule for the target package_source
@@ -162,14 +162,14 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/CMakeFiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/Frontends//CMakeFiles/progress.marks"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Frontends/all
-	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/CMakeFiles" 0
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/CMakeFiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/Frontends//CMakeFiles/progress.marks"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Frontends/all
+	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/CMakeFiles" 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Frontends/clean
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Frontends/clean
 .PHONY : clean
 
 # The main clean target
@@ -178,22 +178,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Frontends/preinstall
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Frontends/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Frontends/preinstall
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Frontends/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 Frontends/CMakeFiles/csound-bin.dir/rule:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Frontends/CMakeFiles/csound-bin.dir/rule
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Frontends/CMakeFiles/csound-bin.dir/rule
 .PHONY : Frontends/CMakeFiles/csound-bin.dir/rule
 
 # Convenience name for target.
@@ -202,12 +202,12 @@ csound-bin: Frontends/CMakeFiles/csound-bin.dir/rule
 
 # fast build rule for target.
 csound-bin/fast:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csound-bin.dir/build.make Frontends/CMakeFiles/csound-bin.dir/build
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csound-bin.dir/build.make Frontends/CMakeFiles/csound-bin.dir/build
 .PHONY : csound-bin/fast
 
 # Convenience name for target.
 Frontends/CMakeFiles/csdebugger.dir/rule:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Frontends/CMakeFiles/csdebugger.dir/rule
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Frontends/CMakeFiles/csdebugger.dir/rule
 .PHONY : Frontends/CMakeFiles/csdebugger.dir/rule
 
 # Convenience name for target.
@@ -216,7 +216,7 @@ csdebugger: Frontends/CMakeFiles/csdebugger.dir/rule
 
 # fast build rule for target.
 csdebugger/fast:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csdebugger.dir/build.make Frontends/CMakeFiles/csdebugger.dir/build
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csdebugger.dir/build.make Frontends/CMakeFiles/csdebugger.dir/build
 .PHONY : csdebugger/fast
 
 csound/csound_main.o: csound/csound_main.c.o
@@ -224,7 +224,7 @@ csound/csound_main.o: csound/csound_main.c.o
 
 # target to build an object file
 csound/csound_main.c.o:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csound-bin.dir/build.make Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csound-bin.dir/build.make Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o
 .PHONY : csound/csound_main.c.o
 
 csound/csound_main.i: csound/csound_main.c.i
@@ -232,7 +232,7 @@ csound/csound_main.i: csound/csound_main.c.i
 
 # target to preprocess a source file
 csound/csound_main.c.i:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csound-bin.dir/build.make Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csound-bin.dir/build.make Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.i
 .PHONY : csound/csound_main.c.i
 
 csound/csound_main.s: csound/csound_main.c.s
@@ -240,7 +240,7 @@ csound/csound_main.s: csound/csound_main.c.s
 
 # target to generate assembly for a file
 csound/csound_main.c.s:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csound-bin.dir/build.make Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csound-bin.dir/build.make Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.s
 .PHONY : csound/csound_main.c.s
 
 debugger/csdebugger.o: debugger/csdebugger.cpp.o
@@ -248,7 +248,7 @@ debugger/csdebugger.o: debugger/csdebugger.cpp.o
 
 # target to build an object file
 debugger/csdebugger.cpp.o:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csdebugger.dir/build.make Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csdebugger.dir/build.make Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o
 .PHONY : debugger/csdebugger.cpp.o
 
 debugger/csdebugger.i: debugger/csdebugger.cpp.i
@@ -256,7 +256,7 @@ debugger/csdebugger.i: debugger/csdebugger.cpp.i
 
 # target to preprocess a source file
 debugger/csdebugger.cpp.i:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csdebugger.dir/build.make Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csdebugger.dir/build.make Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.i
 .PHONY : debugger/csdebugger.cpp.i
 
 debugger/csdebugger.s: debugger/csdebugger.cpp.s
@@ -264,7 +264,7 @@ debugger/csdebugger.s: debugger/csdebugger.cpp.s
 
 # target to generate assembly for a file
 debugger/csdebugger.cpp.s:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csdebugger.dir/build.make Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(MAKE) $(MAKESILENT) -f Frontends/CMakeFiles/csdebugger.dir/build.make Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.s
 .PHONY : debugger/csdebugger.cpp.s
 
 # Help Target
@@ -301,6 +301,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

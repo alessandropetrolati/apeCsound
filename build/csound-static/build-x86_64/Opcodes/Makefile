@@ -57,10 +57,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64"
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -68,7 +68,7 @@ CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/buil
 # Special rule for the target package
 package: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool..."
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && /opt/homebrew/bin/cpack --config ./CPackConfig.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && /opt/homebrew/bin/cpack --config ./CPackConfig.cmake
 .PHONY : package
 
 # Special rule for the target package
@@ -78,7 +78,7 @@ package/fast: package
 # Special rule for the target package_source
 package_source:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool for source..."
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && /opt/homebrew/bin/cpack --config ./CPackSourceConfig.cmake /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/build-x86_64/CPackSourceConfig.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && /opt/homebrew/bin/cpack --config ./CPackSourceConfig.cmake /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/build-x86_64/CPackSourceConfig.cmake
 .PHONY : package_source
 
 # Special rule for the target package_source
@@ -162,14 +162,14 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/CMakeFiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Opcodes//CMakeFiles/progress.marks"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Opcodes/all
-	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/CMakeFiles" 0
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Opcodes//CMakeFiles/progress.marks"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Opcodes/all
+	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Opcodes/clean
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Opcodes/clean
 .PHONY : clean
 
 # The main clean target
@@ -178,22 +178,36 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Opcodes/preinstall
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Opcodes/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Opcodes/preinstall
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Opcodes/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
+Opcodes/CMakeFiles/osc.dir/rule:
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Opcodes/CMakeFiles/osc.dir/rule
+.PHONY : Opcodes/CMakeFiles/osc.dir/rule
+
+# Convenience name for target.
+osc: Opcodes/CMakeFiles/osc.dir/rule
+.PHONY : osc
+
+# fast build rule for target.
+osc/fast:
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/osc.dir/build.make Opcodes/CMakeFiles/osc.dir/build
+.PHONY : osc/fast
+
+# Convenience name for target.
 Opcodes/CMakeFiles/deprecated.dir/rule:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Opcodes/CMakeFiles/deprecated.dir/rule
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Opcodes/CMakeFiles/deprecated.dir/rule
 .PHONY : Opcodes/CMakeFiles/deprecated.dir/rule
 
 # Convenience name for target.
@@ -202,15 +216,63 @@ deprecated: Opcodes/CMakeFiles/deprecated.dir/rule
 
 # fast build rule for target.
 deprecated/fast:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/deprecated.dir/build.make Opcodes/CMakeFiles/deprecated.dir/build
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/deprecated.dir/build.make Opcodes/CMakeFiles/deprecated.dir/build
 .PHONY : deprecated/fast
+
+OSC.o: OSC.c.o
+.PHONY : OSC.o
+
+# target to build an object file
+OSC.c.o:
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/osc.dir/build.make Opcodes/CMakeFiles/osc.dir/OSC.c.o
+.PHONY : OSC.c.o
+
+OSC.i: OSC.c.i
+.PHONY : OSC.i
+
+# target to preprocess a source file
+OSC.c.i:
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/osc.dir/build.make Opcodes/CMakeFiles/osc.dir/OSC.c.i
+.PHONY : OSC.c.i
+
+OSC.s: OSC.c.s
+.PHONY : OSC.s
+
+# target to generate assembly for a file
+OSC.c.s:
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/osc.dir/build.make Opcodes/CMakeFiles/osc.dir/OSC.c.s
+.PHONY : OSC.c.s
+
+apecsound_osc_register.o: apecsound_osc_register.c.o
+.PHONY : apecsound_osc_register.o
+
+# target to build an object file
+apecsound_osc_register.c.o:
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/osc.dir/build.make Opcodes/CMakeFiles/osc.dir/apecsound_osc_register.c.o
+.PHONY : apecsound_osc_register.c.o
+
+apecsound_osc_register.i: apecsound_osc_register.c.i
+.PHONY : apecsound_osc_register.i
+
+# target to preprocess a source file
+apecsound_osc_register.c.i:
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/osc.dir/build.make Opcodes/CMakeFiles/osc.dir/apecsound_osc_register.c.i
+.PHONY : apecsound_osc_register.c.i
+
+apecsound_osc_register.s: apecsound_osc_register.c.s
+.PHONY : apecsound_osc_register.s
+
+# target to generate assembly for a file
+apecsound_osc_register.c.s:
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/osc.dir/build.make Opcodes/CMakeFiles/osc.dir/apecsound_osc_register.c.s
+.PHONY : apecsound_osc_register.c.s
 
 deprecated.o: deprecated.c.o
 .PHONY : deprecated.o
 
 # target to build an object file
 deprecated.c.o:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/deprecated.dir/build.make Opcodes/CMakeFiles/deprecated.dir/deprecated.c.o
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/deprecated.dir/build.make Opcodes/CMakeFiles/deprecated.dir/deprecated.c.o
 .PHONY : deprecated.c.o
 
 deprecated.i: deprecated.c.i
@@ -218,7 +280,7 @@ deprecated.i: deprecated.c.i
 
 # target to preprocess a source file
 deprecated.c.i:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/deprecated.dir/build.make Opcodes/CMakeFiles/deprecated.dir/deprecated.c.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/deprecated.dir/build.make Opcodes/CMakeFiles/deprecated.dir/deprecated.c.i
 .PHONY : deprecated.c.i
 
 deprecated.s: deprecated.c.s
@@ -226,8 +288,32 @@ deprecated.s: deprecated.c.s
 
 # target to generate assembly for a file
 deprecated.c.s:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/deprecated.dir/build.make Opcodes/CMakeFiles/deprecated.dir/deprecated.c.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/deprecated.dir/build.make Opcodes/CMakeFiles/deprecated.dir/deprecated.c.s
 .PHONY : deprecated.c.s
+
+osc_blob.o: osc_blob.c.o
+.PHONY : osc_blob.o
+
+# target to build an object file
+osc_blob.c.o:
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/osc.dir/build.make Opcodes/CMakeFiles/osc.dir/osc_blob.c.o
+.PHONY : osc_blob.c.o
+
+osc_blob.i: osc_blob.c.i
+.PHONY : osc_blob.i
+
+# target to preprocess a source file
+osc_blob.c.i:
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/osc.dir/build.make Opcodes/CMakeFiles/osc.dir/osc_blob.c.i
+.PHONY : osc_blob.c.i
+
+osc_blob.s: osc_blob.c.s
+.PHONY : osc_blob.s
+
+# target to generate assembly for a file
+osc_blob.c.s:
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/osc.dir/build.make Opcodes/CMakeFiles/osc.dir/osc_blob.c.s
+.PHONY : osc_blob.c.s
 
 # Help Target
 help:
@@ -245,9 +331,19 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... test"
 	@echo "... deprecated"
+	@echo "... osc"
+	@echo "... OSC.o"
+	@echo "... OSC.i"
+	@echo "... OSC.s"
+	@echo "... apecsound_osc_register.o"
+	@echo "... apecsound_osc_register.i"
+	@echo "... apecsound_osc_register.s"
 	@echo "... deprecated.o"
 	@echo "... deprecated.i"
 	@echo "... deprecated.s"
+	@echo "... osc_blob.o"
+	@echo "... osc_blob.i"
+	@echo "... osc_blob.s"
 .PHONY : help
 
 
@@ -259,6 +355,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

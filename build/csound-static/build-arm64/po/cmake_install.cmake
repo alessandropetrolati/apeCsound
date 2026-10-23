@@ -1,8 +1,8 @@
-# Install script for directory: /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/po
+# Install script for directory: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/po
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64")
+  set(CMAKE_INSTALL_PREFIX "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -40,6 +40,6 @@ endif()
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/po/install_local_manifest.txt"
+  file(WRITE "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/po/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

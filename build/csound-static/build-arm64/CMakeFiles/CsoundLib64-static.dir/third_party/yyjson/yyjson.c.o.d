@@ -1,7 +1,7 @@
 CMakeFiles/CsoundLib64-static.dir/third_party/yyjson/yyjson.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/third_party/yyjson/yyjson.c \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/third_party/yyjson/yyjson.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/third_party/yyjson/yyjson.c \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/third_party/yyjson/yyjson.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_bounds.h \

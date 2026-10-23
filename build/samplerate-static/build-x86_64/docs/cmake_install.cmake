@@ -1,8 +1,8 @@
-# Install script for directory: /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs
+# Install script for directory: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64-deps/samplerate")
+  set(CMAKE_INSTALL_PREFIX "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64-deps/samplerate")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -39,27 +39,27 @@ endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/doc/libsamplerate" TYPE FILE FILES
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/api.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/api_callback.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/api_full.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/api_misc.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/api_simple.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/bugs.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/download.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/faq.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/history.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/index.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/license.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/lists.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/quality.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/win32.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/docs/SRC.png"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/api.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/api_callback.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/api_full.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/api_misc.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/api_simple.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/bugs.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/download.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/faq.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/history.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/index.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/license.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/lists.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/quality.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/win32.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/docs/SRC.png"
     )
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-x86_64/docs/install_local_manifest.txt"
+  file(WRITE "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-x86_64/docs/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

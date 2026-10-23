@@ -57,10 +57,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64"
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -68,7 +68,7 @@ CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/buil
 # Special rule for the target package
 package: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool..."
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && /opt/homebrew/bin/cpack --config ./CPackConfig.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && /opt/homebrew/bin/cpack --config ./CPackConfig.cmake
 .PHONY : package
 
 # Special rule for the target package
@@ -78,7 +78,7 @@ package/fast: package
 # Special rule for the target package_source
 package_source:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool for source..."
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && /opt/homebrew/bin/cpack --config ./CPackSourceConfig.cmake /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/build-x86_64/CPackSourceConfig.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && /opt/homebrew/bin/cpack --config ./CPackSourceConfig.cmake /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/build-x86_64/CPackSourceConfig.cmake
 .PHONY : package_source
 
 # Special rule for the target package_source
@@ -162,14 +162,14 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/CMakeFiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/tests/commandline//CMakeFiles/progress.marks"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/all
-	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/CMakeFiles" 0
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/tests/commandline//CMakeFiles/progress.marks"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/all
+	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/clean
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/clean
 .PHONY : clean
 
 # The main clean target
@@ -178,22 +178,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/preinstall
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/preinstall
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 tests/commandline/CMakeFiles/csdtests.dir/rule:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/CMakeFiles/csdtests.dir/rule
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/CMakeFiles/csdtests.dir/rule
 .PHONY : tests/commandline/CMakeFiles/csdtests.dir/rule
 
 # Convenience name for target.
@@ -202,12 +202,12 @@ csdtests: tests/commandline/CMakeFiles/csdtests.dir/rule
 
 # fast build rule for target.
 csdtests/fast:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f tests/commandline/CMakeFiles/csdtests.dir/build.make tests/commandline/CMakeFiles/csdtests.dir/build
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f tests/commandline/CMakeFiles/csdtests.dir/build.make tests/commandline/CMakeFiles/csdtests.dir/build
 .PHONY : csdtests/fast
 
 # Convenience name for target.
 tests/commandline/CMakeFiles/csdtests-verbose.dir/rule:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/CMakeFiles/csdtests-verbose.dir/rule
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/CMakeFiles/csdtests-verbose.dir/rule
 .PHONY : tests/commandline/CMakeFiles/csdtests-verbose.dir/rule
 
 # Convenience name for target.
@@ -216,12 +216,12 @@ csdtests-verbose: tests/commandline/CMakeFiles/csdtests-verbose.dir/rule
 
 # fast build rule for target.
 csdtests-verbose/fast:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f tests/commandline/CMakeFiles/csdtests-verbose.dir/build.make tests/commandline/CMakeFiles/csdtests-verbose.dir/build
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f tests/commandline/CMakeFiles/csdtests-verbose.dir/build.make tests/commandline/CMakeFiles/csdtests-verbose.dir/build
 .PHONY : csdtests-verbose/fast
 
 # Convenience name for target.
 tests/commandline/CMakeFiles/csdtest-harness-tests.dir/rule:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/CMakeFiles/csdtest-harness-tests.dir/rule
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/commandline/CMakeFiles/csdtest-harness-tests.dir/rule
 .PHONY : tests/commandline/CMakeFiles/csdtest-harness-tests.dir/rule
 
 # Convenience name for target.
@@ -230,7 +230,7 @@ csdtest-harness-tests: tests/commandline/CMakeFiles/csdtest-harness-tests.dir/ru
 
 # fast build rule for target.
 csdtest-harness-tests/fast:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f tests/commandline/CMakeFiles/csdtest-harness-tests.dir/build.make tests/commandline/CMakeFiles/csdtest-harness-tests.dir/build
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(MAKE) $(MAKESILENT) -f tests/commandline/CMakeFiles/csdtest-harness-tests.dir/build.make tests/commandline/CMakeFiles/csdtest-harness-tests.dir/build
 .PHONY : csdtest-harness-tests/fast
 
 # Help Target
@@ -262,6 +262,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

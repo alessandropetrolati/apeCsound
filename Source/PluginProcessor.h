@@ -429,6 +429,13 @@ public:
         Va chiamata dal thread dei messaggi. */
     void compileAndStart (const juce::String& csdText);
 
+    /** Pausa (bypass) di Csound, bottone accanto ad Apply: il motore non
+        viene eseguito (il tempo di Csound si ferma) e l'ingresso passa
+        all'uscita invariato. Ogni compileAndStart (Apply, Load...) la toglie:
+        di default Csound suona sempre. */
+    void setCsoundPaused (bool shouldBePaused) noexcept { csoundPaused.store (shouldBePaused); }
+    bool isCsoundPaused() const noexcept               { return csoundPaused.load(); }
+
     /** Ferma la performance in corso (se presente).
         Va chiamata dal thread dei messaggi. */
     void stopEngine();
@@ -1100,6 +1107,7 @@ private:
 
     std::atomic<CSOUND*> activeCsound { nullptr };
     std::atomic<bool> ready { false };
+    std::atomic<bool> csoundPaused { false }; // vedi setCsoundPaused
 
     // true tra il momento in cui setStateInformation ripristina il testo del
     // .csd e il momento in cui quel testo viene effettivamente compilato -

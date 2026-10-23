@@ -1,8 +1,8 @@
-if (NOT EXISTS "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/install_manifest.txt")
-    message(FATAL_ERROR "Cannot find install manifest: \"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/install_manifest.txt\"")
-endif(NOT EXISTS "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/install_manifest.txt")
+if (NOT EXISTS "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/install_manifest.txt")
+    message(FATAL_ERROR "Cannot find install manifest: \"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/install_manifest.txt\"")
+endif(NOT EXISTS "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/install_manifest.txt")
 
-file(READ "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/install_manifest.txt" files)
+file(READ "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/install_manifest.txt" files)
 string(REGEX REPLACE "\n" ";" files "${files}")
 list(REVERSE files)
 foreach (file ${files})

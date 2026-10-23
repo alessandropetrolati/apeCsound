@@ -1,5 +1,5 @@
 file(REMOVE_RECURSE
-  "../libdeprecated.dylib"
+  "../libdeprecated.a"
   "../libdeprecated.pdb"
   "CMakeFiles/deprecated.dir/deprecated.c.o"
   "CMakeFiles/deprecated.dir/deprecated.c.o.d"

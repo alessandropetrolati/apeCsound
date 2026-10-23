@@ -42,19 +42,20 @@
 /Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Headers/csound.h
 /Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/CsoundLib64
 /Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Headers
-/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/lib/libCsoundLib64.a
-/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libdeprecated.dylib
-/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/bin/csound
-/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/bin/csdebugger
-/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/share/csound/CsoundTargets.cmake
-/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/share/csound/CsoundTargets-release.cmake
-/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/share/csound/CsoundStaticTargets.cmake
-/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/share/csound/CsoundStaticTargets-release.cmake
-/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/share/csound/CsoundConfig.cmake
-/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/share/csound/CsoundConfigVersion.cmake
-/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/share/csound/FindCsound.cmake
-/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/share/csound/FindWasmtime.cmake
-/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64/lib/pkgconfig/csound.pc
+/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/lib/libCsoundLib64.a
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libosc.a
+/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libdeprecated.a
+/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/bin/csound
+/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/bin/csdebugger
+/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/share/csound/CsoundTargets.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/share/csound/CsoundTargets-release.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/share/csound/CsoundStaticTargets.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/share/csound/CsoundStaticTargets-release.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/share/csound/CsoundConfig.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/share/csound/CsoundConfigVersion.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/share/csound/FindCsound.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/share/csound/FindWasmtime.cmake
+/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64/lib/pkgconfig/csound.pc
 /Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/samples/hrtf-44100-left.dat
 /Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/samples/hrtf-44100-right.dat
 /Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/samples/hrtf-96000-right.dat

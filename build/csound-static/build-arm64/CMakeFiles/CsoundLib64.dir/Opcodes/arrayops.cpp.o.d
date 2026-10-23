@@ -1,6 +1,6 @@
 CMakeFiles/CsoundLib64.dir/Opcodes/arrayops.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/Opcodes/arrayops.cpp \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/arrayops.cpp \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/algorithm \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__config \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__config_site \
@@ -805,13 +805,13 @@ CMakeFiles/CsoundLib64.dir/Opcodes/arrayops.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__numeric/iota.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/execution \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__type_traits/is_execution_policy.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/plugin.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csoundCore.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/sysdep.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/plugin.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csoundCore.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/sysdep.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityMacros.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/TargetConditionals.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_types.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/build-arm64/include/float-version.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_types.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/build-arm64/include/float-version.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/fcntl.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/fcntl.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_o_sync.h \
@@ -839,34 +839,34 @@ CMakeFiles/CsoundLib64.dir/Opcodes/arrayops.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/ttycom.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/ioccom.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/ttydefaults.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/cs_par_structs.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/cs_par_structs.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/setjmp.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_type_system.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/text.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_rtaudio.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_rtmidi.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/cfgvar.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/msg_attr.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/build-arm64/include/version.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_data_structures.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_files.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_graph_display.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_circular_buffer.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_threads.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_compiler.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_misc.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_server.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/coreDefs.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/soundfile.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_type_system.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/text.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_rtaudio.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_rtmidi.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/cfgvar.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/msg_attr.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/build-arm64/include/version.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_data_structures.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_files.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_graph_display.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_circular_buffer.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_threads.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_compiler.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_misc.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_server.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/coreDefs.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/soundfile.h \
   /usr/local/include/sndfile.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/H/cs_internal.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/H/sort.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/H/prototyp.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/cwindow.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/H/filesys.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/H/environ.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/H/remote.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/H/cs_internal.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/H/sort.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/H/prototyp.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/cwindow.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/H/filesys.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/H/environ.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/H/remote.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/ioctl.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/filio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/sockio.h \
@@ -884,9 +884,9 @@ CMakeFiles/CsoundLib64.dir/Opcodes/arrayops.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/netinet/in.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/netinet6/in6.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/arpa/inet.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_structs.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/pstream.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/arrays.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_structs.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/pstream.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/arrays.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/complex \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/sstream \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__ostream/basic_ostream.h \

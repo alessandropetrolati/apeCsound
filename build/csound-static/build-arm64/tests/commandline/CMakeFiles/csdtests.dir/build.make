@@ -53,10 +53,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64"
 
 # Utility rule file for csdtests.
 
@@ -67,7 +67,7 @@ include tests/commandline/CMakeFiles/csdtests.dir/compiler_depend.make
 include tests/commandline/CMakeFiles/csdtests.dir/progress.make
 
 tests/commandline/CMakeFiles/csdtests:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/commandline" && /opt/homebrew/Frameworks/Python.framework/Versions/3.14/bin/python3.14 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/tests/commandline/test.py" "--csound-executable=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound" "--source-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/tests/commandline" "--opcode7dir64=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/commandline" && /opt/homebrew/Frameworks/Python.framework/Versions/3.14/bin/python3.14 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/tests/commandline/test.py" "--csound-executable=/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound" "--source-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/tests/commandline" "--opcode7dir64=/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64"
 
 tests/commandline/CMakeFiles/csdtests.dir/codegen:
 .PHONY : tests/commandline/CMakeFiles/csdtests.dir/codegen
@@ -81,10 +81,10 @@ tests/commandline/CMakeFiles/csdtests.dir/build: csdtests
 .PHONY : tests/commandline/CMakeFiles/csdtests.dir/build
 
 tests/commandline/CMakeFiles/csdtests.dir/clean:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/commandline" && $(CMAKE_COMMAND) -P CMakeFiles/csdtests.dir/cmake_clean.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/commandline" && $(CMAKE_COMMAND) -P CMakeFiles/csdtests.dir/cmake_clean.cmake
 .PHONY : tests/commandline/CMakeFiles/csdtests.dir/clean
 
 tests/commandline/CMakeFiles/csdtests.dir/depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/tests/commandline" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/commandline" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/commandline/CMakeFiles/csdtests.dir/DependInfo.cmake" "--color=$(COLOR)"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/tests/commandline" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/commandline" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/commandline/CMakeFiles/csdtests.dir/DependInfo.cmake" "--color=$(COLOR)"
 .PHONY : tests/commandline/CMakeFiles/csdtests.dir/depend
 

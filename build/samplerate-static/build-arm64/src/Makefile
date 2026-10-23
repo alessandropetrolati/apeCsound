@@ -57,10 +57,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64"
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -68,7 +68,7 @@ CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/buil
 # Special rule for the target package
 package: preinstall
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool..."
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && /opt/homebrew/bin/cpack --config ./CPackConfig.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && /opt/homebrew/bin/cpack --config ./CPackConfig.cmake
 .PHONY : package
 
 # Special rule for the target package
@@ -78,7 +78,7 @@ package/fast: package
 # Special rule for the target package_source
 package_source:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool for source..."
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && /opt/homebrew/bin/cpack --config ./CPackSourceConfig.cmake /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/build-arm64/CPackSourceConfig.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && /opt/homebrew/bin/cpack --config ./CPackSourceConfig.cmake /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/build-arm64/CPackSourceConfig.cmake
 .PHONY : package_source
 
 # Special rule for the target package_source
@@ -152,14 +152,14 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src//CMakeFiles/progress.marks"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/all
-	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles" 0
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src//CMakeFiles/progress.marks"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/all
+	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles" 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/clean
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/clean
 .PHONY : clean
 
 # The main clean target
@@ -168,22 +168,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/preinstall
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/preinstall
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 src/CMakeFiles/samplerate.dir/rule:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/samplerate.dir/rule
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/samplerate.dir/rule
 .PHONY : src/CMakeFiles/samplerate.dir/rule
 
 # Convenience name for target.
@@ -192,7 +192,7 @@ samplerate: src/CMakeFiles/samplerate.dir/rule
 
 # fast build rule for target.
 samplerate/fast:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/build
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/build
 .PHONY : samplerate/fast
 
 samplerate.o: samplerate.c.o
@@ -200,7 +200,7 @@ samplerate.o: samplerate.c.o
 
 # target to build an object file
 samplerate.c.o:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/samplerate.c.o
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/samplerate.c.o
 .PHONY : samplerate.c.o
 
 samplerate.i: samplerate.c.i
@@ -208,7 +208,7 @@ samplerate.i: samplerate.c.i
 
 # target to preprocess a source file
 samplerate.c.i:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/samplerate.c.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/samplerate.c.i
 .PHONY : samplerate.c.i
 
 samplerate.s: samplerate.c.s
@@ -216,7 +216,7 @@ samplerate.s: samplerate.c.s
 
 # target to generate assembly for a file
 samplerate.c.s:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/samplerate.c.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/samplerate.c.s
 .PHONY : samplerate.c.s
 
 src_linear.o: src_linear.c.o
@@ -224,7 +224,7 @@ src_linear.o: src_linear.c.o
 
 # target to build an object file
 src_linear.c.o:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_linear.c.o
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_linear.c.o
 .PHONY : src_linear.c.o
 
 src_linear.i: src_linear.c.i
@@ -232,7 +232,7 @@ src_linear.i: src_linear.c.i
 
 # target to preprocess a source file
 src_linear.c.i:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_linear.c.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_linear.c.i
 .PHONY : src_linear.c.i
 
 src_linear.s: src_linear.c.s
@@ -240,7 +240,7 @@ src_linear.s: src_linear.c.s
 
 # target to generate assembly for a file
 src_linear.c.s:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_linear.c.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_linear.c.s
 .PHONY : src_linear.c.s
 
 src_sinc.o: src_sinc.c.o
@@ -248,7 +248,7 @@ src_sinc.o: src_sinc.c.o
 
 # target to build an object file
 src_sinc.c.o:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_sinc.c.o
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_sinc.c.o
 .PHONY : src_sinc.c.o
 
 src_sinc.i: src_sinc.c.i
@@ -256,7 +256,7 @@ src_sinc.i: src_sinc.c.i
 
 # target to preprocess a source file
 src_sinc.c.i:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_sinc.c.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_sinc.c.i
 .PHONY : src_sinc.c.i
 
 src_sinc.s: src_sinc.c.s
@@ -264,7 +264,7 @@ src_sinc.s: src_sinc.c.s
 
 # target to generate assembly for a file
 src_sinc.c.s:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_sinc.c.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_sinc.c.s
 .PHONY : src_sinc.c.s
 
 src_zoh.o: src_zoh.c.o
@@ -272,7 +272,7 @@ src_zoh.o: src_zoh.c.o
 
 # target to build an object file
 src_zoh.c.o:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_zoh.c.o
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_zoh.c.o
 .PHONY : src_zoh.c.o
 
 src_zoh.i: src_zoh.c.i
@@ -280,7 +280,7 @@ src_zoh.i: src_zoh.c.i
 
 # target to preprocess a source file
 src_zoh.c.i:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_zoh.c.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_zoh.c.i
 .PHONY : src_zoh.c.i
 
 src_zoh.s: src_zoh.c.s
@@ -288,7 +288,7 @@ src_zoh.s: src_zoh.c.s
 
 # target to generate assembly for a file
 src_zoh.c.s:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_zoh.c.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(MAKE) $(MAKESILENT) -f src/CMakeFiles/samplerate.dir/build.make src/CMakeFiles/samplerate.dir/src_zoh.c.s
 .PHONY : src_zoh.c.s
 
 # Help Target
@@ -329,6 +329,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

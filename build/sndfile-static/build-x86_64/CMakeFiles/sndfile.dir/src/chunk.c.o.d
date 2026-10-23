@@ -1,8 +1,8 @@
 CMakeFiles/sndfile.dir/src/chunk.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/chunk.c \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/sfconfig.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/build-x86_64/src/config.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/chunk.c \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/sfconfig.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/build-x86_64/src/config.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stdlib.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdlib.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/Availability.h \
@@ -86,7 +86,7 @@ CMakeFiles/sndfile.dir/src/chunk.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_strings.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_common.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/include/sndfile.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/include/sndfile.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_va_list.h \
@@ -132,11 +132,11 @@ CMakeFiles/sndfile.dir/src/chunk.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_pthread/_pthread_key_t.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_fsblkcnt_t.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_fsfilcnt_t.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/sfendian.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/sfendian.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/inttypes.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/inttypes.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_inttypes.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/common.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/common.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/stdbool.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/math.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/float.h \

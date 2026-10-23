@@ -107,6 +107,11 @@ public:
     void performUndo();
     void performRedo();
 
+    /** Standalone: .csd aperto dal sistema (doppio clic nel Finder, "Apri
+        con", argomento della riga di comando - vedi StandaloneApp.cpp).
+        Come Load / drag & drop: chiede di salvare le modifiche non salvate. */
+    void openFileFromSystem (const juce::File& file)   { loadSessionFile (file); }
+
 private:
     // CsoundAudioProcessor::Listener
     void csoundMessageReceived (const juce::String& message) override;
@@ -747,6 +752,12 @@ private:
     // (Component::setName) assegnato nel costruttore.
     juce::Rectangle<int> toolbarBounds;
     juce::TextButton applyButton        { "Apply" };
+
+    // Pausa/bypass di Csound, a destra di Apply (vedi
+    // CsoundAudioProcessor::setCsoundPaused). Toggle con l'icona della pausa
+    // sempre uguale; in pausa il fondo diventa ambra.
+    juce::TextButton pauseButton {};
+    void updatePauseButton();
 
     // Menu hamburger del pannello Parametri: ancorato a destra in QUESTA
     // toolbar (richiesta esplicita) - l'oggetto VERO (stile/nome/onClick)

@@ -168,6 +168,11 @@ juce::String CsoundAudioSettings::stateSignature() const
     for (const auto& info : juce::MidiInput::getAvailableDevices())
         s.add (info.identifier + (deviceManager.isMidiInputDeviceEnabled (info.identifier) ? "+" : "-"));
 
+    for (const auto& info : juce::MidiOutput::getAvailableDevices())
+        s.add ("out:" + info.identifier);
+
+    s.add ("defaultOut:" + deviceManager.getDefaultMidiOutputIdentifier());
+
     if (muteInput != nullptr)
         s.add (muteInput->toString());
 
@@ -335,6 +340,24 @@ std::vector<CsoundAudioSettings::Entry> CsoundAudioSettings::buildEntries() cons
             break;
         }
 
+        case Page::midiOutput:
+        {
+            // Una sola uscita (StandalonePluginHolder invia il MIDI prodotto
+            // dal plugin - opcode midiout, midiout_i, noteon... - alla uscita
+            // MIDI predefinita del deviceManager).
+            list.push_back (back ("MIDI Output"));
+            const auto current = deviceManager.getDefaultMidiOutputIdentifier();
+
+            list.push_back (choice ("None", current.isEmpty(), [self] { self->selectMidiOutput ({}); }));
+
+            for (const auto& info : juce::MidiOutput::getAvailableDevices())
+            {
+                const auto id = info.identifier;
+                list.push_back (choice (info.name, id == current, [self, id] { self->selectMidiOutput (id); }));
+            }
+            break;
+        }
+
         case Page::main:
             break;
     }
@@ -445,6 +468,19 @@ std::vector<CsoundAudioSettings::Entry> CsoundAudioSettings::buildMainPage() con
         const bool any = ! juce::MidiInput::getAvailableDevices().isEmpty();
         row ("MIDI Inputs", enabled.isEmpty() ? juce::String (any ? "None" : "No devices") : enabled.joinIntoString (", "),
              any, Page::midiInputs);
+    }
+
+    {
+        juce::String outName = "None";
+        const auto current = deviceManager.getDefaultMidiOutputIdentifier();
+
+        for (const auto& info : juce::MidiOutput::getAvailableDevices())
+            if (info.identifier == current)
+                outName = info.name;
+
+        const bool anyOut = ! juce::MidiOutput::getAvailableDevices().isEmpty();
+        row ("MIDI Output", current.isEmpty() ? juce::String (anyOut ? "None" : "No devices") : outName,
+             anyOut, Page::midiOutput);
     }
 
     if (juce::BluetoothMidiDevicePairingDialogue::isAvailable())
@@ -606,6 +642,13 @@ void CsoundAudioSettings::toggleMidiInput (const juce::String& identifier)
 {
     deviceManager.setMidiInputDeviceEnabled (identifier, ! deviceManager.isMidiInputDeviceEnabled (identifier));
     setupChanged(); // resta nella pagina: selezione multipla
+}
+
+void CsoundAudioSettings::selectMidiOutput (const juce::String& identifier)
+{
+    deviceManager.setDefaultMidiOutputDevice (identifier);
+    page = Page::main;
+    setupChanged();
 }
 
 void CsoundAudioSettings::openBluetoothPairing()

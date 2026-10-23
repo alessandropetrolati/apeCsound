@@ -54,10 +54,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-x86_64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-x86_64"
 
 #=============================================================================
 # Directory level rules for the build root directory
@@ -85,14 +85,14 @@ clean: CMakeFiles/sndfile.dir/clean
 CMakeFiles/sndfile.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sndfile.dir/build.make CMakeFiles/sndfile.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sndfile.dir/build.make CMakeFiles/sndfile.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-x86_64/CMakeFiles" --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93 "Built target sndfile"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-x86_64/CMakeFiles" --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93 "Built target sndfile"
 .PHONY : CMakeFiles/sndfile.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/sndfile.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-x86_64/CMakeFiles" 93
+	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-x86_64/CMakeFiles" 93
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/sndfile.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-x86_64/CMakeFiles" 0
+	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-x86_64/CMakeFiles" 0
 .PHONY : CMakeFiles/sndfile.dir/rule
 
 # Convenience name for target.
@@ -102,7 +102,7 @@ sndfile: CMakeFiles/sndfile.dir/rule
 # codegen rule for target.
 CMakeFiles/sndfile.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sndfile.dir/build.make CMakeFiles/sndfile.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-x86_64/CMakeFiles" --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93 "Finished codegen for target sndfile"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-x86_64/CMakeFiles" --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93 "Finished codegen for target sndfile"
 .PHONY : CMakeFiles/sndfile.dir/codegen
 
 # clean rule for target.

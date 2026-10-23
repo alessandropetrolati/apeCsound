@@ -8,10 +8,10 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/samplerate.c" "src/CMakeFiles/samplerate.dir/samplerate.c.o" "gcc" "src/CMakeFiles/samplerate.dir/samplerate.c.o.d"
-  "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/src_linear.c" "src/CMakeFiles/samplerate.dir/src_linear.c.o" "gcc" "src/CMakeFiles/samplerate.dir/src_linear.c.o.d"
-  "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/src_sinc.c" "src/CMakeFiles/samplerate.dir/src_sinc.c.o" "gcc" "src/CMakeFiles/samplerate.dir/src_sinc.c.o.d"
-  "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/src_zoh.c" "src/CMakeFiles/samplerate.dir/src_zoh.c.o" "gcc" "src/CMakeFiles/samplerate.dir/src_zoh.c.o.d"
+  "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/samplerate.c" "src/CMakeFiles/samplerate.dir/samplerate.c.o" "gcc" "src/CMakeFiles/samplerate.dir/samplerate.c.o.d"
+  "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/src_linear.c" "src/CMakeFiles/samplerate.dir/src_linear.c.o" "gcc" "src/CMakeFiles/samplerate.dir/src_linear.c.o.d"
+  "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/src_sinc.c" "src/CMakeFiles/samplerate.dir/src_sinc.c.o" "gcc" "src/CMakeFiles/samplerate.dir/src_sinc.c.o.d"
+  "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/src_zoh.c" "src/CMakeFiles/samplerate.dir/src_zoh.c.o" "gcc" "src/CMakeFiles/samplerate.dir/src_zoh.c.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

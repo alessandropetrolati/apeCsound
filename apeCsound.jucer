@@ -3,13 +3,13 @@
 <JUCERPROJECT id="hIifYP" name="apeCsound" projectType="audioplug" jucerFormatVersion="1"
               pluginFormats="buildAU,buildAUv3,buildStandalone,buildVST3" companyWebsite="www.apesoft.it"
               companyEmail="apps@apesoft.it" bundleIdentifier="it.apeSoft.apeCsound"
-              pluginManufacturerCode="Apes" pluginCode="Csnd" pluginCharacteristicsValue="pluginWantsMidiIn,pluginEditorRequiresKeys"
+              pluginManufacturerCode="Apes" pluginCode="Csnd" pluginCharacteristicsValue="pluginWantsMidiIn,pluginProducesMidiOut,pluginEditorRequiresKeys"
               pluginManufacturer="apeSoft" aaxIdentifier="it.apeSoft.apeCsound"
               pluginVST3Category="Fx" pluginAUMainType="'aufx'" microphonePermissionNeeded="1"
               microphonePermissionsText="apeCsound needs the microphone for live audio input."
               pluginEditorRequiresKeys="1" pluginIsSynth="0" pluginWantsMidiIn="1"
-              pluginProducesMidiOut="0" pluginIsMidiEffectPlugin="0" pluginAAXDisableBypass="0"
-              pluginAAXDisableMultiMono="0" version="1.0.1">
+              pluginProducesMidiOut="1" pluginIsMidiEffectPlugin="0" pluginAAXDisableBypass="0"
+              pluginAAXDisableMultiMono="0" version="1.0.2">
   <MAINGROUP id="tNvtiW" name="apeCsound">
     <GROUP id="{9680A1AA-7764-28DB-226D-D2086CE2E1B8}" name="Resources">
       <FILE id="QhPr70" name="cs-icon.png" compile="0" resource="1" file="Resources/cs-icon.png"/>
@@ -51,12 +51,13 @@
             file="Source/CsoundAudioSettings.cpp"/>
       <FILE id="cAudB" name="CsoundAudioSettings.h" compile="0" resource="0"
             file="Source/CsoundAudioSettings.h"/>
-      <FILE id="cCmbH" name="CsoundComboBox.h" compile="0" resource="0"
-            file="Source/CsoundComboBox.h"/>
+      <FILE id="cCmbH" name="CsoundComboBox.h" compile="0" resource="0" file="Source/CsoundComboBox.h"/>
       <FILE id="cShcH" name="CsoundShortcuts.h" compile="0" resource="0"
             file="Source/CsoundShortcuts.h"/>
       <FILE id="cGrfA" name="CsoundGraphs.cpp" compile="1" resource="0" file="Source/CsoundGraphs.cpp"/>
       <FILE id="cGrfB" name="CsoundGraphs.h" compile="0" resource="0" file="Source/CsoundGraphs.h"/>
+      <FILE id="sAppA" name="StandaloneApp.cpp" compile="1" resource="0"
+            file="Source/StandaloneApp.cpp"/>
       <FILE id="pFbkA" name="PlatformFallbacks.cpp" compile="1" resource="0"
             file="Source/PlatformFallbacks.cpp"/>
       <FILE id="sScfH" name="SecurityScopedFile.h" compile="0" resource="0"
@@ -106,9 +107,10 @@
   <EXPORTFORMATS>
     <XCODE_MAC iosBluetoothPermissionNeeded="1" iosBluetoothPermissionText="apeCsound uses Bluetooth to connect wireless MIDI keyboards and controllers."
                targetFolder="Builds/MacOSX" iosDevelopmentTeamID="4863C638XM"
-               smallIcon="QhPr70" bigIcon="QhPr70" externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate"
+               smallIcon="QhPr70" bigIcon="QhPr70" externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate&#10;csoundosc&#10;lo"
                extraFrameworks="Accelerate" microphonePermissionNeeded="1" microphonePermissionsText="apeCsound needs the microphone for live audio input."
-               hardenedRuntime="1" hardenedRuntimeOptions="com.apple.security.device.audio-input">
+               hardenedRuntime="1" hardenedRuntimeOptions="com.apple.security.device.audio-input"
+               documentExtensions=".csd" extraDefs="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1&#10;APECSOUND_WITH_OSC=1">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" headerPath="../../build/csound-install/universal/include"
                        libraryPath="../../build/csound-install/universal/lib" osxCompatibility="12 SDK"
@@ -174,7 +176,8 @@
       </MODULEPATHS>
     </XCODE_IPHONE>
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile" smallIcon="QhPr70" bigIcon="QhPr70"
-                externalLibraries="csound64&#10;sndfile&#10;samplerate" extraLinkerFlags="-ldl -lpthread -lm">
+                extraDefs="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1" externalLibraries="csound64&#10;sndfile&#10;samplerate"
+                extraLinkerFlags="-ldl -lpthread -lm">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" headerPath="../../build/csound-install/linux/include"
                        libraryPath="../../build/csound-install/linux/lib"/>
@@ -201,7 +204,7 @@
       </MODULEPATHS>
     </LINUX_MAKE>
     <VS2022 targetFolder="Builds/VisualStudio2022" smallIcon="QhPr70" bigIcon="QhPr70"
-            externalLibraries="csound64.lib&#10;sndfile.lib&#10;samplerate.lib&#10;ws2_32.lib&#10;winmm.lib&#10;ole32.lib&#10;uuid.lib&#10;shlwapi.lib">
+            extraDefs="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1" externalLibraries="csound64.lib&#10;sndfile.lib&#10;samplerate.lib&#10;ws2_32.lib&#10;winmm.lib&#10;ole32.lib&#10;uuid.lib&#10;shlwapi.lib">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" winArchitecture="x64"
                        useRuntimeLibDLL="0" headerPath="..\..\build\csound-install\windows\include"

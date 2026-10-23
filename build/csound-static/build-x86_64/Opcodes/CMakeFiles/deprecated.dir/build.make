@@ -53,10 +53,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64"
 
 # Include any dependencies generated for this target.
 include Opcodes/CMakeFiles/deprecated.dir/depend.make
@@ -73,18 +73,18 @@ Opcodes/CMakeFiles/deprecated.dir/codegen:
 .PHONY : Opcodes/CMakeFiles/deprecated.dir/codegen
 
 Opcodes/CMakeFiles/deprecated.dir/deprecated.c.o: Opcodes/CMakeFiles/deprecated.dir/flags.make
-Opcodes/CMakeFiles/deprecated.dir/deprecated.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/Opcodes/deprecated.c
+Opcodes/CMakeFiles/deprecated.dir/deprecated.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/deprecated.c
 Opcodes/CMakeFiles/deprecated.dir/deprecated.c.o: Opcodes/CMakeFiles/deprecated.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building C object Opcodes/CMakeFiles/deprecated.dir/deprecated.c.o"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Opcodes" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT Opcodes/CMakeFiles/deprecated.dir/deprecated.c.o -MF CMakeFiles/deprecated.dir/deprecated.c.o.d -o CMakeFiles/deprecated.dir/deprecated.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Opcodes/deprecated.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building C object Opcodes/CMakeFiles/deprecated.dir/deprecated.c.o"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Opcodes" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT Opcodes/CMakeFiles/deprecated.dir/deprecated.c.o -MF CMakeFiles/deprecated.dir/deprecated.c.o.d -o CMakeFiles/deprecated.dir/deprecated.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/deprecated.c"
 
 Opcodes/CMakeFiles/deprecated.dir/deprecated.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/deprecated.dir/deprecated.c.i"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Opcodes" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Opcodes/deprecated.c" > CMakeFiles/deprecated.dir/deprecated.c.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Opcodes" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/deprecated.c" > CMakeFiles/deprecated.dir/deprecated.c.i
 
 Opcodes/CMakeFiles/deprecated.dir/deprecated.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/deprecated.dir/deprecated.c.s"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Opcodes" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Opcodes/deprecated.c" -o CMakeFiles/deprecated.dir/deprecated.c.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Opcodes" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/deprecated.c" -o CMakeFiles/deprecated.dir/deprecated.c.s
 
 # Object files for target deprecated
 deprecated_OBJECTS = \
@@ -93,21 +93,22 @@ deprecated_OBJECTS = \
 # External object files for target deprecated
 deprecated_EXTERNAL_OBJECTS =
 
-libdeprecated.dylib: Opcodes/CMakeFiles/deprecated.dir/deprecated.c.o
-libdeprecated.dylib: Opcodes/CMakeFiles/deprecated.dir/build.make
-libdeprecated.dylib: Opcodes/CMakeFiles/deprecated.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Linking C shared library ../libdeprecated.dylib"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Opcodes" && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/deprecated.dir/link.txt --verbose=$(VERBOSE)
+libdeprecated.a: Opcodes/CMakeFiles/deprecated.dir/deprecated.c.o
+libdeprecated.a: Opcodes/CMakeFiles/deprecated.dir/build.make
+libdeprecated.a: Opcodes/CMakeFiles/deprecated.dir/link.txt
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Linking C static library ../libdeprecated.a"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Opcodes" && $(CMAKE_COMMAND) -P CMakeFiles/deprecated.dir/cmake_clean_target.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Opcodes" && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/deprecated.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
-Opcodes/CMakeFiles/deprecated.dir/build: libdeprecated.dylib
+Opcodes/CMakeFiles/deprecated.dir/build: libdeprecated.a
 .PHONY : Opcodes/CMakeFiles/deprecated.dir/build
 
 Opcodes/CMakeFiles/deprecated.dir/clean:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Opcodes" && $(CMAKE_COMMAND) -P CMakeFiles/deprecated.dir/cmake_clean.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Opcodes" && $(CMAKE_COMMAND) -P CMakeFiles/deprecated.dir/cmake_clean.cmake
 .PHONY : Opcodes/CMakeFiles/deprecated.dir/clean
 
 Opcodes/CMakeFiles/deprecated.dir/depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Opcodes" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Opcodes" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Opcodes/CMakeFiles/deprecated.dir/DependInfo.cmake" "--color=$(COLOR)"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Opcodes" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Opcodes/CMakeFiles/deprecated.dir/DependInfo.cmake" "--color=$(COLOR)"
 .PHONY : Opcodes/CMakeFiles/deprecated.dir/depend
 

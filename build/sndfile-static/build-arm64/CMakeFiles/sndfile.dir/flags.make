@@ -4,7 +4,7 @@
 # compile C with /usr/bin/cc
 C_DEFINES = 
 
-C_INCLUDES = -I"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/include" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/include" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/src" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/src"
+C_INCLUDES = -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/include" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/include" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/src" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/src"
 
 C_FLAGSarm64 = -O3 -DNDEBUG -std=gnu99 -arch arm64 -mmacosx-version-min=10.14
 

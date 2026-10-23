@@ -1,8 +1,8 @@
-# Install script for directory: /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src
+# Install script for directory: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64-deps/samplerate")
+  set(CMAKE_INSTALL_PREFIX "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64-deps/samplerate")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -38,7 +38,7 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-x86_64/src/libsamplerate.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-x86_64/src/libsamplerate.a")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libsamplerate.a" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libsamplerate.a")
     execute_process(COMMAND "/usr/bin/ranlib" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libsamplerate.a")
@@ -46,17 +46,17 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/include/samplerate.h")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/include/samplerate.h")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-x86_64/src/samplerate.pc")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-x86_64/src/samplerate.pc")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SampleRate" TYPE FILE FILES
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-x86_64/src/SampleRateConfig.cmake"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-x86_64/src/SampleRateConfigVersion.cmake"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-x86_64/src/SampleRateConfig.cmake"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-x86_64/src/SampleRateConfigVersion.cmake"
     )
 endif()
 
@@ -64,7 +64,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/cmake/SampleRate/SampleRateTargets.cmake")
     file(DIFFERENT _cmake_export_file_changed FILES
          "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/cmake/SampleRate/SampleRateTargets.cmake"
-         "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-x86_64/src/CMakeFiles/Export/0c9e84964935f77a451055d6582ec567/SampleRateTargets.cmake")
+         "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-x86_64/src/CMakeFiles/Export/0c9e84964935f77a451055d6582ec567/SampleRateTargets.cmake")
     if(_cmake_export_file_changed)
       file(GLOB _cmake_old_config_files "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/cmake/SampleRate/SampleRateTargets-*.cmake")
       if(_cmake_old_config_files)
@@ -77,15 +77,15 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
     endif()
     unset(_cmake_export_file_changed)
   endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SampleRate" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-x86_64/src/CMakeFiles/Export/0c9e84964935f77a451055d6582ec567/SampleRateTargets.cmake")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SampleRate" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-x86_64/src/CMakeFiles/Export/0c9e84964935f77a451055d6582ec567/SampleRateTargets.cmake")
   if(CMAKE_INSTALL_CONFIG_NAME MATCHES "^([Rr][Ee][Ll][Ee][Aa][Ss][Ee])$")
-    file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SampleRate" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-x86_64/src/CMakeFiles/Export/0c9e84964935f77a451055d6582ec567/SampleRateTargets-release.cmake")
+    file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SampleRate" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-x86_64/src/CMakeFiles/Export/0c9e84964935f77a451055d6582ec567/SampleRateTargets-release.cmake")
   endif()
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-x86_64/src/install_local_manifest.txt"
+  file(WRITE "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-x86_64/src/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

@@ -1,8 +1,8 @@
-# Install script for directory: /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Opcodes
+# Install script for directory: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64")
+  set(CMAKE_INSTALL_PREFIX "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -39,31 +39,39 @@ endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
-   "/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libdeprecated.dylib")
+   "/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libosc.a")
   if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
   if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   endif()
-  file(INSTALL DESTINATION "/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64" TYPE SHARED_LIBRARY FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/libdeprecated.dylib")
-  if(EXISTS "$ENV{DESTDIR}/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libdeprecated.dylib" AND
-     NOT IS_SYMLINK "$ENV{DESTDIR}/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libdeprecated.dylib")
-    execute_process(COMMAND /usr/bin/install_name_tool
-      -add_rpath "/Users/alessandropetrolati/Library/Frameworks"
-      "$ENV{DESTDIR}/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libdeprecated.dylib")
-    if(CMAKE_INSTALL_DO_STRIP)
-      execute_process(COMMAND "/usr/bin/strip" -x "$ENV{DESTDIR}/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libdeprecated.dylib")
-    endif()
+  file(INSTALL DESTINATION "/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64" TYPE STATIC_LIBRARY FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/libosc.a")
+  if(EXISTS "$ENV{DESTDIR}/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libosc.a" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libosc.a")
+    execute_process(COMMAND "/usr/bin/ranlib" "$ENV{DESTDIR}/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libosc.a")
   endif()
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
+  list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
+   "/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libdeprecated.a")
+  if(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(WARNING "ABSOLUTE path INSTALL DESTINATION : ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  if(CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
+    message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
+  endif()
+  file(INSTALL DESTINATION "/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64" TYPE STATIC_LIBRARY FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/libdeprecated.a")
+  if(EXISTS "$ENV{DESTDIR}/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libdeprecated.a" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libdeprecated.a")
+    execute_process(COMMAND "/usr/bin/ranlib" "$ENV{DESTDIR}/Users/alessandropetrolati/Library/Frameworks/CsoundLib64.framework/Versions/7.0/Resources/Opcodes64/libdeprecated.a")
+  endif()
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/Opcodes/install_local_manifest.txt"
+  file(WRITE "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/Opcodes/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

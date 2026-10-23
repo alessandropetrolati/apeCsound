@@ -1,6 +1,6 @@
 # CMake generated Testfile for 
-# Source directory: /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src
-# Build directory: /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64
+# Source directory: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src
+# Build directory: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64
 # 
 # This file includes the relevant testing commands required for 
 # testing this directory and lists subdirectories to be tested as well.

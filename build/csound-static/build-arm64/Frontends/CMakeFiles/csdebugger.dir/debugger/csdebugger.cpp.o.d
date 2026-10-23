@@ -1,6 +1,6 @@
 Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/Frontends/debugger/csdebugger.cpp \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Frontends/debugger/csdebugger.cpp \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__config \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__config_site \
@@ -48,8 +48,8 @@ Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_ctermid.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_off_t.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_ssize_t.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound.hpp \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound.hpp \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/stdint.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/stdint.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stdint.h \
@@ -59,7 +59,7 @@ Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_types/_uint64_t.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_types/_intmax_t.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_types/_uintmax_t.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/sysdep.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/sysdep.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/limits.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/limits.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/machine/limits.h \
@@ -76,8 +76,8 @@ Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/xlocale/_stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/AvailabilityMacros.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/TargetConditionals.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_types.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/build-arm64/include/float-version.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_types.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/build-arm64/include/float-version.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/stdlib.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stdlib.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdlib.h \
@@ -317,7 +317,7 @@ Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/ttycom.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/ioccom.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/ttydefaults.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/text.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/text.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/stdarg.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/__stdarg_header_macro.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/__stdarg___gnuc_va_list.h \
@@ -325,14 +325,14 @@ Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/__stdarg_va_arg.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/__stdarg___va_copy.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/__stdarg_va_copy.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_rtaudio.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_rtmidi.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/cfgvar.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/msg_attr.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/build-arm64/include/version.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csdebug.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_type_system.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/include/csound_data_structures.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_rtaudio.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_rtmidi.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/cfgvar.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/msg_attr.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/build-arm64/include/version.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csdebug.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_type_system.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/include/csound_data_structures.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/iostream \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/ios \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/iosfwd \

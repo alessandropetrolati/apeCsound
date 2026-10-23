@@ -53,10 +53,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64"
 
 # Utility rule file for csdtest-harness-tests.
 
@@ -67,7 +67,7 @@ include tests/commandline/CMakeFiles/csdtest-harness-tests.dir/compiler_depend.m
 include tests/commandline/CMakeFiles/csdtest-harness-tests.dir/progress.make
 
 tests/commandline/CMakeFiles/csdtest-harness-tests:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/commandline" && /opt/homebrew/Frameworks/Python.framework/Versions/3.14/bin/python3.14 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/tests/commandline/test_harness.py"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/commandline" && /opt/homebrew/Frameworks/Python.framework/Versions/3.14/bin/python3.14 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/tests/commandline/test_harness.py"
 
 tests/commandline/CMakeFiles/csdtest-harness-tests.dir/codegen:
 .PHONY : tests/commandline/CMakeFiles/csdtest-harness-tests.dir/codegen
@@ -81,10 +81,10 @@ tests/commandline/CMakeFiles/csdtest-harness-tests.dir/build: csdtest-harness-te
 .PHONY : tests/commandline/CMakeFiles/csdtest-harness-tests.dir/build
 
 tests/commandline/CMakeFiles/csdtest-harness-tests.dir/clean:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/commandline" && $(CMAKE_COMMAND) -P CMakeFiles/csdtest-harness-tests.dir/cmake_clean.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/commandline" && $(CMAKE_COMMAND) -P CMakeFiles/csdtest-harness-tests.dir/cmake_clean.cmake
 .PHONY : tests/commandline/CMakeFiles/csdtest-harness-tests.dir/clean
 
 tests/commandline/CMakeFiles/csdtest-harness-tests.dir/depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/tests/commandline" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/commandline" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/commandline/CMakeFiles/csdtest-harness-tests.dir/DependInfo.cmake" "--color=$(COLOR)"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/tests/commandline" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/commandline" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/commandline/CMakeFiles/csdtest-harness-tests.dir/DependInfo.cmake" "--color=$(COLOR)"
 .PHONY : tests/commandline/CMakeFiles/csdtest-harness-tests.dir/depend
 

@@ -73,7 +73,7 @@ public:
 
 private:
     enum class Page { main, driver, outputDevice, inputDevice, outputChannels, inputChannels,
-                      sampleRate, bufferSize, midiInputs };
+                      sampleRate, bufferSize, midiInputs, midiOutput };
 
     struct Entry
     {
@@ -102,6 +102,7 @@ private:
     void selectSampleRate (double rate);
     void selectBufferSize (int samples);
     void toggleMidiInput (const juce::String& identifier);
+    void selectMidiOutput (const juce::String& identifier); // vuoto = nessuna
     void openBluetoothPairing();
     void resetAudioMidi();
     void setupChanged();

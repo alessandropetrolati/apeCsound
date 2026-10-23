@@ -319,6 +319,16 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     applyButton.getProperties().set ("circular", true); // capsula (vedi CsoundLookAndFeel)
     applyButton.onClick = [this] { performApply(); };
 
+    pauseButton.setName ("pause");
+    pauseButton.getProperties().set ("circular", true);
+    pauseButton.onClick = [this]
+    {
+        audioProcessor.setCsoundPaused (! audioProcessor.isCsoundPaused());
+        updatePauseButton();
+    };
+    addAndMakeVisible (pauseButton);
+    updatePauseButton();
+
     // Stile toolbar: teal chiaro con icona/testo scuri (vedi kToolbarAccent).
     for (juce::Button* b : { static_cast<juce::Button*> (&applyButton),
                              static_cast<juce::Button*> (&findButton),
@@ -1071,6 +1081,11 @@ void CsoundAudioProcessorEditor::resized()
     // essere alto come + e burger").
     applyButton.setBounds (toolbar.removeFromLeft (applyWidth)
                                    .withSizeKeepingCentre (applyWidth, panelToolbarButtonDiameter));
+
+    // Pausa (bypass) subito a destra di Apply, stesso diametro dei bottoni rotondi.
+    toolbar.removeFromLeft (8);
+    pauseButton.setBounds (toolbar.removeFromLeft (panelToolbarButtonDiameter)
+                                  .withSizeKeepingCentre (panelToolbarButtonDiameter, panelToolbarButtonDiameter));
 
 
     // Nome del file collegato (+ "•" se modificato) nello spazio che resta
@@ -2330,6 +2345,7 @@ void CsoundAudioProcessorEditor::performApply()
     logConsole.clear();
     appendToLog ("--- Applying edited .csd ---");
     audioProcessor.compileAndStart (document.getAllContent());
+    updatePauseButton(); // Apply toglie sempre la pausa, anche se la compilazione fallisce
 
     // Dopo compileAndStart il testo applicato (audioProcessor.getCsdText())
     // coincide di nuovo con quello dell'editor: il bordo rosso del bottone
@@ -2555,8 +2571,28 @@ void CsoundAudioProcessorEditor::refreshErrorMarkers (bool scrollToFirst)
     }
 }
 
+void CsoundAudioProcessorEditor::updatePauseButton()
+{
+    const bool paused = audioProcessor.isCsoundPaused();
+
+    // Sempre l'icona della pausa (il "play" e' Apply): lo stato si vede dal fondo ambra.
+    pauseButton.setName ("pause");
+    pauseButton.setToggleState (paused, juce::dontSendNotification);
+    pauseButton.setTooltip (paused ? "Csound is paused (bypass): click to resume. Apply also resumes."
+                                   : "Pause Csound (bypass: the input passes through unchanged).");
+
+    // In pausa: fondo ambra, ben visibile.
+    // (Il bottone "acceso" usa buttonOnColourId.)
+    pauseButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xffe0a030));
+
+    pauseButton.repaint();
+}
+
 void CsoundAudioProcessorEditor::csoundEngineStarted()
 {
+    // Ricompilazione = pausa tolta (vedi CsoundAudioProcessor::compileAndStart).
+    updatePauseButton();
+
     // Il motore viene (ri)compilato con un'istanza CSOUND* nuova ogni
     // volta (vedi compileAndStart): l'elenco opcode va quindi ripreso da
     // capo ogni volta che riparte, non solo alla creazione dell'editor.

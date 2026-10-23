@@ -57,10 +57,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64"
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -78,7 +78,7 @@ package/fast: package
 # Special rule for the target package_source
 package_source:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Run CPack packaging tool for source..."
-	/opt/homebrew/bin/cpack --config ./CPackSourceConfig.cmake /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/build-x86_64/CPackSourceConfig.cmake
+	/opt/homebrew/bin/cpack --config ./CPackSourceConfig.cmake /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/build-x86_64/CPackSourceConfig.cmake
 .PHONY : package_source
 
 # Special rule for the target package_source
@@ -162,9 +162,9 @@ install/strip/fast: preinstall/fast
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/CMakeFiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64//CMakeFiles/progress.marks"
+	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64//CMakeFiles/progress.marks"
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-x86_64/CMakeFiles" 0
+	$(CMAKE_COMMAND) -E cmake_progress_start "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" 0
 .PHONY : all
 
 # The main clean target
@@ -268,6 +268,19 @@ format: cmake_check_build_system
 format/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/format.dir/build.make CMakeFiles/format.dir/build
 .PHONY : format/fast
+
+#=============================================================================
+# Target rules for targets named osc
+
+# Build rule for target.
+osc: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 osc
+.PHONY : osc
+
+# fast build rule for target.
+osc/fast:
+	$(MAKE) $(MAKESILENT) -f Opcodes/CMakeFiles/osc.dir/build.make Opcodes/CMakeFiles/osc.dir/build
+.PHONY : osc/fast
 
 #=============================================================================
 # Target rules for targets named deprecated
@@ -7922,6 +7935,7 @@ help:
 	@echo "... csdebugger"
 	@echo "... csound-bin"
 	@echo "... deprecated"
+	@echo "... osc"
 	@echo "... Engine/auxfd.o"
 	@echo "... Engine/auxfd.i"
 	@echo "... Engine/auxfd.s"

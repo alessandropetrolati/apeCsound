@@ -1,6 +1,6 @@
 CMakeFiles/sndfile.dir/src/G72x/g72x.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/G72x/g72x.c \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/G72x/g72x.c \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_bounds.h \
@@ -93,5 +93,5 @@ CMakeFiles/sndfile.dir/src/G72x/g72x.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_strings.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_strings.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/G72x/g72x.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/G72x/g72x_priv.h
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/G72x/g72x.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/G72x/g72x_priv.h

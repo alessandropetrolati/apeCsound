@@ -33,6 +33,8 @@
 # Usage:  cd "scripts" && ./build_csound_static_macos.sh
 # Output: build/csound-install/universal/{lib,include}
 #   - lib/libCsoundLib64.a, lib/libsndfile.a, lib/libsamplerate.a
+#   - lib/liblo.a + lib/libcsoundosc.a: OSC opcodes (OSCinit, OSClisten,
+#     OSCsend...) linked statically, see section 3b below
 #   - include/csound.h and friends
 
 set -euo pipefail
@@ -43,6 +45,7 @@ CSOUND_BRANCH="develop"   # Csound 7 line - no stable 7.x tag yet as of writing;
                           # time you read this, for a reproducible build.
 SNDFILE_REPO="https://github.com/libsndfile/libsndfile.git"
 SAMPLERATE_REPO="https://github.com/libsndfile/libsamplerate.git"
+LIBLO_REPO="https://github.com/radarsat1/liblo.git"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -89,6 +92,24 @@ clone_once() {
 }
 
 # ---------------------------------------------------------------------
+# helper: a build folder configured for a DIFFERENT source path (e.g. the
+# project folder was renamed or copied, "Csound" -> "apeCsound") makes
+# CMake stop with "CMakeCache.txt directory ... is different". Such stale
+# build folders are removed; the cloned sources are kept.
+# ---------------------------------------------------------------------
+reset_stale_build_dir() {
+  local build_dir="$1" src_dir="$2"
+  local cache="$build_dir/CMakeCache.txt"
+  [ -f "$cache" ] || return 0
+  local cached_src
+  cached_src="$(grep -E '^CMAKE_HOME_DIRECTORY:INTERNAL=' "$cache" | cut -d= -f2-)"
+  if [ "$cached_src" != "$src_dir" ]; then
+    echo "==> removing stale build folder $build_dir (configured for $cached_src)"
+    rm -rf "$build_dir"
+  fi
+}
+
+# ---------------------------------------------------------------------
 # 1. libsndfile, static, core formats only (no FLAC/Vorbis/Opus/MP3, so we
 #    don't also have to vendor and statically link ogg/vorbis/opus/flac/
 #    lame/mpg123 ourselves). Covers WAV/AIFF/AU/CAF and friends, which is
@@ -102,6 +123,7 @@ build_sndfile_arch() {
   local build_dir="$BUILD_ROOT/sndfile-static/build-$arch"
   local install_dir="$INSTALL_ROOT/$arch-deps/sndfile"
   echo "==> building static libsndfile for $arch"
+  reset_stale_build_dir "$build_dir" "$SNDFILE_SRC"
   cmake -S "$SNDFILE_SRC" -B "$build_dir" -G "Unix Makefiles" \
     -DCMAKE_OSX_ARCHITECTURES="$arch" \
     -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 \
@@ -129,6 +151,7 @@ build_samplerate_arch() {
   local build_dir="$BUILD_ROOT/samplerate-static/build-$arch"
   local install_dir="$INSTALL_ROOT/$arch-deps/samplerate"
   echo "==> building static libsamplerate for $arch"
+  reset_stale_build_dir "$build_dir" "$SAMPLERATE_SRC"
   cmake -S "$SAMPLERATE_SRC" -B "$build_dir" -G "Unix Makefiles" \
     -DCMAKE_OSX_ARCHITECTURES="$arch" \
     -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 \
@@ -175,6 +198,7 @@ build_csound_arch() {
   echo "    using SndFile:    $sndfile_lib"
   echo "    using SampleRate: $samplerate_lib"
 
+  reset_stale_build_dir "$build_dir" "$CSOUND_SRC"
   cmake -S "$CSOUND_SRC" -B "$build_dir" -G "Unix Makefiles" \
     -DCMAKE_OSX_ARCHITECTURES="$arch" \
     -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 \
@@ -206,7 +230,10 @@ build_csound_arch() {
     -DUSE_IPMIDI=OFF \
     -DUSE_PULSEAUDIO=OFF \
     -DUSE_PIPEWIRE=OFF \
-    -DBUILD_OSC_OPCODES=OFF \
+    -DBUILD_OSC_OPCODES=ON \
+    -DAPECSOUND_STATIC_PLUGINS=ON \
+    -DLibLO_LIBRARY="$INSTALL_ROOT/$arch-deps/liblo/lib/liblo.a" \
+    -DLibLO_INCLUDE_DIR="$INSTALL_ROOT/$arch-deps/liblo/include" \
     -DBUILD_CSBEATS=OFF \
     -DBUILD_DSSI_OPCODES=OFF
 
@@ -214,10 +241,96 @@ build_csound_arch() {
   cmake --install "$build_dir" --config Release
 }
 
+# ---------------------------------------------------------------------
+# 3b. OSC opcodes, static.
+#     Csound builds the OSC opcodes (Opcodes/OSC.c, needs liblo) only as a
+#     separate plugin (.dylib, make_plugin), which apeCsound cannot load
+#     (static Csound, no plugin folder - and on iOS dynamic plugins are not
+#     allowed at all). So: liblo is built as a static library and Csound's
+#     own CMake is patched (patch_csound_for_static_osc, below) to build the
+#     osc plugin as a STATIC library (libosc.a -> libcsoundosc.a), with a
+#     tiny registration function, apecsound_register_osc_opcodes(CSOUND*),
+#     that apeCsound calls after csoundCreate() (csoundAppendOpcodes).
+#     The plugin entry points of OSC.c are renamed at compile time
+#     (csound_opcode_init -> apecsound_osc_opcode_init) so they cannot
+#     clash with anything in libCsoundLib64.a.
+# ---------------------------------------------------------------------
+LIBLO_SRC="$BUILD_ROOT/liblo-static/src"
+clone_once "$LIBLO_REPO" "master" "$LIBLO_SRC"
+
+build_liblo_arch() {
+  local arch="$1"
+  local build_dir="$BUILD_ROOT/liblo-static/build-$arch"
+  local install_dir="$INSTALL_ROOT/$arch-deps/liblo"
+  echo "==> building static liblo for $arch"
+  reset_stale_build_dir "$build_dir" "$LIBLO_SRC/cmake"
+  cmake -S "$LIBLO_SRC/cmake" -B "$build_dir" -G "Unix Makefiles" \
+    -DCMAKE_OSX_ARCHITECTURES="$arch" \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX="$install_dir" \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+    -DWITH_STATIC=ON \
+    -DWITH_TOOLS=OFF \
+    -DWITH_TESTS=OFF \
+    -DWITH_EXAMPLES=OFF \
+    -DWITH_CPP_TESTS=OFF \
+    -DTHREADING=ON
+  cmake --build "$build_dir" --config Release -j"$(sysctl -n hw.ncpu)"
+  cmake --install "$build_dir" --config Release
+
+  # Static archive under a fixed name (liblo names it liblo.a or
+  # liblo_static.a depending on the version).
+  local lo_a
+  lo_a="$(find "$install_dir" "$build_dir" -name 'liblo*.a' -type f | head -1)"
+  if [ -z "$lo_a" ]; then
+    echo "ERROR: static liblo (liblo*.a) not found in $install_dir or $build_dir"
+    exit 1
+  fi
+  mkdir -p "$install_dir/lib"
+  [ "$lo_a" = "$install_dir/lib/liblo.a" ] || cp "$lo_a" "$install_dir/lib/liblo.a"
+
+  # lo/lo.h + generated lo/lo_endian.h
+  if [ ! -f "$install_dir/include/lo/lo.h" ]; then
+    mkdir -p "$install_dir/include/lo"
+    cp "$LIBLO_SRC"/lo/*.h "$install_dir/include/lo/"
+    find "$build_dir" -path '*lo/*.h' -exec cp {} "$install_dir/include/lo/" \;
+  fi
+}
+
+# Patch (idempotente) dei sorgenti Csound clonati: make_plugin() costruisce
+# librerie STATICHE quando APECSOUND_STATIC_PLUGINS=ON, e il plugin osc
+# include la funzione di registrazione e rinomina i suoi entry point.
+# Cosi' OSC.c viene compilato da Csound stesso, con le sue stesse
+# definizioni (struct CSOUND/OENTRY identiche a quelle del core).
+patch_csound_for_static_osc() {
+  python3 "$SCRIPT_DIR/patch_csound_static_osc.py" "$CSOUND_SRC"
+}
+
+patch_csound_for_static_osc
+
+# Dopo la build di Csound: libosc.a (statica, vedi patch) -> libcsoundosc.a
+collect_csound_osc_arch() {
+  local arch="$1"
+  local build_dir="$BUILD_ROOT/csound-static/build-$arch"
+  local out_lib="$INSTALL_ROOT/$arch-deps/csoundosc/lib/libcsoundosc.a"
+  local osc_a
+  osc_a="$(find "$build_dir" -name 'libosc.a' -type f | head -1)"
+  if [ -z "$osc_a" ]; then
+    echo "ERROR: libosc.a not found in $build_dir (OSC opcodes not built: is liblo found?)"
+    exit 1
+  fi
+  mkdir -p "$(dirname "$out_lib")"
+  cp "$osc_a" "$out_lib"
+  echo "   OSC opcodes ($arch): $out_lib"
+}
+
 for arch in "${ARCHS[@]}"; do
   build_sndfile_arch "$arch"
   build_samplerate_arch "$arch"
+  build_liblo_arch "$arch"     # prima di Csound: serve al plugin osc
   build_csound_arch "$arch"
+  collect_csound_osc_arch "$arch"
 done
 
 # ---------------------------------------------------------------------
@@ -246,6 +359,8 @@ lipo_merge_dir() {
 lipo_merge_dir "csound"     "$INSTALL_ROOT/arm64/lib"               "$INSTALL_ROOT/x86_64/lib"
 lipo_merge_dir "sndfile"    "$INSTALL_ROOT/arm64-deps/sndfile/lib"    "$INSTALL_ROOT/x86_64-deps/sndfile/lib"
 lipo_merge_dir "samplerate" "$INSTALL_ROOT/arm64-deps/samplerate/lib" "$INSTALL_ROOT/x86_64-deps/samplerate/lib"
+lipo_merge_dir "liblo"      "$INSTALL_ROOT/arm64-deps/liblo/lib"      "$INSTALL_ROOT/x86_64-deps/liblo/lib"
+lipo_merge_dir "csoundosc"  "$INSTALL_ROOT/arm64-deps/csoundosc/lib"  "$INSTALL_ROOT/x86_64-deps/csoundosc/lib"
 
 mkdir -p "$INSTALL_ROOT/universal/include"
 
@@ -266,6 +381,7 @@ fi
 cp -R "$CSOUND_FRAMEWORK_HEADERS/." "$INSTALL_ROOT/universal/include/"
 cp -R "$INSTALL_ROOT/arm64-deps/sndfile/include/." "$INSTALL_ROOT/universal/include/"
 cp -R "$INSTALL_ROOT/arm64-deps/samplerate/include/." "$INSTALL_ROOT/universal/include/"
+cp -R "$INSTALL_ROOT/arm64-deps/liblo/include/." "$INSTALL_ROOT/universal/include/"
 
 echo ""
 echo "Done. Universal static libraries in: $UNIVERSAL_LIB_DIR"

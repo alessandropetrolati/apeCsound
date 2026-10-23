@@ -1,7 +1,7 @@
 CMakeFiles/CsoundLib64-static.dir/OOps/pffft.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/OOps/pffft.c \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/H/pffft.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/OOps/pffft.c \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/H/pffft.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/stddef.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stddef.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/__stddef_header_macro.h \

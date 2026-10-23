@@ -4,7 +4,7 @@
 # compile C with /usr/bin/cc
 C_DEFINES = -DHAVE_CONFIG_H
 
-C_INCLUDES = -I"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/include"
+C_INCLUDES = -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/include"
 
 C_FLAGSarm64 = -O3 -DNDEBUG -std=gnu99 -arch arm64 -mmacosx-version-min=10.14
 

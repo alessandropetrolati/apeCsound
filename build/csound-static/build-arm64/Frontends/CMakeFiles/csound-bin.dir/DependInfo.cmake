@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Frontends/csound/csound_main.c" "Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o" "gcc" "Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o.d"
+  "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Frontends/csound/csound_main.c" "Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o" "gcc" "Frontends/CMakeFiles/csound-bin.dir/csound/csound_main.c.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

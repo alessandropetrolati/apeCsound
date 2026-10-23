@@ -53,10 +53,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64"
 
 # Include any dependencies generated for this target.
 include Frontends/CMakeFiles/csdebugger.dir/depend.make
@@ -73,18 +73,18 @@ Frontends/CMakeFiles/csdebugger.dir/codegen:
 .PHONY : Frontends/CMakeFiles/csdebugger.dir/codegen
 
 Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o: Frontends/CMakeFiles/csdebugger.dir/flags.make
-Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/Frontends/debugger/csdebugger.cpp
+Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Frontends/debugger/csdebugger.cpp
 Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o: Frontends/CMakeFiles/csdebugger.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/Frontends" && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o -MF CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o.d -o CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Frontends/debugger/csdebugger.cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/Frontends" && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o -MF CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o.d -o CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Frontends/debugger/csdebugger.cpp"
 
 Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.i"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/Frontends" && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Frontends/debugger/csdebugger.cpp" > CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/Frontends" && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Frontends/debugger/csdebugger.cpp" > CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.i
 
 Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.s"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/Frontends" && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Frontends/debugger/csdebugger.cpp" -o CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/Frontends" && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Frontends/debugger/csdebugger.cpp" -o CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.s
 
 # Object files for target csdebugger
 csdebugger_OBJECTS = \
@@ -97,18 +97,18 @@ csdebugger: Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o
 csdebugger: Frontends/CMakeFiles/csdebugger.dir/build.make
 csdebugger: CsoundLib64.framework/Versions/7.0/CsoundLib64
 csdebugger: Frontends/CMakeFiles/csdebugger.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable ../csdebugger"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/Frontends" && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/csdebugger.dir/link.txt --verbose=$(VERBOSE)
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable ../csdebugger"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/Frontends" && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/csdebugger.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 Frontends/CMakeFiles/csdebugger.dir/build: csdebugger
 .PHONY : Frontends/CMakeFiles/csdebugger.dir/build
 
 Frontends/CMakeFiles/csdebugger.dir/clean:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/Frontends" && $(CMAKE_COMMAND) -P CMakeFiles/csdebugger.dir/cmake_clean.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/Frontends" && $(CMAKE_COMMAND) -P CMakeFiles/csdebugger.dir/cmake_clean.cmake
 .PHONY : Frontends/CMakeFiles/csdebugger.dir/clean
 
 Frontends/CMakeFiles/csdebugger.dir/depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Frontends" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/Frontends" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/Frontends/CMakeFiles/csdebugger.dir/DependInfo.cmake" "--color=$(COLOR)"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Frontends" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/Frontends" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/Frontends/CMakeFiles/csdebugger.dir/DependInfo.cmake" "--color=$(COLOR)"
 .PHONY : Frontends/CMakeFiles/csdebugger.dir/depend
 

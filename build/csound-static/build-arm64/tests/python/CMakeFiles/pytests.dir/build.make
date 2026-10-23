@@ -53,10 +53,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64"
 
 # Utility rule file for pytests.
 
@@ -67,8 +67,8 @@ include tests/python/CMakeFiles/pytests.dir/compiler_depend.make
 include tests/python/CMakeFiles/pytests.dir/progress.make
 
 tests/python/CMakeFiles/pytests: CsoundLib64.framework/Versions/7.0/CsoundLib64
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Running Python tests via unittest"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src" && /opt/homebrew/bin/cmake -E env DYLD_FRAMEWORK_PATH=/Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/build-arm64 PYTHONPATH=/Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/languages/python CSOUND_TEST_EXECUTABLE=/Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/build-arm64/csound /opt/homebrew/Frameworks/Python.framework/Versions/3.14/bin/python3.14 -m unittest discover -s /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/tests/python -p test_*.py -v
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Running Python tests via unittest"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src" && /opt/homebrew/bin/cmake -E env DYLD_FRAMEWORK_PATH=/Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/build-arm64 PYTHONPATH=/Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/languages/python CSOUND_TEST_EXECUTABLE=/Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/build-arm64/csound /opt/homebrew/Frameworks/Python.framework/Versions/3.14/bin/python3.14 -m unittest discover -s /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/tests/python -p test_*.py -v
 
 tests/python/CMakeFiles/pytests.dir/codegen:
 .PHONY : tests/python/CMakeFiles/pytests.dir/codegen
@@ -82,10 +82,10 @@ tests/python/CMakeFiles/pytests.dir/build: pytests
 .PHONY : tests/python/CMakeFiles/pytests.dir/build
 
 tests/python/CMakeFiles/pytests.dir/clean:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/python" && $(CMAKE_COMMAND) -P CMakeFiles/pytests.dir/cmake_clean.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/python" && $(CMAKE_COMMAND) -P CMakeFiles/pytests.dir/cmake_clean.cmake
 .PHONY : tests/python/CMakeFiles/pytests.dir/clean
 
 tests/python/CMakeFiles/pytests.dir/depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/tests/python" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/python" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/python/CMakeFiles/pytests.dir/DependInfo.cmake" "--color=$(COLOR)"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/tests/python" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/python" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/python/CMakeFiles/pytests.dir/DependInfo.cmake" "--color=$(COLOR)"
 .PHONY : tests/python/CMakeFiles/pytests.dir/depend
 

@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Frontends/debugger/csdebugger.cpp" "Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o" "gcc" "Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o.d"
+  "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Frontends/debugger/csdebugger.cpp" "Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o" "gcc" "Frontends/CMakeFiles/csdebugger.dir/debugger/csdebugger.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

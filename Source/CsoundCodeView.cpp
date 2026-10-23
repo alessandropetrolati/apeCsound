@@ -280,13 +280,33 @@ void CodeView::ensureTokensValidUpTo (int lastLine)
         return;
     }
 
+    // Se la prima riga non valida cade DENTRO un commento /* */ iniziato
+    // prima (riga precedente con un token ancora aperto), si riparte dalla
+    // riga in cui il commento comincia: partendo da meta' il tokeniser non
+    // saprebbe di essere in un commento e colorerebbe quelle righe come
+    // codice. Succedeva modificando una riga dentro un commento e anche
+    // scorrendo: la tokenizzazione si ferma alle righe visibili e riprende
+    // dopo, spesso a meta' di un commento lungo.
+    while (firstInvalidLine > 0)
+    {
+        const int openFrom = lineTokens[(size_t) (firstInvalidLine - 1)].openTokenStartLine;
+
+        if (openFrom < 0 || openFrom >= firstInvalidLine)
+            break;
+
+        firstInvalidLine = openFrom;
+    }
+
     // Un solo iteratore che scorre dalla prima riga non valida in poi: i
     // token che attraversano piu' righe (commenti /* */) vengono spezzati
     // riga per riga.
     juce::CodeDocument::Iterator it (juce::CodeDocument::Position (document, firstInvalidLine, 0));
 
     for (int line = firstInvalidLine; line <= lastLine; ++line)
+    {
         lineTokens[(size_t) line].segments.clear();
+        lineTokens[(size_t) line].openTokenStartLine = -1;
+    }
 
     const int lastLineEnd = juce::CodeDocument::Position (document, lastLine, 0).getPosition()
                             + document.getLine (lastLine).length();
@@ -302,6 +322,15 @@ void CodeView::ensureTokensValidUpTo (int lastLine)
 
         const juce::CodeDocument::Position a (document, tokStart);
         const juce::CodeDocument::Position b (document, tokEnd);
+
+        // Token su piu' righe: ogni riga tranne l'ultima "resta aperta".
+        // Un token che finisce esattamente all'inizio di una riga (commento
+        // ';' o '//' che include l'a capo) non la tocca: non conta.
+        const int lastTouchedLine = b.getIndexInLine() == 0 ? b.getLineNumber() - 1 : b.getLineNumber();
+
+        for (int line = juce::jmax (a.getLineNumber(), firstInvalidLine);
+             line < lastTouchedLine && line < (int) lineTokens.size(); ++line)
+            lineTokens[(size_t) line].openTokenStartLine = a.getLineNumber();
 
         for (int line = a.getLineNumber(); line <= juce::jmin (b.getLineNumber(), lastLine); ++line)
         {

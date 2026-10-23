@@ -850,8 +850,8 @@ static const flex_int16_t yy_rule_linenum[39] =
 #define yymore() yymore_used_but_not_detected
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
-#line 1 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
-#line 2 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 1 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
+#line 2 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 
  /*
     csound_prs.lex:
@@ -1261,7 +1261,7 @@ YY_DECL
 
 	{
 /* %% [7.0] user's declarations go here */
-#line 116 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 116 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 
 
 #line 1267 "Engine/csound_prslex.c"
@@ -1344,7 +1344,7 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 118 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 118 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
 #if 0
                   char bb[80];
@@ -1362,7 +1362,7 @@ YY_RULE_SETUP
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 131 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 131 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   corfile_putc(csound, '\n', PARM->cf);
                   csound_prsset_lineno(1+csound_prsget_lineno(yyscanner),
@@ -1372,7 +1372,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 137 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 137 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (PARM->isString != 1) {
                     comment(yyscanner);
@@ -1386,7 +1386,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 147 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 147 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (PARM->isString != 1) {
                     comment(yyscanner);
@@ -1400,7 +1400,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 157 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 157 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (PARM->isString != 1) {
                     comment(yyscanner);
@@ -1414,7 +1414,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 167 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 167 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (PARM->isString != 1)
                     do_comment(yyscanner);
@@ -1424,12 +1424,12 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 173 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 173 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 { corfile_puts(csound, yytext, PARM->cf); }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 174 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 174 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   corfile_putc(csound, '"', PARM->cf);
                   //printf("string start/end: >>%s<<\n", PARM->cf->body);
@@ -1442,7 +1442,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 183 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 183 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                    MACRO     *mm = PARM->macros;
                    mm = find_definition(mm, yytext+1);
@@ -1458,7 +1458,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 195 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 195 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                    MACRO     *mm = PARM->macros;
                    //int err =0;
@@ -1480,7 +1480,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 213 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 213 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (PARM->isString != 1)
                     PARM->isinclude = 1;
@@ -1490,7 +1490,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 219 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 219 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (PARM->isString != 1)
                     BEGIN(incl);
@@ -1500,12 +1500,12 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 225 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 225 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 /* eat the whitespace */
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 226 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 226 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 { /* got the include file name */
                   do_include(csound, yytext[0], yyscanner);
                   BEGIN(INITIAL);
@@ -1513,14 +1513,14 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 230 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 230 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 { // special case for np3 type carries to avoid treatment as n
                  corfile_puts(csound, yytext, PARM->cf);
                 }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 233 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 233 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                  //printf("exit found: >>>%s<<<\n", PARM->cf->body);
                   corfile_putc(csound, '\0', PARM->cf);
@@ -1535,14 +1535,14 @@ case YY_STATE_EOF(macro):
 case YY_STATE_EOF(umacro):
 case YY_STATE_EOF(ifdef):
 case YY_STATE_EOF(lname):
-#line 240 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 240 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (on_EOF(csound, yyscanner)==0) yyterminate();
                 }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 243 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 243 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (PARM->isString != 1)
                     BEGIN(macro);
@@ -1552,12 +1552,12 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 249 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 249 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 /* eat the whitespace */
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 250 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 250 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   yytext[yyleng-1] = '\0';
                   csound->DebugMsg(csound,"Define macro with args %s\n",
@@ -1571,7 +1571,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 260 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 260 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   csound->DebugMsg(csound,"Define macro %s\n", yytext);
                   /* print_csound_prsdata(csound,"Before do_macro", yyscanner); */
@@ -1582,7 +1582,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 267 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 267 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 { csound->Message(csound,
                                   Str("Unexpected character %c(%.2x) line %d\n"),
                                   yytext[0], yytext[0],
@@ -1592,7 +1592,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 273 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 273 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (PARM->isString != 1)
                     BEGIN(umacro);
@@ -1602,12 +1602,12 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 279 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 279 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 /* eat the whitespace */
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 280 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 280 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   csound->DebugMsg(csound,"Undefine macro %s\n", yytext);
                   do_umacro(csound, yytext, yyscanner);
@@ -1616,7 +1616,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 286 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 286 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (PARM->isString != 1) {
                     PARM->isIfndef = (yytext[3] == 'n');  /* #ifdef or #ifndef */
@@ -1633,12 +1633,12 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 299 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 299 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 /* eat the whitespace */
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 300 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 300 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   do_ifdef(csound, yytext, yyscanner);
                   BEGIN(INITIAL);
@@ -1649,7 +1649,7 @@ case 28:
 yyg->yy_c_buf_p = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 304 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 304 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (PARM->isString != 1) {
                     if (UNLIKELY(PARM->ifdefStack == NULL)) {
@@ -1675,7 +1675,7 @@ YY_RULE_SETUP
 case 29:
 /* rule 29 can match eol */
 YY_RULE_SETUP
-#line 325 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 325 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (PARM->isString != 1) {
                     IFDEFSTACK *pp = PARM->ifdefStack;
@@ -1697,7 +1697,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 343 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 343 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   if (PARM->isString) {
                     corfile_putc(csound, yytext[0], PARM->cf);
@@ -1709,12 +1709,12 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 351 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 351 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 /* eat the whitespace */
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 352 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 352 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   corfile_putc(csound, ' ', PARM->cf);
                   corfile_puts(csound, yytext, PARM->cf);
@@ -1723,7 +1723,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 358 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 358 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
                   int c=' ', i;
                   PARM->repeat_index++;
@@ -1794,7 +1794,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 425 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 425 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
           int temp;
           CORFIL *bdy = PARM->cf;
@@ -1833,7 +1833,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 461 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 461 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
           //printf("#loop found\n");
           yypop_buffer_state(yyscanner);
@@ -1864,7 +1864,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 488 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 488 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
          if (PARM->isString) corfile_puts(csound, yytext, PARM->cf);
          else {
@@ -1941,7 +1941,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 561 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 561 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 {
           if (!PARM->isString) {
             int op = yytext[strlen(yytext)-1];
@@ -2030,12 +2030,12 @@ YY_RULE_SETUP
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 646 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 646 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 { corfile_putc(csound, yytext[0], PARM->cf); }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 648 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 648 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 ECHO;
 	YY_BREAK
 #line 2041 "Engine/csound_prslex.c"
@@ -3355,7 +3355,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 /* %ok-for-header */
 
-#line 648 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_prs.lex"
+#line 648 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_prs.lex"
 
 static void comment(yyscan_t yyscanner)              /* Skip until nextline */
 {

@@ -1,7 +1,7 @@
 CMakeFiles/sndfile.dir/src/GSM610/gsm_destroy.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/GSM610/gsm_destroy.c \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/GSM610/gsm.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/GSM610/gsm_destroy.c \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/GSM610/gsm.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_bounds.h \
@@ -41,7 +41,7 @@ CMakeFiles/sndfile.dir/src/GSM610/gsm_destroy.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_types/_ssize_t.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_common.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/GSM610/config.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/GSM610/config.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stdlib.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdlib.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/wait.h \

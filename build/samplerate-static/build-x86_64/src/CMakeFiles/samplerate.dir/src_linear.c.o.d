@@ -1,7 +1,7 @@
 src/CMakeFiles/samplerate.dir/src_linear.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/src/src_linear.c \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/build-x86_64/config.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/src/src_linear.c \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/build-x86_64/config.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/assert.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_symbol_aliasing.h \
@@ -98,7 +98,7 @@ src/CMakeFiles/samplerate.dir/src_linear.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/math.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/float.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/src/common.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/src/common.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/stdbool.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/immintrin.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/x86gprintrin.h \
@@ -221,4 +221,4 @@ src/CMakeFiles/samplerate.dir/src_linear.c.o: \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/enqcmdintrin.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/serializeintrin.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/tsxldtrkintrin.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/include/samplerate.h
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/include/samplerate.h

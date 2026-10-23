@@ -3,6 +3,11 @@
 #include "csound_graph_display.h" // callback grafici (vedi compileAndStart)
 #include "cwindow.h"
 #include <cstdlib>
+
+#if APECSOUND_WITH_OSC
+// Vedi compileAndStart e scripts/build_csound_static_macos.sh (sezione 3b).
+extern "C" int32_t apecsound_register_osc_opcodes (CSOUND* csound);
+#endif
 #include <cstring>
 #include <cmath>
 #include <algorithm>
@@ -915,6 +920,9 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
 {
     jassert (juce::MessageManager::getInstance()->isThisTheMessageThread());
 
+    // Apply (o qualunque ricompilazione) toglie la pausa: si riparte suonando.
+    csoundPaused.store (false);
+
     // CsoundAPI::load() aggancia i puntatori CsoundAPI::csoundXxx ai simboli
     // di Csound linkati STATICAMENTE (vedi CsoundDynamicLib.h): idempotente,
     // non puo' fallire, ma va chiamata prima di ogni altro uso. Il
@@ -967,6 +975,14 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
 
     CsoundAPI::csoundSetHostData (cs, this);
     CsoundAPI::csoundSetMessageCallback (cs, messageCallback);
+
+   #if APECSOUND_WITH_OSC
+    // Opcode OSC (OSCinit, OSClisten, OSCsend...): compilati staticamente in
+    // libcsoundosc.a (vedi build_csound_static_macos.sh, sezione 3b), Csound
+    // non puo' caricarli come plugin. Vanno registrati su ogni nuova istanza.
+    if (apecsound_register_osc_opcodes (cs) != 0)
+        handleMessage ("Warning: OSC opcodes could not be registered.");
+   #endif
 
     // Grafici (ftable, display, dispfft...) -> pannello "Graphs" del menu
     // principale. Senza callback dell'host Csound stamperebbe i grafici come
@@ -1269,6 +1285,16 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     {
         buffer.clear();
         midiMessages.clear();
+        return;
+    }
+
+    // Pausa (bypass): Csound non viene eseguito, l'ingresso passa
+    // all'uscita invariato (canali oltre gli ingressi: silenzio), il MIDI in
+    // ingresso prosegue. Il motore riprende esattamente da dove era.
+    if (csoundPaused.load())
+    {
+        for (int ch = numIn; ch < numOut; ++ch)
+            buffer.clear (ch, 0, numSamples);
         return;
     }
 

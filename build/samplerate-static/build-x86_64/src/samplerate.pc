@@ -1,4 +1,4 @@
-prefix=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/x86_64-deps/samplerate
+prefix=/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64-deps/samplerate
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include

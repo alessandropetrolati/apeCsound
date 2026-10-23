@@ -1,7 +1,7 @@
 CMakeFiles/sndfile.dir/src/GSM610/gsm_create.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/GSM610/gsm_create.c \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/GSM610/config.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/GSM610/gsm_create.c \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/GSM610/config.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_stdio.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_bounds.h \
@@ -94,5 +94,5 @@ CMakeFiles/sndfile.dir/src/GSM610/gsm_create.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_strings.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_strings.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/GSM610/gsm.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/GSM610/gsm610_priv.h
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/GSM610/gsm.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/GSM610/gsm610_priv.h

@@ -222,6 +222,11 @@ private:
         struct Segment { int type; int start, end; }; // indici nella riga [start, end)
         std::vector<Segment> segments;
         bool valid = false;
+        // >= 0: l'ultimo token di questa riga continua sulla riga seguente
+        // (commento /* */ su piu' righe) ed e' iniziato alla riga indicata.
+        // Serve a ricominciare la tokenizzazione dall'inizio del commento,
+        // non da meta' (vedi ensureTokensValidUpTo).
+        int openTokenStartLine = -1;
     };
 
     enum class Gesture

@@ -50,7 +50,7 @@ unset(_cmake_expected_targets)
 add_library(SndFile::sndfile STATIC IMPORTED)
 
 set_target_properties(SndFile::sndfile PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/include;/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/include"
+  INTERFACE_INCLUDE_DIRECTORIES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/include;/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/include"
   INTERFACE_LINK_LIBRARIES "\$<LINK_ONLY:\$<\$<BOOL:1>:m>>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:Ogg::ogg>>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:Vorbis::vorbisenc>>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:FLAC::FLAC>>;\$<LINK_ONLY:\$<\$<AND:\$<BOOL:OFF>,\$<BOOL:OFF>,\$<BOOL:OFF>>:Speex::Speex>>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:Opus::opus>>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:MPG123::libmpg123>>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:mp3lame::mp3lame>>"
 )
 
@@ -58,7 +58,7 @@ set_target_properties(SndFile::sndfile PROPERTIES
 set_property(TARGET SndFile::sndfile APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(SndFile::sndfile PROPERTIES
   IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C"
-  IMPORTED_LOCATION_RELEASE "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/libsndfile.a"
+  IMPORTED_LOCATION_RELEASE "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/libsndfile.a"
   )
 
 # This file does not depend on other imported targets which have

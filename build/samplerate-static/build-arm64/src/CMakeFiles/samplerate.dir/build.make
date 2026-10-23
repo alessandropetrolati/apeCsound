@@ -53,10 +53,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64"
 
 # Include any dependencies generated for this target.
 include src/CMakeFiles/samplerate.dir/depend.make
@@ -73,60 +73,60 @@ src/CMakeFiles/samplerate.dir/codegen:
 .PHONY : src/CMakeFiles/samplerate.dir/codegen
 
 src/CMakeFiles/samplerate.dir/samplerate.c.o: src/CMakeFiles/samplerate.dir/flags.make
-src/CMakeFiles/samplerate.dir/samplerate.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/src/samplerate.c
+src/CMakeFiles/samplerate.dir/samplerate.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/src/samplerate.c
 src/CMakeFiles/samplerate.dir/samplerate.c.o: src/CMakeFiles/samplerate.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building C object src/CMakeFiles/samplerate.dir/samplerate.c.o"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT src/CMakeFiles/samplerate.dir/samplerate.c.o -MF CMakeFiles/samplerate.dir/samplerate.c.o.d -o CMakeFiles/samplerate.dir/samplerate.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/samplerate.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building C object src/CMakeFiles/samplerate.dir/samplerate.c.o"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT src/CMakeFiles/samplerate.dir/samplerate.c.o -MF CMakeFiles/samplerate.dir/samplerate.c.o.d -o CMakeFiles/samplerate.dir/samplerate.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/samplerate.c"
 
 src/CMakeFiles/samplerate.dir/samplerate.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/samplerate.dir/samplerate.c.i"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/samplerate.c" > CMakeFiles/samplerate.dir/samplerate.c.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/samplerate.c" > CMakeFiles/samplerate.dir/samplerate.c.i
 
 src/CMakeFiles/samplerate.dir/samplerate.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/samplerate.dir/samplerate.c.s"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/samplerate.c" -o CMakeFiles/samplerate.dir/samplerate.c.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/samplerate.c" -o CMakeFiles/samplerate.dir/samplerate.c.s
 
 src/CMakeFiles/samplerate.dir/src_linear.c.o: src/CMakeFiles/samplerate.dir/flags.make
-src/CMakeFiles/samplerate.dir/src_linear.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/src/src_linear.c
+src/CMakeFiles/samplerate.dir/src_linear.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/src/src_linear.c
 src/CMakeFiles/samplerate.dir/src_linear.c.o: src/CMakeFiles/samplerate.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Building C object src/CMakeFiles/samplerate.dir/src_linear.c.o"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT src/CMakeFiles/samplerate.dir/src_linear.c.o -MF CMakeFiles/samplerate.dir/src_linear.c.o.d -o CMakeFiles/samplerate.dir/src_linear.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/src_linear.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Building C object src/CMakeFiles/samplerate.dir/src_linear.c.o"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT src/CMakeFiles/samplerate.dir/src_linear.c.o -MF CMakeFiles/samplerate.dir/src_linear.c.o.d -o CMakeFiles/samplerate.dir/src_linear.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/src_linear.c"
 
 src/CMakeFiles/samplerate.dir/src_linear.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/samplerate.dir/src_linear.c.i"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/src_linear.c" > CMakeFiles/samplerate.dir/src_linear.c.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/src_linear.c" > CMakeFiles/samplerate.dir/src_linear.c.i
 
 src/CMakeFiles/samplerate.dir/src_linear.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/samplerate.dir/src_linear.c.s"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/src_linear.c" -o CMakeFiles/samplerate.dir/src_linear.c.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/src_linear.c" -o CMakeFiles/samplerate.dir/src_linear.c.s
 
 src/CMakeFiles/samplerate.dir/src_sinc.c.o: src/CMakeFiles/samplerate.dir/flags.make
-src/CMakeFiles/samplerate.dir/src_sinc.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/src/src_sinc.c
+src/CMakeFiles/samplerate.dir/src_sinc.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/src/src_sinc.c
 src/CMakeFiles/samplerate.dir/src_sinc.c.o: src/CMakeFiles/samplerate.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_3) "Building C object src/CMakeFiles/samplerate.dir/src_sinc.c.o"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT src/CMakeFiles/samplerate.dir/src_sinc.c.o -MF CMakeFiles/samplerate.dir/src_sinc.c.o.d -o CMakeFiles/samplerate.dir/src_sinc.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/src_sinc.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_3) "Building C object src/CMakeFiles/samplerate.dir/src_sinc.c.o"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT src/CMakeFiles/samplerate.dir/src_sinc.c.o -MF CMakeFiles/samplerate.dir/src_sinc.c.o.d -o CMakeFiles/samplerate.dir/src_sinc.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/src_sinc.c"
 
 src/CMakeFiles/samplerate.dir/src_sinc.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/samplerate.dir/src_sinc.c.i"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/src_sinc.c" > CMakeFiles/samplerate.dir/src_sinc.c.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/src_sinc.c" > CMakeFiles/samplerate.dir/src_sinc.c.i
 
 src/CMakeFiles/samplerate.dir/src_sinc.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/samplerate.dir/src_sinc.c.s"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/src_sinc.c" -o CMakeFiles/samplerate.dir/src_sinc.c.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/src_sinc.c" -o CMakeFiles/samplerate.dir/src_sinc.c.s
 
 src/CMakeFiles/samplerate.dir/src_zoh.c.o: src/CMakeFiles/samplerate.dir/flags.make
-src/CMakeFiles/samplerate.dir/src_zoh.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/samplerate-static/src/src/src_zoh.c
+src/CMakeFiles/samplerate.dir/src_zoh.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/samplerate-static/src/src/src_zoh.c
 src/CMakeFiles/samplerate.dir/src_zoh.c.o: src/CMakeFiles/samplerate.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_4) "Building C object src/CMakeFiles/samplerate.dir/src_zoh.c.o"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT src/CMakeFiles/samplerate.dir/src_zoh.c.o -MF CMakeFiles/samplerate.dir/src_zoh.c.o.d -o CMakeFiles/samplerate.dir/src_zoh.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/src_zoh.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_4) "Building C object src/CMakeFiles/samplerate.dir/src_zoh.c.o"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT src/CMakeFiles/samplerate.dir/src_zoh.c.o -MF CMakeFiles/samplerate.dir/src_zoh.c.o.d -o CMakeFiles/samplerate.dir/src_zoh.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/src_zoh.c"
 
 src/CMakeFiles/samplerate.dir/src_zoh.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/samplerate.dir/src_zoh.c.i"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/src_zoh.c" > CMakeFiles/samplerate.dir/src_zoh.c.i
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/src_zoh.c" > CMakeFiles/samplerate.dir/src_zoh.c.i
 
 src/CMakeFiles/samplerate.dir/src_zoh.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/samplerate.dir/src_zoh.c.s"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src/src_zoh.c" -o CMakeFiles/samplerate.dir/src_zoh.c.s
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && /usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src/src_zoh.c" -o CMakeFiles/samplerate.dir/src_zoh.c.s
 
 # Object files for target samplerate
 samplerate_OBJECTS = \
@@ -144,19 +144,19 @@ src/libsamplerate.a: src/CMakeFiles/samplerate.dir/src_sinc.c.o
 src/libsamplerate.a: src/CMakeFiles/samplerate.dir/src_zoh.c.o
 src/libsamplerate.a: src/CMakeFiles/samplerate.dir/build.make
 src/libsamplerate.a: src/CMakeFiles/samplerate.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_5) "Linking C static library libsamplerate.a"
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && $(CMAKE_COMMAND) -P CMakeFiles/samplerate.dir/cmake_clean_target.cmake
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/samplerate.dir/link.txt --verbose=$(VERBOSE)
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_5) "Linking C static library libsamplerate.a"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && $(CMAKE_COMMAND) -P CMakeFiles/samplerate.dir/cmake_clean_target.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/samplerate.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 src/CMakeFiles/samplerate.dir/build: src/libsamplerate.a
 .PHONY : src/CMakeFiles/samplerate.dir/build
 
 src/CMakeFiles/samplerate.dir/clean:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" && $(CMAKE_COMMAND) -P CMakeFiles/samplerate.dir/cmake_clean.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" && $(CMAKE_COMMAND) -P CMakeFiles/samplerate.dir/cmake_clean.cmake
 .PHONY : src/CMakeFiles/samplerate.dir/clean
 
 src/CMakeFiles/samplerate.dir/depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/src/CMakeFiles/samplerate.dir/DependInfo.cmake" "--color=$(COLOR)"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/src/CMakeFiles/samplerate.dir/DependInfo.cmake" "--color=$(COLOR)"
 .PHONY : src/CMakeFiles/samplerate.dir/depend
 

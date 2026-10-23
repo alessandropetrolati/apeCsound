@@ -1,7 +1,7 @@
 CMakeFiles/sndfile.dir/src/ALAC/ag_dec.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/ALAC/ag_dec.c \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/build-arm64/src/config.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/ALAC/ag_dec.c \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/build-arm64/src/config.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/math.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/cdefs.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/sys/_symbol_aliasing.h \
@@ -96,11 +96,11 @@ CMakeFiles/sndfile.dir/src/ALAC/ag_dec.c.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_strings.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_strings.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/secure/_string.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/ALAC/aglib.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/ALAC/ALACBitUtilities.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/ALAC/ALACAudioTypes.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/sfendian.h \
-  /Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/sndfile-static/src/src/sfconfig.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/ALAC/aglib.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/ALAC/ALACBitUtilities.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/ALAC/ALACAudioTypes.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/sfendian.h \
+  /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/sndfile-static/src/src/sfconfig.h \
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/inttypes.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/inttypes.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_inttypes.h

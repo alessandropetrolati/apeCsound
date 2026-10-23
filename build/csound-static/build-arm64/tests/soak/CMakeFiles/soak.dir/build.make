@@ -53,10 +53,10 @@ RM = /opt/homebrew/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src"
+CMAKE_SOURCE_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64"
+CMAKE_BINARY_DIR = "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64"
 
 # Utility rule file for soak.
 
@@ -67,7 +67,7 @@ include tests/soak/CMakeFiles/soak.dir/compiler_depend.make
 include tests/soak/CMakeFiles/soak.dir/progress.make
 
 tests/soak/CMakeFiles/soak:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/soak" && "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/tests/soak/runtests.py" --csound-executable=/Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/build-arm64/csound --opcode6dir64=/Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/build-arm64 --source-dir=/Users/alessandropetrolati/Desktop/Advanced\ 2018/Csound/build/csound-static/src/tests/soak
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/soak" && "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/tests/soak/runtests.py" --csound-executable=/Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/build-arm64/csound --opcode6dir64=/Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/build-arm64 --source-dir=/Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/tests/soak
 
 tests/soak/CMakeFiles/soak.dir/codegen:
 .PHONY : tests/soak/CMakeFiles/soak.dir/codegen
@@ -81,10 +81,10 @@ tests/soak/CMakeFiles/soak.dir/build: soak
 .PHONY : tests/soak/CMakeFiles/soak.dir/build
 
 tests/soak/CMakeFiles/soak.dir/clean:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/soak" && $(CMAKE_COMMAND) -P CMakeFiles/soak.dir/cmake_clean.cmake
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/soak" && $(CMAKE_COMMAND) -P CMakeFiles/soak.dir/cmake_clean.cmake
 .PHONY : tests/soak/CMakeFiles/soak.dir/clean
 
 tests/soak/CMakeFiles/soak.dir/depend:
-	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/tests/soak" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/soak" "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/tests/soak/CMakeFiles/soak.dir/DependInfo.cmake" "--color=$(COLOR)"
+	cd "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/tests/soak" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/soak" "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/tests/soak/CMakeFiles/soak.dir/DependInfo.cmake" "--color=$(COLOR)"
 .PHONY : tests/soak/CMakeFiles/soak.dir/depend
 

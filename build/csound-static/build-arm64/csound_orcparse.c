@@ -72,7 +72,7 @@
 #define yynerrs         csound_orcnerrs
 
 /* First part of user prologue.  */
-#line 141 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 141 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
 
 /* #define YYSTYPE ORCTOKEN* */
 /* JPff thinks that line must be wrong and is trying this! */
@@ -122,7 +122,7 @@
     extern TREE* make_opcall_from_func_start(CSOUND*, int32_t, uint64_t, int32_t, TREE*, TREE*);
     extern void add_instr_variable(CSOUND *csound,  TREE *x);
 
-#line 126 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 126 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -2622,7 +2622,7 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* orcfile: root_statement_list  */
-#line 201 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 201 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           {
               if (yyvsp[0] != NULL)
                 *astTree = ((TREE *)yyvsp[0]);
@@ -2633,80 +2633,80 @@ yyreduce:
 		  csoundGetDebug(csound) & DEBUG_TREE)
                 print_tree(csound, "ALL:\n", yyvsp[0]);
           }
-#line 2637 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2637 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 3: /* root_statement_list: root_statement_list root_statement  */
-#line 215 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 215 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                       { yyval = parser_append(csound, yyvsp[-1], yyvsp[0]); }
-#line 2643 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2643 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 4: /* root_statement_list: %empty  */
-#line 217 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 217 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                       { yyval = NULL; }
-#line 2649 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2649 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 10: /* struct_definition: STRUCT_TOKEN identifier struct_arg_list  */
-#line 230 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 230 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                   { yyval = make_node(csound,LINE,LOCN, STRUCT_TOKEN, yyvsp[-1], yyvsp[0]); }
-#line 2655 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2655 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 11: /* struct_arg_list: struct_arg_list ',' struct_arg  */
-#line 234 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 234 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 { yyval = parser_append(csound, yyvsp[-2], yyvsp[0]); }
-#line 2661 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2661 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 12: /* struct_arg_list: struct_arg_list ',' NEWLINE struct_arg  */
-#line 236 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 236 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                  { yyval = parser_append(csound, yyvsp[-3], yyvsp[0]); }
-#line 2667 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2667 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 17: /* $@1: %empty  */
-#line 245 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 245 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                     { csound_orcput_ilocn(scanner, LINE, LOCN); }
-#line 2673 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2673 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 18: /* instr_definition: INSTR_TOKEN instr_id_list NEWLINE $@1 statement_list ENDIN_TOKEN NEWLINE  */
-#line 247 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 247 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                   {  yyval = make_node(csound, (int32_t) csound_orcget_iline(scanner),
                                   csound_orcget_ilocn(scanner), INSTR_TOKEN,
                                   yyvsp[-5], yyvsp[-2]);
                     csp_orc_sa_instr_finalize(csound);
                  }
-#line 2683 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2683 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 19: /* instr_definition: INSTR_TOKEN NEWLINE error  */
-#line 253 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 253 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                  { csound->ErrorMsg(csound, Str("No number following instr\n"));
                   csp_orc_sa_instr_finalize(csound);
                   yyval = NULL;
                  }
-#line 2692 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2692 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 20: /* instr_id_list: instr_id_list ',' instr_id  */
-#line 261 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 261 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                   { yyval = parser_append(csound, yyvsp[-2], yyvsp[0]); }
-#line 2698 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2698 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 21: /* instr_id_list: instr_id  */
-#line 262 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 262 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                           { csp_orc_sa_instr_add_tree(csound, yyvsp[0]);
                     add_instr_variable(csound, yyvsp[0]);
                 }
-#line 2706 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2706 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 25: /* udo_definition: UDOSTART_DEFINITION identifier ',' UDO_IDENT ',' UDO_IDENT NEWLINE statement_list UDOEND_TOKEN NEWLINE  */
-#line 275 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 275 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               {
                 TREE *udoTop = make_leaf(csound, LINE,LOCN, UDO_TOKEN,
                                          (ORCTOKEN *)NULL);
@@ -2730,11 +2730,11 @@ yyreduce:
                   print_tree(csound, "UDO\n", (TREE *)yyval);
 
               }
-#line 2734 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2734 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 26: /* udo_definition: UDOSTART_DEFINITION identifier udo_arg_list ':' udo_out_arg_list NEWLINE statement_list UDOEND_TOKEN NEWLINE  */
-#line 300 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 300 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               {
                 TREE *udoTop = make_leaf(csound, LINE, LOCN, UDO_TOKEN,
                                         (ORCTOKEN*)NULL);
@@ -2744,11 +2744,11 @@ yyreduce:
                 yyvsp[-7]->right = yyvsp[-6];
                 yyval->right = yyvsp[-2];
               }
-#line 2748 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2748 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 27: /* udo_definition: UDOSTART_DEFINITION identifier udo_arg_list ':' NEWLINE udo_out_arg_list NEWLINE statement_list UDOEND_TOKEN NEWLINE  */
-#line 311 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 311 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               {
                 TREE *udoTop = make_leaf(csound, LINE, LOCN, UDO_TOKEN,
                                         (ORCTOKEN*)NULL);
@@ -2758,11 +2758,11 @@ yyreduce:
                 yyvsp[-8]->right = yyvsp[-7];
                 yyval->right = yyvsp[-2];
               }
-#line 2762 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2762 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 28: /* udo_definition: UDOSTART_DEFINITION identifier udo_arg_list NEWLINE ':' udo_out_arg_list NEWLINE statement_list UDOEND_TOKEN NEWLINE  */
-#line 323 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 323 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               {
                 TREE *udoTop = make_leaf(csound, LINE, LOCN, UDO_TOKEN,
                                         (ORCTOKEN*)NULL);
@@ -2772,90 +2772,90 @@ yyreduce:
                 yyvsp[-8]->right = yyvsp[-7];
                 yyval->right = yyvsp[-2];
               }
-#line 2776 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2776 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 29: /* udo_arg_list: '(' out_arg_list ')'  */
-#line 336 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 336 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
              { yyval = yyvsp[-1];  }
-#line 2782 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2782 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 30: /* udo_arg_list: '(' out_arg_list_array ')'  */
-#line 338 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 338 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
              { yyval = yyvsp[-1];  }
-#line 2788 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2788 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 31: /* udo_arg_list: '(' ')'  */
-#line 340 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 340 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
              { yyval = make_leaf(csound, LINE, LOCN, T_IDENT, make_token(csound, "0", NULL)); }
-#line 2794 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2794 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 32: /* udo_out_arg_list: '(' out_type_list ')'  */
-#line 344 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 344 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
              { yyval = yyvsp[-1]; }
-#line 2800 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2800 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 33: /* udo_out_arg_list: '(' ')'  */
-#line 346 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 346 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
              { yyval = make_leaf(csound, LINE, LOCN, T_IDENT, make_token(csound, "0", NULL)); }
-#line 2806 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2806 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 34: /* udo_out_arg_list: VOID_TOKEN  */
-#line 348 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 348 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
              { yyval = make_leaf(csound, LINE, LOCN, T_IDENT, make_token(csound, "0", NULL)); }
-#line 2812 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2812 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 36: /* out_type_list: out_type_list ',' out_type  */
-#line 353 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 353 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { yyval = parser_append(csound, yyvsp[-2], yyvsp[0]); }
-#line 2818 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2818 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 40: /* opcall: identifier NEWLINE  */
-#line 368 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 368 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_leaf(csound, LINE,LOCN, T_OPCALL, NULL);
             yyval->left = yyvsp[-1];
           }
-#line 2826 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2826 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 41: /* opcall: out_arg_list expr_list NEWLINE  */
-#line 373 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 373 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_leaf(csound, LINE,LOCN, T_OPCALL, NULL);
             yyval->left = yyvsp[-2];
             yyval->right = yyvsp[-1];
           }
-#line 2835 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2835 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 42: /* opcall: out_arg_list '(' ')' NEWLINE  */
-#line 378 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 378 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_leaf(csound, LINE,LOCN, T_OPCALL, NULL);
             yyval->left = yyvsp[-3];
             /*$$->right = $2; */
           }
-#line 2844 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2844 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 43: /* opcall: out_arg_list identifier expr_list NEWLINE  */
-#line 383 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 383 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_leaf(csound, LINE,LOCN, T_OPCALL, NULL);
             yyval->left = yyvsp[-2];
             yyvsp[-2]->type = T_OPCALL;
             yyvsp[-2]->left = yyvsp[-3];
             yyvsp[-2]->right = yyvsp[-1];
           }
-#line 2855 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2855 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 44: /* opcall: out_arg_list identifier NEWLINE  */
-#line 390 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 390 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_leaf(csound, LINE,LOCN, T_OPCALL, NULL);
             if (yyvsp[-1]->value != NULL && yyvsp[-1]->value->lexeme != NULL &&
                 strcmp(yyvsp[-1]->value->lexeme, "init") == 0) {
@@ -2867,40 +2867,40 @@ yyreduce:
               yyval->right = yyvsp[-1];
             }
           }
-#line 2871 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2871 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 45: /* opcall: out_arg_list_array expr_list NEWLINE  */
-#line 402 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 402 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_leaf(csound, LINE,LOCN, T_OPCALL, NULL);
             yyval->left = yyvsp[-2];
             yyval->right = yyvsp[-1];
           }
-#line 2880 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2880 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 46: /* opcall: out_arg_list_array '(' ')' NEWLINE  */
-#line 407 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 407 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_leaf(csound, LINE,LOCN, T_OPCALL, NULL);
             yyval->left = yyvsp[-3];
             /*$$->right = $2; */
           }
-#line 2889 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2889 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 47: /* opcall: out_arg_list_array identifier expr_list NEWLINE  */
-#line 412 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 412 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_leaf(csound, LINE,LOCN, T_OPCALL, NULL);
             yyval->left = yyvsp[-2];
             yyvsp[-2]->type = T_OPCALL;
             yyvsp[-2]->left = yyvsp[-3];
             yyvsp[-2]->right = yyvsp[-1];
           }
-#line 2900 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2900 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 48: /* opcall: out_arg_list_array identifier NEWLINE  */
-#line 419 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 419 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_leaf(csound, LINE,LOCN, T_OPCALL, NULL);
             if (yyvsp[-1]->value != NULL && yyvsp[-1]->value->lexeme != NULL &&
                 strcmp(yyvsp[-1]->value->lexeme, "init") == 0) {
@@ -2912,109 +2912,109 @@ yyreduce:
               yyval->right = yyvsp[-1];
             }
           }
-#line 2916 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2916 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 49: /* opcall: function_call NEWLINE  */
-#line 431 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 431 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = yyvsp[-1]; }
-#line 2922 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2922 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 50: /* opcall: function_call '+' expr_list NEWLINE  */
-#line 433 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 433 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         { yyval = make_opcall_from_func_start(csound, LINE, LOCN, '+', yyvsp[-3], yyvsp[-1]);  }
-#line 2928 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2928 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 51: /* opcall: function_call '-' expr_list NEWLINE  */
-#line 435 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 435 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_opcall_from_func_start(csound, LINE, LOCN, '-', yyvsp[-3], yyvsp[-1]); }
-#line 2934 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2934 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 52: /* opcall: function_call '*' expr_list NEWLINE  */
-#line 437 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 437 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_opcall_from_func_start(csound, LINE, LOCN, '*', yyvsp[-3], yyvsp[-1]); }
-#line 2940 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2940 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 53: /* opcall: function_call '/' expr_list NEWLINE  */
-#line 439 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 439 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_opcall_from_func_start(csound, LINE, LOCN, '/', yyvsp[-3], yyvsp[-1]); }
-#line 2946 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2946 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 54: /* opcall: function_call '^' expr_list NEWLINE  */
-#line 441 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 441 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_opcall_from_func_start(csound, LINE, LOCN, '^', yyvsp[-3], yyvsp[-1]); }
-#line 2952 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2952 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 55: /* opcall: function_call '%' expr_list NEWLINE  */
-#line 443 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 443 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_opcall_from_func_start(csound, LINE, LOCN, '%', yyvsp[-3], yyvsp[-1]); }
-#line 2958 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2958 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 56: /* opcall: function_call '|' expr_list NEWLINE  */
-#line 445 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 445 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_opcall_from_func_start(csound, LINE, LOCN, '|', yyvsp[-3], yyvsp[-1]); }
-#line 2964 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2964 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 57: /* opcall: function_call '&' expr_list NEWLINE  */
-#line 447 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 447 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_opcall_from_func_start(csound, LINE, LOCN, '&', yyvsp[-3], yyvsp[-1]); }
-#line 2970 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2970 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 58: /* opcall: function_call '#' expr_list NEWLINE  */
-#line 449 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 449 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = make_opcall_from_func_start(csound, LINE, LOCN, '#', yyvsp[-3], yyvsp[-1]); }
-#line 2976 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2976 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 59: /* function_call: typed_identifierb expr_list ')'  */
-#line 453 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 453 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { yyval = yyvsp[-2];
                 yyvsp[-2]->type = T_FUNCTION;
                 yyvsp[-2]->right = yyvsp[-1]; }
-#line 2984 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2984 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 60: /* function_call: typed_identifierb ')'  */
-#line 457 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 457 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { yyval = yyvsp[-1];
                 yyvsp[-1]->type = T_FUNCTION; }
-#line 2991 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2991 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 61: /* function_call: identifierb expr_list ')'  */
-#line 460 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 460 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { yyval = yyvsp[-2];
                 yyvsp[-2]->type = T_FUNCTION;
                 yyvsp[-2]->right = yyvsp[-1]; }
-#line 2999 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 2999 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 62: /* function_call: identifierb ')'  */
-#line 464 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 464 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { yyval = yyvsp[-1];
                 yyvsp[-1]->type = T_FUNCTION; }
-#line 3006 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3006 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 63: /* statement_list: statement_list statement  */
-#line 469 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 469 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 {
                     yyval = parser_append(csound, (TREE *)yyvsp[-1], (TREE *)yyvsp[0]);
                 }
-#line 3014 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3014 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 65: /* statement_list: %empty  */
-#line 473 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 473 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                   {
                     /* This rule allows for empty statement lists, but
                     in turn causes a lot of shift/reduce errors to be
@@ -3023,11 +3023,11 @@ yyreduce:
                     without statement_list in them. */
                     yyval = NULL;
                   }
-#line 3027 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3027 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 66: /* statement: out_arg_list assignment expr_list NEWLINE  */
-#line 484 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 484 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 {
                   yyval = (TREE *)yyvsp[-2];
                   yyval->left = (TREE *)yyvsp[-3];
@@ -3042,11 +3042,11 @@ yyreduce:
                     yyval->right = (TREE *)yyvsp[-1];
                   }
                 }
-#line 3046 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3046 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 67: /* statement: out_arg_list_array assignment_array expr_list NEWLINE  */
-#line 499 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 499 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 {
                   yyval = (TREE *)yyvsp[-2];
                   yyval->left = (TREE *)yyvsp[-3];
@@ -3061,76 +3061,76 @@ yyreduce:
                     yyval->right = (TREE *)yyvsp[-1];
                   }
                 }
-#line 3065 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3065 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 69: /* statement: goto identifier NEWLINE  */
-#line 515 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 515 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 {
                     yyvsp[-2]->left = NULL;
                     yyvsp[-2]->right = yyvsp[-1];
                     yyval = yyvsp[-2];
                 }
-#line 3075 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3075 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 76: /* statement: BREAK_TOKEN  */
-#line 528 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 528 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = make_leaf(csound, LINE, LOCN, BREAK_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 3081 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3081 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 77: /* statement: CONTINUE_TOKEN  */
-#line 530 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 530 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = make_leaf(csound, LINE, LOCN, CONTINUE_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 3087 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3087 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 78: /* statement: LABEL_TOKEN  */
-#line 532 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 532 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = make_leaf(csound, LINE, LOCN, LABEL_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 3093 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3093 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 79: /* statement: NEWLINE  */
-#line 534 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 534 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = NULL; }
-#line 3099 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3099 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 80: /* if_goto: IF_TOKEN expr goto T_IDENT NEWLINE  */
-#line 540 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 540 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               {
                   yyvsp[-2]->left = NULL;
                   yyvsp[-2]->right = make_leaf(csound, LINE,LOCN,
                                         T_IDENT, (ORCTOKEN *)yyvsp[-1]);
                   yyval = make_node(csound,LINE,LOCN, IF_TOKEN, yyvsp[-3], yyvsp[-2]);
               }
-#line 3110 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3110 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 81: /* if_then: if_then_base ENDIF_TOKEN NEWLINE  */
-#line 549 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 549 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = yyvsp[-2]; }
-#line 3116 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3116 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 82: /* if_then: if_then_base ELSE_TOKEN statement_list ENDIF_TOKEN NEWLINE  */
-#line 551 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 551 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = yyvsp[-4];
             yyval->right->next = make_node(csound,LINE,LOCN, ELSE_TOKEN, NULL, yyvsp[-2]); }
-#line 3123 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3123 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 83: /* if_then: if_then_base elseif_list ENDIF_TOKEN NEWLINE  */
-#line 554 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 554 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = yyvsp[-3];
             yyval->right->next = yyvsp[-2]; }
-#line 3130 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3130 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 84: /* if_then: if_then_base elseif_list ELSE_TOKEN statement_list ENDIF_TOKEN NEWLINE  */
-#line 557 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 557 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { TREE * tempLastNode;
             yyval = yyvsp[-5];
             yyval->right->next = yyvsp[-4];
@@ -3142,18 +3142,18 @@ yyreduce:
             }
             tempLastNode->right->next = make_node(csound, LINE,LOCN, ELSE_TOKEN, NULL, yyvsp[-2]);
             }
-#line 3146 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3146 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 85: /* if_then_base: IF_TOKEN expr then NEWLINE statement_list  */
-#line 571 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 571 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { yyvsp[-2]->right = yyvsp[0];
                 yyval = make_node(csound,LINE,LOCN, IF_TOKEN, yyvsp[-3], yyvsp[-2]); }
-#line 3153 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3153 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 86: /* elseif_list: elseif_list elseif  */
-#line 576 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 576 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { TREE * tempLastNode = yyvsp[-1];
                 while (tempLastNode->right!=NULL &&
                   tempLastNode->right->next!=NULL) {
@@ -3161,115 +3161,115 @@ yyreduce:
                 }
                 tempLastNode->right->next = yyvsp[0];
                 yyval = yyvsp[-1]; }
-#line 3165 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3165 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 87: /* elseif_list: elseif  */
-#line 583 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 583 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                      { yyval = yyvsp[0]; }
-#line 3171 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3171 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 88: /* elseif: ELSEIF_TOKEN expr then NEWLINE statement_list  */
-#line 587 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 587 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyvsp[-2]->right = yyvsp[0];
               yyval = make_node(csound,LINE,LOCN, ELSEIF_TOKEN, yyvsp[-3], yyvsp[-2]); }
-#line 3178 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3178 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 89: /* until: UNTIL_TOKEN expr DO_TOKEN statement_list OD_TOKEN  */
-#line 592 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 592 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { yyval = make_leaf(csound,LINE,LOCN, UNTIL_TOKEN, (ORCTOKEN *)yyvsp[-4]);
                 yyval->left = yyvsp[-3];
                 yyval->right = yyvsp[-1]; }
-#line 3186 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3186 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 90: /* while: WHILE_TOKEN expr DO_TOKEN statement_list OD_TOKEN  */
-#line 598 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 598 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { yyval = make_leaf(csound,LINE,LOCN, WHILE_TOKEN, (ORCTOKEN *)yyvsp[-4]);
                 yyval->left = yyvsp[-3];
                 yyval->right = yyvsp[-1]; }
-#line 3194 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3194 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 91: /* case: CASE_TOKEN expr_list NEWLINE statement_list  */
-#line 604 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 604 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
       {
         yyval = make_leaf(csound, LINE, LOCN, CASE_TOKEN, (ORCTOKEN *)yyvsp[-3]);
         yyval->left = yyvsp[-2];
         yyval->right = yyvsp[0];
       }
-#line 3204 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3204 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 92: /* case: DEFAULT_TOKEN NEWLINE statement_list  */
-#line 610 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 610 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
       {
         yyval = make_leaf(csound, LINE, LOCN, DEFAULT_TOKEN, (ORCTOKEN *)yyvsp[-2]);
         yyval->right = yyvsp[0];
       }
-#line 3213 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3213 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 93: /* case_list: case_list case  */
-#line 617 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 617 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { TREE * tempLastNode = yyvsp[-1];
                 while (tempLastNode->next != NULL) {
                   tempLastNode = tempLastNode->next;
                 }
                 tempLastNode->next = yyvsp[0];
                 yyval = yyvsp[-1]; }
-#line 3224 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3224 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 94: /* case_list: case  */
-#line 623 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 623 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                    { yyval = yyvsp[0]; }
-#line 3230 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3230 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 95: /* case_list: NEWLINE case_list  */
-#line 625 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 625 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
              {
               yyval = yyvsp[0];
              }
-#line 3238 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3238 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 96: /* switch: SWITCH_TOKEN expr NEWLINE case_list ENDSW_TOKEN  */
-#line 631 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 631 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         {
           yyval = make_leaf(csound,LINE,LOCN, SWITCH_TOKEN, (ORCTOKEN *)yyvsp[-4]);
           yyval->left = yyvsp[-3];
           yyval->right = yyvsp[-1];
         }
-#line 3248 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3248 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 97: /* for_in: FOR_TOKEN identifier in expr DO_TOKEN statement_list OD_TOKEN  */
-#line 639 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 639 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         {
           yyvsp[-4]->left = yyvsp[-3];
           yyvsp[-4]->right = yyvsp[-1];
           yyval = make_node(csound,LINE,LOCN, FOR_TOKEN, yyvsp[-5], yyvsp[-4]);
         }
-#line 3258 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3258 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 98: /* for_in: FOR_TOKEN identifier ',' identifier in expr DO_TOKEN statement_list OD_TOKEN  */
-#line 645 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 645 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         {
           yyvsp[-7]->next = yyvsp[-5];
           yyvsp[-4]->left = yyvsp[-3];
           yyvsp[-4]->right = yyvsp[-1];
           yyval = make_node(csound,LINE,LOCN, FOR_TOKEN, yyvsp[-7], yyvsp[-4]);
         }
-#line 3269 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3269 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 99: /* for_in: FOR_TOKEN typed_identifier in expr DO_TOKEN statement_list OD_TOKEN  */
-#line 652 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 652 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         {
           yyvsp[-4]->left = yyvsp[-3];
           yyvsp[-4]->right = yyvsp[-1];
@@ -3277,11 +3277,11 @@ yyreduce:
                          make_leaf(csound,LINE,LOCN, T_TYPED_IDENT, 
                                    lookup_token(csound, yyvsp[-5]->value->lexeme, NULL)), yyvsp[-4]);
         }
-#line 3281 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3281 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 100: /* for_in: FOR_TOKEN typed_identifier ',' identifier in expr DO_TOKEN statement_list OD_TOKEN  */
-#line 660 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 660 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         {
           
           yyvsp[-4]->left = yyvsp[-3];
@@ -3291,11 +3291,11 @@ yyreduce:
           yyval->next = yyvsp[-5];
           yyval = make_node(csound,LINE,LOCN, FOR_TOKEN, yyval, yyvsp[-4]);
           }
-#line 3295 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3295 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 101: /* for_in: FOR_TOKEN typed_identifier ',' typed_identifier in expr DO_TOKEN statement_list OD_TOKEN  */
-#line 670 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 670 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         {
           yyvsp[-4]->left = yyvsp[-3];
           yyvsp[-4]->right = yyvsp[-1];
@@ -3305,11 +3305,11 @@ yyreduce:
                          lookup_token(csound, yyvsp[-5]->value->lexeme, NULL));
           yyval = make_node(csound,LINE,LOCN, FOR_TOKEN, yyval, yyvsp[-4]);
           }
-#line 3309 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3309 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 102: /* for_in: FOR_TOKEN identifier ',' typed_identifier in expr DO_TOKEN statement_list OD_TOKEN  */
-#line 680 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 680 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         {
           yyvsp[-7]->next = make_leaf(csound,LINE,LOCN, T_TYPED_IDENT, 
                          lookup_token(csound, yyvsp[-5]->value->lexeme, NULL));
@@ -3317,73 +3317,73 @@ yyreduce:
           yyvsp[-4]->right = yyvsp[-1];
           yyval = make_node(csound,LINE,LOCN, FOR_TOKEN, yyvsp[-7], yyvsp[-4]);
         }
-#line 3321 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3321 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 103: /* declare_definition: DECLARE_TOKEN identifier udo_arg_list ':' udo_out_arg_list NEWLINE  */
-#line 690 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 690 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
  {
    yyval = make_leaf(csound, LINE, LOCN, T_DECLARE, make_token(csound, yyvsp[-4]->value->lexeme, NULL));
    yyval->left = yyvsp[-4];
    yyval->left->left = yyvsp[-1];
    yyval->left->right = yyvsp[-3];
  }
-#line 3332 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3332 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 104: /* expr_list: expr_list ',' expr  */
-#line 699 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 699 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { yyval = parser_append(csound, yyvsp[-2], yyvsp[0]); }
-#line 3338 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3338 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 105: /* expr_list: expr_list ',' NEWLINE expr  */
-#line 701 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 701 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { yyval = parser_append(csound, yyvsp[-3], yyvsp[0]); }
-#line 3344 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3344 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 108: /* expr: '(' expr ')'  */
-#line 707 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 707 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           { yyval = yyvsp[-1] ; }
-#line 3350 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3350 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 109: /* expr: '(' expr error  */
-#line 708 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 708 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                             { yyval = NULL;  }
-#line 3356 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3356 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 110: /* expr: '(' error  */
-#line 709 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 709 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                             { yyval = NULL; }
-#line 3362 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3362 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 125: /* gen_array: '[' expr S_ELIPSIS2 expr_list ']'  */
-#line 727 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 727 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                                {
             yyval = make_leaf(csound, LINE,LOCN, T_FUNCTION, make_token(csound, "genarray", NULL));
             yyval->right = yyvsp[-3];
             parser_append(csound, yyval->right, yyvsp[-1]);
              }
-#line 3372 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3372 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 126: /* slice_array: identifier '[' expr ':' expr_list ']'  */
-#line 734 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 734 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                                  {
             yyval = make_leaf(csound,LINE,LOCN, T_FUNCTION, make_token(csound, "slicearray", NULL));
             yyval->right = yyvsp[-5];
             yyval->right = parser_append(csound, yyval->right, yyvsp[-3]);
             parser_append(csound, yyval->right, yyvsp[-1]);
            }
-#line 3383 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3383 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 127: /* slice_array: identifier '[' ':' expr_list ']'  */
-#line 741 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 741 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                              {
             yyval = make_leaf(csound,LINE,LOCN, T_FUNCTION, make_token(csound, "slicearray", NULL));
             yyval->right = yyvsp[-4];
@@ -3392,32 +3392,32 @@ yyreduce:
                                                  make_int(csound, "0", NULL)));
             parser_append(csound, yyval->right, yyvsp[-1]);
            }
-#line 3396 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3396 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 128: /* slice_array: identifier '[' expr ':' ']'  */
-#line 750 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 750 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                        {
             yyval = make_leaf(csound,LINE,LOCN, T_FUNCTION, make_token(csound, "slicearray", NULL));
             yyval->right = yyvsp[-4];
             yyval->right = parser_append(csound, yyval->right, yyvsp[-2]);
            }
-#line 3406 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3406 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 129: /* slice_array: expr '[' expr ':' expr_list ']'  */
-#line 756 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 756 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                            {
             yyval = make_leaf(csound,LINE,LOCN, T_FUNCTION, make_token(csound, "slicearray", NULL));
             yyval->right = yyvsp[-5];
             yyval->right = parser_append(csound, yyval->right, yyvsp[-3]);
             parser_append(csound, yyval->right, yyvsp[-1]);
            }
-#line 3417 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3417 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 130: /* slice_array: expr '[' ':' expr_list ']'  */
-#line 763 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 763 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                        {
             yyval = make_leaf(csound,LINE,LOCN, T_FUNCTION, make_token(csound, "slicearray", NULL));
             yyval->right = yyvsp[-4];
@@ -3426,57 +3426,57 @@ yyreduce:
                                                  make_int(csound, "0", NULL)));
             parser_append(csound, yyval->right, yyvsp[-1]);
            }
-#line 3430 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3430 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 131: /* slice_array: expr '[' expr ':' ']'  */
-#line 772 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 772 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                  {
             yyval = make_leaf(csound,LINE,LOCN, T_FUNCTION, make_token(csound, "slicearray", NULL));
             yyval->right = yyvsp[-4];
             yyval->right = parser_append(csound, yyval->right, yyvsp[-2]);
            }
-#line 3440 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3440 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 132: /* static_array: '[' expr_list ']'  */
-#line 779 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 779 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                  {
             yyval = make_leaf(csound,LINE,LOCN, T_FUNCTION, make_token(csound, "fillarray", NULL));
             yyval->right = yyvsp[-1];
           }
-#line 3449 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3449 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 133: /* array_expr: array_expr '[' expr ']'  */
-#line 788 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 788 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           {
             parser_append(csound, yyvsp[-3]->right, yyvsp[-1]);
             yyval = yyvsp[-3];
           }
-#line 3458 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3458 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 134: /* array_expr: identifier '[' expr ']'  */
-#line 793 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 793 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           {
            char* arrayName = yyvsp[-3]->value->lexeme;
             yyval = make_node(csound, LINE, LOCN, T_ARRAY,
                            make_leaf(csound, LINE, LOCN, T_IDENT, make_token(csound, arrayName, NULL)), yyvsp[-1]);
           }
-#line 3468 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3468 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 135: /* array_expr: function_call '[' expr ']'  */
-#line 799 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 799 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           {
             yyval = make_node(csound, LINE, LOCN, T_ARRAY, yyvsp[-3], yyvsp[-1]);
           }
-#line 3476 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3476 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 136: /* struct_expr: struct_expr '.' identifier  */
-#line 805 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 805 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             {
               char* memberName = yyvsp[0]->value->lexeme;
               // Important: Clear the next pointer of $3 to prevent it from being processed separately
@@ -3489,11 +3489,11 @@ yyreduce:
                 )
               );
             }
-#line 3493 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3493 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 137: /* struct_expr: struct_expr '.' array_expr  */
-#line 818 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 818 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             {
               /* Build a struct member node from array_expr's base identifier, then
                  attach the array indexing so nested chains like a.b[0] work. */
@@ -3507,20 +3507,20 @@ yyreduce:
               yyvsp[0]->left = structMember;
               yyval = yyvsp[0];
             }
-#line 3511 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3511 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 138: /* struct_expr: array_expr '.' identifier  */
-#line 832 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 832 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             {
               yyvsp[0]->type = T_MEMBER_IDENT;
               yyval = make_node(csound, LINE, LOCN, STRUCT_EXPR, yyvsp[-2], yyvsp[0]);
             }
-#line 3520 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3520 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 139: /* struct_expr: identifier '.' array_expr  */
-#line 837 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 837 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             {
               char* structName = yyvsp[-2]->value->lexeme;
               char* memberName = yyvsp[0]->value == NULL ?
@@ -3534,19 +3534,19 @@ yyreduce:
               yyvsp[0]->left = yyval;
               yyval = yyvsp[0];
             }
-#line 3538 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3538 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 140: /* struct_expr: struct_expr '[' expr ']'  */
-#line 851 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 851 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             {
               yyval = make_node(csound, LINE, LOCN, T_ARRAY, yyvsp[-3], yyvsp[-1]);
             }
-#line 3546 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3546 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 141: /* struct_expr: identifier '.' identifier  */
-#line 855 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 855 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             {
               char* structName = yyvsp[-2]->value->lexeme;
               char* memberName = yyvsp[0]->value->lexeme;
@@ -3557,361 +3557,361 @@ yyreduce:
                              make_leaf(csound, LINE, LOCN, T_MEMBER_IDENT, make_token(csound, memberName, NULL))
                    );
             }
-#line 3561 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3561 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 142: /* ternary_expr: expr '?' expr ':' expr  */
-#line 868 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 868 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = make_node(csound,LINE,LOCN, '?', yyvsp[-4],
                              make_node(csound, LINE,LOCN, ':', yyvsp[-2], yyvsp[0])); }
-#line 3568 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3568 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 143: /* ternary_expr: expr '?' expr ':' error  */
-#line 870 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 870 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                     { yyval = NULL; }
-#line 3574 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3574 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 144: /* ternary_expr: expr '?' expr error  */
-#line 871 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 871 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                 { yyval = NULL; }
-#line 3580 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3580 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 145: /* ternary_expr: expr '?' error  */
-#line 872 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 872 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                            { yyval = NULL; }
-#line 3586 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3586 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 146: /* unary_expr: '~' expr  */
-#line 876 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 876 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = make_node(csound, LINE,LOCN, '~', NULL, yyvsp[0]);}
-#line 3592 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3592 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 147: /* unary_expr: '~' error  */
-#line 877 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 877 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                             { yyval = NULL; }
-#line 3598 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3598 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 148: /* unary_expr: '!' expr  */
-#line 878 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 878 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                 { yyval = make_node(csound, LINE,LOCN,
                                                     S_UNOT, yyvsp[0], NULL); }
-#line 3605 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3605 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 149: /* unary_expr: '!' error  */
-#line 880 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 880 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                               { yyval = NULL; }
-#line 3611 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3611 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 150: /* unary_expr: '-' expr  */
-#line 882 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 882 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           {
               yyval = make_node(csound,LINE,LOCN, S_UMINUS, NULL, yyvsp[0]);
           }
-#line 3619 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3619 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 151: /* unary_expr: '-' error  */
-#line 885 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 885 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                               { yyval = NULL; }
-#line 3625 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3625 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 152: /* unary_expr: '+' expr  */
-#line 904 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 904 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
           {
               yyval = make_node(csound,LINE,LOCN, S_UPLUS, NULL, yyvsp[0]);
           }
-#line 3633 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3633 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 153: /* unary_expr: '+' error  */
-#line 908 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 908 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                               { yyval = NULL; }
-#line 3639 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3639 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 154: /* binary_expr: expr '+' optnewline expr  */
-#line 911 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 911 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                          { yyval = make_node(csound, LINE,LOCN, '+', yyvsp[-3], yyvsp[0]); }
-#line 3645 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3645 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 155: /* binary_expr: expr '+' error  */
-#line 912 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 912 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                            { yyval = NULL; }
-#line 3651 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3651 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 156: /* binary_expr: expr '-' optnewline expr  */
-#line 913 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 913 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                       { yyval = make_node(csound ,LINE,LOCN, '-', yyvsp[-3], yyvsp[0]); }
-#line 3657 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3657 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 157: /* binary_expr: expr '-' error  */
-#line 914 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 914 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                            { yyval = NULL; }
-#line 3663 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3663 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 158: /* binary_expr: expr S_LE optnewline expr  */
-#line 915 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 915 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                            { yyval = make_node(csound, LINE,LOCN, S_LE, yyvsp[-3], yyvsp[0]); }
-#line 3669 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3669 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 159: /* binary_expr: expr S_LE error  */
-#line 916 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 916 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                             { yyval = NULL; }
-#line 3675 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3675 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 160: /* binary_expr: expr S_GE optnewline expr  */
-#line 917 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 917 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                            { yyval = make_node(csound, LINE,LOCN, S_GE, yyvsp[-3], yyvsp[0]); }
-#line 3681 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3681 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 161: /* binary_expr: expr S_GE error  */
-#line 918 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 918 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                 { yyval = NULL; }
-#line 3687 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3687 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 162: /* binary_expr: expr S_NEQ optnewline expr  */
-#line 919 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 919 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                            { yyval = make_node(csound, LINE,LOCN, S_NEQ, yyvsp[-3], yyvsp[0]); }
-#line 3693 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3693 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 163: /* binary_expr: expr S_NEQ error  */
-#line 920 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 920 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                 { yyval = NULL; }
-#line 3699 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3699 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 164: /* binary_expr: expr '=' optnewline expr  */
-#line 922 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 922 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                       { yyval = make_node(csound, LINE,LOCN, S_EQ, yyvsp[-3], yyvsp[0]); }
-#line 3705 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3705 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 165: /* binary_expr: expr '=' error  */
-#line 923 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 923 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                            { yyval = NULL; }
-#line 3711 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3711 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 166: /* binary_expr: expr S_EQ optnewline expr  */
-#line 924 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 924 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                            { yyval = make_node(csound, LINE,LOCN, S_EQ, yyvsp[-3], yyvsp[0]); }
-#line 3717 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3717 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 167: /* binary_expr: expr S_EQ error  */
-#line 925 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 925 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                             { yyval = NULL; }
-#line 3723 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3723 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 168: /* binary_expr: expr S_GT optnewline expr  */
-#line 926 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 926 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                            { yyval = make_node(csound, LINE,LOCN, S_GT, yyvsp[-3], yyvsp[0]); }
-#line 3729 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3729 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 169: /* binary_expr: expr S_GT error  */
-#line 927 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 927 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                             { yyval = NULL; }
-#line 3735 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3735 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 170: /* binary_expr: expr S_LT optnewline expr  */
-#line 928 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 928 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                            { yyval = make_node(csound, LINE,LOCN, S_LT, yyvsp[-3], yyvsp[0]); }
-#line 3741 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3741 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 171: /* binary_expr: expr S_LT error  */
-#line 929 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 929 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                             { yyval = NULL; }
-#line 3747 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3747 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 172: /* binary_expr: expr S_AND optnewline expr  */
-#line 930 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 930 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                          { yyval = make_node(csound, LINE,LOCN, S_AND, yyvsp[-3], yyvsp[0]); }
-#line 3753 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3753 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 173: /* binary_expr: expr S_AND error  */
-#line 931 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 931 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                              { yyval = NULL; }
-#line 3759 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3759 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 174: /* binary_expr: expr S_OR optnewline expr  */
-#line 932 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 932 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                          { yyval = make_node(csound, LINE,LOCN, S_OR, yyvsp[-3], yyvsp[0]); }
-#line 3765 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3765 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 175: /* binary_expr: expr S_OR error  */
-#line 933 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 933 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                             { yyval = NULL; }
-#line 3771 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3771 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 176: /* binary_expr: expr '*' optnewline expr  */
-#line 934 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 934 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                         { yyval = make_node(csound, LINE,LOCN, '*', yyvsp[-3], yyvsp[0]); }
-#line 3777 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3777 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 177: /* binary_expr: expr '*' error  */
-#line 935 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 935 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                            { yyval = NULL; }
-#line 3783 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3783 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 178: /* binary_expr: expr '/' optnewline expr  */
-#line 936 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 936 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                         { yyval = make_node(csound, LINE,LOCN, '/', yyvsp[-3], yyvsp[0]); }
-#line 3789 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3789 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 179: /* binary_expr: expr '/' error  */
-#line 937 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 937 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                            { yyval = NULL; }
-#line 3795 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3795 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 180: /* binary_expr: expr '^' optnewline expr  */
-#line 938 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 938 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                         { yyval = make_node(csound, LINE,LOCN, '^', yyvsp[-3], yyvsp[0]); }
-#line 3801 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3801 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 181: /* binary_expr: expr '^' error  */
-#line 939 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 939 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                            { yyval = NULL; }
-#line 3807 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3807 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 182: /* binary_expr: expr '%' optnewline expr  */
-#line 940 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 940 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                         { yyval = make_node(csound, LINE,LOCN, '%', yyvsp[-3], yyvsp[0]); }
-#line 3813 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3813 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 183: /* binary_expr: expr '%' error  */
-#line 941 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 941 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                            { yyval = NULL; }
-#line 3819 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3819 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 184: /* binary_expr: expr '|' optnewline expr  */
-#line 942 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 942 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                             { yyval = make_node(csound, LINE,LOCN, '|', yyvsp[-3], yyvsp[0]); }
-#line 3825 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3825 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 185: /* binary_expr: expr '|' error  */
-#line 943 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 943 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                            { yyval = NULL; }
-#line 3831 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3831 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 186: /* binary_expr: expr '&' optnewline expr  */
-#line 944 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 944 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                             { yyval = make_node(csound, LINE,LOCN, '&', yyvsp[-3], yyvsp[0]); }
-#line 3837 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3837 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 187: /* binary_expr: expr '&' error  */
-#line 945 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 945 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                            { yyval = NULL; }
-#line 3843 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3843 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 188: /* binary_expr: expr '#' optnewline expr  */
-#line 946 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 946 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                             { yyval = make_node(csound, LINE,LOCN, '#', yyvsp[-3], yyvsp[0]); }
-#line 3849 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3849 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 189: /* binary_expr: expr '#' error  */
-#line 947 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 947 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                            { yyval = NULL; }
-#line 3855 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3855 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 190: /* binary_expr: expr S_BITSHIFT_LEFT optnewline expr  */
-#line 949 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 949 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                  { yyval = make_node(csound, LINE,LOCN, S_BITSHIFT_LEFT, yyvsp[-3], yyvsp[0]); }
-#line 3861 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3861 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 191: /* binary_expr: expr S_BITSHIFT_LEFT error  */
-#line 950 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 950 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                        { yyval = NULL; }
-#line 3867 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3867 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 192: /* binary_expr: expr S_BITSHIFT_RIGHT optnewline expr  */
-#line 952 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 952 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                  { yyval = make_node(csound, LINE,LOCN, S_BITSHIFT_RIGHT, yyvsp[-3], yyvsp[0]); }
-#line 3873 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3873 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 193: /* binary_expr: expr S_BITSHIFT_RIGHT error  */
-#line 953 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 953 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                         { yyval = NULL; }
-#line 3879 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3879 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 194: /* out_arg_list: out_arg_list ',' out_arg  */
-#line 958 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 958 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { yyval = parser_append(csound, yyvsp[-2], yyvsp[0]); }
-#line 3885 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3885 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 200: /* out_arg_list_array: out_arg_list_array ',' array_expr  */
-#line 969 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 969 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
               { yyval = parser_append(csound, yyvsp[-2], yyvsp[0]); }
-#line 3891 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3891 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 202: /* array_identifier: array_identifier '[' ']'  */
-#line 973 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 973 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                            {
             parser_append(csound, yyvsp[-2]->right,
                            make_leaf(csound, LINE, LOCN, '[', make_token(csound, "[", NULL)));
             yyval = yyvsp[-2];
           }
-#line 3901 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3901 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 203: /* array_identifier: identifier '[' ']'  */
-#line 978 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 978 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                {
             yyval = yyvsp[-2];
             yyvsp[-2]->type = T_ARRAY_IDENT;
             yyval->right = make_leaf(csound, LINE, LOCN, '[', make_token(csound, "[", NULL));
           }
-#line 3911 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3911 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 204: /* array_identifier: typed_identifier '[' ']'  */
-#line 983 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 983 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                                      {
             yyval = yyvsp[-2];
             // Check if this is a type annotation (e.g., "var:Type[]") vs array access
@@ -3933,199 +3933,199 @@ yyreduce:
               yyval->right = make_leaf(csound, LINE, LOCN, '[', make_token(csound, "[", NULL));
             }
           }
-#line 3937 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3937 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 205: /* assignment: '='  */
-#line 1008 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1008 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 { yyval = make_leaf(csound,LINE,LOCN, T_ASSIGNMENT, make_token(csound, "=", NULL)); }
-#line 3943 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3943 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 206: /* assignment: S_ADDIN  */
-#line 1010 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1010 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 { yyval = make_leaf(csound,LINE,LOCN, S_ADDIN, make_token(csound, "##addin", NULL)); }
-#line 3949 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3949 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 207: /* assignment: S_SUBIN  */
-#line 1012 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1012 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 { yyval = make_leaf(csound,LINE,LOCN, S_SUBIN, make_token(csound, "##subin", NULL)); }
-#line 3955 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3955 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 208: /* assignment: S_DIVIN  */
-#line 1014 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1014 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 { yyval = make_leaf(csound,LINE,LOCN, S_DIVIN, make_token(csound, "##divin", NULL)); }
-#line 3961 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3961 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 209: /* assignment: S_MULIN  */
-#line 1016 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1016 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 { yyval = make_leaf(csound,LINE,LOCN, S_MULIN, make_token(csound, "##mulin", NULL)); }
-#line 3967 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3967 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 210: /* assignment_array: '='  */
-#line 1021 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1021 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 { yyval = make_leaf(csound,LINE,LOCN, T_ASSIGNMENT, make_token(csound, "=", NULL)); }
-#line 3973 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3973 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 211: /* assignment_array: S_ADDIN  */
-#line 1023 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1023 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 { yyval = make_leaf(csound,LINE,LOCN, T_ASSIGNMENT, make_token(csound, "=", NULL));
                   yyval->right = make_leaf(csound, LINE, LOCN, '+', make_token(csound, "+", NULL));
                 }
-#line 3981 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3981 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 212: /* assignment_array: S_SUBIN  */
-#line 1027 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1027 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 { yyval = make_leaf(csound,LINE,LOCN, T_ASSIGNMENT, make_token(csound, "=", NULL));
                   yyval->right = make_leaf(csound, LINE, LOCN, '-', make_token(csound, "-", NULL));
                 }
-#line 3989 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3989 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 213: /* assignment_array: S_DIVIN  */
-#line 1031 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1031 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 { yyval = make_leaf(csound,LINE,LOCN, T_ASSIGNMENT, make_token(csound, "=", NULL));
                   yyval->right = make_leaf(csound, LINE, LOCN, '/', make_token(csound, "/", NULL));
                 }
-#line 3997 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 3997 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 214: /* assignment_array: S_MULIN  */
-#line 1035 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1035 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
                 { yyval = make_leaf(csound,LINE,LOCN, T_ASSIGNMENT, make_token(csound, "=", NULL));
                   yyval->right = make_leaf(csound, LINE, LOCN, '*', make_token(csound, "*", NULL));
                 }
-#line 4005 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4005 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 215: /* in: IN_TOKEN  */
-#line 1041 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1041 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = make_leaf(csound,LINE,LOCN, IN_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 4011 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4011 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 216: /* then: THEN_TOKEN  */
-#line 1044 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1044 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = make_leaf(csound,LINE,LOCN, THEN_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 4017 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4017 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 217: /* then: KTHEN_TOKEN  */
-#line 1046 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1046 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = make_leaf(csound,LINE,LOCN, KTHEN_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 4023 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4023 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 218: /* then: ITHEN_TOKEN  */
-#line 1048 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1048 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = make_leaf(csound,LINE,LOCN, ITHEN_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 4029 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4029 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 219: /* goto: GOTO_TOKEN  */
-#line 1052 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1052 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = make_leaf(csound,LINE,LOCN, GOTO_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 4035 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4035 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 220: /* goto: KGOTO_TOKEN  */
-#line 1054 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1054 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = make_leaf(csound,LINE,LOCN, KGOTO_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 4041 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4041 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 221: /* goto: IGOTO_TOKEN  */
-#line 1056 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1056 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
             { yyval = make_leaf(csound,LINE,LOCN, IGOTO_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 4047 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4047 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 224: /* string: STRING_TOKEN  */
-#line 1064 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1064 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         { yyval = make_leaf(csound, LINE,LOCN, STRING_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 4053 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4053 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 225: /* false_const: FALSE_TOKEN  */
-#line 1068 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1068 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
        { yyval = make_leaf(csound, LINE,LOCN, FALSE_TOKEN,
                         make_token(csound,"false", NULL)); }
-#line 4060 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4060 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 226: /* false_const: FALSEK_TOKEN  */
-#line 1071 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1071 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
        { yyval = make_leaf(csound, LINE,LOCN, FALSEK_TOKEN,
                         make_token(csound,"falsek", NULL)); }
-#line 4067 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4067 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 227: /* true_const: TRUE_TOKEN  */
-#line 1077 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1077 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
            { yyval = make_leaf(csound, LINE,LOCN, TRUE_TOKEN,
                             make_token(csound,"true", NULL)); }
-#line 4074 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4074 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 228: /* true_const: TRUEK_TOKEN  */
-#line 1080 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1080 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
        { yyval = make_leaf(csound, LINE,LOCN, TRUEK_TOKEN,
                         make_token(csound,"truek", NULL)); }
-#line 4081 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4081 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 229: /* number: NUMBER_TOKEN  */
-#line 1086 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1086 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
        { yyval = make_leaf(csound, LINE,LOCN, NUMBER_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 4087 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4087 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 230: /* integer: INTEGER_TOKEN  */
-#line 1090 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1090 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         { yyval = make_leaf(csound, LINE, LOCN, INTEGER_TOKEN, (ORCTOKEN *)yyvsp[0]); }
-#line 4093 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4093 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 231: /* plus_identifier: '+' T_IDENT  */
-#line 1098 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1098 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         {
 	  yyval = make_leaf(csound, LINE, LOCN, T_PLUS_IDENT, (ORCTOKEN *)yyvsp[0]);
 	}
-#line 4101 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4101 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 232: /* typed_identifier: T_TYPED_IDENT  */
-#line 1104 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1104 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         { yyval = make_leaf(csound, LINE, LOCN, T_TYPED_IDENT, (ORCTOKEN *)yyvsp[0]); }
-#line 4107 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4107 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 233: /* typed_identifierb: T_TYPED_IDENTB  */
-#line 1108 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1108 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         { yyval = make_leaf(csound, LINE, LOCN, T_TYPED_IDENT, (ORCTOKEN *)yyvsp[0]); }
-#line 4113 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4113 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 234: /* identifier: T_IDENT  */
-#line 1112 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1112 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         { yyval = make_leaf(csound, LINE, LOCN, T_IDENT, (ORCTOKEN *)yyvsp[0]); }
-#line 4119 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4119 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
   case 235: /* identifierb: T_IDENTB  */
-#line 1116 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1116 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
         { yyval = make_leaf(csound, LINE, LOCN, T_IDENT, (ORCTOKEN *)yyvsp[0]); }
-#line 4125 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4125 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
     break;
 
 
-#line 4129 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/build-arm64/csound_orcparse.c"
+#line 4129 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/csound_orcparse.c"
 
       default: break;
     }
@@ -4349,7 +4349,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 1119 "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-static/src/Engine/csound_orc.y"
+#line 1119 "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc.y"
 
 
 #ifdef SOME_FINE_DAY

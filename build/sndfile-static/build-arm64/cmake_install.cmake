@@ -1,8 +1,8 @@
-# Install script for directory: /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src
+# Install script for directory: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/sndfile")
+  set(CMAKE_INSTALL_PREFIX "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/sndfile")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -38,7 +38,7 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/libsndfile.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/libsndfile.a")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libsndfile.a" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libsndfile.a")
     execute_process(COMMAND "/usr/bin/ranlib" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libsndfile.a")
@@ -47,8 +47,8 @@ endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE FILE FILES
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/include/sndfile.h"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/include/sndfile.hh"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/include/sndfile.h"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/include/sndfile.hh"
     )
 endif()
 
@@ -56,7 +56,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/cmake/SndFile/SndFileTargets.cmake")
     file(DIFFERENT _cmake_export_file_changed FILES
          "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/cmake/SndFile/SndFileTargets.cmake"
-         "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/CMakeFiles/Export/5c71f72976042dd672d3a20ad1898c82/SndFileTargets.cmake")
+         "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/CMakeFiles/Export/5c71f72976042dd672d3a20ad1898c82/SndFileTargets.cmake")
     if(_cmake_export_file_changed)
       file(GLOB _cmake_old_config_files "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/cmake/SndFile/SndFileTargets-*.cmake")
       if(_cmake_old_config_files)
@@ -69,49 +69,49 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
     endif()
     unset(_cmake_export_file_changed)
   endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SndFile" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/CMakeFiles/Export/5c71f72976042dd672d3a20ad1898c82/SndFileTargets.cmake")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SndFile" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/CMakeFiles/Export/5c71f72976042dd672d3a20ad1898c82/SndFileTargets.cmake")
   if(CMAKE_INSTALL_CONFIG_NAME MATCHES "^([Rr][Ee][Ll][Ee][Aa][Ss][Ee])$")
-    file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SndFile" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/CMakeFiles/Export/5c71f72976042dd672d3a20ad1898c82/SndFileTargets-release.cmake")
+    file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SndFile" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/CMakeFiles/Export/5c71f72976042dd672d3a20ad1898c82/SndFileTargets-release.cmake")
   endif()
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SndFile" TYPE FILE RENAME "SndFileConfig.cmake" FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/SndFileConfig2.cmake")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SndFile" TYPE FILE RENAME "SndFileConfig.cmake" FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/SndFileConfig2.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SndFile" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/SndFileConfigVersion.cmake")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/SndFile" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/SndFileConfigVersion.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/doc/libsndfile" TYPE FILE FILES
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/index.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/libsndfile.jpg"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/libsndfile.css"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/print.css"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/api.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/command.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/bugs.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/formats.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/sndfile_info.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/new_file_type_howto.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/win32.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/FAQ.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/lists.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/embedded_files.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/octave.md"
-    "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/src/docs/tutorial.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/index.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/libsndfile.jpg"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/libsndfile.css"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/print.css"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/api.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/command.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/bugs.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/formats.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/sndfile_info.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/new_file_type_howto.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/win32.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/FAQ.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/lists.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/embedded_files.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/octave.md"
+    "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/src/docs/tutorial.md"
     )
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/sndfile.pc")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig" TYPE FILE FILES "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/sndfile.pc")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/install_local_manifest.txt"
+  file(WRITE "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()
 if(CMAKE_INSTALL_COMPONENT)
@@ -127,6 +127,6 @@ else()
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/sndfile-static/build-arm64/${CMAKE_INSTALL_MANIFEST}"
+  file(WRITE "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/sndfile-static/build-arm64/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

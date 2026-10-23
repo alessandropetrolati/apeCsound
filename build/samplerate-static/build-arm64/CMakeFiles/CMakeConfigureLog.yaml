@@ -66,14 +66,14 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "message-v1"
     backtrace:
       - "/opt/homebrew/share/cmake/Modules/CMakeDetermineSystem.cmake:212 (message)"
       - "CMakeLists.txt:3 (project)"
     message: |
-      The system is: Darwin - 25.6.0 - arm64
+      The system is: Darwin - 27.0.0 - arm64
   -
     kind: "find-v1"
     backtrace:
@@ -160,7 +160,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -233,7 +233,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -280,7 +280,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "message-v1"
     backtrace:
@@ -301,7 +301,7 @@ events:
       Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
       
       The C compiler identification is AppleClang, found in:
-        /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/4.1.0/CompilerIdC/a.out
+        /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/4.1.0/CompilerIdC/a.out
       
   -
     kind: "message-v1"
@@ -405,7 +405,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -467,7 +467,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -529,7 +529,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -591,7 +591,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -653,7 +653,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -715,7 +715,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -797,7 +797,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -879,7 +879,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -961,7 +961,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -1043,7 +1043,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -1125,7 +1125,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "find-v1"
     backtrace:
@@ -1192,7 +1192,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
   -
     kind: "try_compile-v1"
     backtrace:
@@ -1202,8 +1202,8 @@ events:
     checks:
       - "Detecting C compiler ABI info"
     directories:
-      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7"
-      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7"
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-1yEDJx"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-1yEDJx"
     cmakeVariables:
       CMAKE_C_FLAGS: ""
       CMAKE_C_FLAGS_DEBUG: "-g"
@@ -1215,19 +1215,19 @@ events:
       variable: "CMAKE_C_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7'
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-1yEDJx'
         
-        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_b1499/fast
-        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_b1499.dir/build.make CMakeFiles/cmTC_b1499.dir/build
-        Building C object CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o
-        /usr/bin/cc   -arch arm64 -mmacosx-version-min=10.14   -v -Wl,-v -MD -MT CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -c /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_5deb9/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_5deb9.dir/build.make CMakeFiles/cmTC_5deb9.dir/build
+        Building C object CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o
+        /usr/bin/cc   -arch arm64 -mmacosx-version-min=10.14   -v -Wl,-v -MD -MT CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o -c /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c
         Apple clang version 21.0.0 (clang-2100.3.34.2)
-        Target: arm64-apple-darwin25.6.0
+        Target: arm64-apple-darwin27.0.0
         Thread model: posix
         InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
         clang: warning: -Wl,-v: 'linker' input unused [-Wunused-command-line-argument]
-         "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang" -cc1 -triple arm64-apple-macosx10.14.0 -Wundef-prefix=TARGET_OS_ -Wdeprecated-objc-isa-usage -Werror=deprecated-objc-isa-usage -Werror=implicit-function-declaration -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCCompilerABI.c -mrelocation-model pic -pic-level 2 -mframe-pointer=non-leaf -fno-strict-return -ffp-contract=on -fno-rounding-math -funwind-tables=1 -fobjc-msgsend-selector-stubs -fno-sized-deallocation -target-sdk-version=27.0 -fdepfile-entry=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json -fvisibility-inlines-hidden-static-local-var -fno-modulemap-allow-subdirectory-search -fdefine-target-os-macros -fno-assume-unique-vtables -fno-modulemap-allow-subdirectory-search -enable-tlsdesc -target-cpu apple-m1 -target-feature +v8.5a -target-feature +aes -target-feature +altnzcv -target-feature +ccdp -target-feature +ccpp -target-feature +complxnum -target-feature +crc -target-feature +dotprod -target-feature +flagm -target-feature +fp-armv8 -target-feature +fp16fml -target-feature +fptoint -target-feature +fullfp16 -target-feature +jsconv -target-feature +lse -target-feature +neon -target-feature +pauth -target-feature +perfmon -target-feature +predres -target-feature +ras -target-feature +rcpc -target-feature +rdm -target-feature +sb -target-feature +sha2 -target-feature +sha3 -target-feature +specrestrict -target-feature +ssbs -target-abi darwinpcs -debugger-tuning=lldb "-fdebug-compilation-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7" -target-linker-version 1166.2 -v "-fcoverage-compilation-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7" -resource-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o.d -skip-unused-modulemap-deps -MT CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -sys-header-deps -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -I/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/SubFrameworks -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/Library/Frameworks -Wno-elaborated-enum-base -ferror-limit 19 -stack-protector 1 -fstack-check -mdarwin-stkchk-strong-link -fblocks -fencode-extended-block-signature -fregister-global-dtors-with-atexit -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fmax-type-align=16 -fcommon -clang-vendor-feature=+disableNonDependentMemberExprInCurrentInstantiation -fno-odr-hash-protocols -clang-vendor-feature=+enableAggressiveVLAFolding -clang-vendor-feature=+revert09abecef7bbf -clang-vendor-feature=+thisNoAlignAttr -clang-vendor-feature=+thisNoNullAttr -clang-vendor-feature=+disableAtImportPrivateFrameworkInImplementationError -Wno-error=allocator-wrappers -fdwarf2-cfi-asm -o CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -x c /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c
-        clang -cc1 version 21.0.0 (clang-2100.3.34.2) default target arm64-apple-darwin25.6.0
+         "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang" -cc1 -triple arm64-apple-macosx10.14.0 -Wundef-prefix=TARGET_OS_ -Wdeprecated-objc-isa-usage -Werror=deprecated-objc-isa-usage -Werror=implicit-function-declaration -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCCompilerABI.c -mrelocation-model pic -pic-level 2 -mframe-pointer=non-leaf -fno-strict-return -ffp-contract=on -fno-rounding-math -funwind-tables=1 -fobjc-msgsend-selector-stubs -fno-sized-deallocation -target-sdk-version=27.0 -fdepfile-entry=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json -fvisibility-inlines-hidden-static-local-var -fno-modulemap-allow-subdirectory-search -fdefine-target-os-macros -fno-assume-unique-vtables -fno-modulemap-allow-subdirectory-search -enable-tlsdesc -target-cpu apple-m1 -target-feature +v8.5a -target-feature +aes -target-feature +altnzcv -target-feature +ccdp -target-feature +ccpp -target-feature +complxnum -target-feature +crc -target-feature +dotprod -target-feature +flagm -target-feature +fp-armv8 -target-feature +fp16fml -target-feature +fptoint -target-feature +fullfp16 -target-feature +jsconv -target-feature +lse -target-feature +neon -target-feature +pauth -target-feature +perfmon -target-feature +predres -target-feature +ras -target-feature +rcpc -target-feature +rdm -target-feature +sb -target-feature +sha2 -target-feature +sha3 -target-feature +specrestrict -target-feature +ssbs -target-abi darwinpcs -debugger-tuning=lldb "-fdebug-compilation-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-1yEDJx" -target-linker-version 1166.2 -v "-fcoverage-compilation-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-1yEDJx" -resource-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o.d -skip-unused-modulemap-deps -MT CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o -sys-header-deps -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -I/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/SubFrameworks -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/Library/Frameworks -Wno-elaborated-enum-base -ferror-limit 19 -stack-protector 1 -fstack-check -mdarwin-stkchk-strong-link -fblocks -fencode-extended-block-signature -fregister-global-dtors-with-atexit -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fmax-type-align=16 -fcommon -clang-vendor-feature=+disableNonDependentMemberExprInCurrentInstantiation -fno-odr-hash-protocols -clang-vendor-feature=+enableAggressiveVLAFolding -clang-vendor-feature=+revert09abecef7bbf -clang-vendor-feature=+thisNoAlignAttr -clang-vendor-feature=+thisNoNullAttr -clang-vendor-feature=+disableAtImportPrivateFrameworkInImplementationError -Wno-error=allocator-wrappers -fdwarf2-cfi-asm -o CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o -x c /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c
+        clang -cc1 version 21.0.0 (clang-2100.3.34.2) default target arm64-apple-darwin27.0.0
         ignoring nonexistent directory "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/local/include"
         ignoring nonexistent directory "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/Library/Frameworks"
         #include "..." search starts here:
@@ -1239,15 +1239,15 @@ events:
          /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks (framework directory)
          /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/SubFrameworks (framework directory)
         End of search list.
-        Linking C executable cmTC_b1499
-        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b1499.dir/link.txt --verbose=1
+        Linking C executable cmTC_5deb9
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_5deb9.dir/link.txt --verbose=1
         Apple clang version 21.0.0 (clang-2100.3.34.2)
-        Target: arm64-apple-darwin25.6.0
+        Target: arm64-apple-darwin27.0.0
         Thread model: posix
         InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
-         "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld" -demangle -lto_library /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libLTO.dylib -dynamic -arch arm64 -platform_version macos 11.0.0 27.0 -syslibroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -mllvm -enable-linkonceodr-outlining -o cmTC_b1499 -L/usr/local/lib -search_paths_first -headerpad_max_install_names -v CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -lSystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/lib/darwin/libclang_rt.osx.a
+         "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld" -demangle -lto_library /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libLTO.dylib -dynamic -arch arm64 -platform_version macos 11.0.0 27.0 -syslibroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -mllvm -enable-linkonceodr-outlining -o cmTC_5deb9 -L/usr/local/lib -search_paths_first -headerpad_max_install_names -v CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o -lSystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/lib/darwin/libclang_rt.osx.a
         @(#)PROGRAM:ld PROJECT:ld-27037.1
-        BUILD 21:17:51 Aug 25 2026
+        BUILD 12:05:32 Aug 17 2026
         configured to support archs: armv6 armv7 armv7s arm64 arm64e arm64_32 i386 x86_64 x86_64h armv6m armv7k armv7m armv7em armv8m.main armv8.1m.main
         LTO support using: LLVM version 21.0.0 (static support for 30, runtime is 30)
         TAPI support using: Apple TAPI version 21.0.0 (tapi-2100.3.8.1)
@@ -1257,7 +1257,7 @@ events:
         	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/swift
         Framework search paths:
         	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks
-        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names  -v -Wl,-v CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -o cmTC_b1499
+        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names  -v -Wl,-v CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o -o cmTC_5deb9
         
       exitCode: 0
   -
@@ -1301,19 +1301,19 @@ events:
       Parsed C implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|")?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)))("|,| |$)]
-        ignore line: [Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7']
+        ignore line: [Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-1yEDJx']
         ignore line: []
-        ignore line: [Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_b1499/fast]
-        ignore line: [/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_b1499.dir/build.make CMakeFiles/cmTC_b1499.dir/build]
-        ignore line: [Building C object CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o]
-        ignore line: [/usr/bin/cc   -arch arm64 -mmacosx-version-min=10.14   -v -Wl -v -MD -MT CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -c /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c]
+        ignore line: [Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_5deb9/fast]
+        ignore line: [/Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_5deb9.dir/build.make CMakeFiles/cmTC_5deb9.dir/build]
+        ignore line: [Building C object CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o]
+        ignore line: [/usr/bin/cc   -arch arm64 -mmacosx-version-min=10.14   -v -Wl -v -MD -MT CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o -c /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c]
         ignore line: [Apple clang version 21.0.0 (clang-2100.3.34.2)]
-        ignore line: [Target: arm64-apple-darwin25.6.0]
+        ignore line: [Target: arm64-apple-darwin27.0.0]
         ignore line: [Thread model: posix]
         ignore line: [InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin]
         ignore line: [clang: warning: -Wl -v: 'linker' input unused [-Wunused-command-line-argument]]
-        ignore line: [ "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang" -cc1 -triple arm64-apple-macosx10.14.0 -Wundef-prefix=TARGET_OS_ -Wdeprecated-objc-isa-usage -Werror=deprecated-objc-isa-usage -Werror=implicit-function-declaration -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCCompilerABI.c -mrelocation-model pic -pic-level 2 -mframe-pointer=non-leaf -fno-strict-return -ffp-contract=on -fno-rounding-math -funwind-tables=1 -fobjc-msgsend-selector-stubs -fno-sized-deallocation -target-sdk-version=27.0 -fdepfile-entry=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json -fvisibility-inlines-hidden-static-local-var -fno-modulemap-allow-subdirectory-search -fdefine-target-os-macros -fno-assume-unique-vtables -fno-modulemap-allow-subdirectory-search -enable-tlsdesc -target-cpu apple-m1 -target-feature +v8.5a -target-feature +aes -target-feature +altnzcv -target-feature +ccdp -target-feature +ccpp -target-feature +complxnum -target-feature +crc -target-feature +dotprod -target-feature +flagm -target-feature +fp-armv8 -target-feature +fp16fml -target-feature +fptoint -target-feature +fullfp16 -target-feature +jsconv -target-feature +lse -target-feature +neon -target-feature +pauth -target-feature +perfmon -target-feature +predres -target-feature +ras -target-feature +rcpc -target-feature +rdm -target-feature +sb -target-feature +sha2 -target-feature +sha3 -target-feature +specrestrict -target-feature +ssbs -target-abi darwinpcs -debugger-tuning=lldb "-fdebug-compilation-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7" -target-linker-version 1166.2 -v "-fcoverage-compilation-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-0NZQq7" -resource-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o.d -skip-unused-modulemap-deps -MT CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -sys-header-deps -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -I/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/SubFrameworks -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/Library/Frameworks -Wno-elaborated-enum-base -ferror-limit 19 -stack-protector 1 -fstack-check -mdarwin-stkchk-strong-link -fblocks -fencode-extended-block-signature -fregister-global-dtors-with-atexit -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fmax-type-align=16 -fcommon -clang-vendor-feature=+disableNonDependentMemberExprInCurrentInstantiation -fno-odr-hash-protocols -clang-vendor-feature=+enableAggressiveVLAFolding -clang-vendor-feature=+revert09abecef7bbf -clang-vendor-feature=+thisNoAlignAttr -clang-vendor-feature=+thisNoNullAttr -clang-vendor-feature=+disableAtImportPrivateFrameworkInImplementationError -Wno-error=allocator-wrappers -fdwarf2-cfi-asm -o CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -x c /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c]
-        ignore line: [clang -cc1 version 21.0.0 (clang-2100.3.34.2) default target arm64-apple-darwin25.6.0]
+        ignore line: [ "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang" -cc1 -triple arm64-apple-macosx10.14.0 -Wundef-prefix=TARGET_OS_ -Wdeprecated-objc-isa-usage -Werror=deprecated-objc-isa-usage -Werror=implicit-function-declaration -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCCompilerABI.c -mrelocation-model pic -pic-level 2 -mframe-pointer=non-leaf -fno-strict-return -ffp-contract=on -fno-rounding-math -funwind-tables=1 -fobjc-msgsend-selector-stubs -fno-sized-deallocation -target-sdk-version=27.0 -fdepfile-entry=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/SDKSettings.json -fvisibility-inlines-hidden-static-local-var -fno-modulemap-allow-subdirectory-search -fdefine-target-os-macros -fno-assume-unique-vtables -fno-modulemap-allow-subdirectory-search -enable-tlsdesc -target-cpu apple-m1 -target-feature +v8.5a -target-feature +aes -target-feature +altnzcv -target-feature +ccdp -target-feature +ccpp -target-feature +complxnum -target-feature +crc -target-feature +dotprod -target-feature +flagm -target-feature +fp-armv8 -target-feature +fp16fml -target-feature +fptoint -target-feature +fullfp16 -target-feature +jsconv -target-feature +lse -target-feature +neon -target-feature +pauth -target-feature +perfmon -target-feature +predres -target-feature +ras -target-feature +rcpc -target-feature +rdm -target-feature +sb -target-feature +sha2 -target-feature +sha3 -target-feature +specrestrict -target-feature +ssbs -target-abi darwinpcs -debugger-tuning=lldb "-fdebug-compilation-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-1yEDJx" -target-linker-version 1166.2 -v "-fcoverage-compilation-dir=/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-1yEDJx" -resource-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21 -dependency-file CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o.d -skip-unused-modulemap-deps -MT CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o -sys-header-deps -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -I/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/local/include -internal-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include -internal-externc-isystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/SubFrameworks -internal-iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/Library/Frameworks -Wno-elaborated-enum-base -ferror-limit 19 -stack-protector 1 -fstack-check -mdarwin-stkchk-strong-link -fblocks -fencode-extended-block-signature -fregister-global-dtors-with-atexit -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fmax-type-align=16 -fcommon -clang-vendor-feature=+disableNonDependentMemberExprInCurrentInstantiation -fno-odr-hash-protocols -clang-vendor-feature=+enableAggressiveVLAFolding -clang-vendor-feature=+revert09abecef7bbf -clang-vendor-feature=+thisNoAlignAttr -clang-vendor-feature=+thisNoNullAttr -clang-vendor-feature=+disableAtImportPrivateFrameworkInImplementationError -Wno-error=allocator-wrappers -fdwarf2-cfi-asm -o CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o -x c /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c]
+        ignore line: [clang -cc1 version 21.0.0 (clang-2100.3.34.2) default target arm64-apple-darwin27.0.0]
         ignore line: [ignoring nonexistent directory "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/local/include"]
         ignore line: [ignoring nonexistent directory "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/Library/Frameworks"]
         ignore line: [#include "..." search starts here:]
@@ -1325,13 +1325,13 @@ events:
         ignore line: [ /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks (framework directory)]
         ignore line: [ /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/SubFrameworks (framework directory)]
         ignore line: [End of search list.]
-        ignore line: [Linking C executable cmTC_b1499]
-        ignore line: [/opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b1499.dir/link.txt --verbose=1]
+        ignore line: [Linking C executable cmTC_5deb9]
+        ignore line: [/opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_5deb9.dir/link.txt --verbose=1]
         ignore line: [Apple clang version 21.0.0 (clang-2100.3.34.2)]
-        ignore line: [Target: arm64-apple-darwin25.6.0]
+        ignore line: [Target: arm64-apple-darwin27.0.0]
         ignore line: [Thread model: posix]
         ignore line: [InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin]
-        link line: [ "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld" -demangle -lto_library /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libLTO.dylib -dynamic -arch arm64 -platform_version macos 11.0.0 27.0 -syslibroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -mllvm -enable-linkonceodr-outlining -o cmTC_b1499 -L/usr/local/lib -search_paths_first -headerpad_max_install_names -v CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o -lSystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/lib/darwin/libclang_rt.osx.a]
+        link line: [ "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld" -demangle -lto_library /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libLTO.dylib -dynamic -arch arm64 -platform_version macos 11.0.0 27.0 -syslibroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -mllvm -enable-linkonceodr-outlining -o cmTC_5deb9 -L/usr/local/lib -search_paths_first -headerpad_max_install_names -v CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o -lSystem /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/lib/darwin/libclang_rt.osx.a]
           arg [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld] ==> ignore
           arg [-demangle] ==> ignore
           arg [-lto_library] ==> ignore, skip following value
@@ -1348,12 +1348,12 @@ events:
           arg [-mllvm] ==> ignore
           arg [-enable-linkonceodr-outlining] ==> ignore
           arg [-o] ==> ignore
-          arg [cmTC_b1499] ==> ignore
+          arg [cmTC_5deb9] ==> ignore
           arg [-L/usr/local/lib] ==> dir [/usr/local/lib]
           arg [-search_paths_first] ==> ignore
           arg [-headerpad_max_install_names] ==> ignore
           arg [-v] ==> ignore
-          arg [CMakeFiles/cmTC_b1499.dir/CMakeCCompilerABI.c.o] ==> ignore
+          arg [CMakeFiles/cmTC_5deb9.dir/CMakeCCompilerABI.c.o] ==> ignore
           arg [-lSystem] ==> lib [System]
           arg [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/lib/darwin/libclang_rt.osx.a] ==> lib [/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/lib/darwin/libclang_rt.osx.a]
         linker tool for 'C': /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld
@@ -1382,7 +1382,7 @@ events:
     message: |
       Running the C compiler's linker: "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld" "-v"
       @(#)PROGRAM:ld PROJECT:ld-27037.1
-      BUILD 21:17:51 Aug 25 2026
+      BUILD 12:05:32 Aug 17 2026
       configured to support archs: armv6 armv7 armv7s arm64 arm64e arm64_32 i386 x86_64 x86_64h armv6m armv7k armv7m armv7em armv8m.main armv8.1m.main
       LTO support using: LLVM version 21.0.0 (static support for 30, runtime is 30)
       TAPI support using: Apple TAPI version 21.0.0 (tapi-2100.3.8.1)
@@ -1394,13 +1394,13 @@ events:
     checks:
       - "Looking for stdbool.h"
     directories:
-      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-AlB8uZ"
-      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-AlB8uZ"
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-gRQG8l"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-gRQG8l"
     cmakeVariables:
       CMAKE_C_FLAGS: ""
       CMAKE_C_FLAGS_DEBUG: "-g"
       CMAKE_EXE_LINKER_FLAGS: ""
-      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/cmake"
+      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/cmake"
       CMAKE_OSX_ARCHITECTURES: "arm64"
       CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
       CMAKE_OSX_SYSROOT: ""
@@ -1408,15 +1408,15 @@ events:
       variable: "HAVE_STDBOOL_H"
       cached: true
       stdout: |
-        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-AlB8uZ'
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-gRQG8l'
         
-        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_5b854/fast
-        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_5b854.dir/build.make CMakeFiles/cmTC_5b854.dir/build
-        Building C object CMakeFiles/cmTC_5b854.dir/CheckIncludeFile.c.o
-        /usr/bin/cc   -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_5b854.dir/CheckIncludeFile.c.o -MF CMakeFiles/cmTC_5b854.dir/CheckIncludeFile.c.o.d -o CMakeFiles/cmTC_5b854.dir/CheckIncludeFile.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-AlB8uZ/CheckIncludeFile.c"
-        Linking C executable cmTC_5b854
-        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_5b854.dir/link.txt --verbose=1
-        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_5b854.dir/CheckIncludeFile.c.o -o cmTC_5b854
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_1b083/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_1b083.dir/build.make CMakeFiles/cmTC_1b083.dir/build
+        Building C object CMakeFiles/cmTC_1b083.dir/CheckIncludeFile.c.o
+        /usr/bin/cc   -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_1b083.dir/CheckIncludeFile.c.o -MF CMakeFiles/cmTC_1b083.dir/CheckIncludeFile.c.o.d -o CMakeFiles/cmTC_1b083.dir/CheckIncludeFile.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-gRQG8l/CheckIncludeFile.c"
+        Linking C executable cmTC_1b083
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_1b083.dir/link.txt --verbose=1
+        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_1b083.dir/CheckIncludeFile.c.o -o cmTC_1b083
         
       exitCode: 0
   -
@@ -1427,13 +1427,13 @@ events:
     checks:
       - "Looking for unistd.h"
     directories:
-      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-MigUya"
-      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-MigUya"
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-rSKTeu"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-rSKTeu"
     cmakeVariables:
       CMAKE_C_FLAGS: ""
       CMAKE_C_FLAGS_DEBUG: "-g"
       CMAKE_EXE_LINKER_FLAGS: ""
-      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/cmake"
+      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/cmake"
       CMAKE_OSX_ARCHITECTURES: "arm64"
       CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
       CMAKE_OSX_SYSROOT: ""
@@ -1441,15 +1441,15 @@ events:
       variable: "HAVE_UNISTD_H"
       cached: true
       stdout: |
-        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-MigUya'
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-rSKTeu'
         
-        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_cd123/fast
-        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_cd123.dir/build.make CMakeFiles/cmTC_cd123.dir/build
-        Building C object CMakeFiles/cmTC_cd123.dir/CheckIncludeFile.c.o
-        /usr/bin/cc   -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_cd123.dir/CheckIncludeFile.c.o -MF CMakeFiles/cmTC_cd123.dir/CheckIncludeFile.c.o.d -o CMakeFiles/cmTC_cd123.dir/CheckIncludeFile.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-MigUya/CheckIncludeFile.c"
-        Linking C executable cmTC_cd123
-        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_cd123.dir/link.txt --verbose=1
-        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_cd123.dir/CheckIncludeFile.c.o -o cmTC_cd123
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_60ece/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_60ece.dir/build.make CMakeFiles/cmTC_60ece.dir/build
+        Building C object CMakeFiles/cmTC_60ece.dir/CheckIncludeFile.c.o
+        /usr/bin/cc   -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_60ece.dir/CheckIncludeFile.c.o -MF CMakeFiles/cmTC_60ece.dir/CheckIncludeFile.c.o.d -o CMakeFiles/cmTC_60ece.dir/CheckIncludeFile.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-rSKTeu/CheckIncludeFile.c"
+        Linking C executable cmTC_60ece
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_60ece.dir/link.txt --verbose=1
+        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_60ece.dir/CheckIncludeFile.c.o -o cmTC_60ece
         
       exitCode: 0
   -
@@ -1460,13 +1460,13 @@ events:
     checks:
       - "Looking for immintrin.h"
     directories:
-      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va"
-      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va"
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-iiZVyD"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-iiZVyD"
     cmakeVariables:
       CMAKE_C_FLAGS: ""
       CMAKE_C_FLAGS_DEBUG: "-g"
       CMAKE_EXE_LINKER_FLAGS: ""
-      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/cmake"
+      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/cmake"
       CMAKE_OSX_ARCHITECTURES: "arm64"
       CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
       CMAKE_OSX_SYSROOT: ""
@@ -1474,23 +1474,23 @@ events:
       variable: "HAVE_IMMINTRIN_H"
       cached: true
       stdout: |
-        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va'
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-iiZVyD'
         
-        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_3d9a6/fast
-        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_3d9a6.dir/build.make CMakeFiles/cmTC_3d9a6.dir/build
-        Building C object CMakeFiles/cmTC_3d9a6.dir/CheckIncludeFile.c.o
-        /usr/bin/cc   -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_3d9a6.dir/CheckIncludeFile.c.o -MF CMakeFiles/cmTC_3d9a6.dir/CheckIncludeFile.c.o.d -o CMakeFiles/cmTC_3d9a6.dir/CheckIncludeFile.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va/CheckIncludeFile.c"
-        In file included from /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va/CheckIncludeFile.c:1:
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_b62fd/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_b62fd.dir/build.make CMakeFiles/cmTC_b62fd.dir/build
+        Building C object CMakeFiles/cmTC_b62fd.dir/CheckIncludeFile.c.o
+        /usr/bin/cc   -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_b62fd.dir/CheckIncludeFile.c.o -MF CMakeFiles/cmTC_b62fd.dir/CheckIncludeFile.c.o.d -o CMakeFiles/cmTC_b62fd.dir/CheckIncludeFile.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-iiZVyD/CheckIncludeFile.c"
+        In file included from /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-iiZVyD/CheckIncludeFile.c:1:
         /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/immintrin.h:14:2: error: "This header is only meant to be used on x86 and x64 architecture"
            14 | #error "This header is only meant to be used on x86 and x64 architecture"
               |  ^
-        In file included from /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va/CheckIncludeFile.c:1:
+        In file included from /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-iiZVyD/CheckIncludeFile.c:1:
         In file included from /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/immintrin.h:17:
         In file included from /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/x86gprintrin.h:13:
         /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/hresetintrin.h:42:27: error: invalid input constraint 'a' in asm
            42 |   __asm__ ("hreset $0" :: "a"(__eax));
               |                           ^
-        In file included from /Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-37p9va/CheckIncludeFile.c:1:
+        In file included from /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-iiZVyD/CheckIncludeFile.c:1:
         In file included from /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/immintrin.h:19:
         /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/mmintrin.h:14:2: error: "This header is only meant to be used on x86 and x64 architecture"
            14 | #error "This header is only meant to be used on x86 and x64 architecture"
@@ -1625,8 +1625,8 @@ events:
               |                                   ^~~~~~~~~~~
         fatal error: too many errors emitted, stopping now [-ferror-limit=]
         20 errors generated.
-        make[1]: *** [CMakeFiles/cmTC_3d9a6.dir/CheckIncludeFile.c.o] Error 1
-        make: *** [cmTC_3d9a6/fast] Error 2
+        make[1]: *** [CMakeFiles/cmTC_b62fd.dir/CheckIncludeFile.c.o] Error 1
+        make: *** [cmTC_b62fd/fast] Error 2
         
       exitCode: 2
   -
@@ -1682,9 +1682,9 @@ events:
       - "/usr/"
       - "/bin/"
       - "/sbin/"
-      - "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate/bin/"
-      - "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate/sbin/"
-      - "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate/"
+      - "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate/bin/"
+      - "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate/sbin/"
+      - "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate/"
       - "/usr/X11R6/bin/"
       - "/usr/X11R6/sbin/"
       - "/usr/X11R6/"
@@ -1725,7 +1725,7 @@ events:
         - "/usr/local/share/dotnet"
         - "~/.dotnet/tools"
         - "/Library/Frameworks/Mono.framework/Versions/Current/Commands"
-      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+      CMAKE_INSTALL_PREFIX: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
       CMAKE_SYSTEM_PREFIX_PATH:
         - "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr"
         - "/opt/homebrew"
@@ -1733,7 +1733,7 @@ events:
         - "/usr"
         - "/"
         - "/opt/homebrew"
-        - "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/csound-install/arm64-deps/samplerate"
+        - "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/arm64-deps/samplerate"
         - "/usr/X11R6"
         - "/usr/pkg"
         - "/opt"
@@ -1753,13 +1753,13 @@ events:
     checks:
       - "Performing Test CPU_CLIPS_POSITIVE"
     directories:
-      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-NERu2W"
-      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-NERu2W"
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-ippGLY"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-ippGLY"
     cmakeVariables:
       CMAKE_C_FLAGS: ""
       CMAKE_C_FLAGS_DEBUG: "-g"
       CMAKE_EXE_LINKER_FLAGS: ""
-      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/cmake"
+      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/cmake"
       CMAKE_OSX_ARCHITECTURES: "arm64"
       CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
       CMAKE_OSX_SYSROOT: ""
@@ -1767,15 +1767,15 @@ events:
       variable: "CPU_CLIPS_POSITIVE_COMPILED"
       cached: true
       stdout: |
-        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-NERu2W'
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-ippGLY'
         
-        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_c550d/fast
-        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_c550d.dir/build.make CMakeFiles/cmTC_c550d.dir/build
-        Building C object CMakeFiles/cmTC_c550d.dir/src.c.o
-        /usr/bin/cc -DCPU_CLIPS_POSITIVE  -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_c550d.dir/src.c.o -MF CMakeFiles/cmTC_c550d.dir/src.c.o.d -o CMakeFiles/cmTC_c550d.dir/src.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-NERu2W/src.c"
-        Linking C executable cmTC_c550d
-        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c550d.dir/link.txt --verbose=1
-        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_c550d.dir/src.c.o -o cmTC_c550d
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_2c0a3/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_2c0a3.dir/build.make CMakeFiles/cmTC_2c0a3.dir/build
+        Building C object CMakeFiles/cmTC_2c0a3.dir/src.c.o
+        /usr/bin/cc -DCPU_CLIPS_POSITIVE  -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_2c0a3.dir/src.c.o -MF CMakeFiles/cmTC_2c0a3.dir/src.c.o.d -o CMakeFiles/cmTC_2c0a3.dir/src.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-ippGLY/src.c"
+        Linking C executable cmTC_2c0a3
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2c0a3.dir/link.txt --verbose=1
+        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_2c0a3.dir/src.c.o -o cmTC_2c0a3
         
       exitCode: 0
     runResult:
@@ -1794,13 +1794,13 @@ events:
     checks:
       - "Performing Test CPU_CLIPS_NEGATIVE"
     directories:
-      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-EEy7tZ"
-      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-EEy7tZ"
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-13M8On"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-13M8On"
     cmakeVariables:
       CMAKE_C_FLAGS: ""
       CMAKE_C_FLAGS_DEBUG: "-g"
       CMAKE_EXE_LINKER_FLAGS: ""
-      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/cmake"
+      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/cmake"
       CMAKE_OSX_ARCHITECTURES: "arm64"
       CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
       CMAKE_OSX_SYSROOT: ""
@@ -1808,15 +1808,15 @@ events:
       variable: "CPU_CLIPS_NEGATIVE_COMPILED"
       cached: true
       stdout: |
-        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-EEy7tZ'
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-13M8On'
         
-        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_bef19/fast
-        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_bef19.dir/build.make CMakeFiles/cmTC_bef19.dir/build
-        Building C object CMakeFiles/cmTC_bef19.dir/src.c.o
-        /usr/bin/cc -DCPU_CLIPS_NEGATIVE  -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_bef19.dir/src.c.o -MF CMakeFiles/cmTC_bef19.dir/src.c.o.d -o CMakeFiles/cmTC_bef19.dir/src.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-EEy7tZ/src.c"
-        Linking C executable cmTC_bef19
-        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_bef19.dir/link.txt --verbose=1
-        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_bef19.dir/src.c.o -o cmTC_bef19
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_6e421/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_6e421.dir/build.make CMakeFiles/cmTC_6e421.dir/build
+        Building C object CMakeFiles/cmTC_6e421.dir/src.c.o
+        /usr/bin/cc -DCPU_CLIPS_NEGATIVE  -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_6e421.dir/src.c.o -MF CMakeFiles/cmTC_6e421.dir/src.c.o.d -o CMakeFiles/cmTC_6e421.dir/src.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-13M8On/src.c"
+        Linking C executable cmTC_6e421
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_6e421.dir/link.txt --verbose=1
+        /usr/bin/cc  -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_6e421.dir/src.c.o -o cmTC_6e421
         
       exitCode: 0
     runResult:
@@ -1834,13 +1834,13 @@ events:
     checks:
       - "Performing Test HAVE_VISIBILITY"
     directories:
-      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-RizahD"
-      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-RizahD"
+      source: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-DEx21f"
+      binary: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-DEx21f"
     cmakeVariables:
       CMAKE_C_FLAGS: ""
       CMAKE_C_FLAGS_DEBUG: "-g"
       CMAKE_EXE_LINKER_FLAGS: ""
-      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/src/cmake"
+      CMAKE_MODULE_PATH: "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/src/cmake"
       CMAKE_OSX_ARCHITECTURES: "arm64"
       CMAKE_OSX_DEPLOYMENT_TARGET: "10.14"
       CMAKE_OSX_SYSROOT: ""
@@ -1848,15 +1848,15 @@ events:
       variable: "HAVE_VISIBILITY"
       cached: true
       stdout: |
-        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-RizahD'
+        Change Dir: '/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-DEx21f'
         
-        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_83630/fast
-        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_83630.dir/build.make CMakeFiles/cmTC_83630.dir/build
-        Building C object CMakeFiles/cmTC_83630.dir/src.c.o
-        /usr/bin/cc -DHAVE_VISIBILITY  -fvisibility=hidden -Werror -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_83630.dir/src.c.o -MF CMakeFiles/cmTC_83630.dir/src.c.o.d -o CMakeFiles/cmTC_83630.dir/src.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/Csound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-RizahD/src.c"
-        Linking C executable cmTC_83630
-        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_83630.dir/link.txt --verbose=1
-        /usr/bin/cc  -fvisibility=hidden -Werror -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_83630.dir/src.c.o -o cmTC_83630
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_e2222/fast
+        /Applications/Xcode.app/Contents/Developer/usr/bin/make  -f CMakeFiles/cmTC_e2222.dir/build.make CMakeFiles/cmTC_e2222.dir/build
+        Building C object CMakeFiles/cmTC_e2222.dir/src.c.o
+        /usr/bin/cc -DHAVE_VISIBILITY  -fvisibility=hidden -Werror -std=gnu99 -arch arm64 -mmacosx-version-min=10.14 -MD -MT CMakeFiles/cmTC_e2222.dir/src.c.o -MF CMakeFiles/cmTC_e2222.dir/src.c.o.d -o CMakeFiles/cmTC_e2222.dir/src.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/samplerate-static/build-arm64/CMakeFiles/CMakeScratch/TryCompile-DEx21f/src.c"
+        Linking C executable cmTC_e2222
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_e2222.dir/link.txt --verbose=1
+        /usr/bin/cc  -fvisibility=hidden -Werror -arch arm64 -mmacosx-version-min=10.14 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_e2222.dir/src.c.o -o cmTC_e2222
         
       exitCode: 0
 ...
