@@ -613,6 +613,81 @@ void CsoundAudioProcessor::syncChannel (CSOUND* cs, int index, const juce::Strin
     }
 }
 
+void CsoundAudioProcessor::warnAudioChannelConflicts (const juce::String& csdText)
+{
+    // Nomi dei canali mappati sui parametri (tutti i tipi di slot).
+    juce::StringArray names;
+    {
+        const juce::ScopedLock sl (channelParamSlotsLock);
+        for (const auto& s : channelParamSlots) if (s.channelName.isNotEmpty()) names.addIfNotAlreadyThere (s.channelName);
+    }
+    {
+        const juce::ScopedLock sl (intParamSlotsLock);
+        for (const auto& s : intParamSlots) if (s.channelName.isNotEmpty()) names.addIfNotAlreadyThere (s.channelName);
+    }
+    {
+        const juce::ScopedLock sl (boolParamSlotsLock);
+        for (const auto& s : boolParamSlots) if (s.channelName.isNotEmpty()) names.addIfNotAlreadyThere (s.channelName);
+    }
+    {
+        const juce::ScopedLock sl (choiceParamSlotsLock);
+        for (const auto& s : choiceParamSlots) if (s.channelName.isNotEmpty()) names.addIfNotAlreadyThere (s.channelName);
+    }
+
+    if (names.isEmpty())
+        return;
+
+    // Solo l'orchestra, senza commenti (; // e /* */) e senza stringhe
+    // diverse dai nomi cercati - basta togliere i commenti.
+    auto code = csdText.fromFirstOccurrenceOf ("<CsInstruments>", false, false)
+                       .upToFirstOccurrenceOf ("</CsInstruments>", false, false);
+    if (code.isEmpty())
+        code = csdText;
+
+    std::string src = code.toStdString();
+    src = std::regex_replace (src, std::regex (R"(/\*[\s\S]*?\*/)"), " ");
+    src = std::regex_replace (src, std::regex (R"((;|//)[^\n]*)"), "");
+
+    auto escape = [] (const juce::String& n)
+    {
+        std::string out;
+        for (auto c : n.toStdString())
+        {
+            if (std::strchr (R"(\^$.|?*+()[]{}-)", c) != nullptr)
+                out += '\\';
+            out += c;
+        }
+        return out;
+    };
+
+    for (const auto& name : names)
+    {
+        const auto q = "\"" + escape (name) + "\"";
+        // Variabile audio: aXxx / gaXxx (sintassi classica) o xxx:a (Csound 7).
+        const std::string avar = R"((?:\bg?a\w*|\b\w+:a)(?:\[\])*)";
+
+        const std::regex patterns[] = {
+            std::regex (avar + R"(\s*(?:=\s*)?chnget(?::a)?\s*\(?\s*)" + q),          // asig chnget "x" / asig = chnget("x")
+            std::regex (R"(\bchnget:a\s*\(\s*)" + q),                                 // chnget:a("x")
+            std::regex (R"(\bchn(?:set|mix)(?::a)?\s*\(?\s*)" + avar + R"(\s*,\s*)" + q), // chnset asig, "x"
+            std::regex (R"(\bchn_a\s*\(?\s*)" + q),                                   // chn_a "x", ...
+        };
+
+        for (const auto& re : patterns)
+        {
+            if (std::regex_search (src, re))
+            {
+                handleMessage ("Warning: channel \"" + name + "\" is a parameter (control channel) "
+                               "but the code uses it as an AUDIO channel. A Csound channel has one type: "
+                               "the audio chnget/chnset will fail (\"channel already exists with an "
+                               "incompatible type\"). Use a different name for the audio bus, or read the "
+                               "parameter as k and convert it: a(chnget:k(\"" + name + "\")).");
+                break;
+            }
+        }
+    }
+}
+
 void CsoundAudioProcessor::pushChannelParametersToCsound (CSOUND* cs)
 {
     // Nuovo motore: tutti i canali vanno riscritti dall'host.
@@ -1186,6 +1261,8 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
         suspendProcessing (false);
         return;
     }
+
+    warnAudioChannelConflicts (newCsdText);
 
     // csoundGetNchnls/csoundGetNchnlsInput non esistono piu': un'unica
     // CsoundAPI::csoundGetChannels(cs, isInput) le sostituisce entrambe.

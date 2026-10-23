@@ -1021,6 +1021,13 @@ private:
     // garanzie real-time piu' rigorose.
     void pushChannelParametersToCsound (CSOUND* cs);
 
+    // Dopo ogni compilazione: avvisa in console se il nome di un parametro e'
+    // usato nel codice anche come canale AUDIO (chnget/chnset/chnmix con
+    // variabili a, chn_a). I canali dei parametri sono di controllo (k) e un
+    // canale Csound ha un solo tipo: Csound rifiuta l'uso audio con
+    // "channel already exists with an incompatible type".
+    void warnAudioChannelConflicts (const juce::String& csdText);
+
     // csoundSetMessageCallback (stile printf/va_list) esiste ancora,
     // invariata, in questo branch di Csound 7 (verificato in csound.h):
     // qui dobbiamo formattarlo noi con vsnprintf. csoundSetMessageStringCallback
