@@ -1645,6 +1645,61 @@ juce::File CsoundAudioProcessor::getBaseFolder()
     return folder;
 }
 
+juce::File CsoundAudioProcessor::getCsdFolder()       { return getBaseFolder().getChildFile ("CSD"); }
+juce::File CsoundAudioProcessor::getUserCsdFolder()   { return getCsdFolder().getChildFile ("User"); }
+juce::File CsoundAudioProcessor::getExamplesFolder()  { return getCsdFolder().getChildFile ("Examples"); }
+
+namespace
+{
+    // Versione dello zip degli esempi (Resources/Examples.zip, vedi
+    // scripts/make_examples_zip.sh): aumentarla quando lo zip cambia, cosi'
+    // gli esempi nuovi vengono estratti anche a chi ha gia' la cartella.
+    constexpr int kExamplesVersion = 2;   // 2: + ape/
+    const char* const kExamplesVersionKey = "examplesVersion";
+}
+
+bool CsoundAudioProcessor::installExamples (bool overwrite)
+{
+    auto dest = getExamplesFolder();
+
+    if (! dest.createDirectory())
+        return false;
+
+    getUserCsdFolder().createDirectory();
+
+    juce::MemoryInputStream zipStream (BinaryData::Examples_zip, (size_t) BinaryData::Examples_zipSize, false);
+    juce::ZipFile zip (zipStream);
+
+    const auto result = zip.uncompressTo (dest, overwrite);
+
+    // Zip creati senza "-X" su macOS: niente cartella __MACOSX tra gli esempi.
+    dest.getChildFile ("__MACOSX").deleteRecursively();
+
+    return result.wasOk();
+}
+
+void CsoundAudioProcessor::ensureExamplesInstalled()
+{
+    static bool done = false; // una volta per processo (piu' istanze del plugin)
+
+    if (done)
+        return;
+
+    done = true;
+
+    auto& settings = getUserSettings();
+
+    if (settings.getIntValue (kExamplesVersionKey, 0) >= kExamplesVersion
+        && getExamplesFolder().isDirectory())
+        return;
+
+    if (installExamples (false))
+    {
+        settings.setValue (kExamplesVersionKey, kExamplesVersion);
+        settings.saveIfNeeded();
+    }
+}
+
 juce::PropertiesFile& CsoundAudioProcessor::getUserSettings()
 {
     static std::unique_ptr<juce::PropertiesFile> settings = []

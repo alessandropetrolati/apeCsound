@@ -244,7 +244,7 @@ private:
         Card card;
 
         static constexpr int cardWidth  = 360;
-        static constexpr int cardHeight = 472;
+        static constexpr int cardHeight = 626;
     };
 
     // Guida rapida "apeCsound Guide" (menu principale, prima di "Csound
@@ -838,6 +838,9 @@ private:
     // default nullptr), nessun comportamento diverso per lui.
     void promptSaveSession (std::function<void()> onSaved = nullptr);
     void promptLoadSession();
+    void promptOpenExample();     // Load aperto in apeCsound/CSD/Examples
+    void promptRestoreExamples(); // riestrae gli esempi di fabbrica (con conferma)
+    juce::File getCsdChooserStartDirectory (bool forSave) const;
 
     // "Import Samples..." (tutte le piattaforme): selettore di file (selezione multipla,
     // file audio) e copia nella cartella SSDIR (CsoundAudioProcessor::

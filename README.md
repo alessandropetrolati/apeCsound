@@ -42,6 +42,8 @@ A fixed pool of host-automatable parameters can be mapped to Csound channels and
 - The parameter mapping is saved **inside the `.csd`** in an `<apeCsoundParams>` section after `</CsoundSynthesizer>`. Csound ignores it, so the file stays a valid, portable `.csd`.
 
 ### Sessions
+- **Folders**: sessions live in `~/Documents/apeCsound/CSD` (iOS: App Group container). `CSD/User` is the default for Save / Save As; Load opens `CSD`. If the session is linked to a file, the choosers open its folder instead.
+- **Examples**: the factory examples (Cabbage and CsoundQt collections, see `README_Examples.md`) are built into the binary (`Resources/Examples.zip`, made with `scripts/make_examples_zip.sh`) and extracted to `CSD/Examples` on first launch, without overwriting existing files. **Open Example...** and **Restore Examples** are in the file capsule menu.
 - **Load CSD**, **Save**, **Save As…** and **Initialize Session** from the main menu, plus drag & drop of `.csd` files onto the window.
 - The DAW project stores the path of the linked `.csd`, a backup copy of the session and the parameter values. **The file on disk is the source of truth.** When the project is reopened, the file is loaded if it exists. The backup copy is used only if the file is missing, or if the session had unsaved changes when the project was saved.
 - A toolbar indicator shows the linked file, where it lives, and a `•` when there are unsaved changes.

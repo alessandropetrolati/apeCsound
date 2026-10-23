@@ -594,6 +594,25 @@ public:
     // entitlement da aggiungere al progetto). Creata se manca.
     static juce::File getBaseFolder();
 
+    /** Sessioni .csd dentro getBaseFolder():
+          CSD/User      - le sessioni dell'utente (Save / Save As di default)
+          CSD/Examples  - esempi di fabbrica (Cabbage, CsoundQt), estratti da
+                          BinaryData::Examples_zip; apeCsound non scrive mai
+                          in CSD/User.
+        Nessuna di queste funzioni crea le cartelle. */
+    static juce::File getCsdFolder();
+    static juce::File getUserCsdFolder();
+    static juce::File getExamplesFolder();
+
+    /** Estrae gli esempi di fabbrica in getExamplesFolder(). overwrite =
+        false: i file gia' presenti (magari modificati) restano. Restituisce
+        false se l'estrazione fallisce. Thread dei messaggi. */
+    static bool installExamples (bool overwrite);
+
+    /** Al primo avvio (o quando cambia kExamplesVersion) estrae gli esempi
+        senza sovrascrivere nulla. Una volta per processo, thread dei messaggi. */
+    static void ensureExamplesInstalled();
+
     /** Cartella dei campioni audio: getBaseFolder()/SSDIR (macOS:
         ~/Documents/apeCsound/SSDIR; iOS: container dell'App Group, condiviso
         fra app e AUv3). Creata se non esiste. compileAndStart la passa a

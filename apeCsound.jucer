@@ -13,6 +13,7 @@
   <MAINGROUP id="tNvtiW" name="apeCsound">
     <GROUP id="{9680A1AA-7764-28DB-226D-D2086CE2E1B8}" name="Resources">
       <FILE id="QhPr70" name="cs-icon.png" compile="0" resource="1" file="Resources/cs-icon.png"/>
+      <FILE id="exZip1" name="Examples.zip" compile="0" resource="1" file="Resources/Examples.zip"/>
     </GROUP>
     <GROUP id="{B758FDEB-C949-26EA-A6AE-DAFC286B8E61}" name="Source">
       <FILE id="BgNYCB" name="PluginProcessor.cpp" compile="1" resource="0"

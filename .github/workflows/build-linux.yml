@@ -67,7 +67,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: build/csound-install/linux
-          key: csound-linux-ubuntu2204-${{ hashFiles('scripts/build_csound_static_linux.sh') }}
+          key: csound-linux-ubuntu2204-${{ hashFiles('scripts/build_csound_static_linux.sh', 'scripts/patch_csound_static_osc.py') }}
 
       - name: Build Csound (static)
         if: steps.csound-cache.outputs.cache-hit != 'true'

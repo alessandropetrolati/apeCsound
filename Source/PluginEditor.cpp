@@ -117,13 +117,6 @@ namespace
     // apertura". Niente piu' "ricorda l'ultima cartella usata" (il vecchio
     // juce::PropertiesFile e' stato rimosso): salvando li' dentro il path
     // nello stato del progetto resta relativo, quindi portabile.
-    juce::File getCsdChooserStartDirectory()
-    {
-        // La cartella viene creata QUI, solo quando serve davvero (punto 10).
-        auto folder = CsoundAudioProcessor::getBaseFolder();
-        folder.createDirectory();
-        return folder;
-    }
 
     // Preferenze dell'UTENTE (non del progetto): poche opzioni di
     // visualizzazione valide per ogni istanza del plugin, es. la sintassi
@@ -361,6 +354,11 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.setVisible (showingParameterPanel);
     sidebarDivider.setVisible (showingParameterPanel);
 
+    // Esempi di fabbrica in apeCsound/CSD/Examples al primo avvio (o quando
+    // cambia la versione dello zip), senza sovrascrivere nulla. Differito: non
+    // rallenta l'apertura della finestra.
+    juce::MessageManager::callAsync ([] { CsoundAudioProcessor::ensureExamplesInstalled(); });
+
     // Menu hamburger: riparentato QUI (richiesta esplicita: vive nella
     // toolbar principale, non dentro il pannello) - vedi il commento su
     // panelToolbarButtonDiameter in PluginEditor.h. setLookAndFeel()
@@ -568,79 +566,74 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
         audioProcessor.setFollowCsdChannels (! audioProcessor.isFollowingCsdChannels());
     };
 
-    // Clic sulla capsula del file: Save / Save as... (stesse azioni del
-    // menu principale, vedi performSaveLinked/promptSaveSession).
+    // Clic sulla capsula del file: menu File, in gruppi separati nell'ordine
+    // classico New / Open / Save, poi i file di supporto e la manutenzione:
+    //   1. Init Session Clear, Init Session Template
+    //   2. Load..., Open Example...
+    //   3. Save, Save as...
+    //   4. Reveal in Finder (desktop), Import Files..., Export Files... (iOS)
+    //   5. Restore Examples
+    // Gli id restano quelli storici (vedi lo switch sotto).
     sessionFileLabel.onClick = [this]
     {
         std::vector<CsoundActionSheetItem> items;
+
+        auto add = [&items] (int id, const juce::String& text, CsoundActionSheetIcon icon,
+                             const juce::String& shortcut = {}, bool enabled = true)
         {
             CsoundActionSheetItem item;
-            item.id = 1; item.text = "Save"; item.icon = CsoundActionSheetIcon::save;
-            item.shortcut = CsoundShortcuts::label (CsoundShortcuts::save());
+            item.id = id; item.text = text; item.icon = icon;
+            item.shortcut = shortcut; item.enabled = enabled;
             items.push_back (item);
-        }
-        {
-            CsoundActionSheetItem item;
-            item.id = 2; item.text = "Save as..."; item.icon = CsoundActionSheetIcon::save;
-            item.shortcut = CsoundShortcuts::label (CsoundShortcuts::saveAs());
-            items.push_back (item);
-        }
+        };
+
+        // 1. Nuova sessione
+        add (5, "Init Session Clear", CsoundActionSheetIcon::newDocument,
+             CsoundShortcuts::label (CsoundShortcuts::newSession()));
+        add (4, "Init Session Template", CsoundActionSheetIcon::newDocument);
+
+        // 2. Apri (Open Example: chooser aperto in apeCsound/CSD/Examples)
         items.push_back (CsoundActionSheetItem::separator());
-        {
-            CsoundActionSheetItem item;
-            item.id = 3; item.text = "Load..."; item.icon = CsoundActionSheetIcon::load;
-            item.shortcut = CsoundShortcuts::label (CsoundShortcuts::load());
-            items.push_back (item);
-        }
-        {
-            // Tutte le piattaforme: copia file nelle cartelle di Csound, scelte
-            // dall'estensione (audio -> SSDIR, .udo/.inc/.orc -> INCDIR, analisi
-            // -> SADIR), dove Csound li trova per nome. Su iOS e' l'unico modo
-            // (il container dell'App Group non si vede in File).
-            CsoundActionSheetItem item;
-            item.id = 7; item.text = "Import Files...";
-            item.icon = CsoundActionSheetIcon::waveform;
-            items.push_back (item);
-        }
-       #if JUCE_IOS
-        {
-            // iOS: condivide i file scritti da Csound (SFDIR), che l'app File non vede.
-            CsoundActionSheetItem item;
-            item.id = 8; item.text = "Export Files...";
-            item.icon = CsoundActionSheetIcon::save;
-            items.push_back (item);
-        }
-       #endif
+        add (3, "Load...", CsoundActionSheetIcon::load,
+             CsoundShortcuts::label (CsoundShortcuts::load()));
+        add (9, "Open Example...", CsoundActionSheetIcon::book);
+
+        // 3. Salva (Save as: chooser aperto in apeCsound/CSD/User)
+        items.push_back (CsoundActionSheetItem::separator());
+        add (1, "Save", CsoundActionSheetIcon::save,
+             CsoundShortcuts::label (CsoundShortcuts::save()));
+        add (2, "Save as...", CsoundActionSheetIcon::save,
+             CsoundShortcuts::label (CsoundShortcuts::saveAs()));
+
+        // 4. File di supporto
+        items.push_back (CsoundActionSheetItem::separator());
        #if ! JUCE_IOS
+        // Mostra il .csd collegato nel file manager di sistema; disabilitata
+        // se la sessione non ha un file o il file non esiste piu'.
         {
-            // Mostra il .csd collegato nel file manager di sistema (Finder /
-            // Esplora file); disabilitata se la sessione non ha un file o il
-            // file non esiste piu'. Non su iOS: non c'e' un Finder.
-            CsoundActionSheetItem item;
            #if JUCE_MAC
-            item.id = 6; item.text = "Reveal in Finder";
+            const juce::String revealText ("Reveal in Finder");
            #elif JUCE_WINDOWS
-            item.id = 6; item.text = "Show in Explorer";
+            const juce::String revealText ("Show in Explorer");
            #else
-            item.id = 6; item.text = "Show in Folder";
+            const juce::String revealText ("Show in Folder");
            #endif
-            item.icon = CsoundActionSheetIcon::folder;
-            item.enabled = audioProcessor.getLinkedCsdFile().existsAsFile();
-            items.push_back (item);
+            add (6, revealText, CsoundActionSheetIcon::folder, {},
+                 audioProcessor.getLinkedCsdFile().existsAsFile());
         }
        #endif
+        // Copia file nelle cartelle di Csound, scelte dall'estensione (audio ->
+        // SSDIR, .udo/.inc/.orc -> INCDIR, analisi -> SADIR). Su iOS e' l'unico
+        // modo (il container dell'App Group non si vede in File).
+        add (7, "Import Files...", CsoundActionSheetIcon::waveform);
+       #if JUCE_IOS
+        // Condivide i file scritti da Csound (SFDIR), che l'app File non vede.
+        add (8, "Export Files...", CsoundActionSheetIcon::save);
+       #endif
+
+        // 5. Manutenzione
         items.push_back (CsoundActionSheetItem::separator());
-        {
-            CsoundActionSheetItem item;
-            item.id = 5; item.text = "Init Session Clear"; item.icon = CsoundActionSheetIcon::newDocument;
-            item.shortcut = CsoundShortcuts::label (CsoundShortcuts::newSession());
-            items.push_back (item);
-        }
-        {
-            CsoundActionSheetItem item;
-            item.id = 4; item.text = "Init Session Template"; item.icon = CsoundActionSheetIcon::newDocument;
-            items.push_back (item);
-        }
+        add (10, "Restore Examples", CsoundActionSheetIcon::resetDefault);
 
         juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
 
@@ -654,6 +647,8 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
                 case 1: safeThis->performSaveLinked();      break;
                 case 2: safeThis->promptSaveSession();      break;
                 case 3: safeThis->promptLoadSession();      break;
+                case 9: safeThis->promptOpenExample();      break;
+                case 10: safeThis->promptRestoreExamples(); break;
                 case 4: safeThis->promptInitializeSession (true);  break;
                 case 5: safeThis->promptInitializeSession (false); break;
                 case 7: safeThis->importSamples(); break;
@@ -1312,10 +1307,10 @@ void CsoundAudioProcessorEditor::promptSaveSession (std::function<void()> onSave
     // CsoundAudioProcessor::saveSessionToFile in PluginProcessor.h - il
     // codice resta testo Csound puro, il mapping dei parametri va in
     // appendice dentro <CsoundParams>. Cartella di partenza: SEMPRE
-    // ~/Documents/apeCsound (vedi getCsdChooserStartDirectory); come nome
+    // ~/Documents/apeCsound/CSD/User (vedi getCsdChooserStartDirectory); come nome
     // si propone quello del file collegato, se c'e', altrimenti Untitled.csd.
     const auto linked = audioProcessor.getLinkedCsdFile();
-    const auto startingFile = getCsdChooserStartDirectory().getChildFile (
+    const auto startingFile = getCsdChooserStartDirectory (true).getChildFile (
         linked != juce::File{} ? linked.getFileName() : juce::String ("Untitled.csd"));
 
     chooseCsdFile ("Save as...", startingFile, true,
@@ -1700,9 +1695,30 @@ void CsoundAudioProcessorEditor::exportFiles()
 }
 #endif
 
+// Cartella di partenza dei file chooser:
+//  - Save As -> SEMPRE apeCsound/CSD/User (anche se la sessione viene da un
+//    esempio o da un'altra cartella: gli esempi di fabbrica restano intatti);
+//  - Load / Relocate -> cartella del file collegato, se esiste, altrimenti
+//    apeCsound/CSD (si vedono sia User sia Examples).
+// Le cartelle vengono create qui, solo quando servono.
+juce::File CsoundAudioProcessorEditor::getCsdChooserStartDirectory (bool forSave) const
+{
+    CsoundAudioProcessor::getUserCsdFolder().createDirectory(); // crea anche CSD
+
+    if (forSave)
+        return CsoundAudioProcessor::getUserCsdFolder();
+
+    const auto linked = audioProcessor.getLinkedCsdFile();
+
+    if (linked != juce::File{} && linked.getParentDirectory().isDirectory())
+        return linked.getParentDirectory();
+
+    return CsoundAudioProcessor::getCsdFolder();
+}
+
 void CsoundAudioProcessorEditor::promptLoadSession()
 {
-    const auto startingDir = getCsdChooserStartDirectory();
+    const auto startingDir = getCsdChooserStartDirectory (false);
 
     chooseCsdFile ("Load...", startingDir, false,
         [this] (const juce::File& file)
@@ -1710,6 +1726,43 @@ void CsoundAudioProcessorEditor::promptLoadSession()
             if (file != juce::File{}) // non annullato dall'utente
                 loadSessionFile (file);
         });
+}
+
+void CsoundAudioProcessorEditor::promptOpenExample()
+{
+    // Al primo uso gli esempi potrebbero non essere ancora estratti.
+    CsoundAudioProcessor::ensureExamplesInstalled();
+
+    auto dir = CsoundAudioProcessor::getExamplesFolder();
+    if (! dir.isDirectory())
+        dir = getCsdChooserStartDirectory (false);
+
+    chooseCsdFile ("Open Example...", dir, false,
+        [this] (const juce::File& file)
+        {
+            if (file != juce::File{})
+                loadSessionFile (file);
+        });
+}
+
+void CsoundAudioProcessorEditor::promptRestoreExamples()
+{
+    juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
+
+    showNativeTwoButtonAlertAsync (
+        "Restore examples?",
+        "The original examples will be copied again into apeCsound/CSD/Examples, "
+        "replacing any changes made to them. Your own files in CSD/User are not touched.",
+        "Cancel", "Restore",
+        [safeThis] (int choice)
+    {
+        if (safeThis == nullptr || choice != 2)
+            return;
+
+        const bool ok = CsoundAudioProcessor::installExamples (true);
+        safeThis->appendToLog (ok ? "--- Examples restored in " + CsoundAudioProcessor::getExamplesFolder().getFullPathName() + " ---"
+                                  : juce::String ("--- Could not restore the examples ---"));
+    }, this);
 }
 
 bool CsoundAudioProcessorEditor::isInterestedInFileDrag (const juce::StringArray& files)
@@ -2084,7 +2137,7 @@ void CsoundAudioProcessorEditor::InputMutedBar::resized()
 
 void CsoundAudioProcessorEditor::promptRelocateSession()
 {
-    const auto startingDir = getCsdChooserStartDirectory();
+    const auto startingDir = getCsdChooserStartDirectory (false);
 
     chooseCsdFile ("Relocate CSD...", startingDir, false,
         [this] (const juce::File& file)
@@ -2799,16 +2852,37 @@ void CsoundAudioProcessorEditor::AboutView::Card::paint (juce::Graphics& g)
     g.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
     g.drawFittedText ("apeSoft", 0, 234, w, 20, juce::Justification::centred, 1);
 
+    // Credits degli esempi di fabbrica (sintesi di CSD/Examples/README_Examples.md).
+    g.setColour (kAboutBorder);
+    g.fillRect (40, 404, w - 80, 1);
+
+    g.setColour (kAboutTextMuted);
+    g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
+    g.drawFittedText ("EXAMPLES", 0, 412, w, 14, juce::Justification::centred, 1);
+
+    g.setFont (juce::Font (juce::FontOptions (10.5f)));
+    g.drawFittedText ("Cabbage examples by Iain McCurdy (CC BY-NC-SA 4.0),\n"
+                      "from the Cabbage collection by Rory Walsh.\n"
+                      "CsoundQt examples by Iain McCurdy, Joachim Heintz,\n"
+                      "Ren" + uc (0x00E9) + ", Michael Gogins, Tom Banados Russell and others\n"
+                      "(GNU GPL/LGPL), from the CsoundQt collection.\n"
+                      "Partially adapted for apeCsound. Full credits:\n"
+                      "CSD/Examples/README_Examples.md",
+                      16, 430, w - 32, 96, juce::Justification::centred, 7, 0.9f);
+
     // Piede.
+    g.setColour (kAboutBorder);
+    g.fillRect (40, 536, w - 80, 1);
+
     g.setColour (kAboutTextMuted);
     g.setFont (juce::Font (juce::FontOptions (11.5f)));
-    g.drawFittedText ("Powered by Csound  " + uc (0x00B7) + "  Built with JUCE", 0, 398, w, 16, juce::Justification::centred, 1);
+    g.drawFittedText ("Powered by Csound  " + uc (0x00B7) + "  Built with JUCE", 0, 544, w, 16, juce::Justification::centred, 1);
     g.setFont (juce::Font (juce::FontOptions (10.5f)));
     g.drawFittedText ("Opcode help text from the Csound Reference Manual\n(GNU FDL), via CsoundQt's opcode database",
-                      0, 425, w, 14, juce::Justification::centred, 1);
+                      0, 564, w, 28, juce::Justification::centred, 2);
     g.setFont (juce::Font (juce::FontOptions (11.5f)));
     g.drawFittedText (uc (0x00A9) + " " + juce::String (juce::Time::getCurrentTime().getYear()) + " apeSoft",
-                      0, 450, w, 16, juce::Justification::centred, 1);
+                      0, 598, w, 16, juce::Justification::centred, 1);
 }
 
 void CsoundAudioProcessorEditor::AboutView::Card::mouseUp (const juce::MouseEvent& e)
@@ -3111,7 +3185,7 @@ Every instance exposes a **fixed set of 144 parameters** to the DAW: **64 Float*
 
 # Toolbar
 - **Apply** - recompiles and restarts Csound with the text in the editor. A red ring means the editor text differs from the running code.
-- **File capsule** (centre) - name of the linked `.csd`, its folder and state (saved / unsaved changes / file not found, coloured dot). Click it for **Save**, **Save as...**, **Load...**, **Import Files...**, **Export Files...** (iOS only), **Reveal in Finder** (desktop only), **Init Session Template** and **Init Session Clear**.
+- **File capsule** (centre) - name of the linked `.csd`, its folder and state (saved / unsaved changes / file not found, coloured dot). Click it for the File menu, in groups: **Init Session Clear** / **Init Session Template** - **Load...** / **Open Example...** - **Save** / **Save as...** - **Reveal in Finder** (desktop only) / **Import Files...** / **Export Files...** (iOS only) - **Restore Examples**.
 - **Magnifier** - opens the Find / Replace bar: match case `Aa`, whole word `W`, Replace / Replace All; Enter = next match, Esc closes.
 - **Menu** - Show/Hide Parameters and Console, Undo / Redo, Audio/MIDI Settings (standalone only), Config, apeCsound Guide, Csound Manual, About.
 - **Audio/MIDI Settings** (standalone only) - the same touch-friendly panel on every platform: Audio Driver, Output/Input Device, Output/Input Channels (stereo pairs), Sample Rate, Buffer Size (with latency in ms), Mute audio input, Control Panel (drivers that have one), MIDI Inputs, **Bluetooth MIDI...** and Reset Audio/MIDI. Tap a row to open its list; rows with a single possible value only show it.
