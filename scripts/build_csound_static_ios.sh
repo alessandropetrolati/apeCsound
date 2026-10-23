@@ -50,6 +50,20 @@ NCPU="$(sysctl -n hw.ncpu)"
 # OSC statico: plugin "osc" di Csound come libreria statica (patch condivisa).
 python3 "$SCRIPT_DIR/patch_csound_static_osc.py" "$CSOUND_SRC"
 
+# Cartella di build configurata per un altro percorso sorgente (progetto
+# spostato/rinominato): CMake si fermerebbe, la si ricrea.
+reset_stale_build_dir() {
+  local build_dir="$1" src_dir="$2"
+  local cache="$build_dir/CMakeCache.txt"
+  [ -f "$cache" ] || return 0
+  local cached_src
+  cached_src="$(grep -E '^CMAKE_HOME_DIRECTORY:INTERNAL=' "$cache" | cut -d= -f2-)"
+  if [ "$cached_src" != "$src_dir" ]; then
+    echo "==> removing stale build folder $build_dir (configured for $cached_src)"
+    rm -rf "$build_dir"
+  fi
+}
+
 # platform = iphoneos | iphonesimulator ; arch = arm64 | x86_64
 build_one() {
   local platform="$1" arch="$2"
@@ -73,14 +87,18 @@ build_one() {
   )
 
   echo "==> libsndfile $tag"
+  reset_stale_build_dir "$BUILD_ROOT/sndfile-static/build-$tag" "$SNDFILE_SRC"
   cmake -S "$SNDFILE_SRC" -B "$BUILD_ROOT/sndfile-static/build-$tag" "${common[@]}" \
     -DCMAKE_INSTALL_PREFIX="$deps/sndfile" \
     -DBUILD_PROGRAMS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF \
-    -DENABLE_EXTERNAL_LIBS=OFF -DENABLE_MPEG=OFF -DENABLE_CPACK=OFF
+    -DENABLE_EXTERNAL_LIBS=OFF -DENABLE_MPEG=OFF -DENABLE_CPACK=OFF \
+    -DBUILD_REGTEST=OFF \
+    -DCMAKE_DISABLE_FIND_PACKAGE_SQLite3=ON
   cmake --build "$BUILD_ROOT/sndfile-static/build-$tag" --config Release -j"$NCPU"
   cmake --install "$BUILD_ROOT/sndfile-static/build-$tag" --config Release
 
   echo "==> libsamplerate $tag"
+  reset_stale_build_dir "$BUILD_ROOT/samplerate-static/build-$tag" "$SAMPLERATE_SRC"
   cmake -S "$SAMPLERATE_SRC" -B "$BUILD_ROOT/samplerate-static/build-$tag" "${common[@]}" \
     -DCMAKE_INSTALL_PREFIX="$deps/samplerate" \
     -DBUILD_TESTING=OFF -DLIBSAMPLERATE_EXAMPLES=OFF
@@ -88,6 +106,7 @@ build_one() {
   cmake --install "$BUILD_ROOT/samplerate-static/build-$tag" --config Release
 
   echo "==> liblo $tag"
+  reset_stale_build_dir "$BUILD_ROOT/liblo-static/build-$tag" "$LIBLO_SRC/cmake"
   cmake -S "$LIBLO_SRC/cmake" -B "$BUILD_ROOT/liblo-static/build-$tag" "${common[@]}" \
     -DCMAKE_INSTALL_PREFIX="$deps/liblo" \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
@@ -107,6 +126,7 @@ build_one() {
   fi
 
   echo "==> Csound $tag"
+  reset_stale_build_dir "$BUILD_ROOT/csound-static/build-$tag" "$CSOUND_SRC"
   cmake -S "$CSOUND_SRC" -B "$BUILD_ROOT/csound-static/build-$tag" "${common[@]}" \
     -DCMAKE_INSTALL_PREFIX="$IOS_ROOT/$tag" \
     -DBISON_EXECUTABLE="$BISON_BIN" \

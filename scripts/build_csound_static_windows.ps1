@@ -1,6 +1,6 @@
 # Static build of Csound 7 for Windows (x64, Visual Studio 2022 / MSVC):
-# core + libsndfile + libsamplerate, no realtime audio/MIDI backends, no
-# OSC/csbeats/DSSI, no separate opcode plugins - the same "monolithic" setup
+# core + libsndfile + libsamplerate + OSC opcodes (liblo, static), no realtime
+# audio/MIDI backends, no csbeats/DSSI, no separate opcode plugins - the same "monolithic" setup
 # as the macOS/iOS/Linux scripts: apeCsound drives Csound through the C API
 # with its own audio/MIDI I/O, and Csound is linked statically into the
 # VST3 and the Standalone.
@@ -20,8 +20,8 @@
 #   powershell -ExecutionPolicy Bypass -File scripts\build_csound_static_windows.ps1
 #
 # Output (the Projucer VS2022 exporter points here):
-#   build\csound-install\windows\lib\Debug\   csound64.lib  sndfile.lib  samplerate.lib
-#   build\csound-install\windows\lib\Release\ csound64.lib  sndfile.lib  samplerate.lib
+#   build\csound-install\windows\lib\Debug\   csound64.lib  sndfile.lib  samplerate.lib  lo.lib  csoundosc.lib
+#   build\csound-install\windows\lib\Release\ csound64.lib  sndfile.lib  samplerate.lib  lo.lib  csoundosc.lib
 #   build\csound-install\windows\include\     csound.h and friends
 #
 # Then: open apeCsound.jucer in Projucer, save (Builds\VisualStudio2022),
@@ -33,6 +33,7 @@ $CsoundRepo     = "https://github.com/csound/csound.git"
 $CsoundBranch   = "develop"   # Csound 7 line, same as the other scripts
 $SndfileRepo    = "https://github.com/libsndfile/libsndfile.git"
 $SamplerateRepo = "https://github.com/libsndfile/libsamplerate.git"
+$LibloRepo      = "https://github.com/radarsat1/liblo.git"
 $DirentRepo     = "https://github.com/tronkko/dirent.git"   # dirent.h for MSVC (required by Csound's CMake)
 $WinFlexBisonUrl = "https://github.com/lexxmark/winflexbison/releases/download/v2.5.25/win_flex_bison-2.5.25.zip"
 
@@ -129,6 +130,36 @@ foreach ($cfg in $Configs) {
     Run cmake @("--install", $SamplerateBuild, "--config", $cfg, "--prefix", (Join-Path $Stage "samplerate-$cfg"))
 }
 
+# ---------------------------------------------------------------------
+# 2b. liblo (OSC), static, Debug + Release: serve agli opcode OSC
+#     (OSCinit/oscinit, OSClisten/osclisten...), vedi la sezione 3b di
+#     build_csound_static_macos.sh e patch_csound_static_osc.py.
+# ---------------------------------------------------------------------
+$LibloSrc   = Join-Path $Work "liblo\src"
+$LibloBuild = Join-Path $Work "liblo\build"
+CloneOnce $LibloRepo "master" $LibloSrc
+
+Write-Host "==> configuring liblo"
+Run cmake (@("-S", (Join-Path $LibloSrc "cmake"), "-B", $LibloBuild) + $Generator + $Common + @(
+    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+    "-DWITH_STATIC=ON", "-DWITH_TOOLS=OFF", "-DWITH_TESTS=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_CPP_TESTS=OFF",
+    "-DTHREADING=ON"))
+
+foreach ($cfg in $Configs) {
+    Write-Host "==> building liblo ($cfg)"
+    Run cmake @("--build", $LibloBuild, "--config", $cfg, "--parallel")
+    Run cmake @("--install", $LibloBuild, "--config", $cfg, "--prefix", (Join-Path $Stage "liblo-$cfg"))
+
+    # lo\lo.h + lo_endian.h generato, se l'install non li ha copiati
+    $loInc = Join-Path $Stage "liblo-$cfg\include\lo"
+    if (-not (Test-Path (Join-Path $loInc "lo.h"))) {
+        New-Item -ItemType Directory -Force -Path $loInc | Out-Null
+        Copy-Item (Join-Path $LibloSrc "lo\*.h") $loInc
+        Get-ChildItem -Path $LibloBuild -Recurse -Filter "*.h" | Where-Object { $_.FullName -match "\\lo\\" } |
+            ForEach-Object { Copy-Item $_.FullName $loInc -Force }
+    }
+}
+
 function FindLib($dir, $patterns) {
     foreach ($p in $patterns) {
         $f = Get-ChildItem -Path $dir -Recurse -Filter $p -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -144,6 +175,57 @@ function FindLib($dir, $patterns) {
 $CsoundSrc = Join-Path $Work "csound\src"
 CloneOnce $CsoundRepo $CsoundBranch $CsoundSrc
 
+# OSC statico: patch condivisa dei sorgenti Csound (stessa logica di
+# patch_csound_static_osc.py, qui in PowerShell per non richiedere Python):
+# make_plugin() STATICO con APECSOUND_STATIC_PLUGINS=ON, plugin osc con la
+# funzione apecsound_register_osc_opcodes() e gli entry point rinominati.
+function Patch-CsoundStaticOsc($src) {
+    $util = Join-Path $src "cmake\cmake-utilities.cmake"
+    $t = [IO.File]::ReadAllText($util)
+    if (-not $t.Contains("APECSOUND_STATIC_PLUGINS")) {
+        $old = "    if(APPLE)`n        add_library(`${libname} SHARED `${srcs})"
+        $t = $t.Replace("`r`n", "`n")
+        if (-not $t.Contains($old)) { throw "patch: make_plugin() in cmake-utilities.cmake not recognised" }
+        $t = $t.Replace($old, "    if(APECSOUND_STATIC_PLUGINS)`n        add_library(`${libname} STATIC `${srcs})`n    elseif(APPLE)`n        add_library(`${libname} SHARED `${srcs})")
+        [IO.File]::WriteAllText($util, $t)
+    }
+
+    $ops = Join-Path $src "Opcodes\CMakeLists.txt"
+    $t = [IO.File]::ReadAllText($ops)
+    if (-not $t.Contains("apecsound_osc_register.c")) {
+        $old = 'make_plugin(osc "OSC.c;osc_blob.c")'
+        if (-not $t.Contains($old)) { throw "patch: make_plugin(osc ...) in Opcodes\CMakeLists.txt not recognised" }
+        $t = $t.Replace($old, 'make_plugin(osc "OSC.c;osc_blob.c;apecsound_osc_register.c")' + "`n" +
+            '    target_compile_definitions(osc PRIVATE csound_opcode_init=apecsound_osc_opcode_init csoundModuleInfo=apecsound_osc_module_info)')
+        [IO.File]::WriteAllText($ops, $t)
+    }
+
+    $reg = @"
+/* csdl.h, come ogni plugin: csoundCore.h da solo e' vietato fuori dal core. */
+#include "csdl.h"
+
+int64_t apecsound_osc_opcode_init(CSOUND *csound, OENTRY **ep);
+
+/* apeCsound: registra gli opcode OSC (OSCinit, OSClisten, OSCsend...) in
+   un'istanza Csound appena creata, al posto del caricamento del plugin
+   dinamico. Chiamata da apeCsound dopo csoundCreate(). */
+int32_t apecsound_register_osc_opcodes(CSOUND *csound)
+{
+    OENTRY *ep = NULL;
+    int64_t bytes = apecsound_osc_opcode_init(csound, &ep);
+
+    if (ep == NULL || bytes <= 0)
+        return -1;
+
+    /* Dai plugin le funzioni del core si chiamano tramite la struct CSOUND. */
+    return csound->AppendOpcodes(csound, ep, (int32_t) (bytes / (int64_t) sizeof(OENTRY)));
+}
+"@
+    [IO.File]::WriteAllText((Join-Path $src "Opcodes\apecsound_osc_register.c"), $reg)
+}
+
+Patch-CsoundStaticOsc $CsoundSrc
+
 # MSVC has no dirent.h. Csound's CMake only find_file()s it (configure-time
 # checks), it does not add its folder to the compiler include path, so
 # new_orc_parser.c fails with C1083. Csound's H/ folder is always on the
@@ -154,6 +236,7 @@ foreach ($cfg in $Configs) {
     $sndfileLib    = FindLib (Join-Path $Stage "sndfile-$cfg\lib")    @("sndfile.lib", "libsndfile*.lib")
     $samplerateLib = FindLib (Join-Path $Stage "samplerate-$cfg\lib") @("samplerate.lib", "libsamplerate*.lib")
     $csoundBuild   = Join-Path $Work "csound\build-$cfg"
+    $loLib         = FindLib (Join-Path $Stage "liblo-$cfg\lib")      @("liblo_static.lib", "lo_static.lib", "liblo.lib", "lo.lib", "*lo*.lib")
 
     Write-Host "==> configuring Csound ($cfg)"
     Write-Host "    SndFile:    $sndfileLib"
@@ -177,7 +260,10 @@ foreach ($cfg in $Configs) {
         "-DUSE_PORTAUDIO=OFF", "-DUSE_PORTMIDI=OFF", "-DUSE_JACK=OFF", "-DUSE_ALSA=OFF",
         "-DUSE_PULSEAUDIO=OFF", "-DUSE_PIPEWIRE=OFF", "-DUSE_IPMIDI=OFF",
         "-DUSE_COREMIDI=OFF", "-DUSE_AUDIOUNIT=OFF",
-        "-DBUILD_OSC_OPCODES=OFF", "-DBUILD_CSBEATS=OFF", "-DBUILD_DSSI_OPCODES=OFF",
+        "-DBUILD_OSC_OPCODES=ON", "-DAPECSOUND_STATIC_PLUGINS=ON",
+        "-DLibLO_LIBRARY=$loLib",
+        "-DLibLO_INCLUDE_DIR=$(Join-Path $Stage "liblo-$cfg\include")",
+        "-DBUILD_CSBEATS=OFF", "-DBUILD_DSSI_OPCODES=OFF",
         "-DUSE_ASA=OFF", "-DUSE_GIT_COMMIT=OFF"))
     # NB: keep BUILD_CSOUND_COMMAND ON: tests/commandline references the
     # csound-bin target unconditionally (generate step fails without it).
@@ -186,7 +272,7 @@ foreach ($cfg in $Configs) {
     Write-Host "==> building Csound ($cfg)"
     # Only the static library: the DLL, csound.exe, csdebugger, utilities... are
     # not needed by apeCsound (and "cmake --install" would need all of them).
-    Run cmake @("--build", $csoundBuild, "--config", $cfg, "--parallel", "--target", "csound64-static")
+    Run cmake @("--build", $csoundBuild, "--config", $cfg, "--parallel", "--target", "csound64-static", "osc")
 
     # Manual "install": libcsound64.lib + public headers (src\include + generated version headers)
     $csoundStage = Join-Path $Stage "csound-$cfg"
@@ -199,6 +285,13 @@ foreach ($cfg in $Configs) {
     Copy-Item (Join-Path $CsoundSrc "include\*.h")   (Join-Path $csoundStage "include\csound")
     Copy-Item (Join-Path $CsoundSrc "include\*.hpp") (Join-Path $csoundStage "include\csound") -ErrorAction SilentlyContinue
     Copy-Item (Join-Path $csoundBuild "include\*.h") (Join-Path $csoundStage "include\csound")
+
+    # Opcode OSC statici (osc.lib, vedi Patch-CsoundStaticOsc) -> csoundosc.lib
+    $oscLib = Get-ChildItem -Path $csoundBuild -Recurse -Filter "osc.lib" |
+              Where-Object { $_.FullName -match "\\$cfg\\" } | Select-Object -First 1
+    if (-not $oscLib) { throw "osc.lib ($cfg) not found under $csoundBuild (OSC opcodes not built: is liblo found?)" }
+    Copy-Item $oscLib.FullName (Join-Path $csoundStage "lib\csoundosc.lib")
+    Copy-Item $loLib (Join-Path $csoundStage "lib\lo.lib")
 }
 
 # ---------------------------------------------------------------------
@@ -216,6 +309,8 @@ foreach ($cfg in $Configs) {
     Copy-Item (FindLib (Join-Path $Stage "csound-$cfg")     @("libcsound64.lib", "csound64.lib", "*csound*.lib")) (Join-Path $libOut "csound64.lib")
     Copy-Item (FindLib (Join-Path $Stage "sndfile-$cfg")    @("sndfile.lib", "libsndfile*.lib"))                  (Join-Path $libOut "sndfile.lib")
     Copy-Item (FindLib (Join-Path $Stage "samplerate-$cfg") @("samplerate.lib", "libsamplerate*.lib"))            (Join-Path $libOut "samplerate.lib")
+    Copy-Item (Join-Path $Stage "csound-$cfg\lib\csoundosc.lib") (Join-Path $libOut "csoundosc.lib")
+    Copy-Item (Join-Path $Stage "csound-$cfg\lib\lo.lib")        (Join-Path $libOut "lo.lib")
 }
 
 # Csound installs its headers in include\csound\; the plugin includes them as "csound.h".
@@ -224,6 +319,7 @@ if (-not (Test-Path $csoundInc)) { $csoundInc = Join-Path $Stage "csound-Release
 Copy-Item -Recurse -Force (Join-Path $csoundInc "*")                                   (Join-Path $Out "include")
 Copy-Item -Recurse -Force (Join-Path $Stage "sndfile-Release\include\*")    (Join-Path $Out "include")
 Copy-Item -Recurse -Force (Join-Path $Stage "samplerate-Release\include\*") (Join-Path $Out "include")
+Copy-Item -Recurse -Force (Join-Path $Stage "liblo-Release\include\*")      (Join-Path $Out "include")
 
 if (-not (Test-Path (Join-Path $Out "include\csound.h"))) { throw "csound.h not found in $Out\include" }
 

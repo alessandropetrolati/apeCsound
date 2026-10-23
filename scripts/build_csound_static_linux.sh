@@ -16,7 +16,8 @@
 #   ./scripts/build_csound_static_linux.sh --no-apt   # build only (deps already installed)
 #
 # Output (the Projucer LINUX_MAKE exporter points here):
-#   build/csound-install/linux/lib/libcsound64.a, libsndfile.a, libsamplerate.a
+#   build/csound-install/linux/lib/libcsound64.a, libsndfile.a, libsamplerate.a,
+#   liblo.a, libcsoundosc.a (opcode OSC)
 #   build/csound-install/linux/include/csound.h and friends
 #
 # Then:
@@ -32,6 +33,7 @@ CSOUND_REPO="https://github.com/csound/csound.git"
 CSOUND_BRANCH="develop"   # Csound 7 line, same as the macOS/iOS scripts
 SNDFILE_REPO="https://github.com/libsndfile/libsndfile.git"
 SAMPLERATE_REPO="https://github.com/libsndfile/libsamplerate.git"
+LIBLO_REPO="https://github.com/radarsat1/liblo.git"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -143,12 +145,44 @@ for f in "$SNDFILE_LIB" "$SAMPLERATE_LIB"; do
 done
 
 # ---------------------------------------------------------------------
+# 2b. liblo, static (-fPIC): serve agli opcode OSC (OSCinit/oscinit,
+#     OSClisten/osclisten...), compilati come libreria statica, vedi
+#     patch_csound_static_osc.py e la sezione 3b di build_csound_static_macos.sh.
+# ---------------------------------------------------------------------
+LIBLO_SRC="$WORK/liblo/src"
+LIBLO_PREFIX="$STAGE/liblo"
+clone_once "$LIBLO_REPO" "master" "$LIBLO_SRC"
+
+echo "==> building static liblo"
+cmake -S "$LIBLO_SRC/cmake" -B "$WORK/liblo/build" "${COMMON_CMAKE[@]}" \
+  -DCMAKE_INSTALL_PREFIX="$LIBLO_PREFIX" \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DWITH_STATIC=ON -DWITH_TOOLS=OFF -DWITH_TESTS=OFF -DWITH_EXAMPLES=OFF -DWITH_CPP_TESTS=OFF \
+  -DTHREADING=ON
+cmake --build "$WORK/liblo/build" -j"$JOBS"
+cmake --install "$WORK/liblo/build"
+
+LIBLO_A="$(find "$LIBLO_PREFIX" "$WORK/liblo/build" -name 'liblo*.a' -type f | head -1)"
+[ -n "$LIBLO_A" ] || { echo "ERROR: static liblo (liblo*.a) not found"; exit 1; }
+mkdir -p "$LIBLO_PREFIX/lib"
+[ "$LIBLO_A" = "$LIBLO_PREFIX/lib/liblo.a" ] || cp "$LIBLO_A" "$LIBLO_PREFIX/lib/liblo.a"
+LIBLO_A="$LIBLO_PREFIX/lib/liblo.a"
+if [ ! -f "$LIBLO_PREFIX/include/lo/lo.h" ]; then
+  mkdir -p "$LIBLO_PREFIX/include/lo"
+  cp "$LIBLO_SRC"/lo/*.h "$LIBLO_PREFIX/include/lo/"
+  find "$WORK/liblo/build" -path '*lo/*.h' -exec cp {} "$LIBLO_PREFIX/include/lo/" \;
+fi
+
+# ---------------------------------------------------------------------
 # 3. Csound 7, static, pointed at our own static sndfile/samplerate
 #    (never the system ones), every realtime backend off.
 # ---------------------------------------------------------------------
 CSOUND_SRC="$WORK/csound/src"
 CSOUND_PREFIX="$STAGE/csound"
 clone_once "$CSOUND_REPO" "$CSOUND_BRANCH" "$CSOUND_SRC"
+
+# OSC statico: plugin "osc" di Csound come libreria statica (patch condivisa).
+python3 "$SCRIPT_DIR/patch_csound_static_osc.py" "$CSOUND_SRC"
 
 echo "==> building static Csound"
 echo "    SndFile:    $SNDFILE_LIB"
@@ -181,7 +215,10 @@ cmake -S "$CSOUND_SRC" -B "$WORK/csound/build" "${COMMON_CMAKE[@]}" \
   -DUSE_IPMIDI=OFF \
   -DUSE_COREMIDI=OFF \
   -DUSE_AUDIOUNIT=OFF \
-  -DBUILD_OSC_OPCODES=OFF \
+  -DBUILD_OSC_OPCODES=ON \
+  -DAPECSOUND_STATIC_PLUGINS=ON \
+  -DLibLO_LIBRARY="$LIBLO_A" \
+  -DLibLO_INCLUDE_DIR="$LIBLO_PREFIX/include" \
   -DBUILD_CSBEATS=OFF \
   -DBUILD_DSSI_OPCODES=OFF \
   -DINSTALL_PYTHON_INTERFACE=OFF
@@ -193,7 +230,7 @@ cmake -S "$CSOUND_SRC" -B "$WORK/csound/build" "${COMMON_CMAKE[@]}" \
 # (depending on the Csound version) ctcsound.py into the system Python
 # site-packages, which fails without root. The library and the public headers
 # are staged by hand, like in build_csound_static_windows.ps1.
-cmake --build "$WORK/csound/build" -j"$JOBS" --target csound64-static
+cmake --build "$WORK/csound/build" -j"$JOBS" --target csound64-static osc
 
 rm -rf "$CSOUND_PREFIX"
 mkdir -p "$CSOUND_PREFIX/lib" "$CSOUND_PREFIX/include/csound"
@@ -223,6 +260,12 @@ fi
 cp "$CSOUND_LIB"      "$OUT/lib/libcsound64.a"   # nome atteso dal .jucer (externalLibraries "csound64")
 cp "$SNDFILE_LIB"     "$OUT/lib/"
 cp "$SAMPLERATE_LIB"  "$OUT/lib/"
+cp "$LIBLO_A"         "$OUT/lib/liblo.a"
+
+# Opcode OSC statici (libosc.a) -> libcsoundosc.a (nome atteso dal .jucer)
+OSC_A="$(find "$WORK/csound/build" -name 'libosc.a' -type f | head -1)"
+[ -n "$OSC_A" ] || { echo "ERROR: libosc.a not found (OSC opcodes not built: is liblo found?)"; exit 1; }
+cp "$OSC_A" "$OUT/lib/libcsoundosc.a"
 
 # Csound installs its headers in include/csound/ on Linux; the plugin
 # includes them as "csound.h", so they are copied flat.
@@ -233,6 +276,7 @@ else
 fi
 cp -R "$SNDFILE_PREFIX/include/."    "$OUT/include/"
 cp -R "$SAMPLERATE_PREFIX/include/." "$OUT/include/"
+cp -R "$LIBLO_PREFIX/include/."      "$OUT/include/"
 
 [ -f "$OUT/include/csound.h" ] || { echo "ERROR: csound.h not found in $OUT/include"; exit 1; }
 
