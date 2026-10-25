@@ -58,6 +58,7 @@
       <FILE id="cGrfA" name="CsoundGraphs.cpp" compile="1" resource="0" file="Source/CsoundGraphs.cpp"/>
       <FILE id="cGrfB" name="CsoundGraphs.h" compile="0" resource="0" file="Source/CsoundGraphs.h"/>
       <FILE id="csdBrw" name="CsdBrowserView.h" compile="0" resource="0" file="Source/CsdBrowserView.h"/>
+      <FILE id="txtPrm" name="CsoundTextPrompt.h" compile="0" resource="0" file="Source/CsoundTextPrompt.h"/>
       <FILE id="sAppA" name="StandaloneApp.cpp" compile="1" resource="0"
             file="Source/StandaloneApp.cpp"/>
       <FILE id="pFbkA" name="PlatformFallbacks.cpp" compile="1" resource="0"

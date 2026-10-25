@@ -1,6 +1,7 @@
 #include "CsoundParameterEditor.h"
 #include "CsoundShortcuts.h"
 #include "NativeAlertMac.h"
+#include "CsoundTextPrompt.h"
 
 namespace
 {
@@ -674,6 +675,35 @@ void CsoundParameterPanelLookAndFeel::drawButtonText (juce::Graphics& g, juce::T
 
         g.setColour (kOnAccent);
         g.fillPath (p);
+        return;
+    }
+
+    // Bottone snapshot (nome "snapshotsMenu", title bar a destra): macchina
+    // fotografica stilizzata - corpo arrotondato, "mirino" sopra, obiettivo
+    // circolare - disegnata a mano come le altre icone qui sopra.
+    if (button.getName() == "snapshotsMenu")
+    {
+        const auto bounds = button.getLocalBounds().toFloat();
+        const float w = bounds.getWidth() * 0.56f;
+        const float h = w * 0.72f;
+        const auto body = juce::Rectangle<float> (w, h).withCentre (bounds.getCentre().translated (0.0f, h * 0.06f));
+        const float r = h * 0.18f;
+
+        juce::Path p;
+        p.addRoundedRectangle (body, r);
+        // Mirino: rettangolino sopra il corpo, a sinistra del centro.
+        p.addRoundedRectangle (body.getX() + w * 0.22f, body.getY() - h * 0.16f, w * 0.26f, h * 0.2f, r * 0.5f);
+
+        g.setColour (kOnAccent);
+        g.fillPath (p);
+
+        // Obiettivo: foro nel corpo (colore del bottone) + pupilla.
+        const float lens = h * 0.5f;
+        auto lensArea = juce::Rectangle<float> (lens, lens).withCentre (body.getCentre().translated (0.0f, h * 0.04f));
+        g.setColour (button.findColour (juce::TextButton::buttonColourId));
+        g.fillEllipse (lensArea);
+        g.setColour (kOnAccent);
+        g.fillEllipse (lensArea.reduced (lens * 0.28f));
         return;
     }
 
@@ -2624,6 +2654,13 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     addButton.onClick = [this] { showAddMenu(); };
     addAndMakeVisible (addButton);
 
+    // Snapshot dei valori (destra della title bar) - vedi il commento nel .h.
+    snapshotsButton.setName ("snapshotsMenu");
+    snapshotsButton.getProperties().set ("circular", true);
+    snapshotsButton.setColour (juce::TextButton::buttonColourId, kAccent);
+    snapshotsButton.onClick = [this] { showSnapshotsMenu(); };
+    addAndMakeVisible (snapshotsButton);
+
     // Titolo centrale della title bar (richiesta esplicita).
     titleLabel.setText ("Parameters", juce::dontSendNotification);
     titleLabel.setJustificationType (juce::Justification::centred);
@@ -3251,6 +3288,232 @@ void CsoundParameterMappingPanel::showAddMenu()
     });
 }
 
+//==============================================================================
+// Snapshot dei valori dei parametri - vedi il commento su snapshotsButton nel .h.
+void CsoundParameterMappingPanel::showSnapshotsMenu()
+{
+    const int count = processor.getNumParameterSnapshots();
+    const bool haveParams = ! unifiedRows.empty();
+
+    // ID: 1 Save, 2 Edit (pagina), 100+i richiama, 1000+i*4+{1,2,3} =
+    // Overwrite / Rename / Delete dello snapshot i (pagine annidate: ogni
+    // id e' unico in tutto il foglio).
+    std::vector<CsoundActionSheetItem> items;
+    {
+        CsoundActionSheetItem item;
+        item.id = 1; item.text = "Save Snapshot...";
+        item.icon = CsoundActionSheetIcon::save;
+        item.enabled = haveParams;
+        items.push_back (item);
+    }
+    {
+        CsoundActionSheetItem edit;
+        edit.text = "Edit Snapshots...";
+        edit.icon = CsoundActionSheetIcon::gear;
+        edit.enabled = count > 0;
+
+        for (int i = 0; i < count; ++i)
+        {
+            CsoundActionSheetItem snap;
+            snap.text = processor.getParameterSnapshotName (i);
+            snap.icon = CsoundActionSheetIcon::sliderFloat;
+
+            CsoundActionSheetItem header;
+            header.sectionHeader = snap.text;
+            snap.subItems.push_back (header);
+
+            CsoundActionSheetItem overwrite;
+            overwrite.id = 1000 + i * 4 + 1; overwrite.text = "Overwrite with Current Values";
+            overwrite.icon = CsoundActionSheetIcon::save;
+            overwrite.enabled = haveParams;
+            snap.subItems.push_back (overwrite);
+
+            CsoundActionSheetItem rename;
+            rename.id = 1000 + i * 4 + 2; rename.text = "Rename...";
+            rename.icon = CsoundActionSheetIcon::codeBraces;
+            snap.subItems.push_back (rename);
+
+            snap.subItems.push_back (CsoundActionSheetItem::separator());
+
+            CsoundActionSheetItem remove;
+            remove.id = 1000 + i * 4 + 3; remove.text = "Delete";
+            remove.icon = CsoundActionSheetIcon::trash;
+            snap.subItems.push_back (remove);
+
+            edit.subItems.push_back (snap);
+        }
+
+        items.push_back (edit);
+    }
+
+    items.push_back (CsoundActionSheetItem::separator());
+
+    if (count == 0)
+    {
+        CsoundActionSheetItem none;
+        none.id = 0; none.text = "No snapshots yet"; none.enabled = false;
+        items.push_back (none);
+    }
+    else
+    {
+        items.push_back (CsoundActionSheetItem::section ("Recall"));
+
+        for (int i = 0; i < count; ++i)
+        {
+            CsoundActionSheetItem item;
+            item.id = 100 + i;
+            item.text = processor.getParameterSnapshotName (i);
+            item.icon = CsoundActionSheetIcon::sliderFloat;
+            item.ticked = (i == lastRecalledSnapshot);
+            items.push_back (item);
+        }
+    }
+
+    juce::Component::SafePointer<CsoundParameterMappingPanel> safeThis (this);
+
+    CsoundActionSheet::show (*this, "Snapshots", std::move (items), [safeThis] (int result)
+    {
+        if (safeThis == nullptr || result <= 0)
+            return;
+
+        auto& self = *safeThis;
+
+        if (result == 1)
+        {
+            self.promptSaveSnapshot();
+            return;
+        }
+
+        if (result >= 100 && result < 1000)
+        {
+            const int index = result - 100;
+
+            if (self.processor.recallParameterSnapshot (index))
+            {
+                self.lastRecalledSnapshot = index;
+
+                if (self.onParameterCopiedToClipboard)
+                    self.onParameterCopiedToClipboard ("--- Snapshot recalled: "
+                                                       + self.processor.getParameterSnapshotName (index) + " ---");
+            }
+            return;
+        }
+
+        if (result >= 1000)
+        {
+            const int index  = (result - 1000) / 4;
+            const int action = (result - 1000) % 4;
+            const auto name  = self.processor.getParameterSnapshotName (index);
+
+            if (action == 1)
+            {
+                const auto before = self.processor.getParameterSnapshotsTree();
+                self.processor.overwriteParameterSnapshot (index);
+                self.applySnapshotsChangeUndoable (before, self.processor.getParameterSnapshotsTree(),
+                                                   "--- Snapshot overwritten: " + name + " ---");
+                self.lastRecalledSnapshot = index;
+            }
+            else if (action == 2)
+            {
+                self.promptRenameSnapshot (index);
+            }
+            else if (action == 3)
+            {
+                const auto before = self.processor.getParameterSnapshotsTree();
+                self.processor.removeParameterSnapshot (index);
+                self.applySnapshotsChangeUndoable (before, self.processor.getParameterSnapshotsTree(),
+                                                   "--- Snapshot deleted: " + name + " ---");
+                if (self.lastRecalledSnapshot == index)      self.lastRecalledSnapshot = -1;
+                else if (self.lastRecalledSnapshot > index)  --self.lastRecalledSnapshot;
+            }
+        }
+    });
+}
+
+void CsoundParameterMappingPanel::promptSaveSnapshot()
+{
+    juce::Component::SafePointer<CsoundParameterMappingPanel> safeThis (this);
+
+    // Sull'intera finestra del plugin (come i menu), non solo sul pannello.
+    auto* host = getTopLevelComponent();
+    if (host == nullptr)
+        host = this;
+
+    CsoundTextPrompt::show (*host, "Save Snapshot", processor.makeUniqueSnapshotName(), "Save",
+        [safeThis] (const juce::String& name)
+        {
+            if (safeThis == nullptr || name.isEmpty())
+                return;
+
+            auto& self = *safeThis;
+            const auto before = self.processor.getParameterSnapshotsTree();
+            const int index = self.processor.addParameterSnapshot (name);
+            self.applySnapshotsChangeUndoable (before, self.processor.getParameterSnapshotsTree(),
+                                               "--- Snapshot saved: " + name + " ---");
+            self.lastRecalledSnapshot = index;
+        });
+}
+
+void CsoundParameterMappingPanel::promptRenameSnapshot (int index)
+{
+    juce::Component::SafePointer<CsoundParameterMappingPanel> safeThis (this);
+
+    auto* host = getTopLevelComponent();
+    if (host == nullptr)
+        host = this;
+
+    const auto oldName = processor.getParameterSnapshotName (index);
+
+    CsoundTextPrompt::show (*host, "Rename Snapshot", oldName, "Rename",
+        [safeThis, index, oldName] (const juce::String& name)
+        {
+            if (safeThis == nullptr || name.isEmpty() || name == oldName)
+                return;
+
+            auto& self = *safeThis;
+            const auto before = self.processor.getParameterSnapshotsTree();
+            self.processor.renameParameterSnapshot (index, name);
+            self.applySnapshotsChangeUndoable (before, self.processor.getParameterSnapshotsTree(),
+                                               "--- Snapshot renamed: " + oldName + " -> " + name + " ---");
+        });
+}
+
+void CsoundParameterMappingPanel::applySnapshotsChangeUndoable (const juce::ValueTree& before, const juce::ValueTree& after,
+                                                                const juce::String& logLine)
+{
+    // La modifica e' GIA' applicata al processor dal chiamante: la prima
+    // perform() deve essere un no-op (stesso schema di
+    // CodeEditTransactionProxy in PluginEditor.cpp). Undo/Redo rimettono
+    // l'albero intero (prima/dopo) e avvisano pannello ed editor
+    // (indicatore "•"), come le altre azioni di struttura del pannello.
+    // Niente `this` nelle lambda: l'azione vive nel processor e sopravvive
+    // alla chiusura dell'editor.
+    auto& proc = processor;
+    auto first = std::make_shared<bool> (true);
+
+    undoManager.beginNewTransaction();
+    undoManager.perform (new LambdaUndoableAction
+    {
+        [&proc, after, first]
+        {
+            if (*first) { *first = false; return; }
+            proc.setParameterSnapshotsTree (after);
+            proc.notifySessionEditedByUndoRedo (false);
+        },
+        [&proc, before]
+        {
+            proc.setParameterSnapshotsTree (before);
+            proc.notifySessionEditedByUndoRedo (false);
+        }
+    });
+
+    // Stato "•" subito (la perform() no-op non ha notificato nessuno).
+    proc.notifySessionEditedByUndoRedo (false);
+
+    if (onParameterCopiedToClipboard)
+        onParameterCopiedToClipboard (logLine);
+}
+
 void CsoundParameterMappingPanel::addNewParameter (int kind)
 {
     // Se la sidebar Parametri e' nascosta, la riga "in sospeso" che stiamo
@@ -3668,6 +3931,8 @@ void CsoundParameterMappingPanel::resized()
         auto bar = titleBarBounds.reduced (panelTitleBarPaddingH, 0);
         addButton.setBounds (bar.removeFromLeft (panelTitleBarButtonDiameter)
                                  .withSizeKeepingCentre (panelTitleBarButtonDiameter, panelTitleBarButtonDiameter));
+        snapshotsButton.setBounds (bar.removeFromRight (panelTitleBarButtonDiameter)
+                                      .withSizeKeepingCentre (panelTitleBarButtonDiameter, panelTitleBarButtonDiameter));
         titleLabel.setBounds (titleBarBounds);
     }
 

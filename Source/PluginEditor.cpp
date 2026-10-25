@@ -3521,6 +3521,12 @@ Every instance offers the DAW **144 fixed parameters**: 64 Float, 32 Int, 32 Boo
 - The code reads them with `chnget`. `chnset` on the same channel moves the parameter (slider and DAW automation).
 - **Drag a row into the code** - drop it on a line of the editor to insert `kCutoff chnget "Cutoff"` with a comment describing the parameter. **Copy** puts the same text in the clipboard.
 - A parameter channel is a control channel: do not use the same name with audio variables (`a...`) - the console warns about it.
+## Snapshots
+The camera button on the right of the Parameters title bar stores and recalls the **values** of all the parameters.
+- **Save Snapshot...** - asks for a name and stores the current values.
+- Tap a snapshot in the **Recall** list to bring every parameter back to those values (sliders, DAW automation).
+- **Edit Snapshots...** - for each snapshot: **Overwrite with Current Values**, **Rename...**, **Delete**.
+- Snapshots are saved in the `.csd` (inside `<apeCsoundParams>`) and in the DAW project, so they travel with the session. Saving, renaming and deleting can be undone; recalling only changes the values.
 ## Cabbage and CsoundQt files
 Their widgets (sliders, knobs, checkboxes, menus, XY...) become parameters when the file is loaded. The rest of their GUI is ignored, and the code is not changed:
 - replace `invalue` / `cabbageGetValue` with `chnget`, `outvalue` / `cabbageSet...` with `chnset`;

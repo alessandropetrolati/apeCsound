@@ -1669,6 +1669,14 @@ juce::ValueTree CsoundAudioProcessor::buildParamsStructureTree()
         state.appendChild (slotsTree, nullptr);
     }
 
+    // Snapshot dei valori (vedi getNumParameterSnapshots): solo se ce ne
+    // sono, cosi' i .csd senza snapshot restano identici a prima.
+    {
+        const juce::ScopedLock sl (parameterSnapshotsLock);
+        if (parameterSnapshots.getNumChildren() > 0)
+            state.appendChild (parameterSnapshots.createCopy(), nullptr);
+    }
+
     return state;
 }
 
@@ -2463,14 +2471,113 @@ void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     // cosi' un riordino degli slot nel .csd, o un cambio di range, non
     // sposta i valori su un parametro sbagliato. type: f/i/b/c = Float/
     // Int/Bool/Choice, per rimappare al pool giusto al ripristino.
-    auto addParam = [&root] (const juce::String& channel, const char* type, double value)
+    for (const auto p : captureParameterValuesTree())
     {
-        auto* p = root.createNewChildElement (kStateParam);
-        p->setAttribute ("channel", channel);
-        p->setAttribute ("type", type);
-        p->setAttribute ("value", value);
+        auto* e = root.createNewChildElement (kStateParam);
+        e->setAttribute ("channel", p.getProperty ("channel").toString());
+        e->setAttribute ("type",    p.getProperty ("type").toString());
+        e->setAttribute ("value",   (double) p.getProperty ("value"));
+    }
+
+    copyXmlToBinary (root, destData);
+}
+
+void CsoundAudioProcessor::applyRestoredValues (const juce::XmlElement& pluginStateXml)
+{
+    // Valori salvati, per tipo + nome canale (vedi getStateInformation).
+    std::map<juce::String, double> saved;
+    for (auto* p : pluginStateXml.getChildWithTagNameIterator (kStateParam))
+        saved[p->getStringAttribute ("type") + ":" + p->getStringAttribute ("channel")] = p->getDoubleAttribute ("value");
+
+    pushParameterValues (saved, true);
+}
+
+void CsoundAudioProcessor::pushParameterValues (const std::map<juce::String, double>& saved, bool fallbackToDefault)
+{
+    auto find = [&saved] (const char* type, const juce::String& channel, double& out)
+    {
+        const auto it = saved.find (juce::String (type) + ":" + channel);
+        if (it == saved.end())
+            return false;
+        out = it->second;
+        return true;
     };
 
+    auto push = [] (juce::RangedAudioParameter* param, float normalized)
+    {
+        if (param != nullptr)
+            param->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, normalized));
+    };
+
+    // UNA sola notifica per parametro: valore salvato se c'e', altrimenti
+    // (fallbackToDefault) il default dello slot - un parametro aggiunto al
+    // file dopo il salvataggio del progetto riparte dal suo default. Senza
+    // fallback (snapshot) i parametri non presenti restano come sono.
+    for (int i = 0; i < numChannelParams; ++i)
+    {
+        const auto slot = getChannelParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+        double v = slot.defaultValue;
+        if (! find ("f", slot.channelName, v) && ! fallbackToDefault)
+            continue;
+        push (apvts.getParameter (getChannelParamID (i)), normalizeChannelParam (slot, v));
+    }
+
+    for (int i = 0; i < numIntParams; ++i)
+    {
+        const auto slot = getIntParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+        double v = slot.defaultValue;
+        if (! find ("i", slot.channelName, v) && ! fallbackToDefault)
+            continue;
+        push (apvts.getParameter (getIntParamID (i)), normalizeIntParam (slot, v));
+    }
+
+    for (int i = 0; i < numBoolParams; ++i)
+    {
+        const auto slot = getBoolParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+        double v = slot.defaultValue ? 1.0 : 0.0;
+        if (! find ("b", slot.channelName, v) && ! fallbackToDefault)
+            continue;
+        push (apvts.getParameter (getBoolParamID (i)), v >= 0.5 ? 1.0f : 0.0f);
+    }
+
+    for (int i = 0; i < numChoiceParams; ++i)
+    {
+        const auto slot = getChoiceParamSlot (i);
+        if (slot.channelName.isEmpty())
+            continue;
+        double v = slot.defaultIndex;
+        if (! find ("c", slot.channelName, v) && ! fallbackToDefault)
+            continue;
+        push (apvts.getParameter (getChoiceParamID (i)),
+              maxChoiceOptions > 1 ? (float) v / (float) (maxChoiceOptions - 1) : 0.0f);
+    }
+}
+
+//==============================================================================
+// Snapshot dei valori dei parametri - vedi il commento in PluginProcessor.h.
+juce::ValueTree CsoundAudioProcessor::captureParameterValuesTree() const
+{
+    juce::ValueTree values ("SNAPSHOT");
+
+    auto addParam = [&values] (const juce::String& channel, const char* type, double value)
+    {
+        juce::ValueTree p ("P");
+        p.setProperty ("channel", channel, nullptr);
+        p.setProperty ("type", type, nullptr);
+        p.setProperty ("value", value, nullptr);
+        values.appendChild (p, nullptr);
+    };
+
+    // VALORI correnti per nome canale, in unita' reali (non normalizzati):
+    // cosi' un riordino degli slot nel .csd, o un cambio di range, non
+    // sposta i valori su un parametro sbagliato. type: f/i/b/c = Float/
+    // Int/Bool/Choice, per rimappare al pool giusto al ripristino.
     for (int i = 0; i < numChannelParams; ++i)
     {
         const auto slot = getChannelParamSlot (i);
@@ -2507,74 +2614,113 @@ void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
             addParam (slot.channelName, "c", (double) juce::roundToInt (raw->load()));
     }
 
-    copyXmlToBinary (root, destData);
+    return values;
 }
 
-void CsoundAudioProcessor::applyRestoredValues (const juce::XmlElement& pluginStateXml)
+void CsoundAudioProcessor::applyParameterValuesTree (const juce::ValueTree& values)
 {
-    // Valori salvati, per tipo + nome canale (vedi getStateInformation).
     std::map<juce::String, double> saved;
-    for (auto* p : pluginStateXml.getChildWithTagNameIterator (kStateParam))
-        saved[p->getStringAttribute ("type") + ":" + p->getStringAttribute ("channel")] = p->getDoubleAttribute ("value");
+    for (const auto p : values)
+        if (p.hasType ("P"))
+            saved[p.getProperty ("type").toString() + ":" + p.getProperty ("channel").toString()] = (double) p.getProperty ("value");
 
-    auto find = [&saved] (const char* type, const juce::String& channel, double& out)
-    {
-        const auto it = saved.find (juce::String (type) + ":" + channel);
-        if (it == saved.end())
-            return false;
-        out = it->second;
-        return true;
-    };
+    pushParameterValues (saved, false);
+}
 
-    auto push = [] (juce::RangedAudioParameter* param, float normalized)
-    {
-        if (param != nullptr)
-            param->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, normalized));
-    };
+int CsoundAudioProcessor::getNumParameterSnapshots() const
+{
+    const juce::ScopedLock sl (parameterSnapshotsLock);
+    return parameterSnapshots.getNumChildren();
+}
 
-    // UNA sola notifica per parametro: valore salvato se c'e', altrimenti il
-    // default dello slot (un parametro aggiunto al file dopo il salvataggio
-    // del progetto riparte dal suo default).
-    for (int i = 0; i < numChannelParams; ++i)
+juce::String CsoundAudioProcessor::getParameterSnapshotName (int index) const
+{
+    const juce::ScopedLock sl (parameterSnapshotsLock);
+    return parameterSnapshots.getChild (index).getProperty ("name", "").toString();
+}
+
+juce::ValueTree CsoundAudioProcessor::getParameterSnapshotsTree() const
+{
+    const juce::ScopedLock sl (parameterSnapshotsLock);
+    return parameterSnapshots.createCopy();
+}
+
+void CsoundAudioProcessor::setParameterSnapshotsTree (const juce::ValueTree& tree)
+{
+    const juce::ScopedLock sl (parameterSnapshotsLock);
+    parameterSnapshots = tree.isValid() && tree.hasType ("SNAPSHOTS") ? tree.createCopy() : juce::ValueTree ("SNAPSHOTS");
+}
+
+juce::String CsoundAudioProcessor::makeUniqueSnapshotName (const juce::String& base) const
+{
+    const juce::ScopedLock sl (parameterSnapshotsLock);
+
+    for (int n = parameterSnapshots.getNumChildren() + 1; ; ++n)
     {
-        const auto slot = getChannelParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
-        double v = slot.defaultValue;
-        find ("f", slot.channelName, v);
-        push (apvts.getParameter (getChannelParamID (i)), normalizeChannelParam (slot, v));
+        const auto candidate = base + " " + juce::String (n);
+        bool taken = false;
+
+        for (const auto snap : parameterSnapshots)
+            if (snap.getProperty ("name").toString() == candidate)
+                taken = true;
+
+        if (! taken)
+            return candidate;
+    }
+}
+
+int CsoundAudioProcessor::addParameterSnapshot (const juce::String& name)
+{
+    auto snap = captureParameterValuesTree();
+    snap.setProperty ("name", name.trim().isNotEmpty() ? name.trim() : makeUniqueSnapshotName(), nullptr);
+
+    const juce::ScopedLock sl (parameterSnapshotsLock);
+    parameterSnapshots.appendChild (snap, nullptr);
+    return parameterSnapshots.getNumChildren() - 1;
+}
+
+void CsoundAudioProcessor::overwriteParameterSnapshot (int index)
+{
+    auto snap = captureParameterValuesTree();
+
+    const juce::ScopedLock sl (parameterSnapshotsLock);
+    auto old = parameterSnapshots.getChild (index);
+    if (! old.isValid())
+        return;
+
+    snap.setProperty ("name", old.getProperty ("name"), nullptr);
+    parameterSnapshots.removeChild (index, nullptr);
+    parameterSnapshots.addChild (snap, index, nullptr);
+}
+
+void CsoundAudioProcessor::renameParameterSnapshot (int index, const juce::String& name)
+{
+    const juce::ScopedLock sl (parameterSnapshotsLock);
+    auto snap = parameterSnapshots.getChild (index);
+    if (snap.isValid() && name.trim().isNotEmpty())
+        snap.setProperty ("name", name.trim(), nullptr);
+}
+
+void CsoundAudioProcessor::removeParameterSnapshot (int index)
+{
+    const juce::ScopedLock sl (parameterSnapshotsLock);
+    if (juce::isPositiveAndBelow (index, parameterSnapshots.getNumChildren()))
+        parameterSnapshots.removeChild (index, nullptr);
+}
+
+bool CsoundAudioProcessor::recallParameterSnapshot (int index)
+{
+    juce::ValueTree snap;
+    {
+        const juce::ScopedLock sl (parameterSnapshotsLock);
+        snap = parameterSnapshots.getChild (index).createCopy();
     }
 
-    for (int i = 0; i < numIntParams; ++i)
-    {
-        const auto slot = getIntParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
-        double v = slot.defaultValue;
-        find ("i", slot.channelName, v);
-        push (apvts.getParameter (getIntParamID (i)), normalizeIntParam (slot, v));
-    }
+    if (! snap.isValid())
+        return false;
 
-    for (int i = 0; i < numBoolParams; ++i)
-    {
-        const auto slot = getBoolParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
-        double v = slot.defaultValue ? 1.0 : 0.0;
-        find ("b", slot.channelName, v);
-        push (apvts.getParameter (getBoolParamID (i)), v >= 0.5 ? 1.0f : 0.0f);
-    }
-
-    for (int i = 0; i < numChoiceParams; ++i)
-    {
-        const auto slot = getChoiceParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
-        double v = slot.defaultIndex;
-        find ("c", slot.channelName, v);
-        push (apvts.getParameter (getChoiceParamID (i)),
-              maxChoiceOptions > 1 ? (float) v / (float) (maxChoiceOptions - 1) : 0.0f);
-    }
+    applyParameterValuesTree (snap);
+    return true;
 }
 
 void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
@@ -3109,6 +3255,9 @@ void CsoundAudioProcessor::resetAllParameterSlots()
         setBoolParamSlot (i, BoolParamSlot{});
     for (int i = 0; i < numChoiceParams; ++i)
         setChoiceParamSlot (i, ChoiceParamSlot{});
+
+    // Anche gli snapshot dei valori: appartengono alla sessione che se ne va.
+    setParameterSnapshotsTree ({});
 }
 
 bool CsoundAudioProcessor::loadSessionFromFile (const juce::File& file)
@@ -3967,6 +4116,12 @@ void CsoundAudioProcessor::applyParamsStructureTree (const juce::ValueTree& stat
                     }
                 }
             }
+        }
+
+        {
+            const juce::ScopedLock sl (parameterSnapshotsLock);
+            auto snaps = state.getChildWithName ("SNAPSHOTS");
+            parameterSnapshots = snaps.isValid() ? snaps.createCopy() : juce::ValueTree ("SNAPSHOTS");
         }
 
         // Nomi, range e testi dei parametri sono cambiati tutti insieme: la DAW

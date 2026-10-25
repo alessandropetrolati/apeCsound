@@ -415,6 +415,15 @@ private:
     std::array<ChoiceParamSlot, (size_t) numChoiceParams> choiceParamSlots;
     mutable juce::CriticalSection choiceParamSlotsLock;
 
+    // Snapshot dei VALORI dei parametri (vedi getNumParameterSnapshots piu'
+    // sotto): albero "SNAPSHOTS" con figli "SNAPSHOT" (name) che contengono
+    // un "P" (channel, type, value) per parametro assegnato - lo stesso
+    // formato per nome canale dello stato del progetto. Fa parte della
+    // STRUTTURA della sessione (buildParamsStructureTree), quindi finisce
+    // nel .csd dentro <apeCsoundParams> e segue Undo/Redo e Save.
+    juce::ValueTree parameterSnapshots { "SNAPSHOTS" };
+    mutable juce::CriticalSection parameterSnapshotsLock;
+
 public:
     // Parametri host (VST3/AU/Standalone): pubblico perche' l'editor dei
     // parametri (futuro) e PluginEditor devono poterci costruire sopra
@@ -836,6 +845,35 @@ public:
     // precedente sugli slot, rimappati sui range nuovi.
     void resetParameterValuesToDefaults();
 
+    //==========================================================================
+    // Snapshot dei valori dei parametri (bottone a destra nella title bar del
+    // pannello Parametri). Ogni snapshot e' un nome + i valori CORRENTI di
+    // tutti i parametri assegnati, per nome canale: richiamarlo riporta i
+    // parametri a quei valori (slider, host, automazione - come
+    // resetParameterValuesToDefaults). L'elenco e' salvato nel .csd (dentro
+    // <apeCsoundParams>) e nel progetto della DAW (copia incorporata).
+    // Add/overwrite/rename/remove modificano la struttura della sessione
+    // (indicatore "•", Undo dal pannello); recall tocca solo i VALORI, che
+    // restano affidati alla DAW (nessun Undo, come per gli slider).
+    int getNumParameterSnapshots() const;
+    juce::String getParameterSnapshotName (int index) const;
+    juce::ValueTree getParameterSnapshotsTree() const;             // copia (per Undo)
+    void setParameterSnapshotsTree (const juce::ValueTree& tree);  // per Undo / Load
+    int  addParameterSnapshot (const juce::String& name);          // valori correnti; ritorna l'indice
+    void overwriteParameterSnapshot (int index);                   // valori correnti nello snapshot esistente
+    void renameParameterSnapshot (int index, const juce::String& name);
+    void removeParameterSnapshot (int index);
+    bool recallParameterSnapshot (int index);
+    /** Nome libero "Snapshot N" (N = primo numero non usato). */
+    juce::String makeUniqueSnapshotName (const juce::String& base = "Snapshot") const;
+
+    /** Valori correnti di tutti i parametri assegnati come albero "SNAPSHOT"
+        (figli "P": channel, type f/i/b/c, value in unita' reali). */
+    juce::ValueTree captureParameterValuesTree() const;
+    /** Applica i valori di un albero "SNAPSHOT" (vedi sopra): i parametri
+        non presenti nell'albero NON vengono toccati. */
+    void applyParameterValuesTree (const juce::ValueTree& values);
+
     // true se al ripristino dal progetto la sessione era "•" (modifiche non
     // salvate su file): la Relocate... la usa per chiedere conferma prima di
     // sostituire un contenuto che non esiste su nessun file. Azzerata da
@@ -940,6 +978,11 @@ private:
     // struttura e' stata ripristinata. Sostituisce "reset ai default + valori
     // salvati", che notificava l'host due volte per parametro (punto 7).
     void applyRestoredValues (const juce::XmlElement& pluginStateXml);
+    // Logica comune a applyRestoredValues e applyParameterValuesTree: chiave
+    // "type:channel" -> valore reale. fallbackToDefault: i parametri assenti
+    // vanno al default dello slot (stato del progetto) o restano com'erano
+    // (snapshot).
+    void pushParameterValues (const std::map<juce::String, double>& saved, bool fallbackToDefault);
 
     // Svuota TUTTI gli slot Float/Int/Bool/Choice (channelName tornato
     // vuoto = non assegnato, come un plugin appena istanziato) - chiamata

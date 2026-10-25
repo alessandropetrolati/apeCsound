@@ -1298,6 +1298,23 @@ private:
     juce::TextButton addButton { "+" };
     void showAddMenu();
 
+    // Bottone a DESTRA nella title bar (nome "snapshotsMenu", icona
+    // "macchina fotografica" in drawButtonText): snapshot dei VALORI dei
+    // parametri, salvati nel .csd - vedi CsoundAudioProcessor::
+    // getNumParameterSnapshots. Il menu (showSnapshotsMenu) elenca gli
+    // snapshot (tocco = richiama), "Save Snapshot..." (nome chiesto con
+    // CsoundTextPrompt) e "Edit Snapshots..." (una pagina per snapshot:
+    // Overwrite / Rename / Delete). Add/overwrite/rename/delete passano da
+    // undoManager (cronologia condivisa con l'editor, vedi
+    // applySnapshotsChangeUndoable); il richiamo tocca solo i valori.
+    juce::TextButton snapshotsButton { "snap" };
+    void showSnapshotsMenu();
+    void promptSaveSnapshot();
+    void promptRenameSnapshot (int index);
+    void applySnapshotsChangeUndoable (const juce::ValueTree& before, const juce::ValueTree& after,
+                                       const juce::String& logLine);
+    int lastRecalledSnapshot = -1; // spunta nel menu
+
     // Etichetta centrale della title bar (richiesta esplicita: "con la
     // label centrale") - vedi resized(): occupa l'INTERA larghezza della
     // barra (non solo lo spazio tra addButton e il bordo destro), cosi' il
