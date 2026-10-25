@@ -478,7 +478,7 @@ void CsoundParameterPanelLookAndFeel::drawLinearSlider (juce::Graphics& g, int x
     // Track sottile (sfondo + riempito fino alla maniglia) - niente Slider::
     // TextBoxRight da dover far stare nella stessa riga, lo spazio e' tutto
     // per il track + la maniglia.
-    const float trackThickness = juce::jmax (3.0f, bounds.getHeight() * 0.18f);
+    const float trackThickness = 4.0f;
     auto trackBounds = juce::Rectangle<float> (bounds.getX(), centreY - trackThickness * 0.5f, bounds.getWidth(), trackThickness);
 
     g.setColour (slider.findColour (juce::Slider::backgroundColourId));
@@ -488,13 +488,31 @@ void CsoundParameterPanelLookAndFeel::drawLinearSlider (juce::Graphics& g, int x
     g.fillRoundedRectangle (trackBounds.withWidth (juce::jlimit (0.0f, bounds.getWidth(), sliderPos - bounds.getX())),
                              trackThickness * 0.5f);
 
-    // Maniglia (thumb) MOLTO piu' grande del normale (richiesta esplicita) -
-    // quasi tutta l'altezza disponibile del componente, indipendentemente
-    // da quanto e' sottile il track sopra: e' questo, non la riga intera,
-    // che deve risultare grande/cliccabile.
-    const float thumbDiameter = juce::jmax (trackThickness, bounds.getHeight());
+    // Maniglia grande (fino a 22 px) su un track sottile; la zona di presa
+    // e' tutta l'altezza dello slider (28 px). Anello chiaro quando e'
+    // trascinata, cosi' sotto il dito si vede che e' "agganciata".
+    const float thumbDiameter = sliderThumbDiameter (bounds.getHeight());
+    const auto thumb = juce::Rectangle<float> (thumbDiameter, thumbDiameter).withCentre ({ sliderPos, centreY });
+
+    if (slider.isMouseButtonDown())
+    {
+        g.setColour (slider.findColour (juce::Slider::thumbColourId).withAlpha (0.25f));
+        g.fillEllipse (thumb.expanded (sliderHaloMargin));
+    }
+
     g.setColour (slider.findColour (juce::Slider::thumbColourId));
-    g.fillEllipse (juce::Rectangle<float> (thumbDiameter, thumbDiameter).withCentre ({ sliderPos, centreY }));
+    g.fillEllipse (thumb);
+    g.setColour (juce::Colours::white.withAlpha (0.85f));
+    g.drawEllipse (thumb.reduced (1.0f), 1.5f);
+}
+
+int CsoundParameterPanelLookAndFeel::getSliderThumbRadius (juce::Slider& slider)
+{
+    if (slider.isHorizontal())
+        // Rientro = raggio dell'alone: agli estremi anche l'alone resta intero.
+        return juce::roundToInt (sliderThumbDiameter ((float) slider.getHeight()) * 0.5f + sliderHaloMargin);
+
+    return LookAndFeel_V4::getSliderThumbRadius (slider);
 }
 
 void CsoundParameterPanelLookAndFeel::drawToggleButton (juce::Graphics& g, juce::ToggleButton& button,
@@ -2255,28 +2273,33 @@ void CsoundParameterMappingPanel::GenericParamRow::resized()
             // possibile.
             auto valueArea = fieldsArea.removeFromRight (uiValueBoxWidth);
             fieldsArea.removeFromRight (uiValueGap);
-            valueReadout.setBounds (valueArea);
+
+            auto rangeLabelsArea = fieldsArea.removeFromBottom (uiRangeLabelHeight);
+            fieldsArea.removeFromBottom (uiSliderTrackGap);
+
+            // Box VALUE alto uiFieldHeight, centrato sulla zona dello slider
+            // (non sulle etichette min/max).
+            valueReadout.setBounds (valueArea.withHeight (fieldsArea.getHeight())
+                                             .withSizeKeepingCentre (valueArea.getWidth(),
+                                                                     juce::jmin (uiFieldHeight, fieldsArea.getHeight())));
 
             // Sotto lo slider, le etichette min/max - lo slider stesso resta
             // COMPATTO (non e' l'altezza totale che deve crescere): la
             // maniglia e' disegnata molto piu' grande del normale
             // indipendentemente da quanto e' sottile questo rettangolo -
             // vedi CsoundParameterPanelLookAndFeel::drawLinearSlider nel .cpp.
-            auto rangeLabelsArea = fieldsArea.removeFromBottom (uiRangeLabelHeight);
             minLabel.setBounds (rangeLabelsArea.removeFromLeft (rangeLabelsArea.getWidth() / 2));
             maxLabel.setBounds (rangeLabelsArea);
-
-            fieldsArea.removeFromBottom (uiSliderTrackGap);
             slider.setBounds (fieldsArea);
             break;
         }
 
         case Kind::toggle:
-            toggle.setBounds (fieldsArea.removeFromLeft (uiTogglePillWidth));
+            toggle.setBounds (fieldsArea.removeFromLeft (uiTogglePillWidth).withSizeKeepingCentre (uiTogglePillWidth, uiFieldHeight));
             break;
 
         case Kind::choice:
-            comboBox.setBounds (fieldsArea);
+            comboBox.setBounds (fieldsArea.withSizeKeepingCentre (fieldsArea.getWidth(), uiFieldHeight));
             break;
     }
 }

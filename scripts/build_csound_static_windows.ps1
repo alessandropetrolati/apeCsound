@@ -30,7 +30,7 @@
 $ErrorActionPreference = "Stop"
 
 $CsoundRepo     = "https://github.com/csound/csound.git"
-$CsoundBranch   = "develop"   # Csound 7 line, same as the other scripts
+$CsoundBranch   = "7.0.0"     # official Csound 7.0.0 release tag, same as the other scripts
 $SndfileRepo    = "https://github.com/libsndfile/libsndfile.git"
 $SamplerateRepo = "https://github.com/libsndfile/libsamplerate.git"
 $LibloRepo      = "https://github.com/radarsat1/liblo.git"
@@ -173,6 +173,16 @@ function FindLib($dir, $patterns) {
 #    One build tree per configuration (it must link the matching sndfile).
 # ---------------------------------------------------------------------
 $CsoundSrc = Join-Path $Work "csound\src"
+# Csound: a checkout of a DIFFERENT ref (e.g. an old "develop" clone) is
+# replaced, so that every build uses exactly $CsoundBranch.
+if (Test-Path (Join-Path $CsoundSrc ".git")) {
+    $currentRef = (git -C $CsoundSrc describe --tags --exact-match 2>$null)
+    if (-not $currentRef) { $currentRef = (git -C $CsoundSrc rev-parse --abbrev-ref HEAD) }
+    if ($currentRef -ne $CsoundBranch) {
+        Write-Host "==> Csound sources are at '$currentRef', need '$CsoundBranch': re-cloning"
+        Remove-Item -Recurse -Force $CsoundSrc
+    }
+}
 CloneOnce $CsoundRepo $CsoundBranch $CsoundSrc
 
 # OSC statico: patch condivisa dei sorgenti Csound (stessa logica di

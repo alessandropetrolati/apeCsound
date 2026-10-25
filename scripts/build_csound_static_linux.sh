@@ -30,7 +30,8 @@
 set -euo pipefail
 
 CSOUND_REPO="https://github.com/csound/csound.git"
-CSOUND_BRANCH="develop"   # Csound 7 line, same as the macOS/iOS scripts
+CSOUND_BRANCH="7.0.0"     # official Csound 7.0.0 release tag (commit c58f4de, 21 Oct 2026).
+                          # Change it here (and in the other build scripts) to move to a new release.
 SNDFILE_REPO="https://github.com/libsndfile/libsndfile.git"
 SAMPLERATE_REPO="https://github.com/libsndfile/libsamplerate.git"
 LIBLO_REPO="https://github.com/radarsat1/liblo.git"
@@ -179,6 +180,15 @@ fi
 # ---------------------------------------------------------------------
 CSOUND_SRC="$WORK/csound/src"
 CSOUND_PREFIX="$STAGE/csound"
+# Csound: a checkout of a DIFFERENT ref (e.g. the old "develop" clone) is
+# replaced, so that every build uses exactly CSOUND_BRANCH.
+if [ -d "$CSOUND_SRC/.git" ]; then
+  current_ref="$(git -C "$CSOUND_SRC" describe --tags --exact-match 2>/dev/null || git -C "$CSOUND_SRC" rev-parse --abbrev-ref HEAD)"
+  if [ "$current_ref" != "$CSOUND_BRANCH" ]; then
+    echo "==> Csound sources are at '$current_ref', need '$CSOUND_BRANCH': re-cloning"
+    rm -rf "$CSOUND_SRC"
+  fi
+fi
 clone_once "$CSOUND_REPO" "$CSOUND_BRANCH" "$CSOUND_SRC"
 
 # OSC statico: plugin "osc" di Csound come libreria statica (patch condivisa).

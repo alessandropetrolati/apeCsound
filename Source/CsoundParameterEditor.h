@@ -10,6 +10,106 @@
 #include "CsoundComboBox.h" // ComboBox con il menu di apeCsound (anche su iOS)
 
 /**
+    Slider dei parametri, uguale con mouse e dito:
+      - mouse / trackpad: comportamento normale di juce::Slider;
+      - dito (touch): la DIREZIONE del primo movimento decide. Orizzontale
+        -> si muove lo slider (e il pannello NON scorre: viewport ignore
+        drag flag); verticale -> scorre il pannello (lo slider non cambia
+        valore). Un tocco senza trascinamento porta lo slider li'.
+    Cosi' una lista di slider si scorre col dito anche partendo da sopra
+    uno slider, e quando lo slider e' "agganciato" al dito il pannello sta
+    fermo.
+*/
+class TouchFriendlySlider final : public juce::Slider
+{
+public:
+    TouchFriendlySlider (SliderStyle style, TextEntryBoxPosition textBox) : juce::Slider (style, textBox)
+    {
+        // Il Viewport non deve mai scorrere da solo a partire da qui: lo
+        // scorrimento col dito, quando serve, lo fa mouseDrag (verticale).
+        setViewportIgnoreDragFlag (true);
+    }
+
+    void mouseDown (const juce::MouseEvent& e) override
+    {
+        if (! e.source.isTouch())
+        {
+            juce::Slider::mouseDown (e);
+            repaint(); // anello "agganciato" (vedi drawLinearSlider)
+            return;
+        }
+
+        gesture = Gesture::undecided;
+        downEvent = std::make_unique<juce::MouseEvent> (e);
+
+        if (auto* vp = findParentComponentOfClass<juce::Viewport>())
+            viewStartY = vp->getViewPositionY();
+    }
+
+    void mouseDrag (const juce::MouseEvent& e) override
+    {
+        if (! e.source.isTouch() || downEvent == nullptr)
+            return juce::Slider::mouseDrag (e);
+
+        if (gesture == Gesture::undecided)
+        {
+            const auto dx = std::abs (e.getDistanceFromDragStartX());
+            const auto dy = std::abs (e.getDistanceFromDragStartY());
+
+            if (juce::jmax (dx, dy) < kDecisionDistance)
+                return;
+
+            gesture = dx >= dy ? Gesture::slider : Gesture::scroll;
+
+            if (gesture == Gesture::slider)
+                juce::Slider::mouseDown (*downEvent);
+        }
+
+        if (gesture == Gesture::slider)
+        {
+            juce::Slider::mouseDrag (e);
+        }
+        else if (auto* vp = findParentComponentOfClass<juce::Viewport>())
+        {
+            vp->setViewPosition (vp->getViewPositionX(), viewStartY - e.getDistanceFromDragStartY());
+        }
+    }
+
+    void mouseUp (const juce::MouseEvent& e) override
+    {
+        if (! e.source.isTouch() || downEvent == nullptr)
+        {
+            juce::Slider::mouseUp (e);
+            repaint(); // toglie l'anello "agganciato" (vedi drawLinearSlider)
+            return;
+        }
+
+        if (gesture == Gesture::undecided)
+        {
+            // Tocco senza trascinamento: lo slider va dove si e' toccato.
+            juce::Slider::mouseDown (*downEvent);
+            juce::Slider::mouseUp (e);
+        }
+        else if (gesture == Gesture::slider)
+        {
+            juce::Slider::mouseUp (e);
+        }
+
+        gesture = Gesture::undecided;
+        downEvent.reset();
+        repaint();
+    }
+
+private:
+    enum class Gesture { undecided, slider, scroll };
+    static constexpr int kDecisionDistance = 6; // px prima di decidere la direzione
+
+    Gesture gesture = Gesture::undecided;
+    std::unique_ptr<juce::MouseEvent> downEvent;
+    int viewStartY = 0;
+};
+
+/**
     LookAndFeel dedicata al pannello parametri (CsoundParameterMappingPanel):
     tema scuro petrolio/teal con angoli a 90 gradi ovunque (nessun bordo
     arrotondato), "glow" accentato sui campi in focus/hover e un menu a
@@ -61,6 +161,16 @@ public:
     void drawLinearSlider (juce::Graphics& g, int x, int y, int width, int height,
                             float sliderPos, float minSliderPos, float maxSliderPos,
                             const juce::Slider::SliderStyle style, juce::Slider& slider) override;
+
+    // Raggio della maniglia = quello disegnato: JUCE rientra il track di
+    // questo valore, cosi' agli estremi la maniglia non viene tagliata e la
+    // posizione del dito corrisponde al centro della maniglia.
+    int getSliderThumbRadius (juce::Slider& slider) override;
+    // Maniglia e alone "agganciato" devono stare DENTRO lo slider (il
+    // componente non disegna fuori dai suoi bordi): alone = maniglia + 2 *
+    // sliderHaloMargin, alto al massimo quanto lo slider.
+    static constexpr float sliderHaloMargin = 4.0f;
+    static float sliderThumbDiameter (float sliderHeight) { return juce::jlimit (10.0f, 20.0f, sliderHeight - 2.0f * sliderHaloMargin); }
 
     // Disegna un "pill" squadrato (sfondo come i campi, pallino pieno +
     // testo ON/OFF) SOLO per i ToggleButton riconosciuti dal nome
@@ -432,15 +542,16 @@ public:
     static constexpr int uiCardHeaderGap = 3;
     static constexpr int uiCardNameHeight = 18;     // nome canale, sola lettura - piu' basso del campo Edit
     static constexpr int uiCardNameGap = 3;
-    static constexpr int uiCardControlHeight = 28;  // slider/toggle/combo/box VALUE - un'unica riga, niente didascalia sopra
+    static constexpr int uiCardControlHeight = 40;  // slider (zona di presa 28 px + min/max) / toggle / combo / box VALUE: comodo anche al dito
 
     static constexpr int uiCardHeight = uiCardPaddingV * 2 + uiCardHeaderHeight + uiCardHeaderGap
                                          + uiCardNameHeight + uiCardNameGap + uiCardControlHeight;
 
     static constexpr int uiValueGap = 10;        // spazio orizzontale tra lo slider e il box VALUE
     static constexpr int uiValueBoxWidth = 80;   // editabile - "0.00001" ci sta comodo
-    static constexpr int uiRangeLabelHeight = 10; // "0"/"127" sotto lo slider - piccola, non e' una didascalia di campo
-    static constexpr int uiSliderTrackGap = 2;    // tra lo slider e le etichette min/max sotto
+    static constexpr int uiRangeLabelHeight = 11; // "0"/"127" sotto lo slider - piccola, non e' una didascalia di campo
+    static constexpr int uiSliderTrackGap = 1;    // tra lo slider e le etichette min/max sotto
+    static constexpr int uiFieldHeight = 30;      // box VALUE / toggle / combo, centrati nella riga
     static constexpr int uiTogglePillWidth = 100;
 
     // Icone "edit"/"copy" proprie di OGNI riga (angolo in alto a destra
@@ -993,7 +1104,7 @@ private:
         juce::Label typeLabel;
         juce::Label channelNameLabel;
 
-        juce::Slider slider { juce::Slider::LinearHorizontal, juce::Slider::NoTextBox };
+        TouchFriendlySlider slider { juce::Slider::LinearHorizontal, juce::Slider::NoTextBox };
         juce::Label minLabel, maxLabel;
         juce::TextEditor valueReadout;   // editabile da tastiera, non un semplice readout - niente didascalia sopra (riga compatta)
 
