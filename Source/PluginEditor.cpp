@@ -36,8 +36,9 @@ namespace
     // in bridgeCodeEditIntoSharedUndo().
     struct CodeEditTransactionProxy final : public juce::UndoableAction
     {
-        CodeEditTransactionProxy (juce::CodeDocument& documentIn, bool& guardFlagIn)
-            : document (documentIn), guardFlag (guardFlagIn) {}
+        CodeEditTransactionProxy (juce::CodeDocument& documentIn, bool& guardFlagIn,
+                                  std::function<void()> onAppliedIn)
+            : document (documentIn), guardFlag (guardFlagIn), onApplied (std::move (onAppliedIn)) {}
 
         // Se il document non ha (piu') nulla da annullare/rifare le due
         // cronologie si sono disallineate: meglio un passo a vuoto che
@@ -54,6 +55,10 @@ namespace
                     document.getUndoManager().redo();
                 else
                     jassertfalse;
+
+                // Caret e selezione sul punto rifatto (vedi CodeView::revealLastEdit).
+                if (onApplied)
+                    onApplied();
             }
 
             firstPerform = false;
@@ -69,11 +74,16 @@ namespace
             else
                 jassertfalse;
 
+            // Caret e selezione sul punto annullato (vedi CodeView::revealLastEdit).
+            if (onApplied)
+                onApplied();
+
             return true;
         }
 
         juce::CodeDocument& document;
         bool& guardFlag;
+        std::function<void()> onApplied;
         bool firstPerform = true;
 
         JUCE_DECLARE_NON_COPYABLE (CodeEditTransactionProxy)
@@ -990,7 +1000,8 @@ void CsoundAudioProcessorEditor::bridgeCodeEditIntoSharedUndo()
     if (document.getUndoManager().getNumActionsInCurrentTransaction() == 0)
     {
         sharedUndoManager.beginNewTransaction();
-        sharedUndoManager.perform (new CodeEditTransactionProxy (document, isApplyingCodeUndoRedo));
+        sharedUndoManager.perform (new CodeEditTransactionProxy (document, isApplyingCodeUndoRedo,
+                                                                 [this] { editor.revealLastEdit(); }));
     }
 }
 

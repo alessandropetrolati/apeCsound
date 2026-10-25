@@ -148,8 +148,11 @@ void CodeView::resized()
 
 //==============================================================================
 // Documento
-void CodeView::DocumentListener::codeDocumentTextInserted (const juce::String&, int insertIndex)
+void CodeView::DocumentListener::codeDocumentTextInserted (const juce::String& newText, int insertIndex)
 {
+    owner.lastEditStart = insertIndex;
+    owner.lastEditEnd   = insertIndex + newText.length();
+
     const int line = juce::CodeDocument::Position (owner.document, insertIndex).getLineNumber();
     owner.removeErrorMarkersOnLine (line);
     owner.documentChanged (line);
@@ -157,6 +160,9 @@ void CodeView::DocumentListener::codeDocumentTextInserted (const juce::String&, 
 
 void CodeView::DocumentListener::codeDocumentTextDeleted (int startIndex, int)
 {
+    owner.lastEditStart = startIndex;
+    owner.lastEditEnd   = startIndex;
+
     const int line = juce::CodeDocument::Position (owner.document, startIndex).getLineNumber();
     owner.removeErrorMarkersOnLine (line);
     owner.documentChanged (line);
@@ -606,6 +612,22 @@ void CodeView::selectRegion (const juce::CodeDocument::Position& start, const ju
     caretMoved (true);
 }
 
+void CodeView::revealLastEdit()
+{
+    if (lastEditStart < 0)
+        return;
+
+    const int total = document.getNumCharacters();
+    const int start = juce::jlimit (0, total, lastEditStart);
+    const int end   = juce::jlimit (start, total, lastEditEnd);
+
+    showHandles = false;
+
+    // Testo reinserito: selezionato; testo tolto: caret li'.
+    selectRegion (juce::CodeDocument::Position (document, start),
+                  juce::CodeDocument::Position (document, end));
+}
+
 void CodeView::setHighlightedRegion (const juce::Range<int>& region)
 {
     selectRegion (juce::CodeDocument::Position (document, region.getStart()),
@@ -868,19 +890,19 @@ bool CodeView::pasteFromClipboard()
 
 bool CodeView::undo()
 {
+    lastEditStart = lastEditEnd = -1;
     document.undo();
-    showHandles = false;
     columnToMaintain = -1;
-    caretMoved (true);
+    revealLastEdit();
     return true;
 }
 
 bool CodeView::redo()
 {
+    lastEditStart = lastEditEnd = -1;
     document.redo();
-    showHandles = false;
     columnToMaintain = -1;
-    caretMoved (true);
+    revealLastEdit();
     return true;
 }
 

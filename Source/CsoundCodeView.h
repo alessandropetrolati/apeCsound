@@ -66,6 +66,11 @@ public:
 
     void moveCaretTo (const juce::CodeDocument::Position& newPos, bool selecting);
     void selectRegion (const juce::CodeDocument::Position& start, const juce::CodeDocument::Position& end);
+
+    /** Dopo Undo / Redo: porta caret e selezione sul punto dell'ultima
+        modifica del documento (testo reinserito selezionato, oppure caret
+        dove il testo e' stato tolto) e lo rende visibile - come Xcode. */
+    void revealLastEdit();
     bool selectAll();  // bool: richiesto da juce::TextEditorKeyMapper
     void deselectAll();
 
@@ -325,6 +330,7 @@ private:
 
     juce::CodeDocument::Position caretPos, selectionAnchor;
     int columnToMaintain = -1; // per le freccie su/giu
+    int lastEditStart = -1, lastEditEnd = -1; // ultima modifica del documento (vedi revealLastEdit)
 
     // Scroll in pixel; contenuto = tutte le righe (+ un margine in fondo).
     double scrollX = 0.0, scrollY = 0.0;
