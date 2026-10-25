@@ -5961,6 +5961,33 @@ Opcodes/quadbezier.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64-static.dir/build.make CMakeFiles/CsoundLib64-static.dir/Opcodes/quadbezier.c.s
 .PHONY : Opcodes/quadbezier.c.s
 
+Opcodes/remap.o: Opcodes/remap.c.o
+.PHONY : Opcodes/remap.o
+
+# target to build an object file
+Opcodes/remap.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64.dir/build.make CMakeFiles/CsoundLib64.dir/Opcodes/remap.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64-static.dir/build.make CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.o
+.PHONY : Opcodes/remap.c.o
+
+Opcodes/remap.i: Opcodes/remap.c.i
+.PHONY : Opcodes/remap.i
+
+# target to preprocess a source file
+Opcodes/remap.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64.dir/build.make CMakeFiles/CsoundLib64.dir/Opcodes/remap.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64-static.dir/build.make CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.i
+.PHONY : Opcodes/remap.c.i
+
+Opcodes/remap.s: Opcodes/remap.c.s
+.PHONY : Opcodes/remap.s
+
+# target to generate assembly for a file
+Opcodes/remap.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64.dir/build.make CMakeFiles/CsoundLib64.dir/Opcodes/remap.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64-static.dir/build.make CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.s
+.PHONY : Opcodes/remap.c.s
+
 Opcodes/repluck.o: Opcodes/repluck.c.o
 .PHONY : Opcodes/repluck.o
 
@@ -6014,6 +6041,33 @@ Opcodes/reverbsc.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64.dir/build.make CMakeFiles/CsoundLib64.dir/Opcodes/reverbsc.c.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64-static.dir/build.make CMakeFiles/CsoundLib64-static.dir/Opcodes/reverbsc.c.s
 .PHONY : Opcodes/reverbsc.c.s
+
+Opcodes/savgol.o: Opcodes/savgol.c.o
+.PHONY : Opcodes/savgol.o
+
+# target to build an object file
+Opcodes/savgol.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64.dir/build.make CMakeFiles/CsoundLib64.dir/Opcodes/savgol.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64-static.dir/build.make CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.o
+.PHONY : Opcodes/savgol.c.o
+
+Opcodes/savgol.i: Opcodes/savgol.c.i
+.PHONY : Opcodes/savgol.i
+
+# target to preprocess a source file
+Opcodes/savgol.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64.dir/build.make CMakeFiles/CsoundLib64.dir/Opcodes/savgol.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64-static.dir/build.make CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.i
+.PHONY : Opcodes/savgol.c.i
+
+Opcodes/savgol.s: Opcodes/savgol.c.s
+.PHONY : Opcodes/savgol.s
+
+# target to generate assembly for a file
+Opcodes/savgol.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64.dir/build.make CMakeFiles/CsoundLib64.dir/Opcodes/savgol.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64-static.dir/build.make CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.s
+.PHONY : Opcodes/savgol.c.s
 
 Opcodes/sc_noise.o: Opcodes/sc_noise.c.o
 .PHONY : Opcodes/sc_noise.o
@@ -6635,6 +6689,33 @@ Opcodes/sterrain.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64.dir/build.make CMakeFiles/CsoundLib64.dir/Opcodes/sterrain.c.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64-static.dir/build.make CMakeFiles/CsoundLib64-static.dir/Opcodes/sterrain.c.s
 .PHONY : Opcodes/sterrain.c.s
+
+Opcodes/stm.o: Opcodes/stm.c.o
+.PHONY : Opcodes/stm.o
+
+# target to build an object file
+Opcodes/stm.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64.dir/build.make CMakeFiles/CsoundLib64.dir/Opcodes/stm.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64-static.dir/build.make CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.o
+.PHONY : Opcodes/stm.c.o
+
+Opcodes/stm.i: Opcodes/stm.c.i
+.PHONY : Opcodes/stm.i
+
+# target to preprocess a source file
+Opcodes/stm.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64.dir/build.make CMakeFiles/CsoundLib64.dir/Opcodes/stm.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64-static.dir/build.make CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.i
+.PHONY : Opcodes/stm.c.i
+
+Opcodes/stm.s: Opcodes/stm.c.s
+.PHONY : Opcodes/stm.s
+
+# target to generate assembly for a file
+Opcodes/stm.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64.dir/build.make CMakeFiles/CsoundLib64.dir/Opcodes/stm.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CsoundLib64-static.dir/build.make CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.s
+.PHONY : Opcodes/stm.c.s
 
 Opcodes/syncgrain.o: Opcodes/syncgrain.c.o
 .PHONY : Opcodes/syncgrain.o
@@ -8554,12 +8635,18 @@ help:
 	@echo "... Opcodes/quadbezier.o"
 	@echo "... Opcodes/quadbezier.i"
 	@echo "... Opcodes/quadbezier.s"
+	@echo "... Opcodes/remap.o"
+	@echo "... Opcodes/remap.i"
+	@echo "... Opcodes/remap.s"
 	@echo "... Opcodes/repluck.o"
 	@echo "... Opcodes/repluck.i"
 	@echo "... Opcodes/repluck.s"
 	@echo "... Opcodes/reverbsc.o"
 	@echo "... Opcodes/reverbsc.i"
 	@echo "... Opcodes/reverbsc.s"
+	@echo "... Opcodes/savgol.o"
+	@echo "... Opcodes/savgol.i"
+	@echo "... Opcodes/savgol.s"
 	@echo "... Opcodes/sc_noise.o"
 	@echo "... Opcodes/sc_noise.i"
 	@echo "... Opcodes/sc_noise.s"
@@ -8629,6 +8716,9 @@ help:
 	@echo "... Opcodes/sterrain.o"
 	@echo "... Opcodes/sterrain.i"
 	@echo "... Opcodes/sterrain.s"
+	@echo "... Opcodes/stm.o"
+	@echo "... Opcodes/stm.i"
+	@echo "... Opcodes/stm.s"
 	@echo "... Opcodes/syncgrain.o"
 	@echo "... Opcodes/syncgrain.i"
 	@echo "... Opcodes/syncgrain.s"

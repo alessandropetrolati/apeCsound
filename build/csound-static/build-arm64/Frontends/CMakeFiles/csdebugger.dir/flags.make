@@ -6,7 +6,7 @@ CXX_DEFINES = -DCS_DEFAULT_PLUGINDIR=\"/Users/alessandropetrolati/Library/Framew
 
 CXX_INCLUDES = -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/include" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/H" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/include" -F"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64"
 
-CXX_FLAGSarm64 =  -ffast-math -fomit-frame-pointer -mcpu=apple-m1 -fvisibility=hidden  -fvisibility=hidden -DHAVE_ATOMIC_BUILTIN -O3 -std=gnu++11 -arch arm64 -mmacosx-version-min=11 -fno-finite-math-only
+CXX_FLAGSarm64 =  -ffast-math -fomit-frame-pointer -mcpu=apple-m1 -fvisibility=hidden  -fvisibility=hidden -DHAVE_ATOMIC_BUILTIN -O3 -std=gnu++11 -arch arm64 -mmacosx-version-min=10.14 -fno-finite-math-only
 
-CXX_FLAGS =  -ffast-math -fomit-frame-pointer -mcpu=apple-m1 -fvisibility=hidden  -fvisibility=hidden -DHAVE_ATOMIC_BUILTIN -O3 -std=gnu++11 -arch arm64 -mmacosx-version-min=11 -fno-finite-math-only
+CXX_FLAGS =  -ffast-math -fomit-frame-pointer -mcpu=apple-m1 -fvisibility=hidden  -fvisibility=hidden -DHAVE_ATOMIC_BUILTIN -O3 -std=gnu++11 -arch arm64 -mmacosx-version-min=10.14 -fno-finite-math-only
 

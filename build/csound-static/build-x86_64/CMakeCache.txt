@@ -50,8 +50,8 @@ BUILD_DEPRECATED_OPCODES:BOOL=ON
 //Build documentation (requires doxygen)
 BUILD_DOCS:BOOL=OFF
 
-//Build the DSSI opcodes
-BUILD_DSSI_OPCODES:BOOL=OFF
+//No help, variable specified on the command line.
+BUILD_DSSI_OPCODES:UNINITIALIZED=OFF
 
 //Build installer
 BUILD_INSTALLER:BOOL=OFF

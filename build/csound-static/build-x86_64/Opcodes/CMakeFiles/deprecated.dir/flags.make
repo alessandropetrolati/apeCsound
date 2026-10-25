@@ -6,7 +6,7 @@ C_DEFINES = -DBUILD_PLUGINS -DCS_DEFAULT_PLUGINDIR=\"/Users/alessandropetrolati/
 
 C_INCLUDES = -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-install/x86_64-deps/sndfile/include" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/util" -I/System/Library/Frameworks -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/include" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/H" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64" -I"/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/include"
 
-C_FLAGSx86_64 = -DHAVE_CLOCK_GETTIME  -DUSE_SRC -ffast-math -mfpmath=sse -fomit-frame-pointer -fvisibility=hidden -DHAVE_VECLIB -DHAVE_ATOMIC_BUILTIN -DHAVE_PTHREAD -O3 -std=gnu11 -arch x86_64 -mmacosx-version-min=11 -fno-finite-math-only
+C_FLAGSx86_64 = -DHAVE_CLOCK_GETTIME  -DUSE_SRC -ffast-math -mfpmath=sse -fomit-frame-pointer -fvisibility=hidden -DHAVE_VECLIB -DHAVE_ATOMIC_BUILTIN -DHAVE_PTHREAD -O3 -std=gnu11 -arch x86_64 -mmacosx-version-min=10.14 -fno-finite-math-only
 
-C_FLAGS = -DHAVE_CLOCK_GETTIME  -DUSE_SRC -ffast-math -mfpmath=sse -fomit-frame-pointer -fvisibility=hidden -DHAVE_VECLIB -DHAVE_ATOMIC_BUILTIN -DHAVE_PTHREAD -O3 -std=gnu11 -arch x86_64 -mmacosx-version-min=11 -fno-finite-math-only
+C_FLAGS = -DHAVE_CLOCK_GETTIME  -DUSE_SRC -ffast-math -mfpmath=sse -fomit-frame-pointer -fvisibility=hidden -DHAVE_VECLIB -DHAVE_ATOMIC_BUILTIN -DHAVE_PTHREAD -O3 -std=gnu11 -arch x86_64 -mmacosx-version-min=10.14 -fno-finite-math-only
 

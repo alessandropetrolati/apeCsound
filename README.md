@@ -1,112 +1,113 @@
 # apeCsound
 
-**apeCsound** is an audio plugin (VST3) and standalone app that runs [Csound](https://csound.com) code live inside your DAW. You write or load a `.csd` file in the built-in editor, press **Apply**, and the engine recompiles it in place. Csound channels can be exposed as automatable DAW parameters.
+**apeCsound** runs [Csound 7](https://csound.com) code live inside your DAW. Write or load a `.csd` file in the built-in editor, press **Apply**, and the engine recompiles while the track keeps playing. Csound channels become automatable DAW parameters.
+
+It is a **MIDI effect** (an audio effect that also receives MIDI), available as:
+
+| Platform | Formats |
+|---|---|
+| macOS | AU, VST3, Standalone app |
+| Windows | VST3, Standalone app |
+| Linux | VST3, Standalone app |
+| iPadOS | AUv3, Standalone app |
 
 Developed by **Alessandro Petrolati** — [apeSoft](https://www.apesoft.it).
+
+---
+
+## Download
+
+- **iPad** (AUv3 + app): [App Store](https://apps.apple.com/app/id6821382219)
+- **macOS**: [apeCsound.pkg](https://www.apesoft.it/Download/apeCsound.pkg)
+- **Windows**: [apeCsound-win.zip](https://www.apesoft.it/Download/apeCsound-win.zip)
+- **Linux**: [apeCsound-linux.zip](https://www.apesoft.it/Download/apeCsound-linux.zip)
+- Product page: [www.apesoft.it/apecsound](https://www.apesoft.it/apecsound/)
 
 ---
 
 ## Features
 
 ### Code editor
-- Csound syntax highlighting.
-- Structure-aware auto-indent for `instr/endin`, `opcode/endop`, `if/elseif/else/endif` and `while/until … do/od`.
-- Opcode autocompletion and an inline help bar: syntax with the manual's argument names, one-line description and category for every opcode of the Csound Reference Manual (generated from CsoundQt's `opcodes.xml`, GNU FDL — see `scripts/generate_opcode_help.py`), plus the user-defined opcodes of the current file and, for anything else, the type signature reported by the running engine. **Modern Syntax in Help** (main menu) shows every synopsis in Csound 7 functional form with type annotations (`ares:a = oscil(xamp, xcps)`); **Csound Manual (online)** opens the Csound 7 reference manual in the browser.
-- **Apply** recompiles the edited code without restarting the host. The button is outlined in red while the editor differs from the running code.
-- Console with Csound's messages and errors.
-- The editor itself is a custom JUCE component (`CodeView`, `Source/CsoundCodeView.*`) rather than `juce::CodeEditorComponent`: one implementation for macOS, Windows, Linux and iOS with smooth pixel scrolling (mouse wheel, trackpad, one-finger pan with inertia), line numbers, current-line highlight, double/triple click selection, and on touch screens tap to place the caret, long press to select with handles and a magnifier, and the app's own menu on release.
+- Csound syntax highlighting and structure-aware auto-indent (`instr/endin`, `opcode/endop`, `if/endif`, loops).
+- Autocompletion and an inline **help bar**: syntax, description and category of every opcode of the Csound Reference Manual (from CsoundQt's `opcodes.xml`, GNU FDL — see `scripts/generate_opcode_help.py`), plus the UDOs of the current file. **Config > Modern Syntax in Help** shows the Csound 7 functional form (`ares:a = oscil(xamp, xcps)`).
+- **Apply** recompiles without restarting the host; the button is outlined in red while the editor differs from the running code. **Pause** stops Csound and lets the audio pass through.
+- **Inline errors**: the line of a compile error (and of INIT/PERF errors at run time) is marked with a red dot, red background and wavy underline; the help bar shows the message.
+- Find / Replace, Comment / Uncomment, re-indent, keyboard shortcuts, undo / redo shared with the Parameters panel.
+- A custom JUCE code view (`Source/CsoundCodeView.*`), the same on macOS, Windows, Linux and iPadOS: smooth scrolling (wheel, trackpad, one-finger pan with inertia), line numbers, and on touch screens tap to place the caret, long press to select with handles and a magnifier.
 
 ### DAW parameters
-## Audio channels
-
-The plugin accepts 1–16 output channels and 0–16 input channels per bus (mono, stereo, surround or discrete layouts). The DAW decides the track channel count; the engine is recompiled whenever it changes.
-
-- **Channels follow the track** (default): `nchnls` / `nchnls_i` are set to the track's output/input channels (minimum 2 outputs, since `outs` needs two), overriding the values declared in the `.csd`, and the orchestra is recompiled when the track's channel count changes.
-- **Follow CSD nchnls** (off by default, in *Config* on the main menu, saved with the project): Csound runs with the `nchnls` / `nchnls_i` declared in the `.csd` header, so the code behaves identically on any track. `outch n` goes to track channel *n*; channels that exist only on one side are silent. If the header does not declare a value, the track count is used.
-
-Any mismatch between header and track is reported in the console. Surround layouts (5.1, 7.1…) are delivered by the host in physical speaker order; the plugin compensates the reordering done by the JUCE wrapper so that `outch 5` is really channel 5 of the track.
-
-A fixed pool of host-automatable parameters can be mapped to Csound channels and read with `chnget`:
+A fixed pool of **144 host-automatable parameters** can be mapped to Csound channels and read with `chnget`:
 
 | Type | Slots | Configuration |
 |---|---|---|
-| Slider Float | 64 | min, max, default, skew, step |
-| Slider Int | 32 | min, max, default |
-| Toggle | 32 | default |
-| Menu | 16 | up to 16 labelled options, default |
+| Float | 64 | min, max, default, skew, step |
+| Int | 32 | min, max, default |
+| Bool | 32 | default |
+| Choice | 16 | up to 16 labelled options, default |
 
-- Drag a parameter onto the code editor to insert the matching `chnget` line.
-- Two-way: `chnset` on a mapped channel updates the parameter (UI slider, host, automation); the value is not overwritten by the host until the parameter has followed it.
-- `.csd` files made with **Cabbage** (`<Cabbage>` section) or **CsoundQt** (`<bsbPanel>` widgets: sliders, knobs, spin boxes, scroll numbers, XY controllers, checkboxes, dropdown menus) are imported automatically: widgets are mapped to parameters.
-- **Porting Cabbage / CsoundQt files is not guaranteed.** Whether a file runs depends on many factors (frontend-specific opcodes, plugin libraries, external files, real-time options). apeCsound imports **only the supported parameter widgets**; GUI layout, graphics, displays and event buttons are ignored, and the code is left untouched: `invalue` / `cabbageGetValue` must be replaced with `chnget`, `outvalue` / `cabbageSet…` with `chnset`, and FLTK, Python, Lua, OSC or non-bundled plugin opcodes do not work. See the in-app **apeCsound Guide** for details.
-- The parameter mapping is saved **inside the `.csd`** in an `<apeCsoundParams>` section after `</CsoundSynthesizer>`. Csound ignores it, so the file stays a valid, portable `.csd`.
+- Drag a parameter onto the code to insert the matching `chnget` line.
+- Two-way: `chnset` on a mapped channel moves the parameter (slider, host, automation).
+- The mapping is saved **inside the `.csd`**, in an `<apeCsoundParams>` section after `</CsoundSynthesizer>`. Csound ignores it, so the file stays a valid, portable `.csd`.
+- **Cabbage** (`<Cabbage>`) and **CsoundQt** (`<bsbPanel>`) widgets — sliders, knobs, spin boxes, XY controllers, checkboxes, menus — are imported as parameters when the file is loaded. The rest of their GUI is ignored and the code is not changed: frontend-specific opcodes (`invalue`, `cabbageGetValue`...) must be replaced with `chnget` / `chnset`. Porting is not guaranteed; see the in-app **apeCsound Guide**.
 
-### Sessions
-- **Folders**: sessions live in `~/Documents/apeCsound/CSD` (iOS: App Group container). `CSD/User` is the default for Save / Save As; Load opens `CSD`. If the session is linked to a file, the choosers open its folder instead.
-- **Examples**: the factory examples (Cabbage and CsoundQt collections, see `README_Examples.md`) are built into the binary (`Resources/Examples.zip`, made with `scripts/make_examples_zip.sh`) and extracted to `CSD/Examples` on first launch, without overwriting existing files. **Open Example...** and **Restore Examples** are in the file capsule menu.
-- **Load CSD**, **Save**, **Save As…** and **Initialize Session** from the main menu, plus drag & drop of `.csd` files onto the window.
-- The DAW project stores the path of the linked `.csd`, a backup copy of the session and the parameter values. **The file on disk is the source of truth.** When the project is reopened, the file is loaded if it exists. The backup copy is used only if the file is missing, or if the session had unsaved changes when the project was saved.
-- A toolbar indicator shows the linked file, where it lives, and a `•` when there are unsaved changes.
-- A single undo history covers both code edits and parameter mapping changes. It survives closing and reopening the plugin window. Parameter **values** are left to the host's automation.
+### Audio, MIDI and OSC
+- **MIDI effect**: AU/AUv3 type "Music Effect" (`aumf`), VST3 category "Fx". The track audio reaches Csound through `inch`, MIDI through `massign` / `notnum`; MIDI written by Csound (`midiout`) goes back to the DAW. To play a `.csd` instrument, load apeCsound as an effect and send it MIDI (the Guide explains how in Logic, Ableton Live, Cubase, REAPER, Bitwig, Studio One and the iOS hosts).
+- **Channels**: 1–16 outputs and 0–16 inputs (mono, stereo, surround, discrete). By default `nchnls` / `nchnls_i` follow the track; **Config > Follow CSD nchnls** uses the values of the `.csd` instead. Surround layouts are reordered so that `outch n` is channel *n* of the track.
+- `sr` follows the DAW; `ksmps` is the plug-in latency, reported to the host.
+- **OSC** opcodes (`oscinit`, `osclisten`, `oscsend`...) are built in.
 
-### Samples folder and errors
-- **SSDIR folder**: apeCsound creates `~/Documents/apeCsound/SSDIR` (iOS: in the App Group container shared by app and AUv3) and passes it to Csound as `SSDIR`, after the folder of the linked `.csd`; files written by Csound go to `~/Documents/apeCsound/SFDIR` (`SFDIR`). Copy audio files there and refer to them by name only (`diskin2 "loop.wav"`, GEN01). `SADIR` (analysis files) and `INCDIR` (`#include`) get their own `apeCsound/SADIR` and `apeCsound/INCDIR` folders too. **Config > Extra Folders** adds an extra folder to SSDIR/SADIR/INCDIR and chooses the SFDIR output folder. `--env:SSDIR=` in `<CsOptions>` overrides it. **Import Files...** (file capsule menu, every platform) copies files into the right folder by extension (audio to SSDIR, `.udo`/`.inc` to INCDIR, analysis files to SADIR); on iOS the App Group folder is not visible in the Files app, so choose an SFDIR output folder in Config (e.g. On My iPad or iCloud Drive) to get the files written by Csound.
-- **Inline errors**: the line of a Csound compile error (and of INIT/PERF errors at run time) is marked in the editor with a red dot, red background and wavy underline; the help bar shows the message when the caret is on that line. Marks clear when the line is edited or on the next Apply.
+### Sessions and files
+- The **file on disk is the reference**. A DAW project stores the path of the linked `.csd`, an embedded copy and the parameter values; the copy is used only if the file is missing.
+- The **apeCsound folder** (`~/Documents/apeCsound`; on iPadOS a folder shared by the app and the AUv3):
+  - `CSD/Examples` — factory examples (Cabbage and CsoundQt collections, see `README_Examples.md`), built into the binary and restorable with **Restore Examples**; `CSD/User` — your sessions, default for **Save as**.
+  - `SSDIR` (audio files to read), `SFDIR` (files written by Csound), `SADIR` (analysis files), `INCDIR` (`#include`). Csound looks first in the folder of the linked `.csd`, then here.
+  - **Config > Extra Folders** adds folders of your choice to SSDIR/SADIR/INCDIR and chooses where Csound writes (SFDIR).
+- **File menu** (the file name in the centre of the toolbar): Init Session Clear / Template, Load, Open Example, Save, Save as, Reveal in Finder, **Import Files...** (copies files into the right folder by type), **Manage Files...** (desktop: opens the apeCsound folder; iPadOS: a file manager to import, export and delete files), Restore Examples.
+- On iPadOS, Load / Save use apeCsound's own file browser, because the shared folder is not visible in the Files app.
 
-### Graphs
-- **Show Graphs** (main menu) opens a panel docked at the bottom next to the console, like Parameters and Console. It draws Csound's function tables and signal displays instead of printing ASCII graphs in the console: every ftable when it is created (long tables as a min/max band), and `display` / `dispfft` while the panel is visible. Displays are always enabled, even with `-d` in `<CsOptions>`; the panel is cleared on every Apply.
-
-### Audio and MIDI
-- Audio input is passed to Csound, so the plugin can process live input as an effect.
-- MIDI input is forwarded to Csound.
-
----
-
-## Requirements
-
-- macOS 12 or later, with Xcode.
-- [JUCE 8](https://juce.com) and the Projucer.
-- **Csound 7**, built as a static library by `scripts/build_csound_static_macos.sh` (Homebrew `cmake`, `bison`, `flex`).
-
-Csound is **linked statically**: `libCsoundLib64.a` + `libsndfile.a` + `libsamplerate.a` (universal arm64/x86_64, all opcodes in the core, no plugin `.dylib`s, no realtime audio/MIDI backends since the host provides audio and MIDI). The plugin bundle has no external dependency and the same approach works on iOS, where runtime-loaded libraries are not allowed. `Source/CsoundDynamicLib.*` keeps a thin function-pointer layer over the C API (a leftover of the previous `dlopen` design) so the rest of the code did not change.
+### Graphs and console
+- **Graphs** panel: function tables and `display` / `dispfft` signals, drawn instead of ASCII graphs.
+- **Console** with Csound's messages and errors; repeated messages are summarised to keep the DAW responsive.
 
 ---
 
 ## Building
 
+### Requirements
+- macOS 12+ with Xcode (for macOS and iPadOS); Visual Studio 2022 (Windows); GCC and the usual development packages (Linux).
+- [JUCE 9](https://juce.com) and the Projucer.
+- **Csound 7.0.0**, built as a static library by the scripts in `scripts/` (macOS: Homebrew `cmake`, `bison`, `flex`).
+
+Csound is **linked statically** (`libCsoundLib64.a` + libsndfile + libsamplerate + liblo for OSC): all opcodes are in the core, no plugin `.dylib`s and no realtime audio/MIDI backends, since the host provides audio and MIDI. The bundles have no external dependency, and the same approach works on iPadOS, where runtime-loaded libraries are not allowed.
+
+### Steps (macOS / iPadOS)
 1. **Clone the repository**
    ```sh
    git clone https://github.com/alessandropetrolati/apeCsound.git
    cd apeCsound
    ```
-
-2. **Build Csound 7 as a static library**
+2. **Build Csound 7.0.0 as a static library**
    ```sh
-   cd scripts && ./build_csound_static_macos.sh
+   cd scripts
+   ./build_csound_static_macos.sh   # macOS, universal arm64 + x86_64
+   ./build_csound_static_ios.sh     # iPadOS device + simulator (uses the sources cloned by the macOS script)
    ```
-   This clones Csound (`develop` branch), libsndfile and libsamplerate, builds them for arm64 and x86_64 and installs headers and universal `.a` files in `build/csound-install/universal/{include,lib}`. The folder is ignored by git. The Xcode project reads headers and libraries from there and links `Accelerate.framework` (Csound's FFT).
+   The scripts clone the official **Csound `7.0.0` release tag**, libsndfile, libsamplerate and liblo, and install headers and `.a` files in `build/csound-install/` (ignored by git). If an older Csound checkout is found, it is replaced.
+3. **Open `apeCsound.jucer` in the Projucer** and save it, to generate `Builds/` and `JuceLibraryCode/`.
+4. **Build in Xcode**: `Builds/MacOSX` (AU, VST3, Standalone) or `Builds/iOS` (AUv3 + app).
 
-   For iOS, then run `./build_csound_static_ios.sh`: it cross-compiles the same sources for device (arm64) and simulator (arm64 + x86_64) into `build/csound-install/ios/{iphoneos,iphonesimulator}/lib`, which the iOS exporter picks up through `$(PLATFORM_NAME)`.
-
-3. **Open the project in the Projucer.** Open `apeCsound.jucer` and check that the JUCE module paths point to your JUCE installation. Then save the project to generate `Builds/MacOSX` and `JuceLibraryCode`.
-
-4. **Build in Xcode.** Open `Builds/MacOSX/apeCsound.xcodeproj` and build the **VST3**, **AUv3** or **Standalone** target; for iOS open `Builds/iOS/apeCsound.xcodeproj` (AUv3 + Standalone). Nothing else to embed: Csound is inside the binary.
-
-> Static Csound 7 build scripts, one per platform (all produce `build/csound-install/...`, the paths used by the `.jucer` exporters):
-> - `scripts/build_csound_static_macos.sh` - macOS, universal (arm64 + x86_64)
-> - `scripts/build_csound_static_ios.sh` - iOS device + simulator (run the macOS script first: it clones the sources)
-> - `scripts/build_csound_static_linux.sh` - Linux (Ubuntu/Debian), x86_64 or aarch64
-> - `scripts/build_csound_static_windows.ps1` - Windows x64, Visual Studio 2022 (Debug + Release, static runtime)
+### Windows and Linux
+Built by **GitHub Actions** (`.github/workflows/build-windows.yml`, `build-linux.yml`): Csound static build (cached), Projucer resave, VST3 + Standalone, zip artifact. They can also be built locally with `scripts/build_csound_static_windows.ps1` / `scripts/build_csound_static_linux.sh` and the generated Visual Studio / Makefile project.
 
 ---
 
 ## Quick start
 
-1. Insert **apeCsound** on a track in your DAW, or launch the standalone app.
-2. Use **Load CSD** from the menu, or drag a `.csd` file onto the window. To start from scratch, use **Initialize Session**.
+1. Insert **apeCsound** on a track as an effect, or launch the standalone app.
+2. Open the file menu (file name in the toolbar) and choose **Open Example...** or **Load...**, or drop a `.csd` on the window.
 3. Edit the code and press **Apply**.
-4. Open the **Parameters** panel, add a parameter, give it the channel name your code reads with `chnget`, and automate it from the DAW.
-5. Use **Save** to write code and parameter mapping back to the `.csd`. New files go to `~/Documents/apeCsound` by default.
+4. In the **Parameters** panel, add a parameter, give it the channel name your code reads with `chnget`, and automate it from the DAW.
+5. **Save** writes the code and the parameter mapping back to the `.csd`.
 
 ---
 
@@ -114,25 +115,31 @@ Csound is **linked statically**: `libCsoundLib64.a` + `libsndfile.a` + `libsampl
 
 ```
 Source/
-  PluginProcessor.*        Csound engine, parameters, session and project state
-  PluginEditor.*           Main window: toolbar, editor, console, menus, About view
-  CsoundCodeView.*         CodeView: custom code editor component (layout, scrolling, mouse/touch, keyboard)
+  PluginProcessor.*        Csound engine, parameters, session and project state, folders
+  PluginEditor.*           Main window: toolbar, editor, console, menus, Guide, About
+  CsoundCodeView.*         Custom code view (layout, scrolling, mouse/touch, keyboard)
   CsoundCodeEditor.*       Csound layer over CodeView (auto-indent, autocompletion, help bar)
   CsoundTokeniser.*        Syntax highlighting
   CsoundParameterEditor.*  Parameters panel
-  CsoundActionSheet.*      Touch-friendly menus
+  CsoundGraphs.*           Graphs panel (ftables, display, dispfft)
+  CsoundActionSheet.*      Menus (touch-friendly on iPadOS)
+  CsdBrowserView.h         iPadOS file browser / file manager
+  CsoundAudioSettings.*    Audio/MIDI settings of the standalone app
   CsoundDynamicLib.*       Function-pointer layer over the statically linked Csound C API
-  NativeAlertMac.*         Native macOS dialogs
-scripts/                   Build helpers for Csound
-Resources/                 App icon
+  SecurityScopedFile.*     iPadOS file access (security-scoped bookmarks)
+  NativeAlertMac.*         Native dialogs
+scripts/                   Csound static builds, examples zip, opcode help generator
+Resources/                 App icon, factory examples (Examples.zip)
 ```
 
 ---
 
 ## Credits
 
-- [Csound](https://csound.com) — the sound and music computing system this plugin is built on. Csound is distributed under the LGPL 2.1.
-- [JUCE](https://juce.com) — the C++ framework for the plugin, the standalone app and the UI.
+- [Csound](https://csound.com) — the sound and music computing system apeCsound is built on (LGPL 2.1).
+- [JUCE](https://juce.com) — the C++ framework for the plug-in, the standalone app and the UI.
+- Opcode help text from the Csound Reference Manual (GNU FDL), via [CsoundQt](https://github.com/CsoundQt/CsoundQt)'s opcode database.
+- Factory examples by Iain McCurdy, Joachim Heintz and others — see `README_Examples.md` for authors and licenses.
 
 ---
 

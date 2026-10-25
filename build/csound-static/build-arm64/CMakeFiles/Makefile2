@@ -921,8 +921,8 @@ tests/soak/CMakeFiles/soak.dir/clean:
 # Target rules for target tests/python/CMakeFiles/pytests.dir
 
 # All Build rule for target.
-tests/python/CMakeFiles/pytests.dir/all: Frontends/CMakeFiles/csound-bin.dir/all
 tests/python/CMakeFiles/pytests.dir/all: CMakeFiles/CsoundLib64.dir/all
+tests/python/CMakeFiles/pytests.dir/all: Frontends/CMakeFiles/csound-bin.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/python/CMakeFiles/pytests.dir/build.make tests/python/CMakeFiles/pytests.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/python/CMakeFiles/pytests.dir/build.make tests/python/CMakeFiles/pytests.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-arm64/CMakeFiles" --progress-num=100 "Built target pytests"

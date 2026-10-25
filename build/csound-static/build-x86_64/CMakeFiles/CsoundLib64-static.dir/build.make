@@ -124,15 +124,15 @@ CMakeFiles/CsoundLib64-static.dir/Top/csound.c.o: CMakeFiles/CsoundLib64-static.
 CMakeFiles/CsoundLib64-static.dir/Top/csound.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Top/csound.c
 CMakeFiles/CsoundLib64-static.dir/Top/csound.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_7) "Building C object CMakeFiles/CsoundLib64-static.dir/Top/csound.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -DGIT_HASH_VALUE=e8b0cd232ce1c9e3c3a33315589fb3f9229f33f0 -MD -MT CMakeFiles/CsoundLib64-static.dir/Top/csound.c.o -MF CMakeFiles/CsoundLib64-static.dir/Top/csound.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Top/csound.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Top/csound.c"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -DGIT_HASH_VALUE=c58f4de6b8056b9356f31615b395b3bfd9bd0775 -MD -MT CMakeFiles/CsoundLib64-static.dir/Top/csound.c.o -MF CMakeFiles/CsoundLib64-static.dir/Top/csound.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Top/csound.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Top/csound.c"
 
 CMakeFiles/CsoundLib64-static.dir/Top/csound.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/CsoundLib64-static.dir/Top/csound.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -DGIT_HASH_VALUE=e8b0cd232ce1c9e3c3a33315589fb3f9229f33f0 -E "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Top/csound.c" > CMakeFiles/CsoundLib64-static.dir/Top/csound.c.i
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -DGIT_HASH_VALUE=c58f4de6b8056b9356f31615b395b3bfd9bd0775 -E "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Top/csound.c" > CMakeFiles/CsoundLib64-static.dir/Top/csound.c.i
 
 CMakeFiles/CsoundLib64-static.dir/Top/csound.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/CsoundLib64-static.dir/Top/csound.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -DGIT_HASH_VALUE=e8b0cd232ce1c9e3c3a33315589fb3f9229f33f0 -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Top/csound.c" -o CMakeFiles/CsoundLib64-static.dir/Top/csound.c.s
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -DGIT_HASH_VALUE=c58f4de6b8056b9356f31615b395b3bfd9bd0775 -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Top/csound.c" -o CMakeFiles/CsoundLib64-static.dir/Top/csound.c.s
 
 CMakeFiles/CsoundLib64-static.dir/Top/csound_perf.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Top/csound_perf.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Top/csound_perf.c
@@ -2122,10 +2122,52 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/dbap.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/CsoundLib64-static.dir/Opcodes/dbap.c.s"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/dbap.c" -o CMakeFiles/CsoundLib64-static.dir/Opcodes/dbap.c.s
 
+CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
+CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/savgol.c
+CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_150) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/savgol.c"
+
+CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.i"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/savgol.c" > CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.i
+
+CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.s"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/savgol.c" -o CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.s
+
+CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
+CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/remap.c
+CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_151) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/remap.c"
+
+CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.i"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/remap.c" > CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.i
+
+CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.s"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/remap.c" -o CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.s
+
+CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
+CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/stm.c
+CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_152) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/stm.c"
+
+CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.i"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/stm.c" > CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.i
+
+CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.s"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/stm.c" -o CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.s
+
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ifd.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ifd.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/ifd.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ifd.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_150) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/ifd.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_153) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/ifd.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/ifd.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/ifd.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/ifd.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/ifd.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ifd.c.i: cmake_force
@@ -2139,7 +2181,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/ifd.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/partials.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/partials.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/partials.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/partials.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_151) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/partials.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_154) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/partials.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/partials.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/partials.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/partials.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/partials.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/partials.c.i: cmake_force
@@ -2153,7 +2195,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/partials.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/psynth.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/psynth.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/psynth.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/psynth.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_152) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/psynth.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_155) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/psynth.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/psynth.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/psynth.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/psynth.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/psynth.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/psynth.c.i: cmake_force
@@ -2167,7 +2209,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/psynth.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbasic.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbasic.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvsbasic.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbasic.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_153) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbasic.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_156) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbasic.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbasic.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbasic.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbasic.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvsbasic.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbasic.c.i: cmake_force
@@ -2181,7 +2223,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbasic.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvscent.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvscent.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvscent.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvscent.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_154) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvscent.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_157) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvscent.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvscent.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvscent.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvscent.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvscent.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvscent.c.i: cmake_force
@@ -2195,7 +2237,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvscent.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsdemix.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsdemix.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvsdemix.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsdemix.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_155) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsdemix.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_158) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsdemix.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsdemix.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsdemix.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsdemix.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvsdemix.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsdemix.c.i: cmake_force
@@ -2209,7 +2251,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsdemix.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvs_ops.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvs_ops.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvs_ops.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvs_ops.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_156) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvs_ops.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_159) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvs_ops.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvs_ops.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvs_ops.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvs_ops.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvs_ops.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvs_ops.c.i: cmake_force
@@ -2223,7 +2265,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvs_ops.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsband.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsband.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvsband.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsband.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_157) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsband.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_160) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsband.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsband.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsband.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsband.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvsband.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsband.c.i: cmake_force
@@ -2237,7 +2279,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsband.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbuffer.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbuffer.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvsbuffer.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbuffer.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_158) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbuffer.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_161) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbuffer.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbuffer.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbuffer.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbuffer.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvsbuffer.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbuffer.c.i: cmake_force
@@ -2251,7 +2293,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsbuffer.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsgendy.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsgendy.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvsgendy.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsgendy.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_159) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsgendy.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_162) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsgendy.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsgendy.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsgendy.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsgendy.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvsgendy.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsgendy.c.i: cmake_force
@@ -2265,7 +2307,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsgendy.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/physutil.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/physutil.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/physutil.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/physutil.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_160) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/physutil.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_163) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/physutil.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/physutil.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/physutil.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/physutil.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/physutil.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/physutil.c.i: cmake_force
@@ -2279,7 +2321,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/physutil.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/modal4.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/modal4.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/modal4.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/modal4.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_161) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/modal4.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_164) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/modal4.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/modal4.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/modal4.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/modal4.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/modal4.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/modal4.c.i: cmake_force
@@ -2293,7 +2335,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/modal4.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/physmod.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/physmod.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/physmod.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/physmod.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_162) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/physmod.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_165) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/physmod.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/physmod.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/physmod.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/physmod.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/physmod.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/physmod.c.i: cmake_force
@@ -2307,7 +2349,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/physmod.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/mandolin.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/mandolin.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/mandolin.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/mandolin.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_163) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/mandolin.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_166) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/mandolin.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/mandolin.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/mandolin.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/mandolin.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/mandolin.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/mandolin.c.i: cmake_force
@@ -2321,7 +2363,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/mandolin.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/singwave.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/singwave.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/singwave.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/singwave.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_164) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/singwave.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_167) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/singwave.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/singwave.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/singwave.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/singwave.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/singwave.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/singwave.c.i: cmake_force
@@ -2335,7 +2377,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/singwave.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/fm4op.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/fm4op.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/fm4op.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/fm4op.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_165) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/fm4op.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_168) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/fm4op.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/fm4op.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/fm4op.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/fm4op.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/fm4op.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/fm4op.c.i: cmake_force
@@ -2349,7 +2391,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/fm4op.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/moog1.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/moog1.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/moog1.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/moog1.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_166) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/moog1.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_169) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/moog1.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/moog1.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/moog1.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/moog1.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/moog1.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/moog1.c.i: cmake_force
@@ -2363,7 +2405,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/moog1.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/shaker.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/shaker.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/shaker.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/shaker.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_167) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/shaker.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_170) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/shaker.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/shaker.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/shaker.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/shaker.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/shaker.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/shaker.c.i: cmake_force
@@ -2377,7 +2419,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/shaker.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/bowedbar.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/bowedbar.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/bowedbar.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/bowedbar.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_168) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/bowedbar.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_171) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/bowedbar.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/bowedbar.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/bowedbar.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/bowedbar.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/bowedbar.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/bowedbar.c.i: cmake_force
@@ -2391,7 +2433,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/bowedbar.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pitch.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pitch.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pitch.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pitch.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_169) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pitch.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_172) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pitch.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pitch.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pitch.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pitch.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pitch.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pitch.c.i: cmake_force
@@ -2405,7 +2447,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pitch.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/spectra.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/spectra.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/spectra.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/spectra.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_170) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/spectra.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_173) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/spectra.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/spectra.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/spectra.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/spectra.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/spectra.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/spectra.c.i: cmake_force
@@ -2419,7 +2461,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/spectra.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/dsputil.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/dsputil.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/dsputil.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/dsputil.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_171) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/dsputil.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_174) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/dsputil.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/dsputil.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/dsputil.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/dsputil.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/dsputil.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/dsputil.c.i: cmake_force
@@ -2433,7 +2475,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/dsputil.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvadd.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvadd.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvadd.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvadd.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_172) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvadd.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_175) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvadd.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvadd.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvadd.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvadd.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvadd.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvadd.c.i: cmake_force
@@ -2447,7 +2489,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvadd.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvinterp.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvinterp.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvinterp.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvinterp.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_173) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvinterp.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_176) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvinterp.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvinterp.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvinterp.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvinterp.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvinterp.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvinterp.c.i: cmake_force
@@ -2461,7 +2503,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvinterp.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvocext.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvocext.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvocext.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvocext.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_174) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvocext.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_177) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvocext.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvocext.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvocext.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvocext.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvocext.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvocext.c.i: cmake_force
@@ -2475,7 +2517,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvocext.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvread.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvread.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvread.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvread.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_175) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvread.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_178) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvread.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvread.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvread.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvread.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvread.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvread.c.i: cmake_force
@@ -2489,7 +2531,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvread.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ugens8.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ugens8.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/ugens8.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ugens8.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_176) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/ugens8.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_179) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/ugens8.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/ugens8.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/ugens8.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/ugens8.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/ugens8.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ugens8.c.i: cmake_force
@@ -2503,7 +2545,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/ugens8.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/vpvoc.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/vpvoc.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/vpvoc.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/vpvoc.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_177) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/vpvoc.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_180) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/vpvoc.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/vpvoc.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/vpvoc.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/vpvoc.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/vpvoc.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/vpvoc.c.i: cmake_force
@@ -2517,7 +2559,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/vpvoc.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvoc.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvoc.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvoc.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvoc.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_178) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvoc.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_181) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvoc.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvoc.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvoc.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvoc.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvoc.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvoc.c.i: cmake_force
@@ -2531,7 +2573,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvoc.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/scansyn.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/scansyn.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/scansyn.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/scansyn.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_179) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/scansyn.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_182) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/scansyn.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/scansyn.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/scansyn.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/scansyn.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/scansyn.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/scansyn.c.i: cmake_force
@@ -2545,7 +2587,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/scansyn.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/scansynx.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/scansynx.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/scansynx.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/scansynx.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_180) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/scansynx.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_183) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/scansynx.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/scansynx.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/scansynx.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/scansynx.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/scansynx.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/scansynx.c.i: cmake_force
@@ -2559,7 +2601,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/scansynx.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/mp3in.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/mp3in.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/mp3in.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/mp3in.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_181) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/mp3in.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_184) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/mp3in.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/mp3in.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/mp3in.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/mp3in.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/mp3in.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/mp3in.c.i: cmake_force
@@ -2573,7 +2615,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/mp3in.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer1.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer1.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/InOut/libmpadec/layer1.c
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer1.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_182) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer1.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_185) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer1.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer1.c.o -MF CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer1.c.o.d -o CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer1.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/InOut/libmpadec/layer1.c"
 
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer1.c.i: cmake_force
@@ -2587,7 +2629,7 @@ CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer1.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer2.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer2.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/InOut/libmpadec/layer2.c
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer2.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_183) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer2.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_186) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer2.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer2.c.o -MF CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer2.c.o.d -o CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer2.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/InOut/libmpadec/layer2.c"
 
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer2.c.i: cmake_force
@@ -2601,7 +2643,7 @@ CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer2.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer3.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer3.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/InOut/libmpadec/layer3.c
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer3.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_184) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer3.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_187) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer3.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer3.c.o -MF CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer3.c.o.d -o CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer3.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/InOut/libmpadec/layer3.c"
 
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer3.c.i: cmake_force
@@ -2615,7 +2657,7 @@ CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/layer3.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/synth.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/synth.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/InOut/libmpadec/synth.c
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/synth.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_185) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/synth.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_188) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/synth.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/synth.c.o -MF CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/synth.c.o.d -o CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/synth.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/InOut/libmpadec/synth.c"
 
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/synth.c.i: cmake_force
@@ -2629,7 +2671,7 @@ CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/synth.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/tables.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/tables.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/InOut/libmpadec/tables.c
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/tables.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_186) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/tables.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_189) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/tables.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/tables.c.o -MF CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/tables.c.o.d -o CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/tables.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/InOut/libmpadec/tables.c"
 
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/tables.c.i: cmake_force
@@ -2643,7 +2685,7 @@ CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/tables.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mpadec.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mpadec.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/InOut/libmpadec/mpadec.c
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mpadec.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_187) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mpadec.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_190) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mpadec.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mpadec.c.o -MF CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mpadec.c.o.d -o CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mpadec.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/InOut/libmpadec/mpadec.c"
 
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mpadec.c.i: cmake_force
@@ -2657,7 +2699,7 @@ CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mpadec.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mp3dec.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mp3dec.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/InOut/libmpadec/mp3dec.c
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mp3dec.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_188) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mp3dec.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_191) "Building C object CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mp3dec.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mp3dec.c.o -MF CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mp3dec.c.o.d -o CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mp3dec.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/InOut/libmpadec/mp3dec.c"
 
 CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mp3dec.c.i: cmake_force
@@ -2671,7 +2713,7 @@ CMakeFiles/CsoundLib64-static.dir/InOut/libmpadec/mp3dec.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ampmidid.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ampmidid.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/ampmidid.cpp
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ampmidid.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_189) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/ampmidid.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_192) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/ampmidid.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/ampmidid.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/ampmidid.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/ampmidid.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/ampmidid.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ampmidid.cpp.i: cmake_force
@@ -2685,7 +2727,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/ampmidid.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/mixer.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/mixer.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/mixer.cpp
 CMakeFiles/CsoundLib64-static.dir/Opcodes/mixer.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_190) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/mixer.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_193) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/mixer.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/mixer.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/mixer.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/mixer.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/mixer.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/mixer.cpp.i: cmake_force
@@ -2699,7 +2741,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/mixer.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/bformdec2.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/bformdec2.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/bformdec2.cpp
 CMakeFiles/CsoundLib64-static.dir/Opcodes/bformdec2.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_191) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/bformdec2.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_194) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/bformdec2.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/bformdec2.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/bformdec2.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/bformdec2.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/bformdec2.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/bformdec2.cpp.i: cmake_force
@@ -2713,7 +2755,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/bformdec2.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/doppler.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/doppler.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/doppler.cpp
 CMakeFiles/CsoundLib64-static.dir/Opcodes/doppler.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_192) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/doppler.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_195) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/doppler.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/doppler.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/doppler.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/doppler.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/doppler.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/doppler.cpp.i: cmake_force
@@ -2727,7 +2769,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/doppler.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ftsamplebank.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ftsamplebank.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/ftsamplebank.cpp
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ftsamplebank.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_193) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/ftsamplebank.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_196) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/ftsamplebank.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/ftsamplebank.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/ftsamplebank.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/ftsamplebank.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/ftsamplebank.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ftsamplebank.cpp.i: cmake_force
@@ -2741,7 +2783,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/ftsamplebank.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/padsynth_gen.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/padsynth_gen.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/padsynth_gen.cpp
 CMakeFiles/CsoundLib64-static.dir/Opcodes/padsynth_gen.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_194) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/padsynth_gen.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_197) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/padsynth_gen.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/padsynth_gen.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/padsynth_gen.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/padsynth_gen.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/padsynth_gen.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/padsynth_gen.cpp.i: cmake_force
@@ -2755,7 +2797,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/padsynth_gen.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/signalflowgraph.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/signalflowgraph.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/signalflowgraph.cpp
 CMakeFiles/CsoundLib64-static.dir/Opcodes/signalflowgraph.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_195) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/signalflowgraph.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_198) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/signalflowgraph.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/signalflowgraph.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/signalflowgraph.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/signalflowgraph.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/signalflowgraph.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/signalflowgraph.cpp.i: cmake_force
@@ -2769,7 +2811,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/signalflowgraph.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/arrayops.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/arrayops.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/arrayops.cpp
 CMakeFiles/CsoundLib64-static.dir/Opcodes/arrayops.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_196) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/arrayops.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_199) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/arrayops.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/arrayops.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/arrayops.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/arrayops.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/arrayops.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/arrayops.cpp.i: cmake_force
@@ -2783,7 +2825,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/arrayops.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/lfsr.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/lfsr.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/lfsr.cpp
 CMakeFiles/CsoundLib64-static.dir/Opcodes/lfsr.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_197) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/lfsr.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_200) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/lfsr.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/lfsr.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/lfsr.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/lfsr.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/lfsr.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/lfsr.cpp.i: cmake_force
@@ -2797,7 +2839,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/lfsr.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsops.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsops.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvsops.cpp
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsops.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_198) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsops.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_201) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsops.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsops.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsops.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsops.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvsops.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsops.cpp.i: cmake_force
@@ -2811,7 +2853,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvsops.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/trigEnvSegs.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/trigEnvSegs.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/trigEnvSegs.cpp
 CMakeFiles/CsoundLib64-static.dir/Opcodes/trigEnvSegs.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_199) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/trigEnvSegs.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_202) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/trigEnvSegs.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/trigEnvSegs.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/trigEnvSegs.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/trigEnvSegs.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/trigEnvSegs.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/trigEnvSegs.cpp.i: cmake_force
@@ -2825,7 +2867,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/trigEnvSegs.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/tl/fractalnoise.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/tl/fractalnoise.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/tl/fractalnoise.cpp
 CMakeFiles/CsoundLib64-static.dir/Opcodes/tl/fractalnoise.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_200) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/tl/fractalnoise.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_203) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Opcodes/tl/fractalnoise.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/tl/fractalnoise.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/tl/fractalnoise.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/tl/fractalnoise.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/tl/fractalnoise.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/tl/fractalnoise.cpp.i: cmake_force
@@ -2839,7 +2881,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/tl/fractalnoise.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfopcodes.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfopcodes.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/hrtfopcodes.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfopcodes.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_201) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfopcodes.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_204) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfopcodes.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfopcodes.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfopcodes.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfopcodes.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/hrtfopcodes.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfopcodes.c.i: cmake_force
@@ -2853,7 +2895,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfopcodes.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfearly.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfearly.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/hrtfearly.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfearly.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_202) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfearly.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_205) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfearly.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfearly.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfearly.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfearly.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/hrtfearly.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfearly.c.i: cmake_force
@@ -2867,7 +2909,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfearly.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfreverb.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfreverb.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/hrtfreverb.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfreverb.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_203) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfreverb.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_206) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfreverb.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfreverb.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfreverb.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfreverb.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/hrtfreverb.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfreverb.c.i: cmake_force
@@ -2881,7 +2923,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtfreverb.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtferX.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtferX.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/hrtferX.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtferX.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_204) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtferX.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_207) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtferX.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtferX.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtferX.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtferX.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/hrtferX.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtferX.c.i: cmake_force
@@ -2895,7 +2937,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/hrtferX.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/socksend.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/socksend.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/socksend.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/socksend.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_205) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/socksend.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_208) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/socksend.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/socksend.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/socksend.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/socksend.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/socksend.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/socksend.c.i: cmake_force
@@ -2909,7 +2951,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/socksend.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sockrecv.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sockrecv.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/sockrecv.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sockrecv.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_206) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/sockrecv.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_209) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/sockrecv.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/sockrecv.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/sockrecv.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/sockrecv.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/sockrecv.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sockrecv.c.i: cmake_force
@@ -2923,7 +2965,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/sockrecv.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/babo.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/babo.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/babo.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/babo.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_207) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/babo.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_210) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/babo.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/babo.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/babo.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/babo.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/babo.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/babo.c.i: cmake_force
@@ -2937,7 +2979,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/babo.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/bilbar.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/bilbar.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/bilbar.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/bilbar.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_208) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/bilbar.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_211) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/bilbar.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/bilbar.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/bilbar.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/bilbar.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/bilbar.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/bilbar.c.i: cmake_force
@@ -2951,7 +2993,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/bilbar.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/compress.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/compress.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/compress.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/compress.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_209) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/compress.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_212) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/compress.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/compress.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/compress.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/compress.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/compress.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/compress.c.i: cmake_force
@@ -2965,7 +3007,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/compress.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/eqfil.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/eqfil.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/eqfil.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/eqfil.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_210) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/eqfil.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_213) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/eqfil.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/eqfil.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/eqfil.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/eqfil.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/eqfil.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/eqfil.c.i: cmake_force
@@ -2979,7 +3021,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/eqfil.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/Vosim.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/Vosim.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/Vosim.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/Vosim.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_211) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/Vosim.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_214) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/Vosim.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/Vosim.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/Vosim.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/Vosim.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/Vosim.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/Vosim.c.i: cmake_force
@@ -2993,7 +3035,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/Vosim.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/squinewave.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/squinewave.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/squinewave.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/squinewave.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_212) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/squinewave.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_215) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/squinewave.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/squinewave.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/squinewave.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/squinewave.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/squinewave.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/squinewave.c.i: cmake_force
@@ -3007,7 +3049,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/squinewave.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pinker.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pinker.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pinker.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pinker.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_213) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pinker.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_216) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pinker.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pinker.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pinker.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pinker.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pinker.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pinker.c.i: cmake_force
@@ -3021,7 +3063,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pinker.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/cpumeter.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/cpumeter.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/cpumeter.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/cpumeter.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_214) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/cpumeter.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_217) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/cpumeter.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/cpumeter.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/cpumeter.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/cpumeter.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/cpumeter.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/cpumeter.c.i: cmake_force
@@ -3035,7 +3077,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/cpumeter.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sc_noise.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sc_noise.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/sc_noise.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sc_noise.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_215) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/sc_noise.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_218) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/sc_noise.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/sc_noise.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/sc_noise.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/sc_noise.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/sc_noise.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sc_noise.c.i: cmake_force
@@ -3049,7 +3091,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/sc_noise.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/afilters.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/afilters.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/afilters.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/afilters.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_216) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/afilters.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_219) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/afilters.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/afilters.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/afilters.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/afilters.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/afilters.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/afilters.c.i: cmake_force
@@ -3063,7 +3105,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/afilters.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/wpfilters.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/wpfilters.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/wpfilters.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/wpfilters.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_217) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/wpfilters.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_220) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/wpfilters.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/wpfilters.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/wpfilters.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/wpfilters.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/wpfilters.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/wpfilters.c.i: cmake_force
@@ -3077,7 +3119,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/wpfilters.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/lufs.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/lufs.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/lufs.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/lufs.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_218) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/lufs.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_221) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/lufs.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/lufs.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/lufs.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/lufs.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/lufs.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/lufs.c.i: cmake_force
@@ -3091,7 +3133,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/lufs.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/date.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/date.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/date.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/date.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_219) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/date.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_222) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/date.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/date.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/date.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/date.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/date.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/date.c.i: cmake_force
@@ -3105,7 +3147,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/date.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/system_call.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/system_call.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/system_call.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/system_call.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_220) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/system_call.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_223) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/system_call.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/system_call.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/system_call.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/system_call.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/system_call.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/system_call.c.i: cmake_force
@@ -3119,7 +3161,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/system_call.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/serial.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/serial.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/serial.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/serial.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_221) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/serial.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_224) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/serial.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/serial.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/serial.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/serial.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/serial.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/serial.c.i: cmake_force
@@ -3133,7 +3175,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/serial.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/counter.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/counter.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/counter.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/counter.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_222) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/counter.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_225) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/counter.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/counter.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/counter.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/counter.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/counter.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/counter.c.i: cmake_force
@@ -3147,7 +3189,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/counter.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/liveconv.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/liveconv.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/liveconv.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/liveconv.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_223) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/liveconv.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_226) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/liveconv.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/liveconv.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/liveconv.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/liveconv.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/liveconv.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/liveconv.c.i: cmake_force
@@ -3161,7 +3203,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/liveconv.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sterrain.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sterrain.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/sterrain.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sterrain.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_224) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/sterrain.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_227) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/sterrain.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/sterrain.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/sterrain.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/sterrain.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/sterrain.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sterrain.c.i: cmake_force
@@ -3175,7 +3217,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/sterrain.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gammatone.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gammatone.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/gammatone.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gammatone.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_225) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/gammatone.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_228) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/gammatone.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/gammatone.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/gammatone.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/gammatone.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/gammatone.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gammatone.c.i: cmake_force
@@ -3189,7 +3231,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/gammatone.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sfont.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sfont.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/sfont.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sfont.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_226) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/sfont.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_229) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/sfont.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -Wno-address-of-packed-member -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/sfont.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/sfont.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/sfont.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/sfont.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sfont.c.i: cmake_force
@@ -3203,7 +3245,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/sfont.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gendy.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gendy.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/gendy.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gendy.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_227) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/gendy.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_230) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/gendy.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/gendy.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/gendy.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/gendy.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/gendy.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gendy.c.i: cmake_force
@@ -3217,7 +3259,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/gendy.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/phisem.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/phisem.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/phisem.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/phisem.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_228) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/phisem.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_231) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/phisem.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/phisem.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/phisem.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/phisem.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/phisem.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/phisem.c.i: cmake_force
@@ -3231,7 +3273,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/phisem.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/framebuffer.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/framebuffer.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/framebuffer.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/framebuffer.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_229) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/framebuffer.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_232) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/framebuffer.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/framebuffer.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/framebuffer.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/framebuffer.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/framebuffer.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/framebuffer.c.i: cmake_force
@@ -3245,7 +3287,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/framebuffer.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/cellular.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/cellular.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/cellular.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/cellular.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_230) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/cellular.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_233) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/cellular.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/cellular.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/cellular.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/cellular.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/cellular.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/cellular.c.i: cmake_force
@@ -3259,7 +3301,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/cellular.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/exciter.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/exciter.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/exciter.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/exciter.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_231) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/exciter.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_234) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/exciter.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/exciter.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/exciter.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/exciter.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/exciter.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/exciter.c.i: cmake_force
@@ -3273,7 +3315,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/exciter.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/buchla.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/buchla.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/buchla.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/buchla.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_232) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/buchla.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_235) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/buchla.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/buchla.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/buchla.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/buchla.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/buchla.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/buchla.c.i: cmake_force
@@ -3287,7 +3329,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/buchla.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/select.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/select.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/select.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/select.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_233) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/select.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_236) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/select.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/select.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/select.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/select.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/select.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/select.c.i: cmake_force
@@ -3301,7 +3343,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/select.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/platerev.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/platerev.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/platerev.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/platerev.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_234) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/platerev.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_237) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/platerev.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/platerev.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/platerev.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/platerev.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/platerev.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/platerev.c.i: cmake_force
@@ -3315,7 +3357,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/platerev.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sequencer.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sequencer.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/sequencer.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sequencer.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_235) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/sequencer.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_238) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/sequencer.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/sequencer.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/sequencer.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/sequencer.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/sequencer.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/sequencer.c.i: cmake_force
@@ -3329,7 +3371,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/sequencer.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/grain4.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/grain4.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/grain4.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/grain4.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_236) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/grain4.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_239) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/grain4.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/grain4.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/grain4.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/grain4.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/grain4.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/grain4.c.i: cmake_force
@@ -3343,7 +3385,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/grain4.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/loscilx.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/loscilx.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/loscilx.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/loscilx.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_237) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/loscilx.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_240) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/loscilx.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/loscilx.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/loscilx.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/loscilx.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/loscilx.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/loscilx.c.i: cmake_force
@@ -3357,7 +3399,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/loscilx.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/minmax.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/minmax.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/minmax.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/minmax.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_238) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/minmax.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_241) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/minmax.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/minmax.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/minmax.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/minmax.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/minmax.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/minmax.c.i: cmake_force
@@ -3371,7 +3413,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/minmax.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pan2.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pan2.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pan2.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pan2.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_239) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pan2.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_242) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pan2.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pan2.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pan2.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pan2.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pan2.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pan2.c.i: cmake_force
@@ -3385,7 +3427,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pan2.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/vaops.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/vaops.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/vaops.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/vaops.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_240) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/vaops.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_243) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/vaops.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/vaops.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/vaops.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/vaops.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/vaops.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/vaops.c.i: cmake_force
@@ -3399,7 +3441,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/vaops.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ugakbari.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ugakbari.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/ugakbari.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ugakbari.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_241) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/ugakbari.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_244) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/ugakbari.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/ugakbari.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/ugakbari.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/ugakbari.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/ugakbari.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ugakbari.c.i: cmake_force
@@ -3413,7 +3455,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/ugakbari.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/harmon.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/harmon.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/harmon.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/harmon.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_242) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/harmon.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_245) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/harmon.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/harmon.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/harmon.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/harmon.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/harmon.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/harmon.c.i: cmake_force
@@ -3427,7 +3469,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/harmon.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pitchtrack.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pitchtrack.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pitchtrack.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pitchtrack.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_243) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pitchtrack.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_246) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pitchtrack.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pitchtrack.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pitchtrack.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pitchtrack.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pitchtrack.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pitchtrack.c.i: cmake_force
@@ -3441,7 +3483,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pitchtrack.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/partikkel.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/partikkel.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/partikkel.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/partikkel.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_244) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/partikkel.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_247) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/partikkel.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/partikkel.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/partikkel.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/partikkel.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/partikkel.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/partikkel.c.i: cmake_force
@@ -3455,7 +3497,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/partikkel.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/shape.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/shape.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/shape.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/shape.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_245) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/shape.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_248) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/shape.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/shape.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/shape.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/shape.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/shape.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/shape.c.i: cmake_force
@@ -3469,7 +3511,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/shape.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/tabaudio.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/tabaudio.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/tabaudio.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/tabaudio.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_246) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/tabaudio.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_249) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/tabaudio.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/tabaudio.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/tabaudio.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/tabaudio.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/tabaudio.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/tabaudio.c.i: cmake_force
@@ -3483,7 +3525,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/tabaudio.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/tabsum.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/tabsum.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/tabsum.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/tabsum.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_247) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/tabsum.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_250) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/tabsum.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/tabsum.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/tabsum.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/tabsum.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/tabsum.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/tabsum.c.i: cmake_force
@@ -3497,7 +3539,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/tabsum.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/crossfm.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/crossfm.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/crossfm.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/crossfm.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_248) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/crossfm.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_251) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/crossfm.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/crossfm.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/crossfm.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/crossfm.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/crossfm.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/crossfm.c.i: cmake_force
@@ -3511,7 +3553,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/crossfm.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvlock.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvlock.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/pvlock.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvlock.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_249) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvlock.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_252) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/pvlock.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/pvlock.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/pvlock.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/pvlock.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/pvlock.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/pvlock.c.i: cmake_force
@@ -3525,7 +3567,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/pvlock.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/fareyseq.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/fareyseq.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/fareyseq.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/fareyseq.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_250) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/fareyseq.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_253) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/fareyseq.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/fareyseq.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/fareyseq.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/fareyseq.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/fareyseq.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/fareyseq.c.i: cmake_force
@@ -3539,7 +3581,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/fareyseq.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/modmatrix.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/modmatrix.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/modmatrix.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/modmatrix.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_251) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/modmatrix.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_254) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/modmatrix.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/modmatrix.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/modmatrix.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/modmatrix.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/modmatrix.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/modmatrix.c.i: cmake_force
@@ -3553,7 +3595,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/modmatrix.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/scoreline.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/scoreline.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/scoreline.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/scoreline.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_252) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/scoreline.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_255) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/scoreline.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/scoreline.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/scoreline.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/scoreline.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/scoreline.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/scoreline.c.i: cmake_force
@@ -3567,7 +3609,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/scoreline.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ambicode1.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ambicode1.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/ambicode1.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ambicode1.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_253) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/ambicode1.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_256) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/ambicode1.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/ambicode1.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/ambicode1.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/ambicode1.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/ambicode1.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ambicode1.c.i: cmake_force
@@ -3581,7 +3623,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/ambicode1.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/arrays.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/arrays.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/arrays.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/arrays.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_254) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/arrays.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_257) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/arrays.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/arrays.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/arrays.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/arrays.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/arrays.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/arrays.c.i: cmake_force
@@ -3595,7 +3637,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/arrays.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/emugens.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/emugens.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/emugens/emugens.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/emugens.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_255) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/emugens.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_258) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/emugens.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/emugens.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/emugens.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/emugens.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/emugens/emugens.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/emugens.c.i: cmake_force
@@ -3609,7 +3651,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/emugens.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/scugens.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/scugens.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/emugens/scugens.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/scugens.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_256) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/scugens.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_259) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/scugens.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/scugens.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/scugens.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/scugens.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/emugens/scugens.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/scugens.c.i: cmake_force
@@ -3623,7 +3665,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/emugens/scugens.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/zak.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/zak.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/zak.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/zak.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_257) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/zak.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_260) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/zak.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/zak.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/zak.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/zak.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/zak.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/zak.c.i: cmake_force
@@ -3637,7 +3679,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/zak.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/paulstretch.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/paulstretch.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/paulstretch.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/paulstretch.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_258) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/paulstretch.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_261) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/paulstretch.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/paulstretch.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/paulstretch.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/paulstretch.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/paulstretch.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/paulstretch.c.i: cmake_force
@@ -3651,7 +3693,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/paulstretch.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ftest.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ftest.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/ftest.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ftest.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_259) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/ftest.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_262) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/ftest.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/ftest.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/ftest.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/ftest.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/ftest.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/ftest.c.i: cmake_force
@@ -3665,7 +3707,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/ftest.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/fareygen.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/fareygen.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/fareygen.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/fareygen.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_260) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/fareygen.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_263) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/fareygen.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/fareygen.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/fareygen.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/fareygen.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/fareygen.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/fareygen.c.i: cmake_force
@@ -3679,7 +3721,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/fareygen.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/quadbezier.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/quadbezier.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/quadbezier.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/quadbezier.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_261) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/quadbezier.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_264) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/quadbezier.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/quadbezier.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/quadbezier.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/quadbezier.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/quadbezier.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/quadbezier.c.i: cmake_force
@@ -3693,7 +3735,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/quadbezier.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/tabmorph.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/tabmorph.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/gab/tabmorph.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/tabmorph.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_262) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/tabmorph.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_265) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/tabmorph.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/tabmorph.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/tabmorph.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/tabmorph.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/gab/tabmorph.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/tabmorph.c.i: cmake_force
@@ -3707,7 +3749,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/tabmorph.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/hvs.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/hvs.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/gab/hvs.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/hvs.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_263) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/hvs.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_266) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/hvs.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/hvs.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/hvs.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/hvs.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/gab/hvs.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/hvs.c.i: cmake_force
@@ -3721,7 +3763,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/hvs.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/newgabopc.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/newgabopc.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/gab/newgabopc.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/newgabopc.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_264) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/newgabopc.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_267) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/newgabopc.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/newgabopc.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/newgabopc.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/newgabopc.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/gab/newgabopc.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/newgabopc.c.i: cmake_force
@@ -3735,7 +3777,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/gab/newgabopc.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/vbap.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/vbap.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/vbap.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/vbap.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_265) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/vbap.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_268) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/vbap.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/vbap.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/vbap.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/vbap.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/vbap.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/vbap.c.i: cmake_force
@@ -3749,7 +3791,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/vbap.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/control.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/control.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/control.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/control.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_266) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/control.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_269) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/control.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/control.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/control.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/control.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/control.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/control.c.i: cmake_force
@@ -3763,7 +3805,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/control.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Opcodes/urandom.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Opcodes/urandom.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Opcodes/urandom.c
 CMakeFiles/CsoundLib64-static.dir/Opcodes/urandom.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_267) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/urandom.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_270) "Building C object CMakeFiles/CsoundLib64-static.dir/Opcodes/urandom.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Opcodes/urandom.c.o -MF CMakeFiles/CsoundLib64-static.dir/Opcodes/urandom.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Opcodes/urandom.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Opcodes/urandom.c"
 
 CMakeFiles/CsoundLib64-static.dir/Opcodes/urandom.c.i: cmake_force
@@ -3777,7 +3819,7 @@ CMakeFiles/CsoundLib64-static.dir/Opcodes/urandom.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Top/csPerfThread.cpp.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Top/csPerfThread.cpp.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Top/csPerfThread.cpp
 CMakeFiles/CsoundLib64-static.dir/Top/csPerfThread.cpp.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_268) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Top/csPerfThread.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_271) "Building CXX object CMakeFiles/CsoundLib64-static.dir/Top/csPerfThread.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Top/csPerfThread.cpp.o -MF CMakeFiles/CsoundLib64-static.dir/Top/csPerfThread.cpp.o.d -o CMakeFiles/CsoundLib64-static.dir/Top/csPerfThread.cpp.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Top/csPerfThread.cpp"
 
 CMakeFiles/CsoundLib64-static.dir/Top/csPerfThread.cpp.i: cmake_force
@@ -3791,7 +3833,7 @@ CMakeFiles/CsoundLib64-static.dir/Top/csPerfThread.cpp.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/csound_orclex.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/csound_orclex.c.o: csound_orclex.c
 CMakeFiles/CsoundLib64-static.dir/csound_orclex.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_269) "Building C object CMakeFiles/CsoundLib64-static.dir/csound_orclex.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_272) "Building C object CMakeFiles/CsoundLib64-static.dir/csound_orclex.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -Wno-implicit-fallthrough -Wno-misleading-indentation -MD -MT CMakeFiles/CsoundLib64-static.dir/csound_orclex.c.o -MF CMakeFiles/CsoundLib64-static.dir/csound_orclex.c.o.d -o CMakeFiles/CsoundLib64-static.dir/csound_orclex.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/csound_orclex.c"
 
 CMakeFiles/CsoundLib64-static.dir/csound_orclex.c.i: cmake_force
@@ -3805,7 +3847,7 @@ CMakeFiles/CsoundLib64-static.dir/csound_orclex.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/csound_orcparse.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/csound_orcparse.c.o: csound_orcparse.c
 CMakeFiles/CsoundLib64-static.dir/csound_orcparse.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_270) "Building C object CMakeFiles/CsoundLib64-static.dir/csound_orcparse.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_273) "Building C object CMakeFiles/CsoundLib64-static.dir/csound_orcparse.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/csound_orcparse.c.o -MF CMakeFiles/CsoundLib64-static.dir/csound_orcparse.c.o.d -o CMakeFiles/CsoundLib64-static.dir/csound_orcparse.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/csound_orcparse.c"
 
 CMakeFiles/CsoundLib64-static.dir/csound_orcparse.c.i: cmake_force
@@ -3819,7 +3861,7 @@ CMakeFiles/CsoundLib64-static.dir/csound_orcparse.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/csound_prelex.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/csound_prelex.c.o: csound_prelex.c
 CMakeFiles/CsoundLib64-static.dir/csound_prelex.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_271) "Building C object CMakeFiles/CsoundLib64-static.dir/csound_prelex.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_274) "Building C object CMakeFiles/CsoundLib64-static.dir/csound_prelex.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -Wno-implicit-fallthrough -MD -MT CMakeFiles/CsoundLib64-static.dir/csound_prelex.c.o -MF CMakeFiles/CsoundLib64-static.dir/csound_prelex.c.o.d -o CMakeFiles/CsoundLib64-static.dir/csound_prelex.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/csound_prelex.c"
 
 CMakeFiles/CsoundLib64-static.dir/csound_prelex.c.i: cmake_force
@@ -3833,7 +3875,7 @@ CMakeFiles/CsoundLib64-static.dir/csound_prelex.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_semantics.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_semantics.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Engine/csound_orc_semantics.c
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_semantics.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_272) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_semantics.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_275) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_semantics.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_semantics.c.o -MF CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_semantics.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_semantics.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc_semantics.c"
 
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_semantics.c.i: cmake_force
@@ -3847,7 +3889,7 @@ CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_semantics.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_expressions.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_expressions.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Engine/csound_orc_expressions.c
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_expressions.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_273) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_expressions.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_276) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_expressions.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_expressions.c.o -MF CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_expressions.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_expressions.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc_expressions.c"
 
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_expressions.c.i: cmake_force
@@ -3861,7 +3903,7 @@ CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_expressions.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_optimize.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_optimize.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Engine/csound_orc_optimize.c
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_optimize.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_274) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_optimize.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_277) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_optimize.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_optimize.c.o -MF CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_optimize.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_optimize.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc_optimize.c"
 
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_optimize.c.i: cmake_force
@@ -3875,7 +3917,7 @@ CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_optimize.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_compile.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_compile.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Engine/csound_orc_compile.c
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_compile.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_275) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_compile.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_278) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_compile.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_compile.c.o -MF CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_compile.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_compile.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc_compile.c"
 
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_compile.c.i: cmake_force
@@ -3889,7 +3931,7 @@ CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_compile.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_structs.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_structs.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Engine/csound_orc_structs.c
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_structs.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_276) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_structs.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_279) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_structs.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_structs.c.o -MF CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_structs.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_structs.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/csound_orc_structs.c"
 
 CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_structs.c.i: cmake_force
@@ -3903,7 +3945,7 @@ CMakeFiles/CsoundLib64-static.dir/Engine/csound_orc_structs.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Engine/new_orc_parser.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Engine/new_orc_parser.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Engine/new_orc_parser.c
 CMakeFiles/CsoundLib64-static.dir/Engine/new_orc_parser.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_277) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/new_orc_parser.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_280) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/new_orc_parser.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Engine/new_orc_parser.c.o -MF CMakeFiles/CsoundLib64-static.dir/Engine/new_orc_parser.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Engine/new_orc_parser.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/new_orc_parser.c"
 
 CMakeFiles/CsoundLib64-static.dir/Engine/new_orc_parser.c.i: cmake_force
@@ -3917,7 +3959,7 @@ CMakeFiles/CsoundLib64-static.dir/Engine/new_orc_parser.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Engine/symbtab.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Engine/symbtab.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Engine/symbtab.c
 CMakeFiles/CsoundLib64-static.dir/Engine/symbtab.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_278) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/symbtab.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_281) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/symbtab.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Engine/symbtab.c.o -MF CMakeFiles/CsoundLib64-static.dir/Engine/symbtab.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Engine/symbtab.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/symbtab.c"
 
 CMakeFiles/CsoundLib64-static.dir/Engine/symbtab.c.i: cmake_force
@@ -3931,7 +3973,7 @@ CMakeFiles/CsoundLib64-static.dir/Engine/symbtab.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/csound_prslex.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/csound_prslex.c.o: csound_prslex.c
 CMakeFiles/CsoundLib64-static.dir/csound_prslex.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_279) "Building C object CMakeFiles/CsoundLib64-static.dir/csound_prslex.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_282) "Building C object CMakeFiles/CsoundLib64-static.dir/csound_prslex.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/csound_prslex.c.o -MF CMakeFiles/CsoundLib64-static.dir/csound_prslex.c.o.d -o CMakeFiles/CsoundLib64-static.dir/csound_prslex.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/csound_prslex.c"
 
 CMakeFiles/CsoundLib64-static.dir/csound_prslex.c.i: cmake_force
@@ -3945,7 +3987,7 @@ CMakeFiles/CsoundLib64-static.dir/csound_prslex.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Engine/cs_new_dispatch.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Engine/cs_new_dispatch.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Engine/cs_new_dispatch.c
 CMakeFiles/CsoundLib64-static.dir/Engine/cs_new_dispatch.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_280) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/cs_new_dispatch.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_283) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/cs_new_dispatch.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Engine/cs_new_dispatch.c.o -MF CMakeFiles/CsoundLib64-static.dir/Engine/cs_new_dispatch.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Engine/cs_new_dispatch.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/cs_new_dispatch.c"
 
 CMakeFiles/CsoundLib64-static.dir/Engine/cs_new_dispatch.c.i: cmake_force
@@ -3959,7 +4001,7 @@ CMakeFiles/CsoundLib64-static.dir/Engine/cs_new_dispatch.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_base.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_base.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Engine/cs_par_base.c
 CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_base.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_281) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_base.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_284) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_base.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_base.c.o -MF CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_base.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_base.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/cs_par_base.c"
 
 CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_base.c.i: cmake_force
@@ -3973,7 +4015,7 @@ CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_base.c.s: cmake_force
 CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_orc_semantic_analysis.c.o: CMakeFiles/CsoundLib64-static.dir/flags.make
 CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_orc_semantic_analysis.c.o: /Users/alessandropetrolati/Desktop/Advanced\ 2018/apeCsound/build/csound-static/src/Engine/cs_par_orc_semantic_analysis.c
 CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_orc_semantic_analysis.c.o: CMakeFiles/CsoundLib64-static.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_282) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_orc_semantic_analysis.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_285) "Building C object CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_orc_semantic_analysis.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_orc_semantic_analysis.c.o -MF CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_orc_semantic_analysis.c.o.d -o CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_orc_semantic_analysis.c.o -c "/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/src/Engine/cs_par_orc_semantic_analysis.c"
 
 CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_orc_semantic_analysis.c.i: cmake_force
@@ -4131,6 +4173,9 @@ CsoundLib64__static_OBJECTS = \
 "CMakeFiles/CsoundLib64-static.dir/Opcodes/wterrain2.c.o" \
 "CMakeFiles/CsoundLib64-static.dir/Opcodes/stdopcod.c.o" \
 "CMakeFiles/CsoundLib64-static.dir/Opcodes/dbap.c.o" \
+"CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.o" \
+"CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.o" \
+"CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.o" \
 "CMakeFiles/CsoundLib64-static.dir/Opcodes/ifd.c.o" \
 "CMakeFiles/CsoundLib64-static.dir/Opcodes/partials.c.o" \
 "CMakeFiles/CsoundLib64-static.dir/Opcodes/psynth.c.o" \
@@ -4413,6 +4458,9 @@ libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/Opcodes/wave-terrain.c.o
 libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/Opcodes/wterrain2.c.o
 libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/Opcodes/stdopcod.c.o
 libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/Opcodes/dbap.c.o
+libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/Opcodes/savgol.c.o
+libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/Opcodes/remap.c.o
+libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/Opcodes/stm.c.o
 libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/Opcodes/ifd.c.o
 libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/Opcodes/partials.c.o
 libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/Opcodes/psynth.c.o
@@ -4548,7 +4596,7 @@ libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_base.c.o
 libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/Engine/cs_par_orc_semantic_analysis.c.o
 libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/build.make
 libCsoundLib64.a: CMakeFiles/CsoundLib64-static.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_283) "Linking CXX static library libCsoundLib64.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/build/csound-static/build-x86_64/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_286) "Linking CXX static library libCsoundLib64.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/CsoundLib64-static.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/CsoundLib64-static.dir/link.txt --verbose=$(VERBOSE)
 
