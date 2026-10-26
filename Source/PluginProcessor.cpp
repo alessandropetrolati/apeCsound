@@ -2381,6 +2381,82 @@ void CsoundAudioProcessor::resetParameterValuesToDefaults()
     }
 }
 
+void CsoundAudioProcessor::resetParameterValueToDefault (int kind, int index)
+{
+    auto push = [] (juce::RangedAudioParameter* param, float normalized)
+    {
+        if (param != nullptr)
+            param->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, normalized));
+    };
+
+    switch (kind)
+    {
+        case 0: { const auto s = getChannelParamSlot (index); push (apvts.getParameter (getChannelParamID (index)), normalizeChannelParam (s, (double) s.defaultValue)); break; }
+        case 1: { const auto s = getIntParamSlot (index);     push (apvts.getParameter (getIntParamID (index)),     normalizeIntParam (s, (double) s.defaultValue)); break; }
+        case 2: { const auto s = getBoolParamSlot (index);    push (apvts.getParameter (getBoolParamID (index)),    s.defaultValue ? 1.0f : 0.0f); break; }
+        case 3: { const auto s = getChoiceParamSlot (index);  push (apvts.getParameter (getChoiceParamID (index)),
+                                                                     maxChoiceOptions > 1 ? (float) s.defaultIndex / (float) (maxChoiceOptions - 1) : 0.0f); break; }
+        default: break;
+    }
+}
+
+void CsoundAudioProcessor::randomizeParameterValue (int kind, int index)
+{
+    auto& rng = juce::Random::getSystemRandom();
+
+    auto push = [] (juce::RangedAudioParameter* param, float normalized)
+    {
+        if (param != nullptr)
+            param->setValueNotifyingHost (juce::jlimit (0.0f, 1.0f, normalized));
+    };
+
+    switch (kind)
+    {
+        case 0:
+            if (getChannelParamSlot (index).channelName.isNotEmpty())
+                push (apvts.getParameter (getChannelParamID (index)), rng.nextFloat());
+            break;
+
+        case 1:
+        {
+            const auto s = getIntParamSlot (index);
+            if (s.channelName.isNotEmpty())
+            {
+                const int lo = juce::jmin (s.minValue, s.maxValue), hi = juce::jmax (s.minValue, s.maxValue);
+                push (apvts.getParameter (getIntParamID (index)), normalizeIntParam (s, (double) (lo + rng.nextInt (hi - lo + 1))));
+            }
+            break;
+        }
+
+        case 2:
+            if (getBoolParamSlot (index).channelName.isNotEmpty())
+                push (apvts.getParameter (getBoolParamID (index)), rng.nextBool() ? 1.0f : 0.0f);
+            break;
+
+        case 3:
+        {
+            const auto s = getChoiceParamSlot (index);
+            if (s.channelName.isNotEmpty())
+            {
+                const int n = juce::jmax (1, s.optionLabels.size());
+                push (apvts.getParameter (getChoiceParamID (index)),
+                      maxChoiceOptions > 1 ? (float) rng.nextInt (n) / (float) (maxChoiceOptions - 1) : 0.0f);
+            }
+            break;
+        }
+
+        default: break;
+    }
+}
+
+void CsoundAudioProcessor::randomizeAllParameterValues()
+{
+    for (int i = 0; i < numChannelParams; ++i) randomizeParameterValue (0, i);
+    for (int i = 0; i < numIntParams;     ++i) randomizeParameterValue (1, i);
+    for (int i = 0; i < numBoolParams;    ++i) randomizeParameterValue (2, i);
+    for (int i = 0; i < numChoiceParams;  ++i) randomizeParameterValue (3, i);
+}
+
 bool CsoundAudioProcessor::hasLinkedFileChangedOnDisk() const
 {
     juce::File file;
@@ -4139,6 +4215,7 @@ void CsoundAudioProcessor::applyParamsStructureTree (const juce::ValueTree& stat
             const juce::ScopedLock sl (parameterSnapshotsLock);
             auto snaps = state.getChildWithName ("SNAPSHOTS");
             parameterSnapshots = snaps.isValid() ? snaps.createCopy() : juce::ValueTree ("SNAPSHOTS");
+
         }
 
         // Nomi, range e testi dei parametri sono cambiati tutti insieme: la DAW

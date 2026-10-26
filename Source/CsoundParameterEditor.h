@@ -562,6 +562,14 @@ public:
     // seconda riga per track e min/max.
     static constexpr int uiCompactCardHeight = uiCardPaddingV * 2 + uiCardHeaderHeight;
 
+    /** Toggle/menu su UNA riga solo se, tolti maniglia, icone e controllo,
+        al nome restano almeno uiCompactMinNameWidth px; altrimenti due
+        righe come lo slider (nome sopra, controllo sotto). isChoice: il
+        menu e' piu' largo del toggle. */
+    static constexpr int uiCompactMinNameWidth = 90;
+    static constexpr int uiExternalDotWidth = 22;   // spazio a sinistra del nome per il puntino "mosso da fuori"
+    static bool compactCardFits (int cardWidth, bool isChoice);
+
     static constexpr int uiValueGap = 10;        // spazio orizzontale tra lo slider e il box VALUE
     static constexpr int uiValueBoxWidth = 80;   // editabile - "0.00001" ci sta comodo
     static constexpr int uiRangeLabelHeight = 11; // "0"/"127" sotto lo slider - piccola, non e' una didascalia di campo
@@ -715,6 +723,10 @@ private:
         // seleziona il contenuto - usata da createPendingRow().
         void focusChannelNameField();
 
+        // Rimozione dal menu "..." della card (stesso effetto del bottone
+        // "x" della vista Edit, vedi removeButton.onClick).
+        void requestRemove() { removeButton.triggerClick(); }
+
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
         void textEditorFocusLost (juce::TextEditor&) override;
@@ -810,6 +822,10 @@ private:
 
         void focusChannelNameField();
 
+        // Rimozione dal menu "..." della card (stesso effetto del bottone
+        // "x" della vista Edit, vedi removeButton.onClick).
+        void requestRemove() { removeButton.triggerClick(); }
+
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
         void textEditorFocusLost (juce::TextEditor&) override;
@@ -884,6 +900,10 @@ private:
         std::function<void()> onCommittedNonEmpty;
 
         void focusChannelNameField();
+
+        // Rimozione dal menu "..." della card (stesso effetto del bottone
+        // "x" della vista Edit, vedi removeButton.onClick).
+        void requestRemove() { removeButton.triggerClick(); }
 
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
@@ -961,6 +981,10 @@ private:
 
         void focusChannelNameField();
 
+        // Rimozione dal menu "..." della card (stesso effetto del bottone
+        // "x" della vista Edit, vedi removeButton.onClick).
+        void requestRemove() { removeButton.triggerClick(); }
+
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
         void textEditorFocusLost (juce::TextEditor&) override;
@@ -1018,9 +1042,19 @@ private:
     // pill toggle per Bool, un combo a tutta larghezza per Choice - agganciato
     // al parametro apvts VERO tramite le classi di attachment "ufficiali" di
     // JUCE.
-    struct GenericParamRow final : public juce::Component
+    struct GenericParamRow final : public juce::Component,
+                                   private juce::Timer
     {
         enum class Kind { slider, toggle, choice };
+
+        // Indicatore "mosso da fuori": quando il valore cambia senza che
+        // l'utente stia toccando il controllo (automazione della DAW,
+        // chnset dal codice, richiamo di uno snapshot) accanto al nome
+        // compare un puntino nel colore del tipo che si spegne in ~0.7 s
+        // (Timer). Spiega perche' uno slider "si muove da solo".
+        void flashExternalChange();
+        void timerCallback() override;
+        float externalFlash = 0.0f; // 1 = appena acceso, 0 = spento
 
         // accent/typeLabelText: stessi colori/testo della card Edit
         // corrispondente (kSliderAccent/"SLIDER FLOAT" ecc.), passati dal
@@ -1168,16 +1202,20 @@ private:
     // disegnarci sopra le rispettive icone, stile "piatto" (nessun riquadro
     // pieno a riposo) visto che si ripetono su ogni card invece di essere
     // un unico bottone di toolbar.
+    // Due bottoni per card, nell'angolo in alto a destra, uguali in vista
+    // UI e in Edit: a destra l'occhio di Edit (nome "editToggle": apre/
+    // chiude la configurazione, cerchio pieno quando e' aperta); alla sua
+    // sinistra il menu "..." (nome "rowMenu": tre puntini grigi, discreti)
+    // con Copy chnget line, Reset to Init Value, Remove (con conferma) -
+    // vedi showRowMenu. Il menu ha preso il posto dell'icona copy.
     static void setupRowEditIconButton (juce::TextButton& button);
-    static void setupRowCopyButton (juce::TextButton& button);
-
-    // Posiziona copyButton ED editIconButton insieme, nell'angolo in alto a
-    // destra della card - copyButton SEMPRE immediatamente a sinistra di
-    // editIconButton (richiesta esplicita: "un bottone sulla sx di edit per
-    // il copy"), in ENTRAMBE le modalita' (sostituisce il vecchio
-    // layoutRowEditIconButton, che posizionava solo editIconButton).
+    static void setupRowMenuButton (juce::TextButton& button);
     static void layoutRowIconButtons (juce::Rectangle<int> fullBounds, bool rowEditMode,
-                                       juce::Component& copyButton, juce::Component& editButton);
+                                       juce::Component& menuButton, juce::Component& editButton);
+
+    // Menu "..." di una card: kind 0..3, slotIndex; onRemove la rimuove
+    // (requestRemove della ParamRow), dopo conferma.
+    void showRowMenu (int kind, int slotIndex, std::function<void()> onRemove);
 
     struct FloatUnifiedRow final : public juce::Component, public UnifiedRowInterface
     {
@@ -1202,7 +1240,7 @@ private:
         std::unique_ptr<ParamRow> editRow;
         std::unique_ptr<GenericParamRow> uiRow;
         juce::TextButton editIconButton;
-        juce::TextButton copyButton;
+        juce::TextButton menuButton;
         bool rowEditMode = false;
         std::function<void()> onEditModeChanged;
 
@@ -1210,6 +1248,7 @@ private:
         // setEditMode(), sia dall'utente (click su editIconButton) sia dal
         // pannello stesso (ripristino dopo un rebuildUnifiedRows()).
         std::function<void (bool)> onEditModeToggled;
+        std::function<void()> onMenuRequested; // menu "..." della card (impostata dal pannello)
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FloatUnifiedRow)
     };
@@ -1236,10 +1275,11 @@ private:
         std::unique_ptr<IntParamRow> editRow;
         std::unique_ptr<GenericParamRow> uiRow;
         juce::TextButton editIconButton;
-        juce::TextButton copyButton;
+        juce::TextButton menuButton;
         bool rowEditMode = false;
         std::function<void()> onEditModeChanged;
         std::function<void (bool)> onEditModeToggled;
+        std::function<void()> onMenuRequested; // menu "..." della card (impostata dal pannello)
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (IntUnifiedRow)
     };
@@ -1253,15 +1293,19 @@ private:
         void resized() override;
         void setEditMode (bool edit) override;
         void focusNameField() override { editRow->focusChannelNameField(); }
-        int getPreferredHeight (int) const override { return rowEditMode ? cardHeightSingleRow : uiCompactCardHeight; }
+        int getPreferredHeight (int w) const override
+        {
+            return rowEditMode ? cardHeightSingleRow : (compactCardFits (w, false) ? uiCompactCardHeight : uiCardHeight);
+        }
 
         std::unique_ptr<BoolParamRow> editRow;
         std::unique_ptr<GenericParamRow> uiRow;
         juce::TextButton editIconButton;
-        juce::TextButton copyButton;
+        juce::TextButton menuButton;
         bool rowEditMode = false;
         std::function<void()> onEditModeChanged;
         std::function<void (bool)> onEditModeToggled;
+        std::function<void()> onMenuRequested; // menu "..." della card (impostata dal pannello)
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BoolUnifiedRow)
     };
@@ -1275,15 +1319,19 @@ private:
         void resized() override;
         void setEditMode (bool edit) override;
         void focusNameField() override { editRow->focusChannelNameField(); }
-        int getPreferredHeight (int) const override { return rowEditMode ? cardHeightDoubleRow : uiCompactCardHeight; }
+        int getPreferredHeight (int w) const override
+        {
+            return rowEditMode ? cardHeightDoubleRow : (compactCardFits (w, true) ? uiCompactCardHeight : uiCardHeight);
+        }
 
         std::unique_ptr<ChoiceParamRow> editRow;
         std::unique_ptr<GenericParamRow> uiRow;
         juce::TextButton editIconButton;
-        juce::TextButton copyButton;
+        juce::TextButton menuButton;
         bool rowEditMode = false;
         std::function<void()> onEditModeChanged;
         std::function<void (bool)> onEditModeToggled;
+        std::function<void()> onMenuRequested; // menu "..." della card (impostata dal pannello)
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChoiceUnifiedRow)
     };
@@ -1471,6 +1519,8 @@ private:
     };
 
     std::vector<DisplayGroup> displayGroups;
+    bool rebuildPending = false; // vedi sessionEditedByUndoRedo
+    void scheduleDeferredRebuild();
     std::set<juce::String> collapsedGroups; // per nome, finche' il pannello esiste
     static constexpr int groupHeaderHeight = 32;
     static constexpr int groupInsetH = 8;       // rientro delle card dentro la cornice

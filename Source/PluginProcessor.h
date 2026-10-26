@@ -844,6 +844,15 @@ public:
     // corretto: prima un Load lasciava i valori normalizzati del CSD
     // precedente sugli slot, rimappati sui range nuovi.
     void resetParameterValuesToDefaults();
+    /** Come sopra, per UN solo parametro (kind 0..3 = Float/Int/Bool/Choice). */
+    void resetParameterValueToDefault (int kind, int index);
+
+    /** Valore casuale nel range del parametro (Float: uniforme sulla corsa
+        normalizzata, quindi segue lo skew; Int: intero nel range; Bool:
+        0/1; Choice: una delle opzioni). randomizeAllParameterValues: tutti
+        quelli assegnati. Come il reset, solo VALORI (nessun Undo). */
+    void randomizeParameterValue (int kind, int index);
+    void randomizeAllParameterValues();
 
     /** true se 'name' e' gia' il canale di un ALTRO parametro assegnato
         (qualunque tipo). kind 0..3 = Float/Int/Bool/Choice e index
