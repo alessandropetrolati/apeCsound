@@ -52,9 +52,15 @@ PARAMETERS PANEL
   * Compact cards: the channel name sits in the title row (no more
     "SLIDER FLOAT" label); toggles and menus are single-line cards.
   * The copy icon of each card is now a "..." menu: Copy chnget line, Reset
-    to Init Value, Randomize, Remove (with confirmation); the edit button
+    to Init Value, Randomize, Show in Code, Remove (with confirmation); the edit button
     shows a pencil, and a check mark (apply) while the card is in edit mode.
   * "Randomize All" in the "+" menu of the Parameters panel.
+  * Live preview: while editing a Float/Int slider the real slider stays
+    visible under the name field and follows every change of Min/Max/Init/
+    Skew/Step as you type.
+  * Code <-> Parameters link: with the caret on a chnget/chnset line, the
+    card of that channel flashes briefly in the Parameters panel; "Show in Code"
+    in the "..." menu of a card selects its channel name in the code.
   * One card in edit mode at a time, outlined in the colour of its type;
     inline validation of min/max/init/skew/step, options and duplicate
     channel names.

@@ -109,6 +109,17 @@ public:
         vuota se sconosciuta (opcode riportato solo dal motore). */
     std::function<void (const juce::String& syntax, const juce::String& description, const juce::String& category)> onOpcodeHelpChanged;
 
+    /** Chiamato ad ogni spostamento del caret (click, tap, frecce, digitazione)
+        con il nome del canale della riga corrente, se la riga contiene un
+        opcode chn* (chnget/chnset/...) con un nome letterale tra virgolette
+        - quello sotto il caret, altrimenti il primo della riga - e stringa
+        vuota in tutti gli altri casi. Usato da PluginEditor per illuminare
+        la card corrispondente nel pannello Parameters. */
+    std::function<void (const juce::String& channelName)> onCaretChannelChanged;
+
+    /** Nome del canale "sotto il caret", vedi onCaretChannelChanged. */
+    juce::String channelNameAtCaret() const;
+
     /** Categoria passata a onOpcodeHelpChanged quando la barra mostra un
         ERRORE Csound (caret su una riga segnalata, vedi setErrorMarkers in
         CodeView): syntax = "Error - line N", description = messaggio. La

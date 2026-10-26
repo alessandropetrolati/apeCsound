@@ -421,6 +421,54 @@ void CsoundCodeEditor::caretPositionMoved()
     // caret (prima era fatto in mouseDown/mouseUp, ora e' CodeView a
     // gestire mouse e touch e a notificare qui).
     updateOpcodeHelp();
+
+    if (onCaretChannelChanged)
+        onCaretChannelChanged (channelNameAtCaret());
+}
+
+juce::String CsoundCodeEditor::channelNameAtCaret() const
+{
+    const auto caret = getCaretPos();
+    const auto line = caret.getLineText();
+    const int col = caret.getIndexInLine();
+
+    // Niente nei commenti.
+    const int semi = line.indexOfChar (';');
+    const auto code = semi >= 0 ? line.substring (0, semi) : line;
+
+    // Un opcode chn* come parola a se' (chnget, chnset, chnget:k, chnmix...).
+    bool hasChnOpcode = false;
+    for (int at = code.indexOf ("chn"); at >= 0; at = code.indexOf (at + 3, "chn"))
+    {
+        if (at > 0 && (juce::CharacterFunctions::isLetterOrDigit (code[at - 1]) || code[at - 1] == '_'))
+            continue;
+        hasChnOpcode = true;
+        break;
+    }
+    if (! hasChnOpcode)
+        return {};
+
+    // Letterali tra virgolette: quello che contiene il caret, altrimenti il primo.
+    juce::String first;
+    int p = 0;
+    while (true)
+    {
+        const int open = code.indexOfChar (p, '"');
+        if (open < 0) break;
+        const int close = code.indexOfChar (open + 1, '"');
+        if (close < 0) break;
+
+        const auto name = code.substring (open + 1, close);
+        if (name.isNotEmpty())
+        {
+            if (col >= open && col <= close + 1)
+                return name;
+            if (first.isEmpty())
+                first = name;
+        }
+        p = close + 1;
+    }
+    return first;
 }
 
 //==============================================================================

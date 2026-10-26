@@ -253,6 +253,31 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     };
     addAndMakeVisible (opcodeHelpBar);
 
+    // Codice <-> pannello Parameters: caret su chnget "x" -> la card "x" si
+    // illumina; tocco sul nome nella card -> l'editor seleziona il "x" del
+    // primo chnget (o della prima occorrenza) e lo porta in vista.
+    editor.onCaretChannelChanged = [this] (const juce::String& name) { parameterPanel.setHighlightedChannel (name); };
+    parameterPanel.onChannelNameClicked = [this] (const juce::String& name)
+    {
+        const auto text = document.getAllContent();
+        const auto quoted = "\"" + name + "\"";
+        int best = -1;
+
+        for (int at = text.indexOf (quoted); at >= 0; at = text.indexOf (at + 1, quoted))
+        {
+            if (best < 0) best = at;
+            const int lineStart = text.substring (0, at).lastIndexOfChar ('\n') + 1;
+            const auto lineText = text.substring (lineStart, at);
+            if (lineText.contains ("chnget")) { best = at; break; }
+        }
+
+        if (best < 0)
+            return;
+
+        editor.setHighlightedRegion ({ best + 1, best + 1 + name.length() });
+        editor.scrollToKeepCaretOnScreen();
+    };
+
     // Etichetta file + barra "file non trovato" (vedi SessionFileLabel/
     // SessionWarningBar in PluginEditor.h). La barra e' addChildComponent:
     // NON visibile finche' updateSessionStatus() non ha nulla da segnalare.
@@ -3521,7 +3546,7 @@ When Apply fails, the line reported by Csound gets a red dot, a red background a
 # Parameters
 Every instance offers the DAW **144 fixed parameters**: 64 Float, 32 Int, 32 Bool and 16 Choice. The DAW always sees "Float 1 ... Float 64" and so on; in the Parameters panel you give each one a Csound channel name and its range.
 - **Float** (min, max, default, skew, step), **Int** (min, max, default), **Bool** (default), **Choice** (up to 16 options; the channel gets 1..N, as in Cabbage).
-- **+** on the panel title adds one. Each card has an **edit** (pencil) button that opens its configuration (channel name, range, default, skew, step, options) - it becomes a check mark while editing: press it to apply and go back to the control - and a **...** menu: **Copy chnget line** (the `chnget` line with a configuration comment, to paste in the code), **Reset to Init Value**, **Randomize** (a random value within the range), **Remove** (asks for confirmation; can be undone). The **+** menu has **Reset to INIT Values** and **Randomize All** for the whole panel. One card is in edit mode at a time - opening another closes the previous one - and it is outlined in the colour of its type. Toggles and menus are single-line cards, sliders take two lines.
+- **+** on the panel title adds one. Each card has an **edit** (pencil) button that opens its configuration (channel name, range, default, skew, step, options) - it becomes a check mark while editing: press it to apply and go back to the control - while a slider is being edited, the slider itself stays visible under the name and follows Min/Max/Init/Skew/Step as you type - and a **...** menu: **Copy chnget line** (the `chnget` line with a configuration comment, to paste in the code), **Reset to Init Value**, **Randomize** (a random value within the range), **Show in Code**, **Remove** (asks for confirmation; can be undone). The **+** menu has **Reset to INIT Values** and **Randomize All** for the whole panel. Code and panel are linked: put the caret on a `chnget "name"` line and the card of that channel flashes briefly; **Show in Code** in the **...** menu of a card jumps to its `chnget`. One card is in edit mode at a time - opening another closes the previous one - and it is outlined in the colour of its type. Toggles and menus are single-line cards, sliders take two lines.
 - **Moved from outside**: when a value changes without you touching the control - DAW automation, `chnset` from the code, a snapshot recall - a dot in the colour of the type flashes next to the parameter name.
 - **Validation**: in edit mode a wrong value turns its field red and the caption says why (Min not below Max, Init outside the range, Skew not positive, Step larger than the range, no options, channel name already used by another parameter). The value is kept as typed: fix it before saving.
 - The code reads them with `chnget`. `chnset` on the same channel moves the parameter (slider and DAW automation).

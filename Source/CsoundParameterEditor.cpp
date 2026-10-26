@@ -768,7 +768,8 @@ void CsoundParameterMappingPanel::layoutCardSkeleton (juce::Rectangle<int> full,
                                                         juce::Rectangle<int>& typeLabelArea,
                                                         juce::Rectangle<int>& removeArea,
                                                         juce::Rectangle<int>& nameArea,
-                                                        juce::Rectangle<int>& fieldsArea)
+                                                        juce::Rectangle<int>& fieldsArea,
+                                                        juce::Rectangle<int>* previewArea)
 {
     handleStrip = full.removeFromLeft (handleStripWidth);
 
@@ -792,6 +793,12 @@ void CsoundParameterMappingPanel::layoutCardSkeleton (juce::Rectangle<int> full,
     content.removeFromTop (cardHeaderGap);
     nameArea = content.removeFromTop (cardNameHeight);
     content.removeFromTop (cardNameGap);
+
+    if (previewArea != nullptr)
+    {
+        *previewArea = content.removeFromTop (cardPreviewHeight);
+        content.removeFromTop (cardPreviewGap);
+    }
 
     fieldsArea = content;
 }
@@ -1133,6 +1140,8 @@ void CsoundParameterMappingPanel::ParamRow::commitFromFields()
     setFieldValidity (skewEditor,      &expCaption,  "SKEW", skewOk,    "SKEW <= 0");
     setFieldValidity (incrementEditor, &stepCaption, "STEP", stepOk,    "STEP > RANGE");
 
+    if (onSlotChanged)
+        onSlotChanged();
     repaint();
 }
 
@@ -1215,7 +1224,7 @@ void CsoundParameterMappingPanel::ParamRow::paint (juce::Graphics& g)
 void CsoundParameterMappingPanel::ParamRow::resized()
 {
     juce::Rectangle<int> handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea;
-    CsoundParameterMappingPanel::layoutCardSkeleton (getLocalBounds(), handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea);
+    CsoundParameterMappingPanel::layoutCardSkeleton (getLocalBounds(), handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea, &previewArea);
 
     handleBounds = handleStrip;
     typeLabel.setBounds (typeLabelArea);
@@ -1413,6 +1422,8 @@ void CsoundParameterMappingPanel::IntParamRow::commitFromFields()
     setFieldValidity (maxEditor,     &maxCaption,  "MAX",  rangeOk,   "MAX <= MIN");
     setFieldValidity (defaultEditor, &initCaption, "INIT", defaultOk, "OUT OF RANGE");
 
+    if (onSlotChanged)
+        onSlotChanged();
     repaint();
 }
 
@@ -1487,7 +1498,7 @@ void CsoundParameterMappingPanel::IntParamRow::paint (juce::Graphics& g)
 void CsoundParameterMappingPanel::IntParamRow::resized()
 {
     juce::Rectangle<int> handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea;
-    CsoundParameterMappingPanel::layoutCardSkeleton (getLocalBounds(), handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea);
+    CsoundParameterMappingPanel::layoutCardSkeleton (getLocalBounds(), handleStrip, typeLabelArea, removeArea, nameArea, fieldsArea, &previewArea);
 
     handleBounds = handleStrip;
     typeLabel.setBounds (typeLabelArea);
@@ -2300,8 +2311,25 @@ void CsoundParameterMappingPanel::GenericParamRow::refreshRangeDisplay()
     updateValueReadout();
 }
 
+void CsoundParameterMappingPanel::GenericParamRow::setPreviewMode (bool shouldPreview)
+{
+    if (previewMode == shouldPreview)
+        return;
+
+    previewMode = shouldPreview;
+    // typeLabel ("SLIDER FLOAT" ecc.) resta SEMPRE nascosta: nelle card UI
+    // compatte non si mostra piu' (addChildComponent nel costruttore).
+    channelNameLabel.setVisible (! previewMode);
+    setInterceptsMouseClicks (! previewMode, true); // la card non e' trascinabile dall'anteprima, lo slider si'
+    resized();
+    repaint();
+}
+
 void CsoundParameterMappingPanel::GenericParamRow::paint (juce::Graphics& g)
 {
+    if (previewMode)
+        return; // la card Edit sotto disegna gia' sfondo e cornice
+
     // Stessa maniglia (con puntini di trascinamento) delle card Edit -
     // trascinabile anche qui, vedi mouseDown/mouseDrag sotto.
     const bool hasName = getChannelName && getChannelName().isNotEmpty();
@@ -2341,13 +2369,10 @@ void CsoundParameterMappingPanel::GenericParamRow::flashExternalChange()
 
 void CsoundParameterMappingPanel::GenericParamRow::timerCallback()
 {
-    externalFlash -= 1.0f / 21.0f; // ~0.7 s a 30 Hz
+    externalFlash = juce::jmax (0.0f, externalFlash - 1.0f / 21.0f); // ~0.7 s a 30 Hz
 
     if (externalFlash <= 0.0f)
-    {
-        externalFlash = 0.0f;
         stopTimer();
-    }
 
     repaint();
 }
@@ -2355,12 +2380,14 @@ void CsoundParameterMappingPanel::GenericParamRow::timerCallback()
 void CsoundParameterMappingPanel::GenericParamRow::mouseDown (const juce::MouseEvent& event)
 {
     // Vedi il commento identico su ParamRow::mouseDown piu' sopra.
-    draggingFromHandle = handleBounds.contains (event.getPosition());
+    // (eventi inoltrati da channelNameLabel: non sono sulla maniglia)
+    draggingFromHandle = event.eventComponent == this && handleBounds.contains (event.getPosition());
 }
 
 void CsoundParameterMappingPanel::GenericParamRow::mouseMove (const juce::MouseEvent& event)
 {
-    updateHandleHover (event.getPosition());
+    if (event.eventComponent == this)
+        updateHandleHover (event.getPosition());
 }
 
 void CsoundParameterMappingPanel::GenericParamRow::mouseExit (const juce::MouseEvent&)
@@ -2408,6 +2435,13 @@ void CsoundParameterMappingPanel::GenericParamRow::resized()
 {
     juce::Rectangle<int> handleStrip, typeLabelArea, nameArea, fieldsArea;
     CsoundParameterMappingPanel::layoutUiCardSkeleton (getLocalBounds(), handleStrip, typeLabelArea, nameArea, fieldsArea);
+
+    if (previewMode)
+    {
+        // Anteprima nella card Edit: tutta l'area e' la riga di controllo.
+        handleStrip = {};
+        fieldsArea = getLocalBounds();
+    }
 
     handleBounds = handleStrip;
     typeLabel.setBounds (typeLabelArea);
@@ -2527,6 +2561,10 @@ CsoundParameterMappingPanel::FloatUnifiedRow::FloatUnifiedRow (
                                                      });
         uiRow->onCopiedToClipboard = onCopied;
         addChildComponent (*uiRow);
+
+        // Anteprima dal vivo: ad ogni commit dei campi (anche per singolo
+        // carattere) lo slider rilegge range e valore.
+        editRow->onSlotChanged = [this] { if (uiRow != nullptr) uiRow->refreshRangeDisplay(); };
     }
 
     setupRowEditIconButton (editIconButton);
@@ -2536,6 +2574,7 @@ CsoundParameterMappingPanel::FloatUnifiedRow::FloatUnifiedRow (
     setupRowMenuButton (menuButton);
     menuButton.onClick = [this] { if (onMenuRequested) onMenuRequested(); };
     addAndMakeVisible (menuButton);
+    addChildComponent (codeFlash); // sopra tutto, vedi CodeFlashOverlay
 
     setEditMode (false);
 }
@@ -2544,16 +2583,28 @@ void CsoundParameterMappingPanel::FloatUnifiedRow::resized()
 {
     editRow->setBounds (getLocalBounds());
     if (uiRow != nullptr)
-        uiRow->setBounds (getLocalBounds());
+        uiRow->setBounds (rowEditMode ? editRow->getPreviewArea() : getLocalBounds());
     layoutRowIconButtons (getLocalBounds(), rowEditMode, menuButton, editIconButton);
+    codeFlash.setBounds (getLocalBounds());
+}
+
+void CsoundParameterMappingPanel::FloatUnifiedRow::setCodeHighlight (bool on)
+{
+    if (on) codeFlash.flash (rowEditMode ? juce::Colours::white : kSliderAccent);
+    else    codeFlash.clear();
 }
 
 void CsoundParameterMappingPanel::FloatUnifiedRow::setEditMode (bool edit)
 {
     rowEditMode = edit;
     editRow->setVisible (edit);
+    // uiRow resta visibile anche in Edit: diventa l'anteprima dal vivo
+    // sotto il campo nome (vedi cardPreviewHeight / setPreviewMode).
     if (uiRow != nullptr)
-        uiRow->setVisible (! edit);
+    {
+        uiRow->setVisible (true);
+        uiRow->setPreviewMode (edit);
+    }
     // setToggleState (non solo un cambio di colore): guida sia il cerchio
     // pieno colorato di drawButtonBackground sia la scelta tra le due
     // icone diverse in drawButtonText - vedi i commenti li'.
@@ -2606,6 +2657,10 @@ CsoundParameterMappingPanel::IntUnifiedRow::IntUnifiedRow (
                                                      });
         uiRow->onCopiedToClipboard = onCopied;
         addChildComponent (*uiRow);
+
+        // Anteprima dal vivo: ad ogni commit dei campi (anche per singolo
+        // carattere) lo slider rilegge range e valore.
+        editRow->onSlotChanged = [this] { if (uiRow != nullptr) uiRow->refreshRangeDisplay(); };
     }
 
     setupRowEditIconButton (editIconButton);
@@ -2615,6 +2670,7 @@ CsoundParameterMappingPanel::IntUnifiedRow::IntUnifiedRow (
     setupRowMenuButton (menuButton);
     menuButton.onClick = [this] { if (onMenuRequested) onMenuRequested(); };
     addAndMakeVisible (menuButton);
+    addChildComponent (codeFlash); // sopra tutto, vedi CodeFlashOverlay
 
     setEditMode (false);
 }
@@ -2623,16 +2679,28 @@ void CsoundParameterMappingPanel::IntUnifiedRow::resized()
 {
     editRow->setBounds (getLocalBounds());
     if (uiRow != nullptr)
-        uiRow->setBounds (getLocalBounds());
+        uiRow->setBounds (rowEditMode ? editRow->getPreviewArea() : getLocalBounds());
     layoutRowIconButtons (getLocalBounds(), rowEditMode, menuButton, editIconButton);
+    codeFlash.setBounds (getLocalBounds());
+}
+
+void CsoundParameterMappingPanel::IntUnifiedRow::setCodeHighlight (bool on)
+{
+    if (on) codeFlash.flash (rowEditMode ? juce::Colours::white : kKnobAccent);
+    else    codeFlash.clear();
 }
 
 void CsoundParameterMappingPanel::IntUnifiedRow::setEditMode (bool edit)
 {
     rowEditMode = edit;
     editRow->setVisible (edit);
+    // uiRow resta visibile anche in Edit: diventa l'anteprima dal vivo
+    // sotto il campo nome (vedi cardPreviewHeight / setPreviewMode).
     if (uiRow != nullptr)
-        uiRow->setVisible (! edit);
+    {
+        uiRow->setVisible (true);
+        uiRow->setPreviewMode (edit);
+    }
     // setToggleState (non solo un cambio di colore): guida sia il cerchio
     // pieno colorato di drawButtonBackground sia la scelta tra le due
     // icone diverse in drawButtonText - vedi i commenti li'.
@@ -2675,6 +2743,7 @@ CsoundParameterMappingPanel::BoolUnifiedRow::BoolUnifiedRow (
     setupRowMenuButton (menuButton);
     menuButton.onClick = [this] { if (onMenuRequested) onMenuRequested(); };
     addAndMakeVisible (menuButton);
+    addChildComponent (codeFlash); // sopra tutto, vedi CodeFlashOverlay
 
     setEditMode (false);
 }
@@ -2685,6 +2754,13 @@ void CsoundParameterMappingPanel::BoolUnifiedRow::resized()
     if (uiRow != nullptr)
         uiRow->setBounds (getLocalBounds());
     layoutRowIconButtons (getLocalBounds(), rowEditMode, menuButton, editIconButton);
+    codeFlash.setBounds (getLocalBounds());
+}
+
+void CsoundParameterMappingPanel::BoolUnifiedRow::setCodeHighlight (bool on)
+{
+    if (on) codeFlash.flash (rowEditMode ? juce::Colours::white : kToggleAccent);
+    else    codeFlash.clear();
 }
 
 void CsoundParameterMappingPanel::BoolUnifiedRow::setEditMode (bool edit)
@@ -2736,6 +2812,7 @@ CsoundParameterMappingPanel::ChoiceUnifiedRow::ChoiceUnifiedRow (
     setupRowMenuButton (menuButton);
     menuButton.onClick = [this] { if (onMenuRequested) onMenuRequested(); };
     addAndMakeVisible (menuButton);
+    addChildComponent (codeFlash); // sopra tutto, vedi CodeFlashOverlay
 
     setEditMode (false);
 }
@@ -2746,6 +2823,13 @@ void CsoundParameterMappingPanel::ChoiceUnifiedRow::resized()
     if (uiRow != nullptr)
         uiRow->setBounds (getLocalBounds());
     layoutRowIconButtons (getLocalBounds(), rowEditMode, menuButton, editIconButton);
+    codeFlash.setBounds (getLocalBounds());
+}
+
+void CsoundParameterMappingPanel::ChoiceUnifiedRow::setCodeHighlight (bool on)
+{
+    if (on) codeFlash.flash (rowEditMode ? juce::Colours::white : kMenuAccent);
+    else    codeFlash.clear();
 }
 
 void CsoundParameterMappingPanel::ChoiceUnifiedRow::setEditMode (bool edit)
@@ -4058,6 +4142,7 @@ void CsoundParameterMappingPanel::rebuildUnifiedRows()
         {
             showRowMenu (kind, idx, [safeRow] { if (safeRow != nullptr) safeRow->editRow->requestRemove(); });
         };
+
     };
 
     for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
@@ -4271,6 +4356,34 @@ void CsoundParameterMappingPanel::refreshGrouping()
     resized();
 }
 
+void CsoundParameterMappingPanel::setHighlightedChannel (const juce::String& channelName)
+{
+    // Stesso canale di prima (caret che si muove sulla stessa riga): niente
+    // nuovo lampo. Canale diverso o nuovo: lampo sulla card.
+    if (highlightedChannel == channelName)
+        return;
+    highlightedChannel = channelName;
+
+    for (size_t i = 0; i < unifiedRows.size() && i < unifiedRowKeys.size(); ++i)
+    {
+        const auto [kind, slot] = unifiedRowKeys[i];
+        juce::String name;
+        switch (kind)
+        {
+            case 0:  name = processor.getChannelParamSlot (slot).channelName; break;
+            case 1:  name = processor.getIntParamSlot (slot).channelName;     break;
+            case 2:  name = processor.getBoolParamSlot (slot).channelName;    break;
+            default: name = processor.getChoiceParamSlot (slot).channelName;  break;
+        }
+
+        const bool on = channelName.isNotEmpty() && name == channelName;
+        if (auto* iface = dynamic_cast<UnifiedRowInterface*> (unifiedRows[i].get()))
+            iface->setCodeHighlight (on);
+        if (on && unifiedRows[i]->isVisible())
+            scrollRowIntoView (*unifiedRows[i]);
+    }
+}
+
 void CsoundParameterMappingPanel::scrollRowIntoView (juce::Component& row)
 {
     const auto bounds = row.getBounds(); // in rowsContainer
@@ -4305,6 +4418,7 @@ void CsoundParameterMappingPanel::showRowMenu (int kind, int slotIndex, std::fun
     add (2, "Copy chnget line", CsoundActionSheetIcon::copy);
     add (3, "Reset to Init Value", CsoundActionSheetIcon::resetDefault);
     add (5, "Randomize", CsoundActionSheetIcon::sliderFloat);
+    add (6, "Show in Code", CsoundActionSheetIcon::codeBraces);
     items.push_back (CsoundActionSheetItem::separator());
     add (4, "Remove", CsoundActionSheetIcon::trash);
 
@@ -4336,6 +4450,7 @@ void CsoundParameterMappingPanel::showRowMenu (int kind, int slotIndex, std::fun
 
             case 3: proc.resetParameterValueToDefault (kind, slotIndex); break;
             case 5: proc.randomizeParameterValue (kind, slotIndex); break;
+            case 6: if (safeThis->onChannelNameClicked) safeThis->onChannelNameClicked (name); break;
 
             case 4:
                 // Conferma prima di rimuovere (richiesta esplicita); Undo resta possibile.

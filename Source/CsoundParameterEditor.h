@@ -414,6 +414,14 @@ public:
     // dell'incongruenza col file su disco").
     std::function<void()> onMappingChanged;
 
+    // Collegamento col codice (richiesta esplicita): setHighlightedChannel
+    // (chiamata dall'editor ad ogni spostamento del caret, "" = nessuno)
+    // illumina la card del canale e la porta in vista; onChannelNameClicked
+    // viene chiamata da "Show in Code" nel menu "..." della card.
+    void setHighlightedChannel (const juce::String& channelName);
+    std::function<void (const juce::String&)> onChannelNameClicked;
+    juce::String highlightedChannel;
+
     // Impostata da PluginEditor (vedi promptInitializeSession()/
     // performInitializeSession() in PluginEditor.h) - richiamata dalla
     // voce "Initialize Session" del menu hamburger (richiesta esplicita:
@@ -509,9 +517,18 @@ public:
     // Choice: 2) sia, dinamicamente, per Slider/Knob quando i campi non
     // entrano tutti su una riga sola e vanno a capo (vedi
     // computeWrappedFieldRows()/ParamRow::resized()).
-    static constexpr int cardHeightForFieldRows (int numFieldRows)
+    // Anteprima dal vivo nelle card Edit di Slider Float/Int: lo slider
+    // VERO (uiRow in "preview mode", vedi GenericParamRow::setPreviewMode)
+    // resta visibile sotto il campo nome mentre si scrivono Min/Max/Init/
+    // Skew/Step, cosi' range, curva e valore si vedono subito invece che
+    // solo dopo aver chiuso l'Edit. Alta quanto la riga di controllo UI.
+    static constexpr int cardPreviewHeight = 40;
+    static constexpr int cardPreviewGap = 8;
+
+    static constexpr int cardHeightForFieldRows (int numFieldRows, bool withPreview = false)
     {
         return cardPaddingV * 2 + cardHeaderHeight + cardHeaderGap + cardNameHeight + cardNameGap
+               + (withPreview ? cardPreviewHeight + cardPreviewGap : 0)
                + numFieldRows * (cardFieldCaptionHeight + cardFieldCaptionGap + cardFieldBoxHeight)
                + (numFieldRows - 1) * cardFieldRowGap;
     }
@@ -634,7 +651,8 @@ private:
                                      juce::Rectangle<int>& typeLabelArea,
                                      juce::Rectangle<int>& removeArea,
                                      juce::Rectangle<int>& nameArea,
-                                     juce::Rectangle<int>& fieldsArea);
+                                     juce::Rectangle<int>& fieldsArea,
+                                     juce::Rectangle<int>* previewArea = nullptr); // se non nullo: striscia cardPreviewHeight tra nome e campi
 
     // Stesso principio di layoutCardSkeleton() sopra ma con la geometria
     // COMPATTA delle card UI (uiCardPaddingV/uiCardHeaderHeight/ecc., vedi
@@ -668,6 +686,14 @@ private:
                              private juce::TextEditor::Listener
     {
         ParamRow (CsoundAudioProcessor& processorToEdit, int slotIndex);
+
+        // Anteprima dal vivo (vedi cardPreviewHeight): dove va messo lo
+        // slider UI dentro questa card (calcolato in resized()), e callback
+        // chiamata dopo OGNI commit (anche ad ogni carattere) perche' il
+        // wrapper *UnifiedRow aggiorni min/max/valore dello slider.
+        juce::Rectangle<int> getPreviewArea() const { return previewArea; }
+        std::function<void()> onSlotChanged;
+        juce::Rectangle<int> previewArea;
 
         void paint (juce::Graphics& g) override;
         void resized() override;
@@ -795,6 +821,14 @@ private:
                                 private juce::TextEditor::Listener
     {
         IntParamRow (CsoundAudioProcessor& processorToEdit, int slotIndex);
+
+        // Anteprima dal vivo (vedi cardPreviewHeight): dove va messo lo
+        // slider UI dentro questa card (calcolato in resized()), e callback
+        // chiamata dopo OGNI commit (anche ad ogni carattere) perche' il
+        // wrapper *UnifiedRow aggiorni min/max/valore dello slider.
+        juce::Rectangle<int> getPreviewArea() const { return previewArea; }
+        std::function<void()> onSlotChanged;
+        juce::Rectangle<int> previewArea;
 
         void paint (juce::Graphics& g) override;
         void resized() override;
@@ -1115,6 +1149,13 @@ private:
         // commento sul costruttore sopra). No-op per toggle/choice.
         void refreshRangeDisplay();
 
+        // Anteprima dentro la card Edit (vedi cardPreviewHeight): niente
+        // sfondo/maniglia/intestazione/nome, solo la riga di controllo su
+        // TUTTE le bounds. Solo per Kind::slider.
+        void setPreviewMode (bool shouldPreview);
+        bool previewMode = false;
+
+
         void resized() override;
         void paint (juce::Graphics& g) override;
         void mouseDown (const juce::MouseEvent& event) override;
@@ -1179,11 +1220,40 @@ private:
     // Interfaccia minima per poter commutare UI/Edit e conoscere l'altezza
     // preferita di una riga qualunque (Float/Int/Bool/Choice) dal codice
     // della lista unificata, senza dover conoscere il tipo concreto.
+    // Lampo "il caret del codice e' su questo canale" (vedi
+    // setHighlightedChannel): strato trasparente SOPRA tutta la card, in
+    // entrambe le modalita'. Colore del tipo sulla card UI; BIANCO sulla
+    // card in Edit, che ha gia' la cornice nel colore del tipo e altrimenti
+    // il lampo non si vedrebbe. Si spegne da solo in ~1.5 s.
+    struct CodeFlashOverlay final : public juce::Component, private juce::Timer
+    {
+        CodeFlashOverlay() { setInterceptsMouseClicks (false, false); }
+        void flash (juce::Colour c) { colour = c; level = 1.0f; setVisible (true); startTimerHz (30); repaint(); }
+        void clear() { level = 0.0f; stopTimer(); setVisible (false); }
+        void paint (juce::Graphics& g) override
+        {
+            const auto b = getLocalBounds().toFloat();
+            g.setColour (colour.withAlpha (0.14f * level));
+            g.fillRect (b.withTrimmedLeft (5.0f));
+            g.setColour (colour.withAlpha (0.95f * level));
+            g.drawRect (b, 2.0f);
+        }
+        void timerCallback() override
+        {
+            level -= 1.0f / 45.0f;
+            if (level <= 0.0f) { clear(); return; }
+            repaint();
+        }
+        juce::Colour colour;
+        float level = 0.0f;
+    };
+
     struct UnifiedRowInterface
     {
         virtual ~UnifiedRowInterface() = default;
         virtual void setEditMode (bool edit) = 0;
         virtual void focusNameField() = 0;
+        virtual void setCodeHighlight (bool shouldHighlight) = 0; // caret del codice su questo canale
 
         // Altezza richiesta da questa riga ORA, per la data larghezza
         // DISPONIBILE per l'intera card (serve il parametro perche'
@@ -1226,6 +1296,8 @@ private:
         void resized() override;
         void setEditMode (bool edit) override;
         void focusNameField() override { editRow->focusChannelNameField(); }
+        void setCodeHighlight (bool on) override;
+        CodeFlashOverlay codeFlash;
         int getPreferredHeight (int availableWidth) const override
         {
             if (! rowEditMode)
@@ -1234,7 +1306,7 @@ private:
             const auto rows = computeWrappedFieldRows (fieldsAvailableWidth (availableWidth),
                 { cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldStepWidth },
                 cardFieldGap);
-            return cardHeightForFieldRows (rows);
+            return cardHeightForFieldRows (rows, true);
         }
 
         std::unique_ptr<ParamRow> editRow;
@@ -1262,6 +1334,8 @@ private:
         void resized() override;
         void setEditMode (bool edit) override;
         void focusNameField() override { editRow->focusChannelNameField(); }
+        void setCodeHighlight (bool on) override;
+        CodeFlashOverlay codeFlash;
         int getPreferredHeight (int availableWidth) const override
         {
             if (! rowEditMode)
@@ -1269,7 +1343,7 @@ private:
 
             const auto rows = computeWrappedFieldRows (fieldsAvailableWidth (availableWidth),
                 { cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldNarrowWidth }, cardFieldGap);
-            return cardHeightForFieldRows (rows);
+            return cardHeightForFieldRows (rows, true);
         }
 
         std::unique_ptr<IntParamRow> editRow;
@@ -1293,6 +1367,8 @@ private:
         void resized() override;
         void setEditMode (bool edit) override;
         void focusNameField() override { editRow->focusChannelNameField(); }
+        void setCodeHighlight (bool on) override;
+        CodeFlashOverlay codeFlash;
         int getPreferredHeight (int w) const override
         {
             return rowEditMode ? cardHeightSingleRow : (compactCardFits (w, false) ? uiCompactCardHeight : uiCardHeight);
@@ -1319,6 +1395,8 @@ private:
         void resized() override;
         void setEditMode (bool edit) override;
         void focusNameField() override { editRow->focusChannelNameField(); }
+        void setCodeHighlight (bool on) override;
+        CodeFlashOverlay codeFlash;
         int getPreferredHeight (int w) const override
         {
             return rowEditMode ? cardHeightDoubleRow : (compactCardFits (w, true) ? uiCompactCardHeight : uiCardHeight);
