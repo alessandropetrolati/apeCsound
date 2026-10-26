@@ -1,5 +1,5 @@
 #define MyAppName "apeCsound"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.4"
 #define MyAppPublisher "apeSoft"
 #define MyAppURL "https://www.apesoft.it/"
 
