@@ -1735,7 +1735,7 @@ namespace
     // Versione dello zip degli esempi (Resources/Examples.zip, vedi
     // scripts/make_examples_zip.sh): aumentarla quando lo zip cambia, cosi'
     // gli esempi nuovi vengono estratti anche a chi ha gia' la cartella.
-    constexpr int kExamplesVersion = 3;   // 2: + ape/  3: + Test/GroupsSnapshotsTest
+    constexpr int kExamplesVersion = 4;   // 2: + ape/  3: + Test/GroupsSnapshotsTest  4: + Test/EvaluateTest
     const char* const kExamplesVersionKey = "examplesVersion";
 }
 
@@ -2379,6 +2379,96 @@ void CsoundAudioProcessor::resetParameterValuesToDefaults()
             push (apvts.getParameter (getChoiceParamID (i)),
                   maxChoiceOptions > 1 ? (float) slot.defaultIndex / (float) (maxChoiceOptions - 1) : 0.0f);
     }
+}
+
+bool CsoundAudioProcessor::evaluateCode (const juce::String& text)
+{
+    auto* cs = activeCsound.load();
+    if (cs == nullptr || ! ready.load())
+    {
+        enqueueMessage ("--- Evaluate: the engine is not running (press Apply first) ---");
+        return false;
+    }
+
+    juce::StringArray lines;
+    lines.addLines (text);
+
+    // Un'istruzione di score: lettera singola seguita da spazio/cifra/fine
+    // riga ("i 3 0 1", "i3 0 1", "f1 0 1024 10 1", "e"). Tutto il resto e'
+    // orchestra ("instr", "schedule(...)", "gk = ...").
+    auto isScoreLine = [] (const juce::String& line)
+    {
+        if (line.isEmpty())
+            return false;
+        const auto c = line[0];
+        if (juce::String ("ifeatsqdbxyrmnvCB").indexOfChar (c) < 0)
+            return false;
+        if (line.length() == 1)
+            return true;
+        const auto next = line[1];
+        if (! (next == ' ' || next == '\t' || juce::CharacterFunctions::isDigit (next) || next == '-' || next == '.' || next == '"'))
+            return false;
+
+        // "a1 oscil 0.3, 440" / "i1 = p4" sono orchestra: una riga di score
+        // ha solo numeri, stringhe, "+" "." "^" "~" "<" ">" "[" "]" e
+        // macro $..., mai "=" ne' parole (opcode, variabili) dopo il primo
+        // token.
+        if (line.containsChar ('='))
+            return false;
+
+        int p = 1;
+        while (p < line.length() && juce::CharacterFunctions::isDigit (line[p])) ++p;
+        bool inString = false;
+        for (; p < line.length(); ++p)
+        {
+            const auto c = line[p];
+            if (c == '"') { inString = ! inString; continue; }
+            if (inString) continue;
+            if (c == '$') { while (p + 1 < line.length() && (juce::CharacterFunctions::isLetterOrDigit (line[p + 1]) || line[p + 1] == '_' || line[p + 1] == '.')) ++p; continue; }
+            if (juce::CharacterFunctions::isLetter (c) && c != 'p' && c != 'n' && c != 'e' && c != 'E')
+                return false; // "p"/"n" (p-field ref, next-p), "e" di notazione esponenziale
+        }
+        return true;
+    };
+
+    juce::String orc, score;
+    int scoreLines = 0;
+
+    for (const auto& raw : lines)
+    {
+        const auto line = raw.trim();
+        const auto code = line.upToFirstOccurrenceOf (";", false, false).trim();
+
+        if (isScoreLine (code))
+        {
+            score << code << "\n";
+            ++scoreLines;
+        }
+        else
+        {
+            orc << raw << "\n";
+        }
+    }
+
+    if (orc.trim().isNotEmpty())
+    {
+        const int result = CsoundAPI::csoundCompileOrc (cs, orc.toRawUTF8(), 1);
+        if (result != 0)
+        {
+            enqueueMessage ("--- Evaluate: orchestra code NOT accepted (see errors above) ---");
+            return false;
+        }
+    }
+
+    if (scoreLines > 0)
+        CsoundAPI::csoundEventString (cs, score.toRawUTF8(), 1);
+
+    juce::String note ("--- Evaluated");
+    if (orc.trim().isNotEmpty()) note << " orchestra code";
+    if (scoreLines > 0) note << (orc.trim().isNotEmpty() ? " + " : " ") << scoreLines << (scoreLines == 1 ? " score event" : " score events");
+    note << " ---";
+    enqueueMessage (note.toRawUTF8());
+    return true;
 }
 
 void CsoundAudioProcessor::resetParameterValueToDefault (int kind, int index)

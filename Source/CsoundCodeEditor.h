@@ -120,6 +120,14 @@ public:
     /** Nome del canale "sotto il caret", vedi onCaretChannelChanged. */
     juce::String channelNameAtCaret() const;
 
+    /** Live coding - "Evaluate" (Cmd+Return / voce di menu): manda a
+        onEvaluateRequested il testo selezionato oppure, senza selezione,
+        il blocco instr/opcode che contiene il caret, altrimenti la riga
+        corrente; le righe inviate lampeggiano. Il testo NON viene
+        modificato (vedi CsoundAudioProcessor::evaluateCode). */
+    void evaluateSelectionOrBlock();
+    std::function<void (const juce::String& code)> onEvaluateRequested;
+
     /** Categoria passata a onOpcodeHelpChanged quando la barra mostra un
         ERRORE Csound (caret su una riga segnalata, vedi setErrorMarkers in
         CodeView): syntax = "Error - line N", description = messaggio. La
@@ -187,6 +195,16 @@ private:
     bool searchMatchCase = false, searchWholeWord = false;
     std::vector<SearchMatch> searchMatches;
     int currentSearchMatch = -1;
+
+    // Lampo sulle righe appena valutate (vedi evaluateSelectionOrBlock).
+    struct EvalFlashTimer final : public juce::Timer
+    {
+        std::function<void()> onTick;
+        void timerCallback() override { if (onTick) onTick(); }
+    };
+    EvalFlashTimer evalFlashTimer;
+    juce::Range<int> evalFlashLines;   // righe [start, end]
+    float evalFlash = 0.0f;
     bool suspendSearchRefresh = false;           // durante replaceAll (un ricalcolo solo alla fine)
     // juce::CodeDocument::Listener
     void codeDocumentTextInserted (const juce::String& newText, int insertIndex) override;
@@ -223,7 +241,7 @@ private:
     void toggleCommentOnSelectedLines();
     bool areSelectedLinesCommented() const;
 
-    enum ContextMenuItem { ctxCut = 1, ctxCopy, ctxPaste, ctxDelete, ctxSelectAll, ctxUndo, ctxRedo, ctxIndent, ctxComment };
+    enum ContextMenuItem { ctxCut = 1, ctxCopy, ctxPaste, ctxDelete, ctxSelectAll, ctxUndo, ctxRedo, ctxIndent, ctxComment, ctxEvaluate };
 
     // Riga evidenziata mentre si trascina uno slot sopra l'editor (-1 =
     // nessun drag in corso) - solo feedback visivo, vedi itemDragMove/

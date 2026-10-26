@@ -228,6 +228,9 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     logConsole.setIndents (8, 6); // inset del testo a sinistra / in alto (richiesta esplicita)
     addAndMakeVisible (logConsole);
 
+
+    editor.onEvaluateRequested = [this] (const juce::String& code) { audioProcessor.evaluateCode (code); };
+
     // Dimensione del testo di editor e consolle: preferenza utente
     // persistente (Config > Larger/Smaller Text).
     applyEditorFontSize (getUserSettings().getIntValue (kEditorFontSizeKey, kDefaultEditorFontSize));
@@ -252,6 +255,33 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
         opcodeHelpBar.setHelpText (syntax, description, category);
     };
     addAndMakeVisible (opcodeHelpBar);
+
+    opcodeHelpBar.input.setMultiLine (false);
+    opcodeHelpBar.input.setReturnKeyStartsNewLine (false);
+    opcodeHelpBar.input.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain));
+    opcodeHelpBar.input.setIndents (6, 4);
+    opcodeHelpBar.input.setColour (juce::TextEditor::backgroundColourId,     juce::Colours::transparentBlack); // il placeholder lo disegna la barra sotto (resta visibile anche col focus)
+    opcodeHelpBar.input.setColour (juce::TextEditor::textColourId,           juce::Colour (0xffe6f1f3));
+    opcodeHelpBar.input.setColour (juce::TextEditor::outlineColourId,        juce::Colours::transparentBlack);
+    opcodeHelpBar.input.setColour (juce::TextEditor::focusedOutlineColourId, juce::Colours::transparentBlack);
+    opcodeHelpBar.input.setColour (juce::TextEditor::highlightColourId,      juce::Colour (0xff2ec4b6).withAlpha (0.35f));
+    opcodeHelpBar.input.setColour (juce::CaretComponent::caretColourId,      juce::Colour (0xffe6f1f3));
+    opcodeHelpBar.input.onTextChange = [this] { opcodeHelpBar.repaint(); }; // placeholder via/compare
+    opcodeHelpBar.input.onReturnKey = [this] { submitConsoleInput(); };
+    // Esc: la barra torna all'help e il focus all'editor di codice.
+    opcodeHelpBar.input.onEscapeKey = [this] { setEvaluateLineVisible (false); };
+    opcodeHelpBar.onEvaluateModeChanged = [this] (bool on) { setEvaluateLineVisible (on); };
+    opcodeHelpBar.input.onKey = [this] (const juce::KeyPress& key)
+    {
+        const int n = consoleInputHistory.size();
+        if (n == 0 || (key.getKeyCode() != juce::KeyPress::upKey && key.getKeyCode() != juce::KeyPress::downKey))
+            return false;
+
+        consoleInputHistoryPos = juce::jlimit (0, n, consoleInputHistoryPos + (key.getKeyCode() == juce::KeyPress::upKey ? -1 : 1));
+        opcodeHelpBar.input.setText (consoleInputHistoryPos < n ? consoleInputHistory[consoleInputHistoryPos] : juce::String(), false);
+        opcodeHelpBar.input.moveCaretToEnd();
+        return true;
+    };
 
     // Codice <-> pannello Parameters: caret su chnget "x" -> la card "x" si
     // illumina; tocco sul nome nella card -> l'editor seleziona il "x" del
@@ -900,6 +930,7 @@ bool CsoundAudioProcessorEditor::keyPressed (const juce::KeyPress& key)
     if (key == SC::find())           { openFindBar(); return true; }
     if (key == SC::showParameters()) { toggleParameterPanel(); return true; }
     if (key == SC::showConsole())    { toggleConsole(); return true; }
+    if (key == SC::evaluateLine())   { setEvaluateLineVisible (! opcodeHelpBar.isEvaluateMode()); return true; }
     if (key == SC::showGraphs())     { toggleGraphs(); return true; }
 
     if (key == SC::largerText() || key == SC::cmd ('+') || key == SC::cmd ('=', true))
@@ -1310,6 +1341,37 @@ void CsoundAudioProcessorEditor::toggleParameterPanel()
 
     resized();
     repaint();
+}
+
+void CsoundAudioProcessorEditor::submitConsoleInput()
+{
+    const auto text = opcodeHelpBar.input.getText().trim();
+    if (text.isEmpty())
+        return;
+
+    consoleInputHistory.removeString (text);
+    consoleInputHistory.add (text);
+    while (consoleInputHistory.size() > 50)
+        consoleInputHistory.remove (0);
+    consoleInputHistoryPos = consoleInputHistory.size();
+
+    audioProcessor.evaluateCode (text);
+    opcodeHelpBar.input.setText ({});
+}
+
+void CsoundAudioProcessorEditor::setEvaluateLineVisible (bool show)
+{
+    opcodeHelpBar.setEvaluateMode (show);
+    if (show)
+    {
+        opcodeHelpBar.input.grabKeyboardFocus();
+    }
+    else
+    {
+        opcodeHelpBar.input.setText ({});
+        if (opcodeHelpBar.input.hasKeyboardFocus (true))
+            editor.grabKeyboardFocus();
+    }
 }
 
 void CsoundAudioProcessorEditor::toggleConsole()
@@ -2575,6 +2637,46 @@ void CsoundAudioProcessorEditor::performApply()
     updateApplyButtonDirtyState();
 }
 
+CsoundAudioProcessorEditor::OpcodeHelpBar::OpcodeHelpBar()
+{
+    addChildComponent (input);
+}
+
+void CsoundAudioProcessorEditor::OpcodeHelpBar::resized()
+{
+    auto area = getLocalBounds();
+    area.removeFromRight (toggleWidth);
+    area.removeFromLeft (22); // prompt ">"
+    input.setBounds (area);
+}
+
+void CsoundAudioProcessorEditor::OpcodeHelpBar::setEvaluateMode (bool on)
+{
+    if (evaluateMode == on)
+        return;
+    evaluateMode = on;
+    input.setVisible (on);
+    repaint();
+}
+
+void CsoundAudioProcessorEditor::OpcodeHelpBar::mouseDown (const juce::MouseEvent& e)
+{
+    if (toggleArea().contains (e.getPosition()) && onEvaluateModeChanged)
+        onEvaluateModeChanged (! evaluateMode);
+}
+
+void CsoundAudioProcessorEditor::OpcodeHelpBar::mouseMove (const juce::MouseEvent& e)
+{
+    const bool over = toggleArea().contains (e.getPosition());
+    if (over != toggleHovered) { toggleHovered = over; repaint (toggleArea()); }
+    setMouseCursor (over ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
+}
+
+void CsoundAudioProcessorEditor::OpcodeHelpBar::mouseExit (const juce::MouseEvent&)
+{
+    if (toggleHovered) { toggleHovered = false; repaint (toggleArea()); }
+}
+
 void CsoundAudioProcessorEditor::OpcodeHelpBar::setHelpText (const juce::String& syntax, const juce::String& description, const juce::String& category)
 {
     syntaxText = syntax;
@@ -2652,6 +2754,44 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::paint (juce::Graphics& g)
 {
     auto bounds = getLocalBounds();
 
+    // Icona ">_" a destra (commuta help <-> Evaluate): accesa in Evaluate.
+    auto paintToggle = [this, &g] (juce::Colour fg, juce::Colour bgHover)
+    {
+        const auto t = toggleArea();
+        if (toggleHovered || evaluateMode)
+        {
+            g.setColour (evaluateMode ? juce::Colour (0xff2ec4b6).withAlpha (0.25f) : bgHover);
+            g.fillRoundedRectangle (t.reduced (4, 3).toFloat(), 4.0f);
+        }
+        g.setColour (fg);
+        g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::bold)));
+        g.drawText (">_", t, juce::Justification::centred, false);
+    };
+
+    if (evaluateMode)
+    {
+        g.setColour (juce::Colour (0xff162129));
+        g.fillRect (bounds);
+        g.setColour (juce::Colour (0xff2ec4b6));
+        g.fillRect (bounds.removeFromLeft (4));
+        g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::bold)));
+        g.drawText (">", juce::Rectangle<int> (4, 0, 18, getHeight()), juce::Justification::centred, false);
+
+        // Placeholder disegnato QUI (non con setTextToShowWhenEmpty, che
+        // JUCE nasconde appena il campo ha il focus): resta visibile col
+        // caret che lampeggia, sparisce al primo carattere.
+        if (input.isEmpty())
+        {
+            g.setColour (juce::Colour (0xff5d7682));
+            g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain)));
+            g.drawText ("score event (i 3 0 1) or orchestra code (schedule(3, 0, 1))",
+                        input.getBounds().withTrimmedLeft (input.getLeftIndent() + 2), juce::Justification::centredLeft, true);
+        }
+
+        paintToggle (juce::Colour (0xff2ec4b6), juce::Colours::white.withAlpha (0.08f));
+        return;
+    }
+
     // Stesso tono "post-it" del popup di autocompletamento, cosi' le due
     // forme di help inline (barra fissa + popup flottante) si riconoscono
     // come parte della stessa funzionalita'.
@@ -2659,8 +2799,10 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::paint (juce::Graphics& g)
     g.fillRect (bounds);
     g.setColour (juce::Colour (0xffd7c89a));
     g.drawLine (0.0f, (float) bounds.getHeight() - 0.5f, (float) bounds.getWidth(), (float) bounds.getHeight() - 0.5f, 1.0f);
+    paintToggle (juce::Colour (0xff8a7a55), juce::Colour (0xffd7c89a).withAlpha (0.5f));
 
     auto area = bounds.reduced (10, 0);
+    area.removeFromRight (toggleWidth - 6);
 
     // Errore Csound sulla riga del caret (vedi CsoundCodeEditor::kErrorHelpCategory):
     // barra rossa con "Error - line N" e il messaggio di Csound.
@@ -2671,6 +2813,7 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::paint (juce::Graphics& g)
         g.setColour (juce::Colour (0xffe5484d));
         g.fillRect (bounds.removeFromLeft (4));
         g.drawLine (0.0f, (float) getHeight() - 0.5f, (float) getWidth(), (float) getHeight() - 0.5f, 1.0f);
+        paintToggle (juce::Colour (0xffb3261e), juce::Colour (0xffe5484d).withAlpha (0.15f));
 
         const auto boldFont = juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::bold));
         juce::GlyphArrangement glyphs;
@@ -3537,6 +3680,13 @@ On iOS the apeCsound folder is not visible in the Files app. **Load**, **Open Ex
 - **Autocompletion** - type two letters: Up/Down to choose, Tab or Enter to accept, Esc to close.
 - **Config > Modern Syntax in Help** - shows the Csound 7 functional form, e.g. `ares:a = oscil(xamp, xcps)`.
 - **Undo / Redo** - one history shared by the editor and the Parameters panel; it survives closing the plug-in window.
+## Evaluate (live coding)
+**Shift+Return**, or **Evaluate** in the right-click menu, sends code to the engine *while it keeps running*, without the full recompile of Apply: the selection, or - with no selection - the `instr` / `opcode` block around the caret, or the current line. The lines flash when sent.
+- Orchestra code is compiled and merged: an `instr` that already exists is **redefined** (notes already playing finish with the old version, new notes use the new one); global code (`gkfb = 0.9`, `gitab = ftgen(...)`, `schedule(3, 0, 1)`) runs at once.
+- Lines that start with a score statement (`i 3 0 2`, `f 1 0 1024 10 1`) are sent as real-time events.
+- The **Evaluate line** does the same for a quick event or a one-liner: click `>_` at the right of the help bar (or **Cmd+E**), type, Return; Up/Down recall the history, Esc goes back to the help bar.
+- Nothing you evaluate is saved anywhere else: the file is the reference. At the next Apply (or when the host reloads the session) only the text in the editor counts, so keep what you want in the code.
+- Errors are reported in the console; the engine must be running (Apply first).
 ## Errors
 When Apply fails, the line reported by Csound gets a red dot, a red background and a wavy underline; with the caret on it, the help bar shows the message.
 - The mark goes away when you edit the line, and all marks are cleared at the next Apply.
@@ -3587,7 +3737,7 @@ Their widgets (sliders, knobs, checkboxes, menus, XY...) become parameters when 
 
 # Shortcuts
 Cmd on macOS, Ctrl on Windows and Linux.
-- **Cmd+Return** - Apply
+- **Cmd+Return** - Apply, **Shift+Return** - Evaluate selection / block / line, **Cmd+E** - Evaluate line in the help bar
 - **Cmd+S** Save, **Cmd+Shift+S** Save as, **Cmd+O** Load, **Cmd+N** Init Session Clear
 - **Cmd+F** - Find / Replace
 - **Cmd+1 / 2 / 3** - Parameters, Console, Graphs

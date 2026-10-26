@@ -80,6 +80,10 @@ namespace CsoundAPI
     extern CsoundSetExternalMidiOutCloseCallbackFn csoundSetExternalMidiOutCloseCallback;
     extern CsoundSetOptionFn csoundSetOption;
     extern CsoundCompileCSDFn csoundCompileCSD;
+    using CsoundCompileOrcFn = int32_t (*) (CSOUND*, const char*, int32_t);
+    using CsoundEventStringFn = void (*) (CSOUND*, const char*, int32_t);
+    extern CsoundCompileOrcFn csoundCompileOrc;   // live coding (Evaluate), async
+    extern CsoundEventStringFn csoundEventString; // eventi di score a runtime, async
     extern CsoundStartFn csoundStart;
     extern CsoundGetKsmpsFn csoundGetKsmps;
     extern CsoundGetChannelsFn csoundGetChannels;

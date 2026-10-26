@@ -58,6 +58,11 @@ PARAMETERS PANEL
   * Live preview: while editing a Float/Int slider the real slider stays
     visible under the name field and follows every change of Min/Max/Init/
     Skew/Step as you type.
+  * Evaluate (live coding): Shift+Return or the right-click menu sends the
+    selection, the instr/opcode block around the caret or the current line
+    to the running engine without a full recompile (instr redefinition,
+    global code, score events); the help bar turns into an Evaluate line
+    (">_" icon or Cmd+E) for one-liners, with history.
   * Code <-> Parameters link: with the caret on a chnget/chnset line, the
     card of that channel flashes briefly in the Parameters panel; "Show in Code"
     in the "..." menu of a card selects its channel name in the code.

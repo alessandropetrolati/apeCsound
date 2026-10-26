@@ -611,13 +611,40 @@ private:
     // sintassi + descrizione dell'opcode su cui si trova il caret
     // (digitato, cliccato, o raggiunto con le freccie), alimentata da
     // CsoundCodeEditor::onOpcodeHelpChanged.
+    struct ConsoleInputEditor final : public juce::TextEditor
+    {
+        std::function<bool (const juce::KeyPress&)> onKey; // su/giu': cronologia
+        bool keyPressed (const juce::KeyPress& key) override
+        {
+            return (onKey && onKey (key)) || juce::TextEditor::keyPressed (key);
+        }
+    };
+
+    // Barra sotto l'editor con due facce: help inline dell'opcode sotto il
+    // caret (default) oppure, con evaluateMode, la riga "Evaluate" (input
+    // per eventi di score / codice d'orchestra al motore in corsa). Si
+    // commuta con l'icona ">_" a destra, Cmd+E, o Esc (torna all'help).
     struct OpcodeHelpBar final : public juce::Component
     {
+        OpcodeHelpBar();
         void paint (juce::Graphics& g) override;
+        void resized() override;
+        void mouseDown (const juce::MouseEvent& e) override;
+        void mouseMove (const juce::MouseEvent& e) override;
+        void mouseExit (const juce::MouseEvent& e) override;
         void setHelpText (const juce::String& syntax, const juce::String& description, const juce::String& category);
 
+        void setEvaluateMode (bool on);
+        bool isEvaluateMode() const noexcept { return evaluateMode; }
+        std::function<void (bool)> onEvaluateModeChanged;
+
+        ConsoleInputEditor input;
+        static constexpr int toggleWidth = 34;
+
     private:
+        juce::Rectangle<int> toggleArea() const { return getLocalBounds().removeFromRight (toggleWidth); }
         juce::String syntaxText, descriptionText, categoryText;
+        bool evaluateMode = false, toggleHovered = false;
     };
 
     // This reference is provided as a quick way for your editor to
@@ -719,6 +746,17 @@ private:
     AboutView aboutView;
 
     ConsoleTextEditor logConsole;
+
+    // Riga Evaluate (nella barra di help, vedi OpcodeHelpBar): eventi di
+    // score ("i 3 0 1") e codice d'orchestra ("schedule(3,0,1)",
+    // "gkfb = 0.9") mandati al motore in corsa - stessa strada di Evaluate
+    // nell'editor (vedi CsoundAudioProcessor::evaluateCode). Cronologia
+    // con su/giu'.
+    // (consoleInput sta DENTRO opcodeHelpBar, vedi OpcodeHelpBar::input)
+    juce::StringArray consoleInputHistory;
+    int consoleInputHistoryPos = 0;
+    void submitConsoleInput();
+    void setEvaluateLineVisible (bool show); // Cmd+E / icona nella barra di help
 
     // Cronologia di Undo/Redo UNICA e CONDIVISA fra l'editor di codice e il
     // pannello Parametri (richiesta esplicita, vedi il commento su

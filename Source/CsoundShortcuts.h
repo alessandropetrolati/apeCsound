@@ -32,6 +32,8 @@ namespace CsoundShortcuts
 
     // Editor di codice, come Xcode (gestite in CsoundCodeEditor::keyPressed).
     inline juce::KeyPress toggleComment()  { return cmd ('/'); }
+    inline juce::KeyPress evaluateLine()   { return cmd ('E'); } // riga Evaluate nella barra di help
+    inline juce::KeyPress evaluate()       { return juce::KeyPress (juce::KeyPress::returnKey, juce::ModifierKeys::shiftModifier, 0); } // live coding (Cmd+Return e' Apply)
     inline juce::KeyPress indent()         { return cmd (']'); }
     inline juce::KeyPress unindent()       { return cmd ('['); }
     // Re-indent (Xcode: Ctrl+I). Su Windows/Linux Ctrl e' anche il "command".

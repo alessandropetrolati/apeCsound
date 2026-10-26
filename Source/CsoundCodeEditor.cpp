@@ -203,6 +203,15 @@ bool CsoundCodeEditor::keyPressed (const juce::KeyPress& key)
         }
     }
 
+    // Shift+Return: Evaluate (come SuperCollider; Cmd+Return e' Apply) -
+    // vedi evaluateSelectionOrBlock(). Intercettato qui, prima che Return
+    // inserisca un a capo.
+    if (key == CsoundShortcuts::evaluate())
+    {
+        evaluateSelectionOrBlock();
+        return true;
+    }
+
     // Cmd+Shift+Z e ANCHE Cmd+Y: TextEditorKeyMapper (usato da
     // CodeEditorComponent::keyPressed) accetta entrambi per il redo. Se
     // Cmd+Y arrivasse alla classe base farebbe redo SOLO sul document,
@@ -323,6 +332,7 @@ void CsoundCodeEditor::showContextMenu (juce::Point<int>)
             case ctxRedo:      item.shortcut = SC::label (SC::redo()); break;
             case ctxIndent:    item.shortcut = SC::label (SC::reindent()); break;
             case ctxComment:   item.shortcut = SC::label (SC::toggleComment()); break;
+            case ctxEvaluate:  item.shortcut = SC::label (SC::evaluate()); break;
             default: break;
         }
 
@@ -340,6 +350,8 @@ void CsoundCodeEditor::showContextMenu (juce::Point<int>)
     items.push_back (CsoundActionSheetItem::separator());
     add (ctxIndent,  "Indent", CsoundActionSheetIcon::indent);
     add (ctxComment, areSelectedLinesCommented() ? "Uncomment" : "Comment", CsoundActionSheetIcon::comment);
+    items.push_back (CsoundActionSheetItem::separator());
+    add (ctxEvaluate, hasSelection ? "Evaluate Selection" : "Evaluate Block / Line", CsoundActionSheetIcon::codeBraces, onEvaluateRequested != nullptr);
 
     juce::Component::SafePointer<CsoundCodeEditor> safeThis (this);
 
@@ -364,6 +376,7 @@ void CsoundCodeEditor::performContextMenuItem (int result)
         case ctxRedo:      if (onRedoRequested) onRedoRequested(); else redo(); break;
         case ctxIndent:    indentSelectedLines(); break;
         case ctxComment:   toggleCommentOnSelectedLines(); break;
+        case ctxEvaluate:  evaluateSelectionOrBlock(); break;
         default: break;
     }
 
@@ -392,6 +405,7 @@ void CsoundCodeEditor::showTouchEditMenu (juce::Rectangle<int> selectionArea)
     add (ctxRedo,      "Redo",       CsoundActionSheetIcon::redo, onRedoRequested != nullptr || getDocument().getUndoManager().canRedo());
     add (ctxIndent,    "Indent",     CsoundActionSheetIcon::indent);
     add (ctxComment,   areSelectedLinesCommented() ? "Uncomment" : "Comment", CsoundActionSheetIcon::comment);
+    add (ctxEvaluate,  "Evaluate",   CsoundActionSheetIcon::codeBraces, onEvaluateRequested != nullptr);
 
     editCallout.show (selectionArea, std::move (items));
 }
@@ -424,6 +438,81 @@ void CsoundCodeEditor::caretPositionMoved()
 
     if (onCaretChannelChanged)
         onCaretChannelChanged (channelNameAtCaret());
+}
+
+void CsoundCodeEditor::evaluateSelectionOrBlock()
+{
+    auto& doc = getDocument();
+    int startLine, endLine;
+    juce::String text;
+
+    const auto selStart = getSelectionStart();
+    const auto selEnd   = getSelectionEnd();
+
+    if (selStart.getPosition() != selEnd.getPosition())
+    {
+        text = doc.getTextBetween (selStart, selEnd);
+        startLine = selStart.getLineNumber();
+        endLine   = selEnd.getLineNumber();
+        if (selEnd.getIndexInLine() == 0 && endLine > startLine)
+            --endLine; // selezione che finisce a inizio riga: quella riga non e' inclusa
+    }
+    else
+    {
+        // Blocco instr/opcode che contiene il caret, altrimenti la riga.
+        const int caretLine = getCaretPos().getLineNumber();
+        const int numLines = doc.getNumLines();
+
+        auto firstWord = [&doc] (int line)
+        {
+            const auto t = doc.getLine (line).trim();
+            return t.upToFirstOccurrenceOf (" ", false, false).upToFirstOccurrenceOf ("\t", false, false);
+        };
+
+        startLine = endLine = caretLine;
+        int blockStart = -1;
+        for (int l = caretLine; l >= 0; --l)
+        {
+            const auto w = firstWord (l);
+            if (w == "endin" || w == "endop") { if (l != caretLine) break; }
+            if (w == "instr" || w == "opcode") { blockStart = l; break; }
+        }
+
+        if (blockStart >= 0)
+        {
+            for (int l = blockStart + 1; l < numLines; ++l)
+            {
+                const auto w = firstWord (l);
+                if (w == "endin" || w == "endop")
+                {
+                    if (l >= caretLine) { startLine = blockStart; endLine = l; }
+                    break;
+                }
+                if (w == "instr" || w == "opcode")
+                    break; // blocco non chiuso: resta la riga
+            }
+        }
+
+        text = doc.getTextBetween (juce::CodeDocument::Position (doc, startLine, 0),
+                                   juce::CodeDocument::Position (doc, endLine, doc.getLine (endLine).length()));
+    }
+
+    if (text.trim().isEmpty())
+        return;
+
+    evalFlashLines = { startLine, endLine };
+    evalFlash = 1.0f;
+    evalFlashTimer.onTick = [this]
+    {
+        evalFlash -= 1.0f / 18.0f; // ~0.6 s a 30 Hz
+        if (evalFlash <= 0.0f) { evalFlash = 0.0f; evalFlashTimer.stopTimer(); }
+        repaint();
+    };
+    evalFlashTimer.startTimerHz (30);
+    repaint();
+
+    if (onEvaluateRequested)
+        onEvaluateRequested (text);
 }
 
 juce::String CsoundCodeEditor::channelNameAtCaret() const
@@ -565,6 +654,23 @@ void CsoundCodeEditor::itemDropped (const SourceDetails& dragSourceDetails)
 
 void CsoundCodeEditor::paintOverChildren (juce::Graphics& g)
 {
+    // Lampo "Evaluate" sulle righe appena inviate al motore.
+    if (evalFlash > 0.0f)
+    {
+        const int firstLine = getFirstLineOnScreen();
+        const int lastLine  = firstLine + getNumLinesOnScreen() + 1;
+        const int a = juce::jmax (evalFlashLines.getStart(), firstLine);
+        const int b = juce::jmin (evalFlashLines.getEnd(), lastLine);
+        if (a <= b)
+        {
+            const auto top    = getCharacterBounds (juce::CodeDocument::Position (codeDocument, a, 0));
+            const auto bottom = getCharacterBounds (juce::CodeDocument::Position (codeDocument, b, 0));
+            juce::Rectangle<float> r (0.0f, (float) top.getY(), (float) getWidth(), (float) (bottom.getBottom() - top.getY()));
+            g.setColour (juce::Colour (0xff2ec4b6).withAlpha (0.28f * evalFlash));
+            g.fillRect (r);
+        }
+    }
+
     // Occorrenze della ricerca (vedi setSearchQuery): solo quelle sulle
     // righe visibili. Riempimento SEMI-trasparente, cosi' il testo sotto
     // resta leggibile; la corrente e' piu' marcata e ha un bordo.

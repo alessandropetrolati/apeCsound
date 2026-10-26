@@ -451,6 +451,18 @@ public:
 
     bool isEngineRunning() const noexcept { return ready.load(); }
 
+    /** Live coding ("Evaluate", vedi la Guide): manda al motore IN CORSA un
+        frammento di testo senza ricompilare tutto. Ogni riga che inizia
+        con un'istruzione di score (i, f, e, t, a, s, q, d, b...) va alla
+        coda degli eventi realtime (csoundEventString); tutto il resto e'
+        codice d'orchestra compilato e fuso nel motore (csoundCompileOrc,
+        async): un instr gia' esistente viene RIDEFINITO (le note attive
+        finiscono con la vecchia versione), il codice globale e' valutato a
+        i-time. Nulla di cio' tocca il testo dell'editor ne' il file: al
+        prossimo Apply vale di nuovo solo quello che c'e' scritto.
+        Thread dei messaggi. Ritorna false se il motore non e' in corsa. */
+    bool evaluateCode (const juce::String& text);
+
     // Il testo CODICE = SOLO il blocco <CsoundSynthesizer>...</CsoundSynthesizer>
     // (richiesta esplicita: "filtrare tutto tranne <CsoundSynthesizer>"): e'
     // cio' che l'editor mostra e che viene compilato. Tutto cio' che nel
