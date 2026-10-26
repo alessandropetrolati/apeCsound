@@ -3731,6 +3731,17 @@ Their widgets (sliders, knobs, checkboxes, menus, XY...) become parameters when 
 - **MIDI** - notes and controllers reach Csound; MIDI written by Csound (`midiout`) goes back to the DAW.
 - **OSC** - the OSC opcodes (`oscinit`, `osclisten`, `oscsend`...) are built in.
 
+## Host transport channels
+The DAW transport is available to the code as control channels, with the same names Cabbage uses, so Cabbage files that read them work unchanged. Updated once per audio block:
+- `HOST_BPM` - tempo; `TIME_SIG_NUM` / `TIME_SIG_DENOM` - time signature
+- `IS_PLAYING`, `IS_RECORDING` - 1 or 0
+- `HOST_PPQ_POS` - position in quarter notes (beats); `HOST_PPQ_BAR_START` - beat of the last bar start
+- `TIME_IN_SECONDS`, `TIME_IN_SAMPLES` - position of the playhead
+Read them with `chnget`, e.g. a tempo-synced delay: `kdel = 60 / chnget:k("HOST_BPM") * 0.75`. In the standalone app, or in a host without transport, they stay at 0 except `HOST_BPM` = 120 and 4/4.
+
+## Audio I/O opcodes
+`nchnls` / `nchnls_i` follow the track, so write the code with the **per-channel** opcodes: `aL inch 1`, `aR inch 2`, `outch 1, aL, 2, aR`. They work with any channel count: on a mono track `outch 2` is simply dropped, on a 6-channel track `outch 3`...`outch 6` reach the extra channels. The fixed-width opcodes (`outs`, `ins`, `out`, `outq`, `inq`...) fail on a track with fewer channels and ignore the extra ones; apeCsound warns in the console when the count does not match.
+
 # Console and Graphs
 - **Console** - Csound messages, compile errors and apeCsound notes. Repeated messages are summarised to keep the DAW responsive. Clear empties it; it is also cleared at every Apply.
 - **Graphs** (menu > Show Graphs) - function tables (f statements, `ftgen`) and `display` / `dispfft` signals, in a panel docked at the bottom. Cleared at every Apply.

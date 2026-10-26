@@ -688,6 +688,48 @@ void CsoundAudioProcessor::warnAudioChannelConflicts (const juce::String& csdTex
     }
 }
 
+void CsoundAudioProcessor::warnFixedChannelOpcodes (const juce::String& csdText, int numOutputs, int numInputs)
+{
+    auto code = csdText.fromFirstOccurrenceOf ("<CsInstruments>", false, false)
+                       .upToFirstOccurrenceOf ("</CsInstruments>", false, false);
+    if (code.isEmpty())
+        code = csdText;
+
+    std::string src = code.toStdString();
+    src = std::regex_replace (src, std::regex (R"(/\*[\s\S]*?\*/)"), " ");
+    src = std::regex_replace (src, std::regex (R"((;|//)[^\n]*)"), "");
+    src = std::regex_replace (src, std::regex (R"("[^"\n]*")"), "\"\"");
+
+    struct Fixed { const char* name; int channels; bool isInput; };
+    static const Fixed fixedOpcodes[] = {
+        { "out", 1, false }, { "outs", 2, false }, { "outq", 4, false }, { "outh", 6, false }, { "outo", 8, false }, { "outx", 16, false },
+        { "in", 1, true },   { "ins", 2, true },   { "inq", 4, true },   { "inh", 6, true },   { "ino", 8, true },   { "inx", 16, true },
+    };
+
+    juce::StringArray found;
+    for (const auto& op : fixedOpcodes)
+    {
+        const int hostChannels = op.isInput ? numInputs : numOutputs;
+        if (hostChannels == op.channels)
+            continue; // combacia: nessun problema
+
+        // Opcode come parola a se' (non "outch", "outleta", "inch", "ins2"...),
+        // in sintassi classica ("outs a1, a2") o funzionale ("outs(a1, a2)").
+        const std::regex re ("(^|[^\\w:])" + std::string (op.name) + R"((?![\w:]))");
+        if (std::regex_search (src, re))
+            found.add (juce::String (op.name) + " (" + juce::String (op.channels) + (op.channels == 1 ? " channel" : " channels") + ")");
+    }
+
+    if (found.isEmpty())
+        return;
+
+    handleMessage ("Warning: the code uses " + found.joinIntoString (", ")
+                   + " but the track has " + juce::String (numOutputs) + " output"
+                   + (numOutputs == 1 ? "" : "s") + " / " + juce::String (numInputs) + " input"
+                   + (numInputs == 1 ? "" : "s") + ". Fixed-width I/O opcodes fail on fewer channels and ignore the "
+                   "extra ones: prefer outch 1, aL, 2, aR and inch 1 / inch 2, which work with any nchnls (see the Guide).");
+}
+
 void CsoundAudioProcessor::pushChannelParametersToCsound (CSOUND* cs)
 {
     // Nuovo motore: tutti i canali vanno riscritti dall'host.
@@ -1265,6 +1307,7 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     csKsmps            = CsoundAPI::csoundGetKsmps (cs);
     csNumChannels      = (int) CsoundAPI::csoundGetChannels (cs, 0);
     csInputChannels    = (int) CsoundAPI::csoundGetChannels (cs, 1);
+    warnFixedChannelOpcodes (newCsdText, csNumChannels, csInputChannels);
     {
         const double zeroDbfs = (double) ::csoundGet0dBFS (cs);
         csInScale  = (float) (zeroDbfs > 0 ? zeroDbfs : 1.0);
@@ -1314,6 +1357,11 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
                            + msText + " latency on live input."
                            " Use a lower ksmps (16-64) for live monitoring.");
     }
+
+    // Canali del trasporto host risolti/creati QUI (thread dei messaggi,
+    // prima che il motore sia visibile al ciclo audio): nessuna allocazione
+    // nel primo processBlock().
+    resolveHostTransportChannels (cs);
 
     activeCsound.store (cs);
     ready = true;
@@ -1376,6 +1424,7 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     // 64 "macro" parametri (float/int/bool/choice) verso i canali Csound a
     // cui sono assegnati.
     pushChannelParametersToCsound (cs);
+    pushHostTransportToCsound (cs);
 
     // Messaggi MIDI in ingresso di questo blocco: midiInReadCallback li
     // consuma durante CsoundAPI::csoundPerformKsmps() qui sotto (stesso thread audio).
@@ -1735,7 +1784,7 @@ namespace
     // Versione dello zip degli esempi (Resources/Examples.zip, vedi
     // scripts/make_examples_zip.sh): aumentarla quando lo zip cambia, cosi'
     // gli esempi nuovi vengono estratti anche a chi ha gia' la cartella.
-    constexpr int kExamplesVersion = 4;   // 2: + ape/  3: + Test/GroupsSnapshotsTest  4: + Test/EvaluateTest
+    constexpr int kExamplesVersion = 5;   // 2: + ape/  3: + Test/GroupsSnapshotsTest  4: + Test/EvaluateTest  5: + Test/HostTransportTest
     const char* const kExamplesVersionKey = "examplesVersion";
 }
 
@@ -2379,6 +2428,62 @@ void CsoundAudioProcessor::resetParameterValuesToDefaults()
             push (apvts.getParameter (getChoiceParamID (i)),
                   maxChoiceOptions > 1 ? (float) slot.defaultIndex / (float) (maxChoiceOptions - 1) : 0.0f);
     }
+}
+
+void CsoundAudioProcessor::resolveHostTransportChannels (CSOUND* cs)
+{
+    auto& t = transportChannels;
+    {
+        auto resolve = [cs] (const char* name) -> cs_float*
+        {
+            void* p = nullptr;
+            if (CsoundAPI::csoundGetChannelPtr == nullptr
+                || CsoundAPI::csoundGetChannelPtr (cs, &p, name, CSOUND_CONTROL_CHANNEL | CSOUND_INPUT_CHANNEL) != 0)
+                return nullptr;
+            return static_cast<cs_float*> (p);
+        };
+
+        t.bpm       = resolve ("HOST_BPM");
+        t.playing   = resolve ("IS_PLAYING");
+        t.recording = resolve ("IS_RECORDING");
+        t.seconds   = resolve ("TIME_IN_SECONDS");
+        t.samples   = resolve ("TIME_IN_SAMPLES");
+        t.ppq       = resolve ("HOST_PPQ_POS");
+        t.ppqBar    = resolve ("HOST_PPQ_BAR_START");
+        t.sigNum    = resolve ("TIME_SIG_NUM");
+        t.sigDenom  = resolve ("TIME_SIG_DENOM");
+        t.resolvedFor = cs;
+
+        if (t.bpm != nullptr)      *t.bpm = 120;
+        if (t.sigNum != nullptr)   *t.sigNum = 4;
+        if (t.sigDenom != nullptr) *t.sigDenom = 4;
+    }
+}
+
+void CsoundAudioProcessor::pushHostTransportToCsound (CSOUND* cs)
+{
+    auto& t = transportChannels;
+    if (t.resolvedFor != cs)
+        return; // motore non ancora passato da resolveHostTransportChannels()
+
+    auto set = [] (cs_float* p, double v) { if (p != nullptr) *p = (cs_float) v; };
+
+    auto* playHead = getPlayHead();
+    if (playHead == nullptr)
+        return;
+
+    const auto pos = playHead->getPosition();
+    if (! pos.hasValue())
+        return;
+
+    if (auto bpm = pos->getBpm())              set (t.bpm, *bpm);
+    set (t.playing,   pos->getIsPlaying()   ? 1.0 : 0.0);
+    set (t.recording, pos->getIsRecording() ? 1.0 : 0.0);
+    if (auto s = pos->getTimeInSeconds())      set (t.seconds, *s);
+    if (auto s = pos->getTimeInSamples())      set (t.samples, (double) *s);
+    if (auto p = pos->getPpqPosition())        set (t.ppq, *p);
+    if (auto p = pos->getPpqPositionOfLastBarStart()) set (t.ppqBar, *p);
+    if (auto sig = pos->getTimeSignature())  { set (t.sigNum, sig->numerator); set (t.sigDenom, sig->denominator); }
 }
 
 bool CsoundAudioProcessor::evaluateCode (const juce::String& text)

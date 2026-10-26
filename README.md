@@ -57,6 +57,7 @@ A fixed pool of **144 host-automatable parameters** can be mapped to Csound chan
 - **Channels**: 1–16 outputs and 0–16 inputs (mono, stereo, surround, discrete). By default `nchnls` / `nchnls_i` follow the track; **Config > Follow CSD nchnls** uses the values of the `.csd` instead. Surround layouts are reordered so that `outch n` is channel *n* of the track.
 - `sr` follows the DAW; `ksmps` is the plug-in latency, reported to the host.
 - **OSC** opcodes (`oscinit`, `osclisten`, `oscsend`...) are built in.
+- **Host transport** as control channels (Cabbage names): `HOST_BPM`, `IS_PLAYING`, `IS_RECORDING`, `HOST_PPQ_POS`, `HOST_PPQ_BAR_START`, `TIME_IN_SECONDS`, `TIME_IN_SAMPLES`, `TIME_SIG_NUM`, `TIME_SIG_DENOM`.
 
 ### Sessions and files
 - The **file on disk is the reference**. A DAW project stores the path of the linked `.csd`, an embedded copy and the parameter values; the copy is used only if the file is missing.

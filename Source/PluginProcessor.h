@@ -1109,12 +1109,41 @@ private:
     // garanzie real-time piu' rigorose.
     void pushChannelParametersToCsound (CSOUND* cs);
 
+    // Canali riservati del TRASPORTO dell'host (stessi nomi di Cabbage, cosi'
+    // un csd scritto per Cabbage li legge senza modifiche): HOST_BPM,
+    // IS_PLAYING, IS_RECORDING, TIME_IN_SECONDS, TIME_IN_SAMPLES,
+    // HOST_PPQ_POS, HOST_PPQ_BAR_START, TIME_SIG_NUM, TIME_SIG_DENOM -
+    // scritti una volta per blocco da processBlock() leggendo
+    // getPlayHead(). Puntatori ai canali risolti UNA volta per istanza di
+    // motore (csoundGetChannelPtr, che li crea se non esistono) e poi
+    // scritti direttamente: niente lookup per nome ne' allocazioni nel
+    // ciclo audio. Senza playhead (standalone, host senza trasporto) i
+    // canali restano a 0 tranne HOST_BPM = 120.
+    struct HostTransportChannels
+    {
+        CSOUND* resolvedFor = nullptr;
+        cs_float* bpm = nullptr; cs_float* playing = nullptr; cs_float* recording = nullptr;
+        cs_float* seconds = nullptr; cs_float* samples = nullptr; cs_float* ppq = nullptr;
+        cs_float* ppqBar = nullptr; cs_float* sigNum = nullptr; cs_float* sigDenom = nullptr;
+    };
+    HostTransportChannels transportChannels;
+    void resolveHostTransportChannels (CSOUND* cs); // all'avvio del motore (thread messaggi)
+    void pushHostTransportToCsound (CSOUND* cs);    // processBlock
+
     // Dopo ogni compilazione: avvisa in console se il nome di un parametro e'
     // usato nel codice anche come canale AUDIO (chnget/chnset/chnmix con
     // variabili a, chn_a). I canali dei parametri sono di controllo (k) e un
     // canale Csound ha un solo tipo: Csound rifiuta l'uso audio con
     // "channel already exists with an incompatible type".
     void warnAudioChannelConflicts (const juce::String& csdText);
+
+    // Dopo ogni compilazione: avvisa se il codice usa gli opcode di I/O a
+    // numero di canali FISSO (outs/ins = 2, out = 1, outq/inq = 4, outh/inh
+    // = 6, outo/ino = 8, outx/inx = 16) quando la traccia ha un numero
+    // diverso di canali: con nchnls che segue la traccia, "outs" su una
+    // traccia mono fallisce e su una 4/6/8 canali copre solo 1-2. Si
+    // consiglia outch n / inch n, che valgono con qualunque nchnls.
+    void warnFixedChannelOpcodes (const juce::String& csdText, int numOutputs, int numInputs);
 
     // csoundSetMessageCallback (stile printf/va_list) esiste ancora,
     // invariata, in questo branch di Csound 7 (verificato in csound.h):

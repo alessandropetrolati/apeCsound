@@ -20,6 +20,7 @@ namespace CsoundAPI
     CsoundSetExternalMidiOutCloseCallbackFn csoundSetExternalMidiOutCloseCallback = nullptr;
     CsoundSetOptionFn csoundSetOption = nullptr;
     CsoundCompileCSDFn csoundCompileCSD = nullptr;
+    CsoundGetChannelPtrFn csoundGetChannelPtr = nullptr;
     CsoundCompileOrcFn csoundCompileOrc = nullptr;
     CsoundEventStringFn csoundEventString = nullptr;
     CsoundStartFn csoundStart = nullptr;
@@ -71,6 +72,7 @@ namespace CsoundAPI
         csoundSetExternalMidiOutCloseCallback = &::csoundSetExternalMidiOutCloseCallback;
         csoundSetOption                       = &::csoundSetOption;
         csoundCompileCSD                      = &::csoundCompileCSD;
+        csoundGetChannelPtr                   = &::csoundGetChannelPtr;
         csoundCompileOrc                      = &::csoundCompileOrc;
         csoundEventString                     = &::csoundEventString;
         csoundStart                           = &::csoundStart;

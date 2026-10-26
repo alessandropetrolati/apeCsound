@@ -63,6 +63,12 @@ PARAMETERS PANEL
     to the running engine without a full recompile (instr redefinition,
     global code, score events); the help bar turns into an Evaluate line
     (">_" icon or Cmd+E) for one-liners, with history.
+  * Console warning when the code uses fixed-width I/O opcodes (outs, ins,
+    out, outq...) and the track has a different channel count: prefer
+    outch / inch.
+  * Host transport channels, same names as Cabbage: HOST_BPM, IS_PLAYING,
+    IS_RECORDING, TIME_IN_SECONDS, TIME_IN_SAMPLES, HOST_PPQ_POS,
+    HOST_PPQ_BAR_START, TIME_SIG_NUM, TIME_SIG_DENOM (chnget them).
   * Code <-> Parameters link: with the caret on a chnget/chnset line, the
     card of that channel flashes briefly in the Parameters panel; "Show in Code"
     in the "..." menu of a card selects its channel name in the code.
