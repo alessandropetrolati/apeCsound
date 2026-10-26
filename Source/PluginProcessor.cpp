@@ -1735,7 +1735,7 @@ namespace
     // Versione dello zip degli esempi (Resources/Examples.zip, vedi
     // scripts/make_examples_zip.sh): aumentarla quando lo zip cambia, cosi'
     // gli esempi nuovi vengono estratti anche a chi ha gia' la cartella.
-    constexpr int kExamplesVersion = 2;   // 2: + ape/
+    constexpr int kExamplesVersion = 3;   // 2: + ape/  3: + Test/GroupsSnapshotsTest
     const char* const kExamplesVersionKey = "examplesVersion";
 }
 
@@ -4829,6 +4829,9 @@ instr 1
     ; Convert MIDI velocity to amplitude
     iamp = ampmidi(0.5)
     
+    ; "@group Name" puts the parameters read below it under one label in
+    ; the Parameters panel (until the next @group or the end of the instr).
+    ; @group Synth
     ;MENU: Options=Sawtooth,Square/PWM,Pulse; Default=Sawtooth
     iWave chnget "Wave"
     
@@ -4867,6 +4870,7 @@ instr 2
     ; Delay parameters
     idelay = 1
 
+    ; @group Delay
     ;SLIDER FLOAT: Min=0; Max=1; Skew=1; Step=0.001
     kdelay chnget "Delay"
 

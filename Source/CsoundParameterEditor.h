@@ -8,6 +8,7 @@
 #include "PluginProcessor.h"
 #include "CsoundActionSheet.h"
 #include "CsoundComboBox.h" // ComboBox con il menu di apeCsound (anche su iOS)
+#include "CsoundParameterGroups.h" // raggruppamento per "; @group Nome" nel codice
 
 /**
     Slider dei parametri, uguale con mouse e dito:
@@ -284,6 +285,11 @@ public:
     // mostra subito il contenuto appena caricato invece dei vecchi valori
     // della sessione precedente.
     void refreshAllFromProcessor();
+
+    /** Ricalcola il raggruppamento (vedi CsoundParameterGroups.h) dal codice
+        compilato (processor.getCsdText()) e rifa' il layout: da chiamare
+        dopo Apply. Load/ripristino passano gia' da rebuildUnifiedRows(). */
+    void refreshGrouping();
 
     // Undo/Redo GENERALI per i METADATA (nome canale, min/max/default/skew/
     // step, default bool, opzioni/default choice) e per aggiunta/rimozione
@@ -1422,6 +1428,47 @@ private:
     juce::Component rowsContainer;
 
     std::vector<std::unique_ptr<juce::Component>> unifiedRows;
+    std::vector<std::pair<int, int>> unifiedRowKeys; // (kind 0..3, slotIndex) parallelo a unifiedRows
+
+    // Gruppi (vedi CsoundParameterGroups.h): intestazione apribile/chiudibile
+    // + le righe di unifiedRows che le appartengono. Vuoto se il codice non
+    // ha nessun "@group": elenco piatto. Ricalcolato in rebuildUnifiedRows()
+    // e refreshGrouping(); resized() impagina per gruppi.
+    // Cornice dell'intero gruppo (sfondo + bordo arrotondato) con la riga di
+    // intestazione in alto: le card dei parametri stanno DENTRO la cornice
+    // (rientrate), cosi' il gruppo si legge come un blocco unico. Il tocco
+    // sull'intestazione apre/chiude; la cornice sta dietro alle righe
+    // (toBack in rebuildDisplayGroups).
+    struct GroupHeader final : public juce::Component
+    {
+        void paint (juce::Graphics& g) override;
+        void mouseUp (const juce::MouseEvent& e) override
+        {
+            if (e.getPosition().getY() < groupHeaderHeight && contains (e.getPosition()) && onToggle)
+                onToggle();
+        }
+
+        juce::String name;
+        int count = 0;
+        bool collapsed = false;
+        std::function<void()> onToggle;
+    };
+
+    struct DisplayGroup
+    {
+        juce::String name;
+        std::vector<juce::Component*> rows;
+        std::unique_ptr<GroupHeader> header;
+    };
+
+    std::vector<DisplayGroup> displayGroups;
+    std::set<juce::String> collapsedGroups; // per nome, finche' il pannello esiste
+    static constexpr int groupHeaderHeight = 32;
+    static constexpr int groupInsetH = 8;       // rientro delle card dentro la cornice
+    static constexpr int groupInsetBottom = 8;  // aria sotto l'ultima card
+    static constexpr int groupGap = 12;         // tra un gruppo e il successivo
+    void rebuildDisplayGroups();
+    void setAllGroupsCollapsed (bool collapsed); // menu "+": Expand / Collapse All Groups
 
     // La riga "in sospeso" creata da createPendingRow() (vedi sopra) -
     // SEPARATA da unifiedRows apposta: rappresenta uno slot che il

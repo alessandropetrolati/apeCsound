@@ -2794,6 +2794,10 @@ void CsoundAudioProcessorEditor::csoundEngineStarted()
     // volta (vedi compileAndStart): l'elenco opcode va quindi ripreso da
     // capo ogni volta che riparte, non solo alla creazione dell'editor.
     editor.setOpcodeSignatures (audioProcessor.getOpcodeSignatures());
+
+    // Gruppi del pannello Parametri ("; @group" nel codice): seguono il
+    // testo COMPILATO, quindi si aggiornano qui, a ogni Apply/Load.
+    parameterPanel.refreshGrouping();
 }
 
 void CsoundAudioProcessorEditor::csoundEngineStopped()
@@ -3521,6 +3525,16 @@ Every instance offers the DAW **144 fixed parameters**: 64 Float, 32 Int, 32 Boo
 - The code reads them with `chnget`. `chnset` on the same channel moves the parameter (slider and DAW automation).
 - **Drag a row into the code** - drop it on a line of the editor to insert `kCutoff chnget "Cutoff"` with a comment describing the parameter. **Copy** puts the same text in the clipboard.
 - A parameter channel is a control channel: do not use the same name with audio variables (`a...`) - the console warns about it.
+## Groups
+By default the panel lists the parameters by type: all the Float sliders, then Int, Bool and Choice. A comment in the code groups them the way you want, so that the controls of one instrument - its sliders, toggles and menus together - stay under one label:
+- `; @group Synth` on its own line, before the `chnget` lines. Every parameter read below it belongs to "Synth", until the next `@group`, or `endin` / `endop`. Also `;@group` and `// @group`; names can contain spaces.
+- A Bool or Choice parameter goes where its `chnget` is: next to the sliders of its instrument, not at the end of the list.
+- The group of a parameter is decided by the **first** `chnget` of its channel in the code. A channel read in several instruments goes where it appears first - put that line under the `@group` you prefer.
+- The same name in several places joins the parameters in one group (e.g. a "Master" group spread over two instruments).
+- Groups appear in the order of the code, parameters in the order of their `chnget`. Parameters without a group, or whose channel is not read by any `chnget` (misspelt name, name built at run time), go to **Other**, at the end. Without any `@group` the list stays flat, as before.
+- Each group is a frame with a teal header: tap it to collapse or expand the group. **Expand All Groups** and **Collapse All Groups** are in the panel's + menu (Open Configs also expands them).
+- Groups follow the **compiled** code: they update at Apply and Load, not while typing. They only change the order in the panel: the DAW still sees the parameters by their fixed indices.
+- Example: `; @group Synth` / `kcut chnget "Cutoff"` / `iwave chnget "Wave"` / `; @group Delay` / `ktime chnget "Time"` - see `Test/GroupsSnapshotsTest.csd` in the examples.
 ## Snapshots
 The camera button on the right of the Parameters title bar stores and recalls the **values** of all the parameters.
 - **Save Snapshot...** - asks for a name and stores the current values.

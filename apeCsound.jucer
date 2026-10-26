@@ -9,7 +9,7 @@
               microphonePermissionsText="apeCsound needs the microphone for live audio input."
               pluginEditorRequiresKeys="1" pluginIsSynth="0" pluginWantsMidiIn="1"
               pluginProducesMidiOut="1" pluginIsMidiEffectPlugin="0" pluginAAXDisableBypass="0"
-              pluginAAXDisableMultiMono="0" version="1.0.2">
+              pluginAAXDisableMultiMono="0" version="1.0.4">
   <MAINGROUP id="tNvtiW" name="apeCsound">
     <GROUP id="{9680A1AA-7764-28DB-226D-D2086CE2E1B8}" name="Resources">
       <FILE id="QhPr70" name="cs-icon.png" compile="0" resource="1" file="Resources/cs-icon.png"/>
@@ -57,8 +57,12 @@
             file="Source/CsoundShortcuts.h"/>
       <FILE id="cGrfA" name="CsoundGraphs.cpp" compile="1" resource="0" file="Source/CsoundGraphs.cpp"/>
       <FILE id="cGrfB" name="CsoundGraphs.h" compile="0" resource="0" file="Source/CsoundGraphs.h"/>
-      <FILE id="csdBrw" name="CsdBrowserView.h" compile="0" resource="0" file="Source/CsdBrowserView.h"/>
-      <FILE id="txtPrm" name="CsoundTextPrompt.h" compile="0" resource="0" file="Source/CsoundTextPrompt.h"/>
+      <FILE id="csdBrw" name="CsdBrowserView.h" compile="0" resource="0"
+            file="Source/CsdBrowserView.h"/>
+      <FILE id="txtPrm" name="CsoundTextPrompt.h" compile="0" resource="0"
+            file="Source/CsoundTextPrompt.h"/>
+      <FILE id="pGrps" name="CsoundParameterGroups.h" compile="0" resource="0"
+            file="Source/CsoundParameterGroups.h"/>
       <FILE id="sAppA" name="StandaloneApp.cpp" compile="1" resource="0"
             file="Source/StandaloneApp.cpp"/>
       <FILE id="pFbkA" name="PlatformFallbacks.cpp" compile="1" resource="0"
@@ -108,7 +112,8 @@
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"
                JUCE_WEB_BROWSER="0" JUCE_USE_CURL="0"/>
   <EXPORTFORMATS>
-    <XCODE_MAC customPList="&lt;plist version=&quot;1.0&quot;&gt;&#10;&lt;dict&gt;&#10;  &lt;key&gt;NSLocalNetworkUsageDescription&lt;/key&gt;&#10;  &lt;string&gt;apeCsound uses the local network to send and receive OSC messages (Csound OSC opcodes).&lt;/string&gt;&#10;&lt;/dict&gt;&#10;&lt;/plist&gt;" iosBluetoothPermissionNeeded="1" iosBluetoothPermissionText="apeCsound uses Bluetooth to connect wireless MIDI keyboards and controllers."
+    <XCODE_MAC customPList="&lt;plist version=&quot;1.0&quot;&gt;&#10;&lt;dict&gt;&#10;  &lt;key&gt;NSLocalNetworkUsageDescription&lt;/key&gt;&#10;  &lt;string&gt;apeCsound uses the local network to send and receive OSC messages (Csound OSC opcodes).&lt;/string&gt;&#10;&lt;/dict&gt;&#10;&lt;/plist&gt;"
+               iosBluetoothPermissionNeeded="1" iosBluetoothPermissionText="apeCsound uses Bluetooth to connect wireless MIDI keyboards and controllers."
                targetFolder="Builds/MacOSX" iosDevelopmentTeamID="4863C638XM"
                smallIcon="QhPr70" bigIcon="QhPr70" externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate&#10;csoundosc&#10;lo"
                extraFrameworks="Accelerate" microphonePermissionNeeded="1" microphonePermissionsText="apeCsound needs the microphone for live audio input."
@@ -149,7 +154,8 @@
                   iosAppGroups="1" iosAppGroupsId="group.it.apeSoft.apeCsound.gr"
                   microphonePermissionNeeded="1" microphonePermissionsText="apeCsound needs the microphone for live audio input."
                   customPList="&lt;plist version=&quot;1.0&quot;&gt;&#10;&lt;dict&gt;&#10;  &lt;key&gt;LSSupportsOpeningDocumentsInPlace&lt;/key&gt;&#10;  &lt;true/&gt;&#10;  &lt;key&gt;CFBundleDocumentTypes&lt;/key&gt;&#10;  &lt;array&gt;&#10;    &lt;dict&gt;&#10;      &lt;key&gt;CFBundleTypeName&lt;/key&gt;&#10;      &lt;string&gt;Csound Unified Document&lt;/string&gt;&#10;      &lt;key&gt;LSHandlerRank&lt;/key&gt;&#10;      &lt;string&gt;Alternate&lt;/string&gt;&#10;      &lt;key&gt;LSItemContentTypes&lt;/key&gt;&#10;      &lt;array&gt;&#10;        &lt;string&gt;it.apesoft.csd&lt;/string&gt;&#10;      &lt;/array&gt;&#10;    &lt;/dict&gt;&#10;  &lt;/array&gt;&#10;  &lt;key&gt;UTExportedTypeDeclarations&lt;/key&gt;&#10;  &lt;array&gt;&#10;    &lt;dict&gt;&#10;      &lt;key&gt;UTTypeIdentifier&lt;/key&gt;&#10;      &lt;string&gt;it.apesoft.csd&lt;/string&gt;&#10;      &lt;key&gt;UTTypeDescription&lt;/key&gt;&#10;      &lt;string&gt;Csound Unified Document&lt;/string&gt;&#10;      &lt;key&gt;UTTypeConformsTo&lt;/key&gt;&#10;      &lt;array&gt;&#10;        &lt;string&gt;public.plain-text&lt;/string&gt;&#10;      &lt;/array&gt;&#10;      &lt;key&gt;UTTypeTagSpecification&lt;/key&gt;&#10;      &lt;dict&gt;&#10;        &lt;key&gt;public.filename-extension&lt;/key&gt;&#10;        &lt;array&gt;&#10;          &lt;string&gt;csd&lt;/string&gt;&#10;        &lt;/array&gt;&#10;      &lt;/dict&gt;&#10;    &lt;/dict&gt;&#10;  &lt;/array&gt;&#10;  &lt;key&gt;NSLocalNetworkUsageDescription&lt;/key&gt;&#10;  &lt;string&gt;apeCsound uses the local network to send and receive OSC messages (Csound OSC opcodes).&lt;/string&gt;&#10;&lt;/dict&gt;&#10;&lt;/plist&gt;"
-                  externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate&#10;csoundosc&#10;lo" extraFrameworks="Accelerate" extraDefs="APECSOUND_WITH_OSC=1"
+                  externalLibraries="CsoundLib64&#10;sndfile&#10;samplerate&#10;csoundosc&#10;lo"
+                  extraFrameworks="Accelerate" extraDefs="APECSOUND_WITH_OSC=1"
                   UIStatusBarHidden="1">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" headerPath="../../build/csound-install/universal/include"
@@ -179,7 +185,8 @@
       </MODULEPATHS>
     </XCODE_IPHONE>
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile" smallIcon="QhPr70" bigIcon="QhPr70"
-                extraDefs="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1&#10;APECSOUND_WITH_OSC=1" externalLibraries="csoundosc&#10;lo&#10;csound64&#10;sndfile&#10;samplerate"
+                extraDefs="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1&#10;APECSOUND_WITH_OSC=1"
+                externalLibraries="csoundosc&#10;lo&#10;csound64&#10;sndfile&#10;samplerate"
                 extraLinkerFlags="-ldl -lpthread -lm">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" headerPath="../../build/csound-install/linux/include"
@@ -207,7 +214,8 @@
       </MODULEPATHS>
     </LINUX_MAKE>
     <VS2022 targetFolder="Builds/VisualStudio2022" smallIcon="QhPr70" bigIcon="QhPr70"
-            extraDefs="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1&#10;APECSOUND_WITH_OSC=1" externalLibraries="csoundosc.lib&#10;lo.lib&#10;csound64.lib&#10;sndfile.lib&#10;samplerate.lib&#10;ws2_32.lib&#10;wsock32.lib&#10;iphlpapi.lib&#10;winmm.lib&#10;ole32.lib&#10;uuid.lib&#10;shlwapi.lib">
+            extraDefs="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1&#10;APECSOUND_WITH_OSC=1"
+            externalLibraries="csoundosc.lib&#10;lo.lib&#10;csound64.lib&#10;sndfile.lib&#10;samplerate.lib&#10;ws2_32.lib&#10;wsock32.lib&#10;iphlpapi.lib&#10;winmm.lib&#10;ole32.lib&#10;uuid.lib&#10;shlwapi.lib">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="apeCsound" winArchitecture="x64"
                        useRuntimeLibDLL="0" headerPath="..\..\build\csound-install\windows\include"

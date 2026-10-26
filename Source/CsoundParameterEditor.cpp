@@ -3172,6 +3172,24 @@ void CsoundParameterMappingPanel::setAllRowsEditMode (bool edit)
         if (auto* iface = dynamic_cast<UnifiedRowInterface*> (row.get()))
             iface->setEditMode (edit);
 
+    // Con i gruppi chiusi non si vedrebbe nulla: Open Configs li apre.
+    if (edit)
+        setAllGroupsCollapsed (false);
+
+    resized();
+}
+
+void CsoundParameterMappingPanel::setAllGroupsCollapsed (bool collapsed)
+{
+    for (auto& group : displayGroups)
+    {
+        group.header->collapsed = collapsed;
+        group.header->repaint();
+
+        if (collapsed) collapsedGroups.insert (group.name);
+        else           collapsedGroups.erase (group.name);
+    }
+
     resized();
 }
 
@@ -3247,6 +3265,24 @@ void CsoundParameterMappingPanel::showAddMenu()
         item.icon = CsoundActionSheetIcon::eyeClosed;
         items.push_back (item);
     }
+
+    // Gruppi ("; @group" nel codice): solo se ce ne sono.
+    if (! displayGroups.empty())
+    {
+        items.push_back (CsoundActionSheetItem::separator());
+        {
+            CsoundActionSheetItem item;
+            item.id = 111; item.text = "Expand All Groups";
+            item.icon = CsoundActionSheetIcon::eyeOpen;
+            items.push_back (item);
+        }
+        {
+            CsoundActionSheetItem item;
+            item.id = 112; item.text = "Collapse All Groups";
+            item.icon = CsoundActionSheetIcon::eyeClosed;
+            items.push_back (item);
+        }
+    }
     items.push_back (CsoundActionSheetItem::separator());
     {
         CsoundActionSheetItem item;
@@ -3283,6 +3319,8 @@ void CsoundParameterMappingPanel::showAddMenu()
             case 108: safeThis->setAllRowsEditMode (true); break;
             case 109: safeThis->setAllRowsEditMode (false); break;
             case 110: safeThis->resetAllParametersToInit(); break;
+            case 111: safeThis->setAllGroupsCollapsed (false); break;
+            case 112: safeThis->setAllGroupsCollapsed (true); break;
             default: break;
         }
     });
@@ -3716,6 +3754,8 @@ void CsoundParameterMappingPanel::createPendingRow (int kind, int slotIndex)
 void CsoundParameterMappingPanel::rebuildUnifiedRows()
 {
     unifiedRows.clear();
+    unifiedRowKeys.clear();
+    displayGroups.clear();
 
     // Scarta dal tracking gli slot ormai vuoti (rimossi, o un Undo che li
     // ha appena svuotati) - altrimenti un futuro "+" che riusa lo stesso
@@ -3827,6 +3867,7 @@ void CsoundParameterMappingPanel::rebuildUnifiedRows()
         wireEditModeTracking (*row, row->onEditModeToggled, 0, i);
         rowsContainer.addAndMakeVisible (*row);
         unifiedRows.push_back (std::move (row));
+        unifiedRowKeys.emplace_back (0, i);
     }
 
     for (int i = 0; i < CsoundAudioProcessor::numIntParams; ++i)
@@ -3839,6 +3880,7 @@ void CsoundParameterMappingPanel::rebuildUnifiedRows()
         wireEditModeTracking (*row, row->onEditModeToggled, 1, i);
         rowsContainer.addAndMakeVisible (*row);
         unifiedRows.push_back (std::move (row));
+        unifiedRowKeys.emplace_back (1, i);
     }
 
     for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
@@ -3851,6 +3893,7 @@ void CsoundParameterMappingPanel::rebuildUnifiedRows()
         wireEditModeTracking (*row, row->onEditModeToggled, 2, i);
         rowsContainer.addAndMakeVisible (*row);
         unifiedRows.push_back (std::move (row));
+        unifiedRowKeys.emplace_back (2, i);
     }
 
     for (int i = 0; i < CsoundAudioProcessor::numChoiceParams; ++i)
@@ -3863,12 +3906,14 @@ void CsoundParameterMappingPanel::rebuildUnifiedRows()
         wireEditModeTracking (*row, row->onEditModeToggled, 3, i);
         rowsContainer.addAndMakeVisible (*row);
         unifiedRows.push_back (std::move (row));
+        unifiedRowKeys.emplace_back (3, i);
     }
 
     const bool empty = unifiedRows.empty() && pendingRow == nullptr;
     viewport.setVisible (! empty);
     emptyStateLabel.setVisible (empty);
 
+    rebuildDisplayGroups();
     resized();
 
     // Ogni modifica alla STRUTTURA (aggiunta/rimozione/metadata, undo/redo
@@ -3877,6 +3922,144 @@ void CsoundParameterMappingPanel::rebuildUnifiedRows()
     // dal file su disco - vedi onMappingChanged nel .h.
     if (onMappingChanged)
         onMappingChanged();
+}
+
+//==============================================================================
+// Gruppi "; @group Nome" - vedi CsoundParameterGroups.h.
+void CsoundParameterMappingPanel::GroupHeader::paint (juce::Graphics& g)
+{
+    const auto b = getLocalBounds().toFloat();
+    const float radius = 10.0f;
+
+    // Cornice: sfondo nettamente diverso dal pannello (tinta dell'accento)
+    // e bordo nel colore dell'accento, cosi' il gruppo si vede subito come
+    // un blocco. Chiuso: e' alta quanto la sola intestazione.
+    g.setColour (kAccent.withAlpha (0.14f));
+    g.fillRoundedRectangle (b, radius);
+    g.setColour (kAccent.withAlpha (0.7f));
+    g.drawRoundedRectangle (b.reduced (0.75f), radius, 1.5f);
+
+    // Intestazione: fascia PIENA nel colore dell'accento, testo scuro -
+    // come i bottoni teal della toolbar.
+    auto head = b.withHeight ((float) groupHeaderHeight);
+    {
+        juce::Path p;
+        p.addRoundedRectangle (head.getX(), head.getY(), head.getWidth(), head.getHeight(),
+                               radius, radius, true, true, collapsed, collapsed);
+        g.setColour (kAccent);
+        g.fillPath (p);
+    }
+
+    // Triangolo: a destra se chiuso, in giu' se aperto.
+    juce::Path tri;
+    const float cx = 18.0f, cy = head.getCentreY(), r = 5.0f;
+    if (collapsed)
+        tri.addTriangle (cx - r * 0.6f, cy - r, cx - r * 0.6f, cy + r, cx + r * 0.8f, cy);
+    else
+        tri.addTriangle (cx - r, cy - r * 0.6f, cx + r, cy - r * 0.6f, cx, cy + r * 0.8f);
+    g.setColour (kOnAccent);
+    g.fillPath (tri);
+
+    auto headInt = head.toNearestInt();
+    g.setColour (kOnAccent);
+    g.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
+    const int nameWidth = (int) std::ceil (juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), name)) + 4;
+    auto area = headInt.withTrimmedLeft (32).withTrimmedRight (12);
+    g.drawFittedText (name, area.removeFromLeft (juce::jmin (nameWidth, area.getWidth() - 36)), juce::Justification::centredLeft, 1);
+
+    // Numero di parametri, a destra, in una pillola scura sull'accento.
+    {
+        const auto label = juce::String (count);
+        g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
+        const int w = (int) std::ceil (juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), label)) + 14;
+        auto pill = headInt.removeFromRight (w + 10).withSizeKeepingCentre (w, 18);
+        g.setColour (kOnAccent.withAlpha (0.75f));
+        g.fillRoundedRectangle (pill.toFloat(), 9.0f);
+        g.setColour (kText);
+        g.drawFittedText (label, pill, juce::Justification::centred, 1);
+    }
+}
+
+void CsoundParameterMappingPanel::rebuildDisplayGroups()
+{
+    displayGroups.clear();
+
+    // Testo COMPILATO (Apply/Load), non la bozza dell'editor: i gruppi non
+    // saltano mentre si scrive.
+    const auto parsed = CsoundParameterGroups::parse (processor.getCsdText());
+
+    if (! parsed.hasGroups() || unifiedRows.empty())
+    {
+        for (auto& row : unifiedRows)
+            row->setVisible (true);
+        return;
+    }
+
+    auto channelOf = [this] (int kind, int idx) -> juce::String
+    {
+        switch (kind)
+        {
+            case 0:  return processor.getChannelParamSlot (idx).channelName;
+            case 1:  return processor.getIntParamSlot (idx).channelName;
+            case 2:  return processor.getBoolParamSlot (idx).channelName;
+            default: return processor.getChoiceParamSlot (idx).channelName;
+        }
+    };
+
+    // Un gruppo per nome, nell'ordine del codice, + "Other" in coda.
+    const int numNamed = parsed.groupNames.size();
+    std::vector<std::vector<std::pair<int, juce::Component*>>> buckets ((size_t) numNamed + 1); // (ordine, riga)
+
+    for (size_t r = 0; r < unifiedRows.size(); ++r)
+    {
+        const auto key = unifiedRowKeys[r];
+        const auto it = parsed.channels.find (channelOf (key.first, key.second));
+
+        if (it != parsed.channels.end() && it->second.group >= 0)
+            buckets[(size_t) it->second.group].emplace_back (it->second.order, unifiedRows[r].get());
+        else
+            buckets[(size_t) numNamed].emplace_back ((int) r, unifiedRows[r].get()); // ordine del pannello
+    }
+
+    for (int gi = 0; gi <= numNamed; ++gi)
+    {
+        auto& bucket = buckets[(size_t) gi];
+        if (bucket.empty())
+            continue;
+
+        std::sort (bucket.begin(), bucket.end(), [] (const auto& a, const auto& b) { return a.first < b.first; });
+
+        DisplayGroup group;
+        group.name = gi < numNamed ? parsed.groupNames[gi] : juce::String ("Other");
+        for (auto& [order, row] : bucket)
+            group.rows.push_back (row);
+
+        group.header = std::make_unique<GroupHeader>();
+        group.header->name = group.name;
+        group.header->count = (int) group.rows.size();
+        group.header->collapsed = collapsedGroups.count (group.name) > 0;
+
+        auto* header = group.header.get();
+        const auto name = group.name;
+        group.header->onToggle = [this, header, name]
+        {
+            header->collapsed = ! header->collapsed;
+            if (header->collapsed) collapsedGroups.insert (name);
+            else                   collapsedGroups.erase (name);
+            header->repaint();
+            resized();
+        };
+
+        rowsContainer.addAndMakeVisible (*group.header);
+        group.header->toBack(); // dietro alle card del gruppo
+        displayGroups.push_back (std::move (group));
+    }
+}
+
+void CsoundParameterMappingPanel::refreshGrouping()
+{
+    rebuildDisplayGroups();
+    resized();
 }
 
 void CsoundParameterMappingPanel::refreshAllFromProcessor()
@@ -3956,12 +4139,51 @@ void CsoundParameterMappingPanel::resized()
     // (kPanelBg) tra una card e la successiva.
     const int gapBetweenRows = cardGap;
 
-    for (auto& row : unifiedRows)
+    if (displayGroups.empty())
     {
-        auto* iface = dynamic_cast<UnifiedRowInterface*> (row.get());
-        const int h = iface != nullptr ? iface->getPreferredHeight (contentWidth) : rowHeight;
-        row->setBounds (0, y, contentWidth, h);
-        y += h + gapBetweenRows;
+        for (auto& row : unifiedRows)
+        {
+            auto* iface = dynamic_cast<UnifiedRowInterface*> (row.get());
+            const int h = iface != nullptr ? iface->getPreferredHeight (contentWidth) : rowHeight;
+            row->setVisible (true);
+            row->setBounds (0, y, contentWidth, h);
+            y += h + gapBetweenRows;
+        }
+    }
+    else
+    {
+        // Per gruppi (vedi CsoundParameterGroups.h): intestazione, poi le
+        // righe del gruppo; chiuso = righe nascoste.
+        for (auto& group : displayGroups)
+        {
+            const int groupTop = y;
+            const int innerWidth = contentWidth - groupInsetH * 2;
+            y += groupHeaderHeight;
+
+            if (! group.header->collapsed)
+            {
+                y += gapBetweenRows;
+
+                for (auto* row : group.rows)
+                {
+                    auto* iface = dynamic_cast<UnifiedRowInterface*> (row);
+                    const int h = iface != nullptr ? iface->getPreferredHeight (innerWidth) : rowHeight;
+                    row->setVisible (true);
+                    row->setBounds (groupInsetH, y, innerWidth, h);
+                    y += h + gapBetweenRows;
+                }
+
+                y += groupInsetBottom - gapBetweenRows;
+            }
+            else
+            {
+                for (auto* row : group.rows)
+                    row->setVisible (false);
+            }
+
+            group.header->setBounds (0, groupTop, contentWidth, y - groupTop);
+            y += groupGap;
+        }
     }
 
     if (pendingRow != nullptr)
