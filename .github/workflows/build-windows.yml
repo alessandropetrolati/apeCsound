@@ -139,6 +139,7 @@ jobs:
           Copy-Item -Recurse $vst3.FullName dist/
           Copy-Item $exe.FullName dist/
           Copy-Item README.md dist/
+          Copy-Item CHANGELOG.txt dist/
           Get-ChildItem -Recurse dist | Format-Table FullName, Length
 
       - name: Upload artifact

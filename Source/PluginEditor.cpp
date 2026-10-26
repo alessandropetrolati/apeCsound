@@ -3521,7 +3521,8 @@ When Apply fails, the line reported by Csound gets a red dot, a red background a
 # Parameters
 Every instance offers the DAW **144 fixed parameters**: 64 Float, 32 Int, 32 Bool and 16 Choice. The DAW always sees "Float 1 ... Float 64" and so on; in the Parameters panel you give each one a Csound channel name and its range.
 - **Float** (min, max, default, skew, step), **Int** (min, max, default), **Bool** (default), **Choice** (up to 16 options; the channel gets 1..N, as in Cabbage).
-- **+** on the panel title adds one. Each row has edit, copy and remove buttons.
+- **+** on the panel title adds one. Each card has a copy button and an **edit** (eye) button that opens its configuration; one card is in edit mode at a time - opening another closes the previous one - and it is outlined in the colour of its type. Toggles and menus are single-line cards, sliders take two lines.
+- **Validation**: in edit mode a wrong value turns its field red and the caption says why (Min not below Max, Init outside the range, Skew not positive, Step larger than the range, no options, channel name already used by another parameter). The value is kept as typed: fix it before saving.
 - The code reads them with `chnget`. `chnset` on the same channel moves the parameter (slider and DAW automation).
 - **Drag a row into the code** - drop it on a line of the editor to insert `kCutoff chnget "Cutoff"` with a comment describing the parameter. **Copy** puts the same text in the clipboard.
 - A parameter channel is a control channel: do not use the same name with audio variables (`a...`) - the console warns about it.
@@ -3532,7 +3533,7 @@ By default the panel lists the parameters by type: all the Float sliders, then I
 - The group of a parameter is decided by the **first** `chnget` of its channel in the code. A channel read in several instruments goes where it appears first - put that line under the `@group` you prefer.
 - The same name in several places joins the parameters in one group (e.g. a "Master" group spread over two instruments).
 - Groups appear in the order of the code, parameters in the order of their `chnget`. Parameters without a group, or whose channel is not read by any `chnget` (misspelt name, name built at run time), go to **Other**, at the end. Without any `@group` the list stays flat, as before.
-- Each group is a frame with a teal header: tap it to collapse or expand the group. **Expand All Groups** and **Collapse All Groups** are in the panel's + menu (Open Configs also expands them).
+- Each group is a frame with a teal header: tap it to collapse or expand the group. **Expand All Groups** and **Collapse All Groups** are in the panel's + menu.
 - Groups follow the **compiled** code: they update at Apply and Load, not while typing. They only change the order in the panel: the DAW still sees the parameters by their fixed indices.
 - Example: `; @group Synth` / `kcut chnget "Cutoff"` / `iwave chnget "Wave"` / `; @group Delay` / `ktime chnget "Time"` - see `Test/GroupsSnapshotsTest.csd` in the examples.
 ## Snapshots

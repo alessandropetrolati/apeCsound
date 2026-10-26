@@ -2627,6 +2627,23 @@ void CsoundAudioProcessor::applyParameterValuesTree (const juce::ValueTree& valu
     pushParameterValues (saved, false);
 }
 
+bool CsoundAudioProcessor::isChannelNameUsedElsewhere (const juce::String& name, int kind, int index) const
+{
+    if (name.isEmpty())
+        return false;
+
+    for (int i = 0; i < numChannelParams; ++i)
+        if (! (kind == 0 && i == index) && getChannelParamSlot (i).channelName == name) return true;
+    for (int i = 0; i < numIntParams; ++i)
+        if (! (kind == 1 && i == index) && getIntParamSlot (i).channelName == name) return true;
+    for (int i = 0; i < numBoolParams; ++i)
+        if (! (kind == 2 && i == index) && getBoolParamSlot (i).channelName == name) return true;
+    for (int i = 0; i < numChoiceParams; ++i)
+        if (! (kind == 3 && i == index) && getChoiceParamSlot (i).channelName == name) return true;
+
+    return false;
+}
+
 int CsoundAudioProcessor::getNumParameterSnapshots() const
 {
     const juce::ScopedLock sl (parameterSnapshotsLock);

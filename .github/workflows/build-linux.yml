@@ -132,7 +132,7 @@ jobs:
           cp -R "$OUT/apeCsound.vst3" "dist/$PKG/"
           cp    "$OUT/apeCsound"      "dist/$PKG/"
           strip "dist/$PKG/apeCsound" "dist/$PKG/apeCsound.vst3/Contents/x86_64-linux/"*.so || true
-          cp README.md "dist/$PKG/"
+          cp README.md CHANGELOG.txt "dist/$PKG/"
           cat > "dist/$PKG/INSTALL.txt" <<'EOF'
           apeCsound for Linux (x86_64)
 

@@ -544,14 +544,23 @@ public:
     // CsoundParameterPanelLookAndFeel::drawLinearSlider nel .cpp) - e'
     // quello, non l'altezza della riga, a dover risultare grande.
     static constexpr int uiCardPaddingV = 6;
-    static constexpr int uiCardHeaderHeight = 38;   // solo etichetta tipo (niente bottone rimozione) - stessa altezza di cardHeaderHeight sopra, per fare spazio a editIconButton/copyButton ingranditi
-    static constexpr int uiCardHeaderGap = 3;
-    static constexpr int uiCardNameHeight = 18;     // nome canale, sola lettura - piu' basso del campo Edit
-    static constexpr int uiCardNameGap = 3;
+    // Card UI compatta: UNA riga di testa con il NOME del canale a sinistra
+    // e copy/edit a destra (niente etichetta "SLIDER FLOAT": il tipo lo dice
+    // il colore della striscia/del controllo), poi il controllo. 34 px =
+    // rowEditIconSize, il minimo per le icone.
+    static constexpr int uiCardHeaderHeight = 34;
+    static constexpr int uiCardHeaderGap = 2;
+    static constexpr int uiCardNameHeight = 0;      // il nome sta nella riga di testa (vedi layoutUiCardSkeleton)
+    static constexpr int uiCardNameGap = 0;
     static constexpr int uiCardControlHeight = 40;  // slider (zona di presa 28 px + min/max) / toggle / combo / box VALUE: comodo anche al dito
 
     static constexpr int uiCardHeight = uiCardPaddingV * 2 + uiCardHeaderHeight + uiCardHeaderGap
                                          + uiCardNameHeight + uiCardNameGap + uiCardControlHeight;
+
+    // Toggle e menu: card a UNA riga (nome a sinistra, controllo a destra,
+    // icone in fondo) - meta' altezza di uno slider, che ha bisogno della
+    // seconda riga per track e min/max.
+    static constexpr int uiCompactCardHeight = uiCardPaddingV * 2 + uiCardHeaderHeight;
 
     static constexpr int uiValueGap = 10;        // spazio orizzontale tra lo slider e il box VALUE
     static constexpr int uiValueBoxWidth = 80;   // editabile - "0.00001" ci sta comodo
@@ -1244,7 +1253,7 @@ private:
         void resized() override;
         void setEditMode (bool edit) override;
         void focusNameField() override { editRow->focusChannelNameField(); }
-        int getPreferredHeight (int) const override { return rowEditMode ? cardHeightSingleRow : uiCardHeight; }
+        int getPreferredHeight (int) const override { return rowEditMode ? cardHeightSingleRow : uiCompactCardHeight; }
 
         std::unique_ptr<BoolParamRow> editRow;
         std::unique_ptr<GenericParamRow> uiRow;
@@ -1266,7 +1275,7 @@ private:
         void resized() override;
         void setEditMode (bool edit) override;
         void focusNameField() override { editRow->focusChannelNameField(); }
-        int getPreferredHeight (int) const override { return rowEditMode ? cardHeightDoubleRow : uiCardHeight; }
+        int getPreferredHeight (int) const override { return rowEditMode ? cardHeightDoubleRow : uiCompactCardHeight; }
 
         std::unique_ptr<ChoiceParamRow> editRow;
         std::unique_ptr<GenericParamRow> uiRow;
@@ -1469,6 +1478,7 @@ private:
     static constexpr int groupGap = 12;         // tra un gruppo e il successivo
     void rebuildDisplayGroups();
     void setAllGroupsCollapsed (bool collapsed); // menu "+": Expand / Collapse All Groups
+    void scrollRowIntoView (juce::Component& row); // card in Edit tenuta in vista
 
     // La riga "in sospeso" creata da createPendingRow() (vedi sopra) -
     // SEPARATA da unifiedRows apposta: rappresenta uno slot che il

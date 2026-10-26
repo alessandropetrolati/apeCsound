@@ -76,6 +76,28 @@ namespace
         label.setMinimumHorizontalScale (1.0f);
     }
 
+    // Validazione inline (card Edit): campo con bordo rosso e didascalia
+    // rossa con il messaggio al posto del nome, invece di correggere in
+    // silenzio. Con ok = true la didascalia torna al testo normale.
+    void setFieldValidity (juce::TextEditor& field, juce::Label* caption, const juce::String& captionText,
+                           bool ok, const juce::String& message = {})
+    {
+        field.setColour (juce::TextEditor::outlineColourId,        ok ? kFieldOutline : kDanger);
+        field.setColour (juce::TextEditor::focusedOutlineColourId, ok ? kAccent : kDanger);
+        field.repaint();
+
+        if (caption != nullptr)
+        {
+            // Le didascalie sono strette: messaggio BREVE (es. "MIN > MAX"),
+            // il dettaglio nel tooltip del campo.
+            caption->setText (ok ? captionText : message, juce::dontSendNotification);
+            caption->setColour (juce::Label::textColourId, ok ? kTextMuted : kDanger.brighter (0.4f));
+        }
+
+        if (message.isNotEmpty())
+            field.setTooltip (ok ? juce::String() : message);
+    }
+
     // Etichetta tipo in testa alla card ("SLIDER · CANALE" ecc.) - colorata
     // come l'accento del tipo.
     void setupTypeLabel (juce::Label& label, const juce::String& text, juce::Colour accent)
@@ -788,8 +810,10 @@ void CsoundParameterMappingPanel::layoutUiCardSkeleton (juce::Rectangle<int> ful
     typeLabelArea = content.removeFromTop (uiCardHeaderHeight);
     content.removeFromTop (uiCardHeaderGap);
 
-    nameArea = content.removeFromTop (uiCardNameHeight);
-    content.removeFromTop (uiCardNameGap);
+    // Nome del canale nella stessa riga di testa, a sinistra delle icone
+    // copy/edit (vedi layoutRowIconButtons: 2 icone + spazio + margine).
+    const int iconsWidth = rowEditIconMargin + rowEditIconSize * 2 + rowIconButtonGap + 8;
+    nameArea = typeLabelArea.withTrimmedRight (iconsWidth);
 
     fieldsArea = content;
 }
@@ -860,6 +884,18 @@ void CsoundParameterMappingPanel::paintCardChrome (juce::Graphics& g, juce::Rect
 
     g.setColour (accent);
     g.fillRect (bounds.getX(), bounds.getY(), 5, bounds.getHeight());
+
+    // Card in Edit (una sola alla volta): oltre allo sfondo piu' chiaro,
+    // un bordo pieno nel colore del tipo e un alone - deve risultare
+    // evidente a colpo d'occhio quale card si sta configurando.
+    if (isEditingCard)
+    {
+        const auto b = bounds.toFloat();
+        g.setColour (accent.withAlpha (0.18f));
+        g.fillRect (b.withTrimmedLeft (5.0f));
+        g.setColour (accent);
+        g.drawRect (b, 2.0f);
+    }
 
     if (! showHandleDots)
         return;
@@ -1082,6 +1118,23 @@ void CsoundParameterMappingPanel::ParamRow::commitFromFields()
     slot.increment = incrementText.isNotEmpty() ? incrementText.getFloatValue() : 0.001f;
 
     processor.setChannelParamSlot (index, slot);
+
+    // Validazione inline (vedi setFieldValidity): non blocca il commit, i
+    // valori restano quelli scritti, ma il campo e la didascalia lo dicono.
+    const bool nameTaken = slot.channelName.isNotEmpty() && processor.isChannelNameUsedElsewhere (slot.channelName, 0, index);
+    setFieldValidity (channelNameEditor, nullptr, {}, ! nameTaken);
+    channelNameEditor.setTooltip (nameTaken ? "Channel name already used by another parameter" : juce::String());
+
+    const bool rangeOk   = slot.minValue < slot.maxValue;
+    const bool defaultOk = ! rangeOk || (slot.defaultValue >= slot.minValue && slot.defaultValue <= slot.maxValue);
+    const bool skewOk    = slot.skew > 0.0f;
+    const bool stepOk    = slot.increment >= 0.0f && (! rangeOk || slot.increment <= slot.maxValue - slot.minValue);
+
+    setFieldValidity (minEditor,       &minCaption,  "MIN",  rangeOk,   "MIN >= MAX");
+    setFieldValidity (maxEditor,       &maxCaption,  "MAX",  rangeOk,   "MAX <= MIN");
+    setFieldValidity (defaultEditor,   &initCaption, "INIT", defaultOk, "OUT OF RANGE");
+    setFieldValidity (skewEditor,      &expCaption,  "SKEW", skewOk,    "SKEW <= 0");
+    setFieldValidity (incrementEditor, &stepCaption, "STEP", stepOk,    "STEP > RANGE");
 
     removeButton.setVisible (slot.channelName.isNotEmpty());
     repaint();
@@ -1355,6 +1408,16 @@ void CsoundParameterMappingPanel::IntParamRow::commitFromFields()
 
     processor.setIntParamSlot (index, slot);
 
+    const bool nameTaken = slot.channelName.isNotEmpty() && processor.isChannelNameUsedElsewhere (slot.channelName, 1, index);
+    setFieldValidity (channelNameEditor, nullptr, {}, ! nameTaken);
+    channelNameEditor.setTooltip (nameTaken ? "Channel name already used by another parameter" : juce::String());
+
+    const bool rangeOk   = slot.minValue < slot.maxValue;
+    const bool defaultOk = ! rangeOk || (slot.defaultValue >= slot.minValue && slot.defaultValue <= slot.maxValue);
+    setFieldValidity (minEditor,     &minCaption,  "MIN",  rangeOk,   "MIN >= MAX");
+    setFieldValidity (maxEditor,     &maxCaption,  "MAX",  rangeOk,   "MAX <= MIN");
+    setFieldValidity (defaultEditor, &initCaption, "INIT", defaultOk, "OUT OF RANGE");
+
     removeButton.setVisible (slot.channelName.isNotEmpty());
     repaint();
 }
@@ -1598,6 +1661,11 @@ void CsoundParameterMappingPanel::BoolParamRow::commitFromFields()
     slot.defaultValue = defaultToggle.getToggleState();
 
     processor.setBoolParamSlot (index, slot);
+
+    const bool nameTaken = slot.channelName.isNotEmpty() && processor.isChannelNameUsedElsewhere (slot.channelName, 2, index);
+    setFieldValidity (channelNameEditor, nullptr, {}, ! nameTaken);
+    channelNameEditor.setTooltip (nameTaken ? "Channel name already used by another parameter" : juce::String());
+
     removeButton.setVisible (slot.channelName.isNotEmpty());
     repaint();
 }
@@ -1890,6 +1958,12 @@ void CsoundParameterMappingPanel::ChoiceParamRow::commitFromFields()
     slot.defaultIndex = selectedId > 0 ? juce::jlimit (0, CsoundAudioProcessor::maxChoiceOptions - 1, selectedId - 1) : 0;
 
     processor.setChoiceParamSlot (index, slot);
+
+    const bool nameTaken = slot.channelName.isNotEmpty() && processor.isChannelNameUsedElsewhere (slot.channelName, 3, index);
+    setFieldValidity (channelNameEditor, nullptr, {}, ! nameTaken);
+    channelNameEditor.setTooltip (nameTaken ? "Channel name already used by another parameter" : juce::String());
+    setFieldValidity (optionsEditor, &optionsCaption, "OPTIONS (COMMA SEPARATED)", ! slot.optionLabels.isEmpty(), "NO OPTIONS");
+
     removeButton.setVisible (slot.channelName.isNotEmpty());
     repaint();
 }
@@ -2053,11 +2127,14 @@ CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
     setMouseCursor (juce::MouseCursor::NormalCursor);
     setMouseClickGrabsKeyboardFocus (false);
 
+    // Card UI: niente etichetta del tipo (il colore basta), il nome sta
+    // nella riga di testa - vedi layoutUiCardSkeleton. typeLabel resta
+    // (nascosta) per non toccare il resto.
     setupTypeLabel (typeLabel, typeLabelText, accentColour);
-    addAndMakeVisible (typeLabel);
+    addChildComponent (typeLabel);
 
     channelNameLabel.setText (channelName, juce::dontSendNotification);
-    channelNameLabel.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+    channelNameLabel.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
     channelNameLabel.setColour (juce::Label::textColourId, kText);
     channelNameLabel.setMinimumHorizontalScale (1.0f);
     addAndMakeVisible (channelNameLabel);
@@ -2324,13 +2401,26 @@ void CsoundParameterMappingPanel::GenericParamRow::resized()
             break;
         }
 
+        // Toggle e menu: card compatta a una riga (uiCompactCardHeight): il
+        // controllo sta nella riga di testa, tra il nome e le icone.
         case Kind::toggle:
-            toggle.setBounds (fieldsArea.removeFromLeft (uiTogglePillWidth).withSizeKeepingCentre (uiTogglePillWidth, uiFieldHeight));
+        {
+            auto head = nameArea;
+            toggle.setBounds (head.removeFromRight (uiTogglePillWidth).withSizeKeepingCentre (uiTogglePillWidth, uiFieldHeight));
+            head.removeFromRight (uiValueGap);
+            channelNameLabel.setBounds (head);
             break;
+        }
 
         case Kind::choice:
-            comboBox.setBounds (fieldsArea.withSizeKeepingCentre (fieldsArea.getWidth(), uiFieldHeight));
+        {
+            auto head = nameArea;
+            const int comboWidth = juce::jlimit (90, 220, head.getWidth() * 55 / 100);
+            comboBox.setBounds (head.removeFromRight (comboWidth).withSizeKeepingCentre (comboWidth, uiFieldHeight));
+            head.removeFromRight (uiValueGap);
+            channelNameLabel.setBounds (head);
             break;
+        }
     }
 }
 
@@ -3172,7 +3262,7 @@ void CsoundParameterMappingPanel::setAllRowsEditMode (bool edit)
         if (auto* iface = dynamic_cast<UnifiedRowInterface*> (row.get()))
             iface->setEditMode (edit);
 
-    // Con i gruppi chiusi non si vedrebbe nulla: Open Configs li apre.
+    // Con i gruppi chiusi non si vedrebbe nulla: in Edit li apre.
     if (edit)
         setAllGroupsCollapsed (false);
 
@@ -3250,22 +3340,6 @@ void CsoundParameterMappingPanel::showAddMenu()
     // annidate dentro lo stesso show() di showPanelMenu()).
     std::vector<CsoundActionSheetItem> items = buildAddParameterItems();
 
-    items.push_back (CsoundActionSheetItem::separator());
-    {
-        CsoundActionSheetItem item;
-        item.id = 108; item.text = "Open Configs";
-        item.enabled = ! unifiedRows.empty();
-        item.icon = CsoundActionSheetIcon::eyeOpen;
-        items.push_back (item);
-    }
-    {
-        CsoundActionSheetItem item;
-        item.id = 109; item.text = "Close Configs";
-        item.enabled = ! unifiedRows.empty();
-        item.icon = CsoundActionSheetIcon::eyeClosed;
-        items.push_back (item);
-    }
-
     // Gruppi ("; @group" nel codice): solo se ce ne sono.
     if (! displayGroups.empty())
     {
@@ -3316,8 +3390,6 @@ void CsoundParameterMappingPanel::showAddMenu()
         switch (result)
         {
             case 107: safeThis->removeAllParameters(); break;
-            case 108: safeThis->setAllRowsEditMode (true); break;
-            case 109: safeThis->setAllRowsEditMode (false); break;
             case 110: safeThis->resetAllParametersToInit(); break;
             case 111: safeThis->setAllGroupsCollapsed (false); break;
             case 112: safeThis->setAllGroupsCollapsed (true); break;
@@ -3628,6 +3700,10 @@ void CsoundParameterMappingPanel::createPendingRow (int kind, int slotIndex)
     // pendingRow nullptr o rimpiazzato e non fara' nulla di pericoloso.
     pendingRow.reset();
 
+    // Una sola card in Edit alla volta: la riga nuova e' in Edit, le altre
+    // tornano ai controlli.
+    setAllRowsEditMode (false);
+
     auto onCopied = [this] (const juce::String& msg)
     {
         if (onParameterCopiedToClipboard)
@@ -3848,9 +3924,28 @@ void CsoundParameterMappingPanel::rebuildUnifiedRows()
         {
             const std::pair<int, int> key { kind, idx };
             if (edit)
+            {
+                // UNA sola card in Edit alla volta: aprirne una chiude le
+                // altre (le loro onEditModeToggled(false) le tolgono dal
+                // tracking). Poi la card aperta viene tenuta in vista.
+                for (size_t r = 0; r < unifiedRows.size(); ++r)
+                    if (unifiedRowKeys[r] != key && rowsInEditMode.count (unifiedRowKeys[r]) > 0)
+                        if (auto* other = dynamic_cast<UnifiedRowInterface*> (unifiedRows[r].get()))
+                            other->setEditMode (false);
+
                 rowsInEditMode.insert (key);
+
+                juce::MessageManager::callAsync ([this, key]
+                {
+                    for (size_t r = 0; r < unifiedRows.size(); ++r)
+                        if (unifiedRowKeys[r] == key)
+                            scrollRowIntoView (*unifiedRows[r]);
+                });
+            }
             else
+            {
                 rowsInEditMode.erase (key);
+            }
         };
 
         if (rowsInEditMode.count ({ kind, idx }) > 0)
@@ -3967,7 +4062,9 @@ void CsoundParameterMappingPanel::GroupHeader::paint (juce::Graphics& g)
     auto area = headInt.withTrimmedLeft (32).withTrimmedRight (12);
     g.drawFittedText (name, area.removeFromLeft (juce::jmin (nameWidth, area.getWidth() - 36)), juce::Justification::centredLeft, 1);
 
-    // Numero di parametri, a destra, in una pillola scura sull'accento.
+    // Numero di parametri, a destra, in una pillola scura sull'accento -
+    // SOLO a gruppo chiuso: aperto, i parametri si vedono.
+    if (collapsed)
     {
         const auto label = juce::String (count);
         g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
@@ -4060,6 +4157,18 @@ void CsoundParameterMappingPanel::refreshGrouping()
 {
     rebuildDisplayGroups();
     resized();
+}
+
+void CsoundParameterMappingPanel::scrollRowIntoView (juce::Component& row)
+{
+    const auto bounds = row.getBounds(); // in rowsContainer
+    const int viewTop = viewport.getViewPositionY();
+    const int viewBottom = viewTop + viewport.getViewHeight();
+
+    if (bounds.getBottom() > viewBottom)
+        viewport.setViewPosition (viewport.getViewPositionX(), juce::jmax (0, bounds.getBottom() - viewport.getViewHeight() + 4));
+    else if (bounds.getY() < viewTop)
+        viewport.setViewPosition (viewport.getViewPositionX(), juce::jmax (0, bounds.getY() - 4));
 }
 
 void CsoundParameterMappingPanel::refreshAllFromProcessor()

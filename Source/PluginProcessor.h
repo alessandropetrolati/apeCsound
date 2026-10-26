@@ -845,6 +845,11 @@ public:
     // precedente sugli slot, rimappati sui range nuovi.
     void resetParameterValuesToDefaults();
 
+    /** true se 'name' e' gia' il canale di un ALTRO parametro assegnato
+        (qualunque tipo). kind 0..3 = Float/Int/Bool/Choice e index
+        identificano il parametro da escludere dal confronto. */
+    bool isChannelNameUsedElsewhere (const juce::String& name, int kind, int index) const;
+
     //==========================================================================
     // Snapshot dei valori dei parametri (bottone a destra nella title bar del
     // pannello Parametri). Ogni snapshot e' un nome + i valori CORRENTI di
