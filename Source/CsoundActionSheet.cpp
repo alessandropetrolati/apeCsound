@@ -647,6 +647,10 @@ void CsoundActionSheet::show (juce::Component& host, const juce::String& title,
     sheet->setBounds (target->getLocalBounds());
     sheet->toFront (false);
     sheet->animateIn();
+    sheet->focusBeforeShow = juce::Component::getCurrentlyFocusedComponent();
+    sheet->setWantsKeyboardFocus (true);
+    sheet->grabKeyboardFocus(); // tastiera e VoiceOver partono dal foglio
+    sheet->focusFirstRowForScreenReader();
 }
 
 CsoundActionSheet::CsoundActionSheet (const juce::String& title, std::vector<CsoundActionSheetItem> items,
@@ -725,6 +729,7 @@ void CsoundActionSheet::recomputeLayout()
 
     const int contentHeight = y + 10;
     rowsContent.setSize (sheetWidth, contentHeight);
+    rebuildRowProxies();
 
     const int titleHeight = page.title.isNotEmpty() ? titleAreaHeight : 0;
     const int chromeHeight = topPadding + titleHeight;
@@ -861,6 +866,7 @@ void CsoundActionSheet::activateRow (int rowIndex)
         pageStack.push_back ({ item.text, item.subItems });
         recomputeLayout();
         rowsViewport.setViewPosition (0, 0);
+        focusFirstRowForScreenReader();
         return;
     }
 
@@ -885,12 +891,42 @@ void CsoundActionSheet::goBack()
     pageStack.pop_back();
     recomputeLayout();
     rowsViewport.setViewPosition (0, 0);
+    focusFirstRowForScreenReader();
+}
+
+// Il focus di tastiera va subito sulla prima voce selezionabile, cosi' uno
+// screen reader annuncia l'apertura del menu (titolo + prima voce) senza
+// dover premere una freccia. focusedRowIndex resta -1: nessuna riga viene
+// evidenziata visivamente finche' l'utente non usa le frecce.
+void CsoundActionSheet::focusFirstRowForScreenReader()
+{
+    juce::Component::SafePointer<CsoundActionSheet> self (this);
+    juce::MessageManager::callAsync ([self]
+    {
+        if (self == nullptr || ! self->isShowing() || self->focusedRowIndex >= 0)
+            return;
+        for (int i = 0; i < (int) self->laidOutRows.size(); ++i)
+        {
+            const auto& row = self->laidOutRows[(size_t) i];
+            const bool selectable = row.kind == LaidOutRow::Kind::back
+                                 || (row.kind == LaidOutRow::Kind::normal
+                                     && self->pageStack.back().items[(size_t) row.itemIndex].isEnabledNow());
+            if (! selectable) continue;
+            for (auto& p : self->rowProxies)
+                if (p->getBounds() == row.bounds) { p->grabKeyboardFocus(); return; }
+        }
+    });
 }
 
 void CsoundActionSheet::dismiss (int resultId)
 {
     setVisible (false);
     setInterceptsMouseClicks (false, false);
+
+    // Il focus torna a chi lo aveva prima del menu (editor di codice,
+    // bottone...): senza, dopo Esc la tastiera non andrebbe da nessuna parte.
+    if (focusBeforeShow != nullptr && focusBeforeShow->isShowing())
+        focusBeforeShow->grabKeyboardFocus();
 
     auto callback = onSelected;
     juce::Component::SafePointer<CsoundActionSheet> self (this);
@@ -926,7 +962,7 @@ void CsoundActionSheet::RowsContent::paint (juce::Graphics& g)
 
         if (row.kind == CsoundActionSheet::LaidOutRow::Kind::back)
         {
-            if (i == owner.pressedRowIndex)
+            if (i == owner.pressedRowIndex || i == owner.focusedRowIndex)
             {
                 g.setColour (kRowPressedBg);
                 g.fillRect (bounds);
@@ -965,8 +1001,8 @@ void CsoundActionSheet::RowsContent::paint (juce::Graphics& g)
             continue;
         }
 
-        // Riga normale
-        if (i == owner.pressedRowIndex && item.isEnabledNow())
+        // Riga normale (evidenziata se premuta o se ha il focus da tastiera)
+        if ((i == owner.pressedRowIndex || i == owner.focusedRowIndex) && item.isEnabledNow())
         {
             g.setColour (kRowPressedBg);
             g.fillRect (bounds);
@@ -1065,4 +1101,123 @@ void CsoundActionSheet::repaintOpenSheets (juce::Component& host)
     for (auto* child : host.getChildren())
         if (auto* sheet = dynamic_cast<CsoundActionSheet*> (child))
             sheet->rowsContent.repaint();
+}
+
+//==============================================================================
+// Accessibilita' e tastiera - vedi il commento nel .h.
+juce::String CsoundActionSheet::accessibleTitleForRow (int rowIndex) const
+{
+    if (rowIndex < 0 || rowIndex >= (int) laidOutRows.size())
+        return {};
+    const auto& row = laidOutRows[(size_t) rowIndex];
+    if (row.kind == LaidOutRow::Kind::back)
+        return "Back";
+    if (row.itemIndex < 0)
+        return {};
+    const auto& item = pageStack.back().items[(size_t) row.itemIndex];
+    if (row.kind == LaidOutRow::Kind::sectionHeader)
+        return item.sectionHeaderNow();
+    if (row.kind == LaidOutRow::Kind::separator)
+        return {};
+    juce::String t = item.textNow();
+    if (! item.subItems.empty()) t << ", submenu";
+    if (item.isTickedNow())      t << ", checked";
+    if (! item.isEnabledNow())   t << ", disabled";
+    return t;
+}
+
+void CsoundActionSheet::rebuildRowProxies()
+{
+    rowProxies.clear();
+    for (int i = 0; i < (int) laidOutRows.size(); ++i)
+    {
+        const auto& row = laidOutRows[(size_t) i];
+        if (row.kind == LaidOutRow::Kind::separator)
+            continue;
+        auto proxy = std::make_unique<RowProxy> (*this, i);
+        proxy->setBounds (row.bounds);
+        proxy->setTitle (accessibleTitleForRow (i));
+        proxy->setWantsKeyboardFocus (row.kind != LaidOutRow::Kind::sectionHeader);
+        rowsContent.addAndMakeVisible (*proxy);
+        rowProxies.push_back (std::move (proxy));
+    }
+    focusedRowIndex = -1;
+}
+
+std::unique_ptr<juce::AccessibilityHandler> CsoundActionSheet::RowProxy::createAccessibilityHandler()
+{
+    const auto& row = owner.laidOutRows[(size_t) rowIndex];
+    if (row.kind == LaidOutRow::Kind::sectionHeader)
+        return std::make_unique<juce::AccessibilityHandler> (*this, juce::AccessibilityRole::staticText);
+
+    return std::make_unique<juce::AccessibilityHandler> (*this, juce::AccessibilityRole::menuItem,
+        juce::AccessibilityActions().addAction (juce::AccessibilityActionType::press,
+                                                [this] { owner.activateRow (rowIndex); }));
+}
+
+std::unique_ptr<juce::AccessibilityHandler> CsoundActionSheet::createAccessibilityHandler()
+{
+    return std::make_unique<juce::AccessibilityHandler> (*this, juce::AccessibilityRole::popupMenu);
+}
+
+void CsoundActionSheet::setFocusedRow (int rowIndex)
+{
+    if (focusedRowIndex == rowIndex)
+        return;
+    focusedRowIndex = rowIndex;
+    if (rowIndex >= 0 && rowIndex < (int) laidOutRows.size())
+    {
+        // Riga in vista nel viewport.
+        const auto b = laidOutRows[(size_t) rowIndex].bounds;
+        const int top = rowsViewport.getViewPositionY(), bottom = top + rowsViewport.getViewHeight();
+        if (b.getY() < top)               rowsViewport.setViewPosition (0, b.getY());
+        else if (b.getBottom() > bottom)  rowsViewport.setViewPosition (0, b.getBottom() - rowsViewport.getViewHeight());
+    }
+    rowsContent.repaint();
+}
+
+void CsoundActionSheet::moveFocus (int delta)
+{
+    const int n = (int) laidOutRows.size();
+    if (n == 0) return;
+    int i = focusedRowIndex;
+    for (int step = 0; step < n; ++step)
+    {
+        i = (i < 0) ? (delta > 0 ? 0 : n - 1) : (i + delta + n) % n;
+        const auto& row = laidOutRows[(size_t) i];
+        const bool selectable = row.kind == LaidOutRow::Kind::back
+                             || (row.kind == LaidOutRow::Kind::normal
+                                 && pageStack.back().items[(size_t) row.itemIndex].isEnabledNow());
+        if (selectable)
+        {
+            for (auto& p : rowProxies)
+                if (p->getBounds() == row.bounds) { p->grabKeyboardFocus(); break; }
+            setFocusedRow (i);
+            return;
+        }
+    }
+}
+
+bool CsoundActionSheet::keyPressed (const juce::KeyPress& key)
+{
+    if (key == juce::KeyPress::downKey || key == juce::KeyPress::tabKey)                      { moveFocus (1);  return true; }
+    if (key == juce::KeyPress::upKey || key == juce::KeyPress (juce::KeyPress::tabKey, juce::ModifierKeys::shiftModifier, 0)) { moveFocus (-1); return true; }
+    if (key == juce::KeyPress::returnKey || key == juce::KeyPress::spaceKey)
+    {
+        if (focusedRowIndex >= 0) activateRow (focusedRowIndex);
+        return true;
+    }
+    if (key == juce::KeyPress::escapeKey || key == juce::KeyPress::leftKey)
+    {
+        if (pageStack.size() > 1) goBack(); else dismiss (0);
+        return true;
+    }
+    if (key == juce::KeyPress::rightKey && focusedRowIndex >= 0)
+    {
+        const auto& row = laidOutRows[(size_t) focusedRowIndex];
+        if (row.kind == LaidOutRow::Kind::normal && ! pageStack.back().items[(size_t) row.itemIndex].subItems.empty())
+            activateRow (focusedRowIndex);
+        return true;
+    }
+    return false;
 }

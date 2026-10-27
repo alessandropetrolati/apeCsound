@@ -4712,8 +4712,24 @@ void CsoundAudioProcessor::flushPendingMessages()
 
     int floodSuppressed = 0;
 
+    // Errori e avvisi passano SEMPRE, anche durante un flood (es. le 70 righe
+    // "defining argument" di una macro espansa 16 volte nascondevano l'INIT
+    // ERROR che disattivava lo strumento).
+    auto isImportant = [] (const juce::String& m)
+    {
+        return m.containsIgnoreCase ("error") || m.contains ("deactivated") || m.containsIgnoreCase ("warning")
+            || m.contains ("Unable to") || m.contains ("cannot") || m.contains ("not found")
+            || m.containsIgnoreCase ("undefined") || m.contains ("used before defined") || m.startsWith ("---");
+    };
+
     for (auto& m : incoming)
     {
+        if (isImportant (m))
+        {
+            out.add (m);
+            continue;
+        }
+
         // Flood: oltre il limite di righe per blocco i messaggi si contano
         // soltanto (niente filtro ripetizioni, che costerebbe una ricerca
         // nella mappa per ogni messaggio).

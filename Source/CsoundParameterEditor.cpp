@@ -855,12 +855,14 @@ void CsoundParameterMappingPanel::layoutUiCardSkeleton (juce::Rectangle<int> ful
 void CsoundParameterMappingPanel::setupRowEditIconButton (juce::TextButton& button)
 {
     button.setName ("editToggle");
+    button.setTitle ("Edit parameter");
 }
 
 void CsoundParameterMappingPanel::setupRowMenuButton (juce::TextButton& button)
 {
     button.setName ("rowMenu");
     button.setTooltip ("Parameter menu");
+    button.setTitle ("Parameter menu");
 }
 
 // Edit a destra, menu "..." subito alla sua sinistra, nell'angolo in alto a
@@ -1004,6 +1006,7 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     addAndMakeVisible (typeLabel);
 
     channelNameEditor.setTextToShowWhenEmpty ("(no channel)", kPlaceholder);
+    channelNameEditor.setTitle ("Channel name");
     channelNameEditor.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
@@ -1012,6 +1015,7 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     setupFieldCaption (minCaption, "MIN");
     addAndMakeVisible (minCaption);
     minEditor.setInputRestrictions (0, "0123456789.,-eE");
+    minEditor.setTitle ("Minimum");
     minEditor.setJustification (juce::Justification::centredLeft);
     minEditor.addListener (this);
     applyDarkFieldColours (minEditor);
@@ -1020,6 +1024,7 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     setupFieldCaption (maxCaption, "MAX");
     addAndMakeVisible (maxCaption);
     maxEditor.setInputRestrictions (0, "0123456789.,-eE");
+    maxEditor.setTitle ("Maximum");
     maxEditor.setJustification (juce::Justification::centredLeft);
     maxEditor.addListener (this);
     applyDarkFieldColours (maxEditor);
@@ -1028,6 +1033,7 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     setupFieldCaption (initCaption, "INIT");
     addAndMakeVisible (initCaption);
     defaultEditor.setInputRestrictions (0, "0123456789.,-eE");
+    defaultEditor.setTitle ("Initial value");
     defaultEditor.setJustification (juce::Justification::centredLeft);
     defaultEditor.addListener (this);
     applyDarkFieldColours (defaultEditor);
@@ -1036,6 +1042,7 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     setupFieldCaption (expCaption, "SKEW");
     addAndMakeVisible (expCaption);
     skewEditor.setInputRestrictions (0, "0123456789.,-eE");
+    skewEditor.setTitle ("Skew");
     skewEditor.setJustification (juce::Justification::centredLeft);
     skewEditor.addListener (this);
     applyDarkFieldColours (skewEditor);
@@ -1044,6 +1051,7 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     setupFieldCaption (stepCaption, "STEP");
     addAndMakeVisible (stepCaption);
     incrementEditor.setInputRestrictions (0, "0123456789.,-eE");
+    incrementEditor.setTitle ("Step");
     incrementEditor.setJustification (juce::Justification::centredLeft);
     incrementEditor.addListener (this);
     applyDarkFieldColours (incrementEditor);
@@ -1348,6 +1356,7 @@ CsoundParameterMappingPanel::IntParamRow::IntParamRow (CsoundAudioProcessor& pro
     addAndMakeVisible (typeLabel);
 
     channelNameEditor.setTextToShowWhenEmpty ("(no channel)", kPlaceholder);
+    channelNameEditor.setTitle ("Channel name");
     channelNameEditor.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
@@ -1356,6 +1365,7 @@ CsoundParameterMappingPanel::IntParamRow::IntParamRow (CsoundAudioProcessor& pro
     setupFieldCaption (minCaption, "MIN");
     addAndMakeVisible (minCaption);
     minEditor.setInputRestrictions (0, "0123456789-");
+    minEditor.setTitle ("Minimum");
     minEditor.setJustification (juce::Justification::centredLeft);
     minEditor.addListener (this);
     applyDarkFieldColours (minEditor);
@@ -1364,6 +1374,7 @@ CsoundParameterMappingPanel::IntParamRow::IntParamRow (CsoundAudioProcessor& pro
     setupFieldCaption (maxCaption, "MAX");
     addAndMakeVisible (maxCaption);
     maxEditor.setInputRestrictions (0, "0123456789-");
+    maxEditor.setTitle ("Maximum");
     maxEditor.setJustification (juce::Justification::centredLeft);
     maxEditor.addListener (this);
     applyDarkFieldColours (maxEditor);
@@ -1372,6 +1383,7 @@ CsoundParameterMappingPanel::IntParamRow::IntParamRow (CsoundAudioProcessor& pro
     setupFieldCaption (initCaption, "INIT");
     addAndMakeVisible (initCaption);
     defaultEditor.setInputRestrictions (0, "0123456789-");
+    defaultEditor.setTitle ("Initial value");
     defaultEditor.setJustification (juce::Justification::centredLeft);
     defaultEditor.addListener (this);
     applyDarkFieldColours (defaultEditor);
@@ -1616,6 +1628,7 @@ CsoundParameterMappingPanel::BoolParamRow::BoolParamRow (CsoundAudioProcessor& p
     addAndMakeVisible (typeLabel);
 
     channelNameEditor.setTextToShowWhenEmpty ("(no channel)", kPlaceholder);
+    channelNameEditor.setTitle ("Channel name");
     channelNameEditor.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
@@ -1640,6 +1653,7 @@ CsoundParameterMappingPanel::BoolParamRow::BoolParamRow (CsoundAudioProcessor& p
                        [&proc, idx, beforeSlot] { proc.setBoolParamSlot (idx, beforeSlot); });
         }
     };
+    defaultToggle.setTitle ("Initial state");
     addAndMakeVisible (defaultToggle);
 
     // Cerchio rosso con un "-" disegnato a mano (vedi drawButtonText,
@@ -1850,6 +1864,7 @@ CsoundParameterMappingPanel::ChoiceParamRow::ChoiceParamRow (CsoundAudioProcesso
     addAndMakeVisible (typeLabel);
 
     channelNameEditor.setTextToShowWhenEmpty ("(no channel)", kPlaceholder);
+    channelNameEditor.setTitle ("Channel name");
     channelNameEditor.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
@@ -1858,6 +1873,7 @@ CsoundParameterMappingPanel::ChoiceParamRow::ChoiceParamRow (CsoundAudioProcesso
     setupFieldCaption (optionsCaption, "OPTIONS (COMMA SEPARATED)");
     addAndMakeVisible (optionsCaption);
     optionsEditor.setTextToShowWhenEmpty ("item1, item2, item3...", kPlaceholder);
+    optionsEditor.setTitle ("Options, comma separated");
     optionsEditor.addListener (this);
     applyDarkFieldColours (optionsEditor);
     addAndMakeVisible (optionsEditor);
@@ -1871,6 +1887,7 @@ CsoundParameterMappingPanel::ChoiceParamRow::ChoiceParamRow (CsoundAudioProcesso
     defaultIndexCombo.setColour (juce::PopupMenu::textColourId,                  kText);
     defaultIndexCombo.setColour (juce::PopupMenu::highlightedBackgroundColourId, kMenuAccent);
     defaultIndexCombo.setColour (juce::PopupMenu::highlightedTextColourId,       kOnAccent);
+    defaultIndexCombo.setTitle ("Initial option");
     defaultIndexCombo.setTextWhenNoChoicesAvailable ("(no options yet)");
     defaultIndexCombo.setTextWhenNothingSelected ("(no options yet)");
     defaultIndexCombo.onChange = [this]
@@ -2167,6 +2184,13 @@ CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
     addChildComponent (typeLabel);
 
     channelNameLabel.setText (channelName, juce::dontSendNotification);
+    // Accessibilita': VoiceOver legge "Cutoff, slider, 1200" invece di un
+    // controllo senza nome; lo stesso per toggle e menu.
+    slider.setTitle (channelName);
+    toggle.setTitle (channelName);
+    comboBox.setTitle (channelName);
+    valueReadout.setTitle (channelName + " value");
+    setTitle (channelName);
     channelNameLabel.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
     channelNameLabel.setColour (juce::Label::textColourId, kText);
     channelNameLabel.setMinimumHorizontalScale (1.0f);
@@ -2669,6 +2693,11 @@ void CsoundParameterMappingPanel::FloatUnifiedRow::setEditMode (bool edit)
     // icone diverse in drawButtonText - vedi i commenti li'.
     editIconButton.setToggleState (edit, juce::dontSendNotification);
     editIconButton.setTooltip (edit ? "Back to controls" : "Edit this parameter");
+    if (uiRow != nullptr) // accessibilita': "Edit amp" / "amp menu" invece di titoli generici
+    {
+        editIconButton.setTitle ((edit ? "Apply " : "Edit ") + uiRow->getTitle());
+        menuButton.setTitle (uiRow->getTitle() + " menu");
+    }
     // Se si torna alla vista UI, rilegge SUBITO il range reale appena
     // configurato in modalita' Edit (BUG corretto: prima restava fermo al
     // valore della costruzione) - vedi GenericParamRow::refreshRangeDisplay().
@@ -2713,8 +2742,65 @@ void CsoundParameterMappingPanel::XYPadRow::Pad::paint (juce::Graphics& g)
     g.setColour (kOnAccent);
     g.fillEllipse (cx - 3.0f, cy - 3.0f, 6.0f, 6.0f);
 
-    g.setColour (accent.withAlpha (0.6f));
-    g.drawRoundedRectangle (b.reduced (0.75f), 6.0f, 1.5f);
+    g.setColour (accent.withAlpha (hasKeyboardFocus (false) ? 1.0f : 0.6f));
+    g.drawRoundedRectangle (b.reduced (0.75f), 6.0f, hasKeyboardFocus (false) ? 2.5f : 1.5f);
+}
+
+void CsoundParameterMappingPanel::XYPadRow::Pad::nudge (float dx, float dy)
+{
+    px = juce::jlimit (0.0f, 1.0f, px + dx);
+    py = juce::jlimit (0.0f, 1.0f, py + dy);
+    if (onDrag) onDrag (px, py, true, true);
+    repaint();
+}
+
+// Tastiera / VoiceOver: frecce sinistra-destra = X, su-giu' = Y (passo 1%,
+// 10% con Shift); Home/End portano X a 0/1; PageUp/PageDown Y a 1/0.
+bool CsoundParameterMappingPanel::XYPadRow::Pad::keyPressed (const juce::KeyPress& key)
+{
+    const float step = key.getModifiers().isShiftDown() ? 0.1f : 0.01f;
+    if (key.isKeyCode (juce::KeyPress::leftKey))  { nudge (-step, 0.0f); return true; }
+    if (key.isKeyCode (juce::KeyPress::rightKey)) { nudge ( step, 0.0f); return true; }
+    if (key.isKeyCode (juce::KeyPress::upKey))    { nudge (0.0f,  step); return true; }
+    if (key.isKeyCode (juce::KeyPress::downKey))  { nudge (0.0f, -step); return true; }
+    if (key.isKeyCode (juce::KeyPress::homeKey))     { nudge (-1.0f, 0.0f); return true; }
+    if (key.isKeyCode (juce::KeyPress::endKey))      { nudge ( 1.0f, 0.0f); return true; }
+    if (key.isKeyCode (juce::KeyPress::pageUpKey))   { nudge (0.0f,  1.0f); return true; }
+    if (key.isKeyCode (juce::KeyPress::pageDownKey)) { nudge (0.0f, -1.0f); return true; }
+    return false;
+}
+
+// Il pad e' esposto come "slider" il cui valore (VO+freccia su/giu',
+// o accessibilityPerformIncrement) muove l'asse X; il testo del valore
+// riporta entrambi gli assi. L'asse Y si muove con le frecce su/giu'
+// (vedi Pad::keyPressed).
+struct CsoundParameterMappingPanel::XYPadRow::Pad::ValueInterface final : public juce::AccessibilityValueInterface
+{
+    explicit ValueInterface (Pad& p) : pad (p) {}
+
+    bool isReadOnly() const override { return false; }
+    double getCurrentValue() const override { return (double) pad.px; }
+    juce::String getCurrentValueAsString() const override
+    {
+        return pad.describeValues != nullptr ? pad.describeValues()
+                                             : juce::String (pad.px, 2) + ", " + juce::String (pad.py, 2);
+    }
+    void setValue (double newValue) override
+    {
+        pad.nudge ((float) newValue - pad.px, 0.0f);
+    }
+    void setValueAsString (const juce::String& newValue) override { setValue (newValue.getDoubleValue()); }
+    AccessibleValueRange getRange() const override { return { { 0.0, 1.0 }, 0.01 }; }
+
+    Pad& pad;
+};
+
+std::unique_ptr<juce::AccessibilityHandler> CsoundParameterMappingPanel::XYPadRow::Pad::createAccessibilityHandler()
+{
+    return std::make_unique<juce::AccessibilityHandler> (*this,
+                                                         juce::AccessibilityRole::slider,
+                                                         juce::AccessibilityActions(),
+                                                         juce::AccessibilityHandler::Interfaces { std::make_unique<ValueInterface> (*this) });
 }
 
 void CsoundParameterMappingPanel::XYPadRow::Pad::mouseDown (const juce::MouseEvent& e)
@@ -2761,6 +2847,8 @@ CsoundParameterMappingPanel::XYPadRow::XYPadRow (CsoundAudioProcessor& processor
     editRowY->setTypeLabelText ("XY PAD " + dot + " Y AXIS FIELDS");
     editRowX->nameSplit = 1;
     editRowY->nameSplit = 2;
+    editRowX->setChannelNameAccessibleTitle ("X channel name");
+    editRowY->setChannelNameAccessibleTitle ("Y channel name");
     for (auto* r : { editRowX.get(), editRowY.get() })
     {
         r->onCopiedToClipboard = onCopied;
@@ -2771,6 +2859,14 @@ CsoundParameterMappingPanel::XYPadRow::XYPadRow (CsoundAudioProcessor& processor
     }
 
     pad.accent = kSliderAccent;
+    pad.setWantsKeyboardFocus (true);
+    pad.setMouseClickGrabsKeyboardFocus (false);
+    pad.setDescription ("Arrow keys move X (left/right) and Y (up/down), Shift for larger steps, double click resets");
+    pad.describeValues = [this]
+    {
+        return "X " + processor.getChannelParamSlot (xIndex).channelName + " " + formatValue (xIndex, pad.px)
+             + ", Y " + processor.getChannelParamSlot (yIndex).channelName + " " + formatValue (yIndex, pad.py);
+    };
     addAndMakeVisible (pad);
 
     auto setupName = [] (juce::Label& l, const juce::String& prefix)
@@ -2850,6 +2946,23 @@ void CsoundParameterMappingPanel::XYPadRow::updateReadouts()
     nameLabelY.setText ("Y  " + yName, juce::dontSendNotification);
     valueLabelX.setText (formatValue (xIndex, pad.px), juce::dontSendNotification);
     valueLabelY.setText (formatValue (yIndex, pad.py), juce::dontSendNotification);
+
+    // Accessibilita': il pad e i bottoni di riga portano i nomi dei canali.
+    const auto padName = "XY pad " + xName + " by " + yName;
+    if (pad.getTitle() != padName)
+    {
+        pad.setTitle (padName);
+        setTitle (padName);
+        valueLabelX.setTitle (xName + " value");
+        valueLabelY.setTitle (yName + " value");
+        if (! rowEditMode)
+        {
+            editIconButton.setTitle ("Edit " + padName);
+            menuButton.setTitle (padName + " menu");
+        }
+    }
+    if (auto* h = pad.getAccessibilityHandler())
+        h->notifyAccessibilityEvent (juce::AccessibilityEvent::valueChanged);
 }
 
 void CsoundParameterMappingPanel::XYPadRow::paint (juce::Graphics& g)
@@ -2929,6 +3042,11 @@ void CsoundParameterMappingPanel::XYPadRow::setEditMode (bool edit)
         c->setVisible (! edit);
     editIconButton.setToggleState (edit, juce::dontSendNotification);
     editIconButton.setTooltip (edit ? "Back to the pad" : "Edit (X fields; Y from the ... menu)");
+    {
+        const auto padName = pad.getTitle().isNotEmpty() ? pad.getTitle() : juce::String ("XY pad");
+        editIconButton.setTitle ((edit ? "Apply " : "Edit ") + padName);
+        menuButton.setTitle (padName + " menu");
+    }
     if (! edit)
         updateReadouts();
     if (onEditModeToggled)
@@ -3029,6 +3147,11 @@ void CsoundParameterMappingPanel::IntUnifiedRow::setEditMode (bool edit)
     // icone diverse in drawButtonText - vedi i commenti li'.
     editIconButton.setToggleState (edit, juce::dontSendNotification);
     editIconButton.setTooltip (edit ? "Back to controls" : "Edit this parameter");
+    if (uiRow != nullptr) // accessibilita': "Edit amp" / "amp menu" invece di titoli generici
+    {
+        editIconButton.setTitle ((edit ? "Apply " : "Edit ") + uiRow->getTitle());
+        menuButton.setTitle (uiRow->getTitle() + " menu");
+    }
     // Vedi il commento identico su FloatUnifiedRow::setEditMode sopra.
     if (! edit && uiRow != nullptr)
         uiRow->refreshRangeDisplay();
@@ -3097,6 +3220,11 @@ void CsoundParameterMappingPanel::BoolUnifiedRow::setEditMode (bool edit)
     // icone diverse in drawButtonText - vedi i commenti li'.
     editIconButton.setToggleState (edit, juce::dontSendNotification);
     editIconButton.setTooltip (edit ? "Back to controls" : "Edit this parameter");
+    if (uiRow != nullptr) // accessibilita': "Edit amp" / "amp menu" invece di titoli generici
+    {
+        editIconButton.setTitle ((edit ? "Apply " : "Edit ") + uiRow->getTitle());
+        menuButton.setTitle (uiRow->getTitle() + " menu");
+    }
     if (onEditModeToggled)
         onEditModeToggled (edit);
     resized();
@@ -3166,6 +3294,11 @@ void CsoundParameterMappingPanel::ChoiceUnifiedRow::setEditMode (bool edit)
     // icone diverse in drawButtonText - vedi i commenti li'.
     editIconButton.setToggleState (edit, juce::dontSendNotification);
     editIconButton.setTooltip (edit ? "Back to controls" : "Edit this parameter");
+    if (uiRow != nullptr) // accessibilita': "Edit amp" / "amp menu" invece di titoli generici
+    {
+        editIconButton.setTitle ((edit ? "Apply " : "Edit ") + uiRow->getTitle());
+        menuButton.setTitle (uiRow->getTitle() + " menu");
+    }
     if (onEditModeToggled)
         onEditModeToggled (edit);
     resized();
@@ -3190,6 +3323,8 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     // sinistra - vedi resized()), quindi addAndMakeVisible() qui, a
     // differenza di menuButton sotto che resta riparentato da PluginEditor.
     addButton.setName ("paramsMenu");
+    addButton.setTitle ("Parameters menu");
+    addButton.setDescription ("Add a parameter, expand or collapse groups, reset or randomize all");
     addButton.getProperties().set ("circular", true);
     addButton.setColour (juce::TextButton::buttonColourId, kAccent);
     //addButton.setTooltip ("Add / configure parameters");
@@ -3198,6 +3333,8 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
 
     // Snapshot dei valori (destra della title bar) - vedi il commento nel .h.
     snapshotsButton.setName ("snapshotsMenu");
+    snapshotsButton.setTitle ("Snapshots");
+    snapshotsButton.setDescription ("Save, recall and edit snapshots of the parameter values");
     snapshotsButton.getProperties().set ("circular", true);
     snapshotsButton.setColour (juce::TextButton::buttonColourId, kAccent);
     snapshotsButton.onClick = [this] { showSnapshotsMenu(); };
@@ -3221,6 +3358,7 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
     // gerarchia dei componenti cambia. NON addAndMakeVisible() qui.
     menuButton.setName ("burgerMenu");
     menuButton.getProperties().set ("circular", true);
+    menuButton.setTitle ("Main menu");
     menuButton.setColour (juce::TextButton::buttonColourId, kAccent);
     //menuButton.setTooltip ("Undo / Redo / Save / Load / Show Parameters / Show Console");
     menuButton.onClick = [this] { showPanelMenu(); };

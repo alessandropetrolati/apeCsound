@@ -4,9 +4,44 @@ APECSOUND - RELEASE NOTES
 1.0.5
 -----
 
-Live coding, host transport, XY pads, Monitor, and a smarter import of
-Cabbage and CsoundQt files. No change to the .csd format: files saved by
-1.0.4 load unchanged.
+VoiceOver support, live coding, host transport, XY pads, Monitor, and a
+smarter import of Cabbage and CsoundQt files. No change to the .csd
+format: files saved by 1.0.4 load unchanged.
+
+ACCESSIBILITY - VOICEOVER
+
+  apeCsound can now be used with VoiceOver on macOS and iOS (and with
+  other screen readers that use the system accessibility API). Every
+  control has a name, a role and, where useful, a description; the whole
+  interface can be driven from the keyboard. In detail:
+
+  * Toolbar and panels: Apply, Pause, the file capsule, Find, Main menu,
+    Parameters menu, Snapshots, Evaluate line and Clear console are
+    announced by name; the file capsule is a real button (Tab,
+    Return/Space, VoiceOver "press"); the focus order follows the layout
+    left-to-right, top-to-bottom.
+  * Menus: the file menu, the main menu, the "+" menu and the "..." menu
+    of every card are real menus for VoiceOver. Each entry is announced
+    with its state (checked, disabled, submenu) and can be activated; when
+    a menu opens the focus is already on the first entry, so it is read at
+    once. Keyboard: Up/Down or Tab move, Return activates, Right opens a
+    submenu, Left/Esc go back or close; the focus returns to where it was.
+  * Code editor: an accessible text area. VoiceOver reads it by character,
+    word and line, follows the caret and the selection, and typing,
+    selecting and replacing text through the screen reader work like in a
+    native text view. The help bar announces the help of the opcode under
+    the caret.
+  * Parameter cards: sliders, toggles and menus carry the channel name
+    ("amp", "amp value"), the Edit and "..." buttons say which channel
+    they act on ("Edit amp", "amp menu"), and the fields of the Edit card
+    (channel name, Min, Max, Init, Skew, Step, options) are named.
+  * XY pad: an accessible control that announces both axes with their
+    channel names and values ("X cutoff 0.42, Y res 0.8"). VoiceOver
+    increment/decrement moves X; from the keyboard the arrow keys move X
+    (left/right) and Y (up/down), Shift for larger steps, Home/End and
+    PageUp/PageDown jump to the ends; the pad shows a focus ring.
+  * Nothing changes for mouse and touch users: no extra focus rings or
+    highlighted menu rows appear unless the keyboard is used.
 
 LIVE CODING
 
@@ -22,6 +57,8 @@ LIVE CODING
     "gkfb = 0.9", with history (Up/Down); Esc goes back to the help bar.
   * Nothing evaluated is saved: at the next Apply only the editor text
     counts (the file stays the reference).
+  * Right-click on the help bar: "Copy error" (or "Copy help") puts the
+    text shown in the bar on the clipboard.
 
 HOST AND ENGINE
 

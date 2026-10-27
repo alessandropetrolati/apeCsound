@@ -270,7 +270,37 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     opcodeHelpBar.input.onReturnKey = [this] { submitConsoleInput(); };
     // Esc: la barra torna all'help e il focus all'editor di codice.
     opcodeHelpBar.input.onEscapeKey = [this] { setEvaluateLineVisible (false); };
+    // Accessibilita' (VoiceOver): titolo/descrizione sui bottoni a sola
+    // icona (altrimenti vengono letti come "pulsante" senza nome) e un
+    // ordine di focus da sinistra a destra, dall'alto in basso.
+    applyButton.setTitle ("Apply");
+    applyButton.setDescription ("Compile the code and restart the Csound engine");
+    pauseButton.setTitle ("Pause");
+    pauseButton.setDescription ("Pause or resume the Csound engine");
+    findButton.setTitle ("Find and replace");
+    parameterPanel.getMenuButton().setTitle ("Main menu");
+    parameterPanel.getMenuButton().setDescription ("Undo, redo, view, config, guide, about");
+    clearConsoleButton.setTitle ("Clear console");
+    editor.setTitle ("Code editor");
+    editor.setDescription ("Csound code of the current session");
+    logConsole.setTitle ("Console");
+    opcodeHelpBar.input.setTitle ("Evaluate line");
+    opcodeHelpBar.input.setDescription ("Score event or orchestra code sent to the running engine on Return");
+    applyButton.setExplicitFocusOrder (1);
+    pauseButton.setExplicitFocusOrder (2);
+    sessionFileLabel.setExplicitFocusOrder (3);
+    findButton.setExplicitFocusOrder (4);
+    parameterPanel.getMenuButton().setExplicitFocusOrder (5);
+    editor.setExplicitFocusOrder (6);
+    evaluateButton.setExplicitFocusOrder (7);
+    opcodeHelpBar.input.setExplicitFocusOrder (8);
+    clearConsoleButton.setExplicitFocusOrder (9);
+    logConsole.setExplicitFocusOrder (10);
+    parameterPanel.setExplicitFocusOrder (11);
+
     evaluateButton.setName ("evaluate");
+    evaluateButton.setTitle ("Evaluate line");
+    evaluateButton.setDescription ("Opens an input line for a score event or orchestra code sent to the running engine");
     evaluateButton.getProperties().set ("circular", true);
     evaluateButton.setTooltip ("Evaluate line: score event or orchestra code to the running engine (Cmd+E)");
     evaluateButton.setClickingTogglesState (false);
@@ -1392,6 +1422,7 @@ void CsoundAudioProcessorEditor::setEvaluateLineVisible (bool show)
     evaluateButton.setName (show ? "evaluateClose" : "evaluate");       // icona: ">_" chiuso, "x" aperto
     evaluateButton.setTooltip (show ? "Close the Evaluate line (Esc)"
                                     : "Evaluate line: score event or orchestra code to the running engine (Cmd+E)");
+    evaluateButton.setTitle (show ? "Close Evaluate line" : "Evaluate line");
     evaluateButton.repaint();
     if (show)
     {
@@ -2542,6 +2573,7 @@ void CsoundAudioProcessorEditor::updateSessionStatus()
     sessionFileLabel.stateText    = state;
     sessionFileLabel.dirty      = dirty;
     sessionFileLabel.missing    = missing;
+    sessionFileLabel.updateAccessibleTitle();
     sessionFileLabel.repaint();
 
     sessionWarningBar.messageLabel.setText (
@@ -2695,7 +2727,52 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::setHelpText (const juce::String&
     syntaxText = syntax;
     descriptionText = description;
     categoryText = category;
+    setTitle (syntax.isEmpty() && description.isEmpty() ? juce::String ("Opcode help")
+                                                        : "Opcode help: " + syntax + ". " + description);
+    if (auto* h = getAccessibilityHandler())
+        h->notifyAccessibilityEvent (juce::AccessibilityEvent::titleChanged);
     repaint();
+}
+
+bool CsoundAudioProcessorEditor::OpcodeHelpBar::isShowingError() const noexcept
+{
+    return categoryText == CsoundCodeEditor::kErrorHelpCategory;
+}
+
+juce::String CsoundAudioProcessorEditor::OpcodeHelpBar::getPlainText() const
+{
+    if (syntaxText.isEmpty() && descriptionText.isEmpty())
+        return {};
+    if (descriptionText.isEmpty()) return syntaxText;
+    if (syntaxText.isEmpty())      return descriptionText;
+    return syntaxText + (isShowingError() ? ": " : "\n") + descriptionText;
+}
+
+void CsoundAudioProcessorEditor::OpcodeHelpBar::mouseDown (const juce::MouseEvent& e)
+{
+    if (evaluateMode || getPlainText().isEmpty())
+        return;
+    if (e.mods.isPopupMenu())
+        showCopyMenu();
+}
+
+void CsoundAudioProcessorEditor::OpcodeHelpBar::showCopyMenu()
+{
+    std::vector<CsoundActionSheetItem> items;
+    CsoundActionSheetItem copyItem;
+    copyItem.id   = 1;
+    copyItem.text = isShowingError() ? "Copy error" : "Copy help";
+    copyItem.icon = CsoundActionSheetIcon::copy;
+    items.push_back (copyItem);
+
+    juce::Component::SafePointer<OpcodeHelpBar> safeThis (this);
+    CsoundActionSheet::show (*this, isShowingError() ? "Csound error" : "Opcode help", std::move (items),
+                             [safeThis] (int result)
+    {
+        if (safeThis == nullptr || result != 1)
+            return;
+        juce::SystemClipboard::copyTextToClipboard (safeThis->getPlainText());
+    });
 }
 
 CsoundAudioProcessorEditor::SidebarDivider::SidebarDivider()
@@ -2946,6 +3023,7 @@ void CsoundAudioProcessorEditor::updatePauseButton()
     // Sempre l'icona della pausa (il "play" e' Apply): lo stato si vede dal fondo ambra.
     pauseButton.setName ("pause");
     pauseButton.setToggleState (paused, juce::dontSendNotification);
+    pauseButton.setTitle (paused ? "Resume Csound" : "Pause Csound");
     pauseButton.setTooltip (paused ? "Csound is paused (bypass): click to resume. Apply also resumes."
                                    : "Pause Csound (bypass: the input passes through unchanged).");
 

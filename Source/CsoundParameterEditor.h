@@ -499,7 +499,12 @@ public:
     // lasciare un margine sopra/sotto.
     static constexpr int panelTitleBarHeight = 40;
     static constexpr int panelTitleBarButtonDiameter = 30;
-    static constexpr int panelTitleBarPaddingH = 8;
+    // 17 = allinea il centro del bottone Snapshots (30 px) con quello del
+    // burger della toolbar principale (40 px, inset 12 dal bordo destro:
+    // 12 + 40/2 - 30/2 - vedi panelToolbarButtonDiameter in PluginEditor.h);
+    // stesso margine a sinistra per il "+", cosi' i due restano equispaziati
+    // dai bordi (richiesta esplicita).
+    static constexpr int panelTitleBarPaddingH = 17;
 
     // Larghezze dei singoli campi numerici nella riga sotto il nome - STEP
     // (Float) usa la stessa larghezza "narrow" di Min/Max/Init/Exp
@@ -707,6 +712,7 @@ private:
         int nameSplit = 0;
         static constexpr int nameSplitLetterWidth = 22;
         void setNameOnly (bool only);
+        void setChannelNameAccessibleTitle (const juce::String& t) { channelNameEditor.setTitle (t); }
         bool nameOnly = false;
         void setTypeLabelText (const juce::String& t) { typeLabel.setText (t, juce::dontSendNotification); } // XYPadRow: "XY PAD - X AXIS"
         juce::Rectangle<int> channelNameEditorBounds() const { return channelNameEditor.getBounds(); }
@@ -1396,8 +1402,15 @@ private:
             void mouseDrag (const juce::MouseEvent& e) override;
             void mouseUp (const juce::MouseEvent& e) override;
             void mouseDoubleClick (const juce::MouseEvent& e) override;
+            bool keyPressed (const juce::KeyPress& key) override;
+            void focusGained (FocusChangeType) override { repaint(); }
+            void focusLost (FocusChangeType) override { repaint(); }
+            std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+            struct ValueInterface;
+            void nudge (float dx, float dy);
             std::function<void (float x, float y, bool begin, bool end)> onDrag; // normalizzati
             std::function<void()> onResetRequested;
+            std::function<juce::String()> describeValues;   // per VoiceOver: "X cutoff 0.42, Y res 0.8"
             float px = 0.0f, py = 0.0f;
             bool dragging = false;
             juce::Colour accent;

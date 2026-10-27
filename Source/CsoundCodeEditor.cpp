@@ -1331,7 +1331,7 @@ bool CsoundCodeEditor::hasFunctionalForm (const juce::String& word, const juce::
     static const juce::StringArray noFunctionalForm { "xin", "xout", "goto", "igoto", "kgoto", "tigoto",
                                                       "cigoto", "ckgoto", "cggoto", "cngoto", "cnkgoto", "rigoto",
                                                       "reinit", "rireturn", "timout", "loop_lt", "loop_le",
-                                                      "loop_gt", "loop_ge" };
+                                                      "loop_gt", "loop_ge", "looplt", "loople", "loopgt", "loopge" };
 
     return ! category.startsWith ("Orchestra Syntax") && ! noFunctionalForm.contains (word);
 }

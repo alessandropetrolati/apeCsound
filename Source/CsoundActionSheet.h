@@ -197,6 +197,41 @@ private:
     void mouseDown (const juce::MouseEvent& event) override;
     void mouseUp (const juce::MouseEvent& event) override;
 
+    // Accessibilita' e tastiera (VoiceOver): il foglio e' un "menu"; ogni
+    // riga ha un figlio invisibile (RowProxy) con ruolo menuItem, titolo
+    // (testo + stato spuntato/disabilitato), azione press, e focus da
+    // tastiera - cosi' VoiceOver elenca le voci e le attiva, e da tastiera
+    // su/giu' scorrono le righe, Return attiva, Esc torna indietro/chiude.
+    // Il disegno resta quello di RowsContent: i proxy non intercettano il
+    // mouse e non dipingono nulla.
+    bool keyPressed (const juce::KeyPress& key) override;
+    std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+
+    class RowProxy final : public juce::Component
+    {
+    public:
+        RowProxy (CsoundActionSheet& ownerIn, int rowIndexIn) : owner (ownerIn), rowIndex (rowIndexIn)
+        {
+            setInterceptsMouseClicks (false, false);
+            setWantsKeyboardFocus (true);
+        }
+        void focusGained (juce::Component::FocusChangeType) override { owner.setFocusedRow (rowIndex); }
+        std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+        bool keyPressed (const juce::KeyPress& key) override { return owner.keyPressed (key); }
+
+    private:
+        CsoundActionSheet& owner;
+        const int rowIndex;
+    };
+    std::vector<std::unique_ptr<RowProxy>> rowProxies;
+    int focusedRowIndex = -1;
+    juce::Component::SafePointer<juce::Component> focusBeforeShow; // ripristinato alla chiusura
+    void rebuildRowProxies();
+    void setFocusedRow (int rowIndex);
+    void moveFocus (int delta);
+    void focusFirstRowForScreenReader();
+    juce::String accessibleTitleForRow (int rowIndex) const;
+
     // juce::Component chiama questo automaticamente sui FIGLI (questo
     // foglio e' un figlio di "host", vedi show()) ogni volta che il
     // genitore cambia dimensione - BUG corretto (richiesta esplicita: "non

@@ -43,6 +43,15 @@ public:
     //==========================================================================
     juce::CodeDocument& getDocument() const noexcept        { return document; }
 
+    // Accessibilita' (VoiceOver): l'editor e' un campo di testo editabile
+    // con AccessibilityTextInterface completa (testo, selezione, caret,
+    // rettangoli delle righe, offset da un punto), costruita sulle stesse
+    // funzioni usate dall'input testuale (getTextInRange, selectRegion,
+    // insertTextAtCaret, getCharacterBounds, getPositionAt). Gli eventi
+    // textChanged / textSelectionChanged partono da documentChanged() e
+    // caretMoved(). Vedi createAccessibilityHandler() nel .cpp.
+    std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
+
     void setFont (const juce::Font& newFont);
     const juce::Font& getFont() const noexcept              { return font; }
 

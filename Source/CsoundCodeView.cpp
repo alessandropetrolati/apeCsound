@@ -152,6 +152,8 @@ void CodeView::DocumentListener::codeDocumentTextInserted (const juce::String& n
 {
     owner.lastEditStart = insertIndex;
     owner.lastEditEnd   = insertIndex + newText.length();
+    if (auto* h = owner.getAccessibilityHandler())
+        h->notifyAccessibilityEvent (juce::AccessibilityEvent::textChanged);
 
     const int line = juce::CodeDocument::Position (owner.document, insertIndex).getLineNumber();
     owner.removeErrorMarkersOnLine (line);
@@ -162,6 +164,8 @@ void CodeView::DocumentListener::codeDocumentTextDeleted (int startIndex, int)
 {
     owner.lastEditStart = startIndex;
     owner.lastEditEnd   = startIndex;
+    if (auto* h = owner.getAccessibilityHandler())
+        h->notifyAccessibilityEvent (juce::AccessibilityEvent::textChanged);
 
     const int line = juce::CodeDocument::Position (owner.document, startIndex).getLineNumber();
     owner.removeErrorMarkersOnLine (line);
@@ -699,6 +703,9 @@ void CodeView::deselectAll()
 
 void CodeView::caretMoved (bool keepOnScreen)
 {
+    if (auto* h = getAccessibilityHandler())
+        h->notifyAccessibilityEvent (juce::AccessibilityEvent::textSelectionChanged);
+
     hideTouchEditMenu(); // [EDIT-CALLOUT] ricompare, se serve, da chi ha mosso la selezione
 
     if (keepOnScreen)
@@ -1994,4 +2001,81 @@ void CodeView::paintMagnifier (juce::Graphics& g)
 
     g.setColour (findColour (highlightColourId).withAlpha (1.0f));
     g.drawEllipse (centre.x - r, centre.y - r, r * 2.0f, r * 2.0f, 2.0f);
+}
+
+//==============================================================================
+// Accessibilita' - vedi il commento su createAccessibilityHandler nel .h.
+namespace
+{
+    class CodeViewTextInterface final : public juce::AccessibilityTextInterface
+    {
+    public:
+        explicit CodeViewTextInterface (CodeView& v) : view (v) {}
+
+        bool isDisplayingProtectedText() const override { return false; }
+        bool isReadOnly() const override                { return view.isReadOnly(); }
+        int getTotalNumCharacters() const override      { return view.getDocument().getNumCharacters(); }
+        juce::Range<int> getSelection() const override  { return view.getHighlightedRegion(); }
+
+        void setSelection (juce::Range<int> r) override
+        {
+            auto& doc = view.getDocument();
+            const int total = doc.getNumCharacters();
+            const int a = juce::jlimit (0, total, r.getStart()), b = juce::jlimit (0, total, r.getEnd());
+            view.selectRegion (juce::CodeDocument::Position (doc, a), juce::CodeDocument::Position (doc, b));
+        }
+
+        juce::String getText (juce::Range<int> r) const override { return view.getTextInRange (r); }
+
+        void setText (const juce::String& newText) override
+        {
+            if (view.isReadOnly()) return;
+            view.selectAll();
+            view.insertTextAtCaret (newText); // passa dal documento: undo e listener come una digitazione
+        }
+
+        int getTextInsertionOffset() const override { return view.getCaretPosition(); }
+
+        juce::RectangleList<int> getTextBounds (juce::Range<int> textRange) const override
+        {
+            juce::RectangleList<int> out;
+            auto& doc = view.getDocument();
+            const int total = doc.getNumCharacters();
+            const int start = juce::jlimit (0, total, textRange.getStart());
+            const int end   = juce::jlimit (start, total, textRange.getEnd());
+            juce::CodeDocument::Position p (doc, start);
+            const juce::CodeDocument::Position pEnd (doc, end);
+
+            // Un rettangolo per ogni riga toccata dall'intervallo.
+            while (p.getPosition() <= pEnd.getPosition())
+            {
+                const int line = p.getLineNumber();
+                const int lineEndPos = juce::jmin (end, juce::CodeDocument::Position (doc, line, doc.getLine (line).length()).getPosition());
+                const auto a = view.getCharacterBounds (p);
+                const auto b = view.getCharacterBounds (juce::CodeDocument::Position (doc, lineEndPos));
+                juce::Rectangle<int> r (a.getX(), a.getY(), juce::jmax (2, b.getX() - a.getX()), a.getHeight());
+                out.add (view.localAreaToGlobal (r));
+                if (line + 1 >= doc.getNumLines() || lineEndPos >= end)
+                    break;
+                p = juce::CodeDocument::Position (doc, line + 1, 0);
+            }
+            return out;
+        }
+
+        int getOffsetAtPoint (juce::Point<int> point) const override
+        {
+            const auto local = view.getLocalPoint (nullptr, point);
+            return view.getPositionAt (local.x, local.y).getPosition();
+        }
+
+    private:
+        CodeView& view;
+    };
+}
+
+std::unique_ptr<juce::AccessibilityHandler> CodeView::createAccessibilityHandler()
+{
+    return std::make_unique<juce::AccessibilityHandler> (*this, juce::AccessibilityRole::editableText,
+                                                         juce::AccessibilityActions(),
+                                                         juce::AccessibilityHandler::Interfaces { std::make_unique<CodeViewTextInterface> (*this) });
 }

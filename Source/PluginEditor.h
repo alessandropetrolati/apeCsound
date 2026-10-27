@@ -260,9 +260,34 @@ private:
     // Cmd+Z finiva all'host invece che alla nostra cronologia di undo).
     struct SessionFileLabel final : public juce::Component
     {
-        SessionFileLabel() { setMouseCursor (juce::MouseCursor::PointingHandCursor); }
+        SessionFileLabel()
+        {
+            setMouseCursor (juce::MouseCursor::PointingHandCursor);
+            // Accessibilita' (VoiceOver): e' un bottone a tutti gli effetti -
+            // raggiungibile con Tab, Return/Spazio lo premono, ruolo e
+            // titolo esposti da createAccessibilityHandler().
+            setWantsKeyboardFocus (true);
+            setTitle ("File menu");
+            setDescription ("Current session file. Opens the file menu: load, save, examples.");
+        }
         void paint (juce::Graphics& g) override;
         void mouseUp (const juce::MouseEvent& e) override { if (onClick && contains (e.getPosition())) onClick(); }
+        bool keyPressed (const juce::KeyPress& key) override
+        {
+            if (key == juce::KeyPress::returnKey || key == juce::KeyPress::spaceKey) { if (onClick) onClick(); return true; }
+            return false;
+        }
+        std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
+        {
+            return std::make_unique<juce::AccessibilityHandler> (*this, juce::AccessibilityRole::button,
+                juce::AccessibilityActions().addAction (juce::AccessibilityActionType::press, [this] { if (onClick) onClick(); }));
+        }
+        void updateAccessibleTitle()
+        {
+            setTitle ("File: " + fileName + ", " + stateText);
+            if (auto* h = getAccessibilityHandler())
+                h->notifyAccessibilityEvent (juce::AccessibilityEvent::titleChanged);
+        }
         void mouseEnter (const juce::MouseEvent&) override { hovered = true;  repaint(); }
         void mouseExit  (const juce::MouseEvent&) override { hovered = false; repaint(); }
 
@@ -634,6 +659,21 @@ private:
 
         void setEvaluateMode (bool on);
         bool isEvaluateMode() const noexcept { return evaluateMode; }
+
+        // Tasto destro (o pressione lunga su iOS) sul testo della barra:
+        // menu con "Copy error" / "Copy help" - un errore di compilazione va
+        // potuto incollare altrove (richiesta esplicita).
+        void mouseDown (const juce::MouseEvent& e) override;
+        void showCopyMenu();
+        juce::String getPlainText() const;
+        bool isShowingError() const noexcept;
+
+        // Accessibilita': la barra e' un testo statico il cui titolo e'
+        // l'help corrente (VoiceOver lo legge e lo riannuncia quando cambia).
+        std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
+        {
+            return std::make_unique<juce::AccessibilityHandler> (*this, juce::AccessibilityRole::staticText);
+        }
 
         ConsoleInputEditor input;
         // Spazio lasciato libero a destra per il bottone Evaluate, che
