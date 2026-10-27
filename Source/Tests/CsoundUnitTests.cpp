@@ -4,6 +4,7 @@
 #include "../CsoundCabbageHelpers.h"
 #include "../CsoundLayoutHelpers.h"
 #include "../CsoundSyntaxHelpers.h"
+#include "../CsoundMonitorLayout.h"
 
 #ifndef CSOUND_TESTS_CORE_ONLY
  #include "../PluginProcessor.h"
@@ -302,6 +303,103 @@ struct SyntaxHelpersTests final : public juce::UnitTest
     }
 };
 
+//==============================================================================
+struct MonitorLayoutTests final : public juce::UnitTest
+{
+    MonitorLayoutTests() : juce::UnitTest ("Monitor attributes and grouping", kCategory) {}
+
+    void runTest() override
+    {
+        using namespace csoundMonitor;
+
+        beginTest ("parseAttributes: keywords, case, separators, group:Name");
+        {
+            const auto a = parseAttributes ("db SPARK, int;hidden group:Spectrum 8");
+            expect (a.db && a.spark && a.isInt && a.hidden);
+            expectEquals (a.group, juce::String ("Spectrum"));
+            const auto b = parseAttributes ("group=My Bands");
+            expectEquals (b.group, juce::String ("My"));   // uno spazio separa i token: usare "group:MyBands"
+            const auto c = parseAttributes ("");
+            expect (! c.db && ! c.spark && ! c.isInt && ! c.hidden && c.group.isEmpty());
+            const auto d = parseAttributes ("unknown words");
+            expect (! d.db && d.group.isEmpty());
+        }
+
+        beginTest ("splitIndexedName");
+        {
+            juce::String base; int index = 0;
+            expect (splitIndexedName ("Band_7", base, index));  expectEquals (base, juce::String ("Band")); expectEquals (index, 7);
+            expect (splitIndexedName ("LFO2", base, index));    expectEquals (base, juce::String ("LFO"));  expectEquals (index, 2);
+            expect (splitIndexedName ("Late 12", base, index)); expectEquals (base, juce::String ("Late")); expectEquals (index, 12);
+            expect (splitIndexedName ("F1", base, index));      expectEquals (base, juce::String ("F"));
+            expect (! splitIndexedName ("Cutoff", base, index));
+            expect (! splitIndexedName ("OutRMS_dB", base, index));
+            expect (! splitIndexedName ("7", base, index));
+            expect (! splitIndexedName ("_1", base, index));
+        }
+
+        beginTest ("buildCards: name groups of >= 2, singles stay single, order of first appearance, strings never grouped");
+        {
+            std::vector<ChannelInfo> ch {
+                { "Level", false, {} },
+                { "Band_2", false, {} },
+                { "Status", true, {} },
+                { "Band_1", false, {} },
+                { "Only1", false, {} },
+                { "Band_3", false, {} },
+                { "Name1", true, {} }, { "Name2", true, {} },
+            };
+            const auto cards = buildCards (ch);
+            expectEquals ((int) cards.size(), 6);
+            expectEquals (cards[0].title, juce::String ("Level"));  expect (! cards[0].multi);
+            expectEquals (cards[1].title, juce::String ("Band"));   expect (cards[1].multi);
+            expectEquals ((int) cards[1].channels.size(), 3);
+            expectEquals (cards[1].channels[0], 3);  // Band_1 first, sorted by index
+            expectEquals (cards[1].channels[1], 1);
+            expectEquals (cards[1].channels[2], 5);
+            expectEquals (cards[2].title, juce::String ("Status"));
+            expectEquals (cards[3].title, juce::String ("Only1"));  expect (! cards[3].multi);
+            expectEquals (cards[4].title, juce::String ("Name1"));
+            expectEquals (cards[5].title, juce::String ("Name2"));
+        }
+
+        beginTest ("buildCards: group: attribute wins over the name, hidden channels disappear");
+        {
+            std::vector<ChannelInfo> ch {
+                { "Peak_L", false, parseAttributes ("group:Meters") },
+                { "Peak_R", false, parseAttributes ("group:Meters") },
+                { "Secret", false, parseAttributes ("hidden") },
+                { "Rms_1", false, parseAttributes ("group:Meters") },
+                { "Rms_2", false, {} },
+            };
+            const auto cards = buildCards (ch);
+            expectEquals ((int) cards.size(), 2);
+            expectEquals (cards[0].title, juce::String ("Meters"));
+            expectEquals ((int) cards[0].channels.size(), 3);
+            expectEquals (cards[1].title, juce::String ("Rms_2"));
+            expect (! cards[1].multi);
+        }
+
+        beginTest ("cabbageIdentChannels: only inside <Cabbage>, unique");
+        {
+            const auto names = cabbageIdentChannels ("<Cabbage>\nrslider channel(\"Fb\"), identChannel(\"FbID\")\n"
+                                                    "checkbox channel(\"x\") identChannel( \"xID\" )\nlabel identChannel(\"FbID\")\n</Cabbage>\n"
+                                                    "<CsInstruments>\n; identChannel(\"NotInCabbage\")\n</CsInstruments>");
+            expectEquals (names.size(), 2);
+            expect (names.contains ("FbID") && names.contains ("xID"));
+            expect (cabbageIdentChannels ("no cabbage here").isEmpty());
+        }
+
+        beginTest ("linearToDb");
+        {
+            expectWithinAbsoluteError (linearToDb (1.0), 0.0, 1e-9);
+            expectWithinAbsoluteError (linearToDb (0.5), -6.0206, 1e-3);
+            expectWithinAbsoluteError (linearToDb (0.0), -60.0, 1e-9);
+            expectWithinAbsoluteError (linearToDb (1e-9), -60.0, 1e-9);
+        }
+    }
+};
+
 #ifndef CSOUND_TESTS_CORE_ONLY
 //==============================================================================
 // Suite che usano il processor: lavorano sullo stato corrente e lo
@@ -534,6 +632,7 @@ Summary runAll (CsoundAudioProcessor* processor, const std::function<void (const
     static CabbageHelpersTests  cabbageTests;
     static LayoutHelpersTests   layoutTests;
     static SyntaxHelpersTests   syntaxTests;
+    static MonitorLayoutTests   monitorTests;
    #ifndef CSOUND_TESTS_CORE_ONLY
     static CabbageImportTests   importTests;
     static SnapshotTreeTests    snapshotTests;

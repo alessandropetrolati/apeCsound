@@ -90,6 +90,8 @@ namespace CsoundAPI
     extern CsoundGetStringChannelFn csoundGetStringChannel;
     using CsoundGetChannelPtrFn = int32_t (*) (CSOUND*, void**, const char*, int32_t);
     extern CsoundGetChannelPtrFn csoundGetChannelPtr; // puntatore diretto a un canale (host transport)
+    using CsoundGetTableFn = int32_t (*) (CSOUND*, cs_float**, int32_t);
+    extern CsoundGetTableFn csoundGetTable;           // ftable dal vivo nel pannello Graphs
     extern CsoundCompileOrcFn csoundCompileOrc;   // live coding (Evaluate), async
     extern CsoundEventStringFn csoundEventString; // eventi di score a runtime, async
     extern CsoundStartFn csoundStart;

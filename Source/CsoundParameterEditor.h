@@ -9,6 +9,7 @@
 #include "CsoundActionSheet.h"
 #include "CsoundComboBox.h" // ComboBox con il menu di apeCsound (anche su iOS)
 #include "CsoundParameterGroups.h" // raggruppamento per "; @group Nome" nel codice
+#include "CsoundMonitorLayout.h" // attributi chn_k e accorpamento delle card del Monitor
 
 /**
     Slider dei parametri, uguale con mouse e dito:
@@ -1692,7 +1693,13 @@ private:
         void paint (juce::Graphics& g) override;
         void mouseUp (const juce::MouseEvent& e) override
         {
-            if (e.getPosition().getY() < groupHeaderHeight && contains (e.getPosition()) && onToggle)
+            if (e.getPosition().getY() >= groupHeaderHeight || ! contains (e.getPosition()))
+                return;
+            // Option/Alt + click: apre o chiude TUTTI i gruppi (Monitor
+            // compreso) nello stato opposto a quello di questo gruppo.
+            if (e.mods.isAltDown() && onToggleAll)
+                onToggleAll (! collapsed);
+            else if (onToggle)
                 onToggle();
         }
 
@@ -1700,6 +1707,7 @@ private:
         int count = 0;
         bool collapsed = false;
         std::function<void()> onToggle;
+        std::function<void (bool collapseAll)> onToggleAll;
     };
 
     struct DisplayGroup
@@ -1718,14 +1726,34 @@ private:
     // Elenco rifatto ~1 Hz (nuovi canali possono nascere a runtime) e ad
     // ogni cambio di motore; valori a 20 Hz. Non sono parametri: niente
     // undo, snapshot, automazione.
+    // Una card del Monitor: un canale (barra, sparkline o testo) oppure un
+    // gruppo di canali numerici (una barra verticale ciascuno) - vedi
+    // CsoundMonitorLayout.h per attributi di chn_k e accorpamento per nome.
     struct MonitorRow final : public juce::Component
     {
+        struct Entry
+        {
+            juce::String name, label, text;   // label: indice del membro nelle card multiple
+            int channelIndex = -1;            // in monitorChannels
+            bool isString = false, hasHints = false;
+            double value = 0.0, hintMin = 0.0, hintMax = 1.0, seenMin = 0.0, seenMax = 0.0;
+            bool seenAny = false;
+            std::vector<float> history;       // sparkline: ultimi kHistoryLength valori (ring)
+            int historyPos = 0;
+        };
+
         void paint (juce::Graphics& g) override;
-        juce::String name, text;
-        bool isString = false, hasHints = false;
-        double value = 0.0, hintMin = 0.0, hintMax = 1.0, seenMin = 0.0, seenMax = 0.0;
-        bool seenAny = false;
-        static constexpr int height = 46;
+        int preferredHeight() const noexcept;
+        juce::String displayValue (const Entry& e) const;
+        void barRange (const Entry& e, double& lo, double& hi) const;
+        double shown (const Entry& e) const;       // valore come lo misura la barra (dB se "db")
+
+        juce::String title;
+        bool multi = false;
+        csoundMonitor::Attributes attrs;           // del primo canale della card
+        std::vector<Entry> entries;
+        static constexpr int kHistoryLength = 100; // 5 s a 20 Hz
+        static constexpr int height = 46;          // card semplice (barra o testo)
     };
     struct TickTimer final : public juce::Timer
     {

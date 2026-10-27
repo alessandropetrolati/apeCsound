@@ -21,6 +21,7 @@ namespace CsoundAPI
     CsoundSetOptionFn csoundSetOption = nullptr;
     CsoundCompileCSDFn csoundCompileCSD = nullptr;
     CsoundGetChannelPtrFn csoundGetChannelPtr = nullptr;
+    CsoundGetTableFn csoundGetTable = nullptr;
     CsoundListChannelsFn csoundListChannels = nullptr;
     CsoundDeleteChannelListFn csoundDeleteChannelList = nullptr;
     CsoundGetStringChannelFn csoundGetStringChannel = nullptr;
@@ -76,6 +77,7 @@ namespace CsoundAPI
         csoundSetOption                       = &::csoundSetOption;
         csoundCompileCSD                      = &::csoundCompileCSD;
         csoundGetChannelPtr                   = &::csoundGetChannelPtr;
+        csoundGetTable                        = &::csoundGetTable;
         csoundListChannels                    = &::csoundListChannels;
         csoundDeleteChannelList               = &::csoundDeleteChannelList;
         csoundGetStringChannel                = &::csoundGetStringChannel;

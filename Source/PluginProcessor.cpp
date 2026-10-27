@@ -80,6 +80,9 @@ CsoundAudioProcessor::CsoundAudioProcessor()
 
     startTimer (kMessageFlushIntervalMs);
 
+    // Ftable dal vivo nel pannello Graphs (vedi refreshFtableGraphs).
+    graphStore.onLiveRefresh = [this] { refreshFtableGraphs(); };
+
     for (int i = 0; i < kMaxBusChannels; ++i)
         hostOutputIndex[(size_t) i] = hostInputIndex[(size_t) i] = i; // identita' finche' non c'e' un layout
 
@@ -1113,6 +1116,7 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     // la DAW. I display vengono poi attivati SEMPRE (dopo la compilazione,
     // vedi sotto), qualunque -d contengano le <CsOptions>.
     graphStore.clear();
+    ftableChecksums.clear();
     ::csoundSetIsGraphable (cs, 1);
     ::csoundSetMakeGraphCallback (cs, makeGraphCallback);
     ::csoundSetDrawGraphCallback (cs, drawGraphCallback);
@@ -2495,6 +2499,45 @@ void CsoundAudioProcessor::pushHostTransportToCsound (CSOUND* cs)
     if (auto sig = pos->getTimeSignature())  { set (t.sigNum, sig->numerator); set (t.sigDenom, sig->denominator); }
 }
 
+void CsoundAudioProcessor::refreshFtableGraphs()
+{
+    auto* cs = activeCsound.load();
+    if (cs == nullptr || ! ready.load() || CsoundAPI::csoundGetTable == nullptr)
+        return;
+
+    std::vector<CsoundGraphStore::FtableSlot> slots;
+    graphStore.ftableSlots (slots);
+
+    for (const auto& s : slots)
+    {
+        cs_float* data = nullptr;
+        const int len = CsoundAPI::csoundGetTable (cs, &data, s.tableNumber);
+        if (len <= 0 || data == nullptr)
+            continue;
+
+        // Checksum a passo fisso (max 1024 letture) + massimo assoluto: la
+        // tabella puo' essere scritta dal thread audio nel frattempo, ma per
+        // un grafico una lettura "sporca" e' innocua.
+        const int stride = juce::jmax (1, len / 1024);
+        double sum = 0.0, absMax = 0.0;
+        for (int i = 0; i < len; i += stride)
+        {
+            sum += (double) data[i] * (double) (i % 7 + 1);
+            absMax = juce::jmax (absMax, std::abs ((double) data[i]));
+        }
+
+        auto it = ftableChecksums.find (s.tableNumber);
+        if (it != ftableChecksums.end() && it->second == sum)
+            continue;
+        ftableChecksums[s.tableNumber] = sum;
+
+        for (int i = 0; i < len; ++i)
+            absMax = juce::jmax (absMax, std::abs ((double) data[i]));
+
+        graphStore.draw (s.slotPlusOne, data, len, absMax, s.polarity);
+    }
+}
+
 bool CsoundAudioProcessor::isReservedHostChannel (const juce::String& name) const
 {
     static const char* const reserved[] = { "HOST_BPM", "IS_PLAYING", "IS_RECORDING", "TIME_IN_SECONDS", "TIME_IN_SAMPLES",
@@ -2517,6 +2560,14 @@ std::vector<CsoundAudioProcessor::MonitorChannel> CsoundAudioProcessor::listMoni
     if (n <= 0 || list == nullptr)
         return out;
 
+    // Elenco degli identChannel Cabbage, rifatto a ogni nuovo motore
+    // (vedi CsoundMonitorLayout.h).
+    if (const auto gen = engineGeneration.load(); gen != monitorIdentChannelsGeneration)
+    {
+        monitorIdentChannelsGeneration = gen;
+        monitorIdentChannels = csoundMonitor::cabbageIdentChannels (getCsdTextWithSurroundings());
+    }
+
     for (int i = 0; i < n; ++i)
     {
         const auto& info = list[i];
@@ -2529,6 +2580,9 @@ std::vector<CsoundAudioProcessor::MonitorChannel> CsoundAudioProcessor::listMoni
 
         const juce::String name (juce::CharPointer_UTF8 (info.name));
         if (name.isEmpty() || isReservedHostChannel (name))
+            continue;
+        // identChannel di Cabbage (messaggi GUI come "colour(...)"): fuori.
+        if (type == CSOUND_STRING_CHANNEL && monitorIdentChannels.contains (name))
             continue;
         // Un parametro del pannello (anche se il codice lo scrive con chnset:
         // e' gia' visibile come slider) - vedi isChannelNameUsedElsewhere.
@@ -2543,6 +2597,8 @@ std::vector<CsoundAudioProcessor::MonitorChannel> CsoundAudioProcessor::listMoni
             ch.hasHints = info.hints.behav != CSOUND_CONTROL_CHANNEL_NO_HINTS && info.hints.max > info.hints.min;
             ch.hintMin = info.hints.min;
             ch.hintMax = info.hints.max;
+            if (info.hints.behav != CSOUND_CONTROL_CHANNEL_NO_HINTS && info.hints.attributes != nullptr)
+                ch.attributes = juce::String (juce::CharPointer_UTF8 (info.hints.attributes));
             void* p = nullptr;
             if (CsoundAPI::csoundGetChannelPtr != nullptr
                 && CsoundAPI::csoundGetChannelPtr (cs, &p, info.name, CSOUND_CONTROL_CHANNEL | CSOUND_OUTPUT_CHANNEL) == 0)
@@ -3262,6 +3318,7 @@ void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInByte
 }
 
 #include "CsoundCabbageHelpers.h"
+#include "CsoundMonitorLayout.h"
 using namespace cabbageImport;
 
 bool CsoundAudioProcessor::saveSessionToFile (const juce::File& file, const juce::String& codeText)

@@ -3817,7 +3817,7 @@ By default the panel lists the parameters by type: all the Float sliders, then I
 - The group of a parameter is decided by the **first** `chnget` of its channel in the code. A channel read in several instruments goes where it appears first - put that line under the `@group` you prefer.
 - The same name in several places joins the parameters in one group (e.g. a "Master" group spread over two instruments).
 - Groups appear in the order of the code, parameters in the order of their `chnget`. Parameters without a group, or whose channel is not read by any `chnget` (misspelt name, name built at run time), go to **Other**, at the end. Without any `@group` the list stays flat, as before.
-- Each group is a frame with a teal header: tap it to collapse or expand the group. **Expand All Groups** and **Collapse All Groups** are in the panel's + menu.
+- Each group is a frame with a teal header: tap it to collapse or expand the group; **Option/Alt + click** on any header opens or closes *all* groups (Monitor included). **Expand All Groups** and **Collapse All Groups** are also in the panel's + menu.
 - Groups follow the **compiled** code: they update at Apply and Load, not while typing. They only change the order in the panel: the DAW still sees the parameters by their fixed indices.
 - Example: `; @group Synth` / `kcut chnget "Cutoff"` / `iwave chnget "Wave"` / `; @group Delay` / `ktime chnget "Time"` - see `Test/GroupsSnapshotsTest.csd` in the examples.
 When a file with more than 4 groups is loaded only the first group starts open; with 4 or fewer they all start open. Your open/closed choices are kept until the set of groups changes. Cabbage files get their groups from the GUI: `groupbox` / `plant` containers (with `{ }` blocks, or by position for the old syntax) become groups named after their `text(...)`, the first label inside, or the plant name. A `; @group` in the code always wins.
@@ -3825,6 +3825,15 @@ When a file with more than 4 groups is loaded only the first group starts open; 
 Two Float parameters can share one card with a two-dimensional pad instead of two sliders: write `; @xy "Cutoff" "Resonance"` anywhere in the code (X first, Y second). Both stay separate parameters for the DAW, automation and snapshots; only the card changes. Edit shows one card with both channel fields (X on the first line, Y on the second) and the range, init, skew and step of one axis - the pencil edits X, **...** > Edit Y the other; the menu also offers Copy chnget lines, Reset, Randomize, Show in Code and Remove X / Remove Y; double-click the pad to reset both. The pad sits in the group and position of its X channel. If one of the two names is not an assigned Float parameter the comment is ignored and you get two sliders. Cabbage `xypad` widgets and CsoundQt XY controllers become pads automatically (read from their `<Cabbage>` / `<bsbPanel>` sections at every Apply).
 ## Monitor
 Channels the code *writes* with `chnset` (and that are not parameters) appear read-only in a **Monitor** group at the bottom of the panel: name, value and a bar for numbers (range from `chn_k "x", 2, 0, min, max` if declared, otherwise the values seen so far), the text for string channels. It is the equivalent of the meters, displays and labels of CsoundQt and Cabbage, so an `outvalue` converted to `chnset` shows up here. Channels created at run time appear within a second; the group starts closed when there are more than 8.
+
+Channels named `Base1, Base2...` or `Base_1, Base_2...` (same prefix, trailing number, at least two) are shown as **one card with a bar per channel** - a spectrum, a step sequencer, a bank of LFOs. The 11th argument of `chn_k` adds **attributes** (words separated by spaces):
+
+```
+chn_k "Level", 2, 2, 0, 0, 0, 0, 0, 0, 0, "db spark"
+chn_k "B1", 2, 2, 0, 0, 1, 0, 0, 0, 0, "group:Bands"
+```
+
+`db` the value is a linear amplitude, shown and measured in dB (-60..0 unless min/max are given); `spark` a sparkline of the last 5 seconds instead of the bar; `int` no decimals; `hidden` the channel is written but not shown; `group:Name` puts the channel in the multi-bar card "Name" (wins over the automatic grouping). See `CSD/Examples/Test/MonitorStressTest.csd`.
 ## Snapshots
 The camera button on the right of the Parameters title bar stores and recalls the **values** of all the parameters.
 - **Save Snapshot...** - asks for a name and stores the current values.
@@ -3857,7 +3866,7 @@ Read them with `chnget`, e.g. a tempo-synced delay: `kdel = 60 / chnget:k("HOST_
 
 # Console and Graphs
 - **Console** - Csound messages, compile errors and apeCsound notes. Repeated messages are summarised to keep the DAW responsive. Clear empties it; it is also cleared at every Apply.
-- **Graphs** (menu > Show Graphs) - function tables (f statements, `ftgen`) and `display` / `dispfft` signals, in a panel docked at the bottom. Cleared at every Apply.
+- **Graphs** (menu > Show Graphs) - function tables (f statements, `ftgen`) and `display` / `dispfft` signals, in a panel docked at the bottom. Cleared at every Apply. Tables are **live**: while the panel is open they are re-read about 4 times per second and redrawn when their content changes (`tablew`, `ftgen` regenerated, GEN routines in a loop) - a free oscilloscope or envelope viewer: write what you want to see into a table.
 
 # Shortcuts
 Cmd on macOS, Ctrl on Windows and Linux.

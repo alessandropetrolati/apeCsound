@@ -3927,6 +3927,15 @@ void CsoundParameterMappingPanel::setAllGroupsCollapsed (bool collapsed)
         else           collapsedGroups.erase (group.name);
     }
 
+    // Anche il Monitor (menu "+" e Option+click su un'intestazione).
+    if (monitorHeader != nullptr)
+    {
+        monitorHeader->collapsed = collapsed;
+        monitorHeader->repaint();
+        if (collapsed) collapsedGroups.insert ("Monitor");
+        else           collapsedGroups.erase ("Monitor");
+    }
+
     resized();
 }
 
@@ -3993,13 +4002,13 @@ void CsoundParameterMappingPanel::showAddMenu()
         items.push_back (CsoundActionSheetItem::separator());
         {
             CsoundActionSheetItem item;
-            item.id = 111; item.text = "Expand All Groups";
+            item.id = 111; item.text = "Expand All Groups"; item.shortcut = juce::String (juce::CharPointer_UTF8 ("\xe2\x8c\xa5")) + " click";
             item.icon = CsoundActionSheetIcon::eyeOpen;
             items.push_back (item);
         }
         {
             CsoundActionSheetItem item;
-            item.id = 112; item.text = "Collapse All Groups";
+            item.id = 112; item.text = "Collapse All Groups"; item.shortcut = juce::String (juce::CharPointer_UTF8 ("\xe2\x8c\xa5")) + " click";
             item.icon = CsoundActionSheetIcon::eyeClosed;
             items.push_back (item);
         }
@@ -4889,6 +4898,7 @@ void CsoundParameterMappingPanel::rebuildDisplayGroups()
             header->repaint();
             resized();
         };
+        group.header->onToggleAll = [this] (bool collapseAll) { setAllGroupsCollapsed (collapseAll); };
 
         rowsContainer.addAndMakeVisible (*group.header);
         group.header->toBack(); // dietro alle card del gruppo
@@ -4935,6 +4945,38 @@ void CsoundParameterMappingPanel::setHighlightedChannel (const juce::String& cha
 
 //==============================================================================
 // Monitor - vedi il commento nel .h.
+int CsoundParameterMappingPanel::MonitorRow::preferredHeight() const noexcept
+{
+    if (multi)        return 24 + 64;   // titolo + barre verticali con etichetta
+    if (attrs.spark)  return 24 + 40;   // titolo/valore + sparkline
+    return height;
+}
+
+double CsoundParameterMappingPanel::MonitorRow::shown (const Entry& e) const
+{
+    return attrs.db ? csoundMonitor::linearToDb (e.value) : e.value;
+}
+
+void CsoundParameterMappingPanel::MonitorRow::barRange (const Entry& e, double& lo, double& hi) const
+{
+    if (e.hasHints)      { lo = e.hintMin; hi = e.hintMax; }
+    else if (attrs.db)   { lo = -60.0;     hi = 0.0; }
+    else                 { lo = e.seenMin; hi = e.seenMax; }
+}
+
+juce::String CsoundParameterMappingPanel::MonitorRow::displayValue (const Entry& e) const
+{
+    if (e.isString)
+        return e.text;
+    const double v = shown (e);
+    if (attrs.isInt)
+        return juce::String (juce::roundToInt (v));
+    auto t = juce::String (v, attrs.db ? 1 : 3);
+    if (t.containsChar ('.')) t = t.trimCharactersAtEnd ("0").trimCharactersAtEnd (".");
+    if (t == "-0") t = "0";
+    return attrs.db ? t + " dB" : t;
+}
+
 void CsoundParameterMappingPanel::MonitorRow::paint (juce::Graphics& g)
 {
     const auto b = getLocalBounds();
@@ -4944,38 +4986,101 @@ void CsoundParameterMappingPanel::MonitorRow::paint (juce::Graphics& g)
     g.fillRect (b.getX(), b.getY(), 5, b.getHeight());
 
     auto area = b.reduced (cardPaddingH, 0).withTrimmedLeft (6);
+    const auto monoFont = juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain));
 
-    g.setColour (kText);
-    g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
-    auto head = area.removeFromTop (isString ? height : 24);
-    const int nameW = juce::jmin (head.getWidth() / 2, 180);
+    if (entries.empty())
+        return;
 
-    if (isString)
+    // ---- card multipla: titolo a sinistra, barre verticali sotto
+    if (multi)
     {
-        g.drawFittedText (name, head.removeFromLeft (nameW), juce::Justification::centredLeft, 1);
+        g.setColour (kText);
+        g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+        auto head = area.removeFromTop (24);
+        g.drawFittedText (title, head.removeFromLeft (juce::jmin (head.getWidth() / 2, 180)), juce::Justification::centredLeft, 1);
         g.setColour (kTextMuted);
-        g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain)));
-        g.drawFittedText (text, head.withTrimmedLeft (8), juce::Justification::centredRight, 1);
+        g.setFont (monoFont);
+        g.drawFittedText (juce::String ((int) entries.size()) + " ch", head, juce::Justification::centredRight, 1);
+
+        auto plot = area.withTrimmedTop (2).withTrimmedBottom (4);
+        const int labelH = 12;
+        auto bars = plot.withTrimmedBottom (labelH);
+        const int n = (int) entries.size();
+        const float slot = (float) bars.getWidth() / (float) n;
+        const float barW = juce::jmax (2.0f, slot - 3.0f);
+
+        g.setColour (kPanelBg);
+        g.fillRoundedRectangle (bars.toFloat(), 3.0f);
+
+        for (int i = 0; i < n; ++i)
+        {
+            const auto& e = entries[(size_t) i];
+            double lo, hi; barRange (e, lo, hi);
+            const float x = (float) bars.getX() + slot * (float) i + (slot - barW) * 0.5f;
+            if (hi > lo)
+            {
+                const float f = (float) juce::jlimit (0.0, 1.0, (shown (e) - lo) / (hi - lo));
+                const float hgt = juce::jmax (2.0f, (float) bars.getHeight() * f);
+                g.setColour (kAccent.withAlpha (0.8f));
+                g.fillRoundedRectangle (x, (float) bars.getBottom() - hgt, barW, hgt, 2.0f);
+            }
+            if (slot >= 14.0f)
+            {
+                g.setColour (kTextMuted);
+                g.setFont (juce::Font (juce::FontOptions (9.0f)));
+                g.drawFittedText (e.label, juce::Rectangle<int> ((int) x - 4, bars.getBottom(), (int) barW + 8, labelH),
+                                  juce::Justification::centred, 1);
+            }
+        }
         return;
     }
 
-    g.drawFittedText (name, head.removeFromLeft (nameW), juce::Justification::centredLeft, 1);
-
-    auto s = juce::String (value, 3);
-    if (s.containsChar ('.')) s = s.trimCharactersAtEnd ("0").trimCharactersAtEnd (".");
+    // ---- card singola
+    const auto& e = entries.front();
+    g.setColour (kText);
+    g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+    auto head = area.removeFromTop (e.isString ? height : 24);
+    const int nameW = juce::jmin (head.getWidth() / 2, 180);
+    g.drawFittedText (title, head.removeFromLeft (nameW), juce::Justification::centredLeft, 1);
     g.setColour (kTextMuted);
-    g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain)));
-    g.drawFittedText (s == "-0" ? "0" : s, head.withTrimmedLeft (8), juce::Justification::centredRight, 1);
+    g.setFont (monoFont);
+    g.drawFittedText (displayValue (e), head.withTrimmedLeft (8), juce::Justification::centredRight, 1);
 
-    // Barra: range dagli hint se dichiarati, altrimenti min/max visti.
-    const double lo = hasHints ? hintMin : seenMin;
-    const double hi = hasHints ? hintMax : seenMax;
+    if (e.isString)
+        return;
+
+    double lo, hi; barRange (e, lo, hi);
+
+    if (attrs.spark)
+    {
+        // Sparkline degli ultimi kHistoryLength valori (ring buffer).
+        auto plot = area.withTrimmedTop (2).withTrimmedBottom (6).toFloat();
+        g.setColour (kPanelBg);
+        g.fillRoundedRectangle (plot, 3.0f);
+        if (hi > lo && ! e.history.empty())
+        {
+            juce::Path path;
+            const int n = (int) e.history.size();
+            for (int i = 0; i < n; ++i)
+            {
+                const float v = e.history[(size_t) ((e.historyPos + i) % n)];
+                const float f = (float) juce::jlimit (0.0, 1.0, ((double) v - lo) / (hi - lo));
+                const float x = plot.getX() + plot.getWidth() * (float) i / (float) juce::jmax (1, n - 1);
+                const float y = plot.getBottom() - 2.0f - (plot.getHeight() - 4.0f) * f;
+                if (i == 0) path.startNewSubPath (x, y); else path.lineTo (x, y);
+            }
+            g.setColour (kAccent.withAlpha (0.9f));
+            g.strokePath (path, juce::PathStrokeType (1.5f));
+        }
+        return;
+    }
+
     auto bar = area.withTrimmedTop (4).withHeight (8).toFloat();
     g.setColour (kPanelBg);
     g.fillRoundedRectangle (bar, 3.0f);
     if (hi > lo)
     {
-        const float f = (float) juce::jlimit (0.0, 1.0, (value - lo) / (hi - lo));
+        const float f = (float) juce::jlimit (0.0, 1.0, (shown (e) - lo) / (hi - lo));
         g.setColour (kAccent.withAlpha (0.8f));
         g.fillRoundedRectangle (bar.withWidth (juce::jmax (3.0f, bar.getWidth() * f)), 3.0f);
     }
@@ -4987,28 +5092,48 @@ void CsoundParameterMappingPanel::refreshMonitorList()
     auto channels = processor.listMonitorChannels();
 
     juce::StringArray names;
-    for (const auto& c : channels) names.add (c.name);
+    for (const auto& c : channels) names.add (c.name + "|" + c.attributes);
     const auto signature = names.joinIntoString ("\n");
 
     if (signature == monitorSignature && engine == monitorEngine)
         return;
 
     const bool wasEmpty = monitorRows.empty();
+    const bool sameRows = signature == monitorSignature;   // stesso elenco, motore nuovo: solo i puntatori cambiano
     monitorEngine = engine;
     monitorSignature = signature;
     monitorChannels = std::move (channels);
 
-    // Righe: ricreate solo se cambiano i nomi (stesso motore = stesse righe,
-    // solo puntatori nuovi gia' in monitorChannels).
-    if (names.size() != (int) monitorRows.size() || ! std::equal (names.begin(), names.end(), monitorRows.begin(),
-            [] (const juce::String& n, const std::unique_ptr<MonitorRow>& r) { return n == r->name; }))
+    if (! sameRows || monitorRows.empty())
     {
-        monitorRows.clear();
+        // Card dai canali: attributi di chn_k + accorpamento per nome
+        // (CsoundMonitorLayout.h). Ricreate solo se cambia l'elenco.
+        std::vector<csoundMonitor::ChannelInfo> infos;
         for (const auto& c : monitorChannels)
+            infos.push_back ({ c.name, c.isString, csoundMonitor::parseAttributes (c.attributes) });
+
+        monitorRows.clear();
+        for (const auto& card : csoundMonitor::buildCards (infos))
         {
             auto row = std::make_unique<MonitorRow>();
-            row->name = c.name; row->isString = c.isString;
-            row->hasHints = c.hasHints; row->hintMin = c.hintMin; row->hintMax = c.hintMax;
+            row->title = card.title;
+            row->multi = card.multi;
+            if (! card.channels.empty())
+                row->attrs = infos[(size_t) card.channels.front()].attributes;
+
+            for (int idx : card.channels)
+            {
+                const auto& c = monitorChannels[(size_t) idx];
+                MonitorRow::Entry e;
+                e.name = c.name; e.channelIndex = idx; e.isString = c.isString;
+                e.hasHints = c.hasHints; e.hintMin = c.hintMin; e.hintMax = c.hintMax;
+                juce::String base; int index = -1;
+                e.label = csoundMonitor::splitIndexedName (c.name, base, index) ? juce::String (index) : c.name;
+                if (row->attrs.spark)
+                    e.history.assign ((size_t) MonitorRow::kHistoryLength, 0.0f);
+                row->entries.push_back (std::move (e));
+            }
+            row->setTitle (row->title);
             rowsContainer.addAndMakeVisible (*row);
             monitorRows.push_back (std::move (row));
         }
@@ -5032,6 +5157,7 @@ void CsoundParameterMappingPanel::refreshMonitorList()
             monitorHeader->repaint();
             resized();
         };
+        monitorHeader->onToggleAll = [this] (bool collapseAll) { setAllGroupsCollapsed (collapseAll); };
         rowsContainer.addAndMakeVisible (*monitorHeader);
         monitorHeader->toBack();
     }
@@ -5064,23 +5190,40 @@ void CsoundParameterMappingPanel::updateMonitorValues()
     if (monitorHeader != nullptr && monitorHeader->collapsed)
         return;
 
-    for (size_t i = 0; i < monitorRows.size() && i < monitorChannels.size(); ++i)
+    for (auto& rowPtr : monitorRows)
     {
-        auto& row = *monitorRows[i];
-        const auto& ch = monitorChannels[i];
-        if (ch.isString)
+        auto& row = *rowPtr;
+        bool changed = false;
+
+        for (auto& e : row.entries)
         {
-            const auto t = processor.readMonitorString (ch);
-            if (t != row.text) { row.text = t; row.repaint(); }
-        }
-        else
-        {
+            if (! juce::isPositiveAndBelow (e.channelIndex, (int) monitorChannels.size()))
+                continue;
+            const auto& ch = monitorChannels[(size_t) e.channelIndex];
+
+            if (ch.isString)
+            {
+                const auto t = processor.readMonitorString (ch);
+                if (t != e.text) { e.text = t; changed = true; }
+                continue;
+            }
+
             const double v = processor.readMonitorValue (ch);
-            if (! row.seenAny) { row.seenMin = row.seenMax = v; row.seenAny = true; }
-            row.seenMin = juce::jmin (row.seenMin, v);
-            row.seenMax = juce::jmax (row.seenMax, v);
-            if (v != row.value) { row.value = v; row.repaint(); }
+            if (! e.seenAny) { e.seenMin = e.seenMax = v; e.seenAny = true; }
+            e.seenMin = juce::jmin (e.seenMin, v);
+            e.seenMax = juce::jmax (e.seenMax, v);
+            if (v != e.value) { e.value = v; changed = true; }
+
+            if (! e.history.empty())
+            {
+                e.history[(size_t) e.historyPos] = (float) row.shown (e);
+                e.historyPos = (e.historyPos + 1) % (int) e.history.size();
+                changed = true; // la sparkline scorre anche a valore fermo
+            }
         }
+
+        if (changed)
+            row.repaint();
     }
 }
 
@@ -5392,9 +5535,10 @@ void CsoundParameterMappingPanel::resized()
             y += gapBetweenRows;
             for (auto& row : monitorRows)
             {
+                const int h = row->preferredHeight();
                 row->setVisible (true);
-                row->setBounds (groupInsetH, y, innerWidth, MonitorRow::height);
-                y += MonitorRow::height + gapBetweenRows;
+                row->setBounds (groupInsetH, y, innerWidth, h);
+                y += h + gapBetweenRows;
             }
             y += groupInsetBottom - gapBetweenRows;
         }

@@ -83,8 +83,20 @@ PARAMETERS PANEL
     bar (range from chn_k hints, or the values seen so far), text for
     string channels. The equivalent of CsoundQt / Cabbage meters, displays
     and labels; channels created at run time appear within a second.
+  * Graphs: function tables are live - while the panel is open they are
+    re-read ~4 times per second and redrawn when their content changes
+    (tablew, regenerated ftgen, GEN in a loop): a scope or envelope viewer
+    for free. Monitor: "spark" attribute for a value history.
+  * Monitor cards: channels "Base1, Base2..." / "Base_1, Base_2..." become
+    one card with a bar per channel (spectra, LFO banks, sequencer steps);
+    the 11th argument of chn_k adds attributes: "db" (linear amplitude in
+    dB), "spark" (sparkline of the last 5 s), "int", "hidden", "group:Name"
+    (explicit multi-bar card). See the Guide and MonitorStressTest.csd.
   * Cabbage files get their groups from groupbox / plant containers of the
     GUI, no change to the file needed; "; @group" in the code still wins.
+  * Option/Alt + click on a group header opens or closes all groups
+    (Monitor included); Expand/Collapse All in the "+" menu now include
+    the Monitor too.
   * More than 4 groups: only the first starts open when a file is loaded;
     the open/closed state is kept while the set of groups does not change.
   * Compact cards: the channel name sits in the title row (no more

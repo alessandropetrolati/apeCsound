@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 #include <atomic>
 #include <vector>
+#include <functional>
 #include "csound.h"
 
 /**
@@ -59,6 +60,16 @@ public:
     /** Copia dei grafici presenti (message thread). */
     void snapshot (std::vector<Graph>& out);
 
+    /** Ftable registrate: (slot + 1, numero di tabella, polarita'), per il
+        ridisegno dal vivo (vedi onLiveRefresh). Numero da "ftable N:". */
+    struct FtableSlot { int slotPlusOne = 0; int tableNumber = 0; int polarity = 0; };
+    void ftableSlots (std::vector<FtableSlot>& out);
+
+    /** "Mini-watch" delle tabelle: chiamato dal pannello ~4 volte al secondo
+        mentre e' visibile; il processor rilegge le ftable (csoundGetTable) e
+        le ridisegna se cambiate (tablew, ftgen rigenerate, GEN in loop). */
+    std::function<void()> onLiveRefresh;
+
 private:
     juce::SpinLock lock;
     Graph graphs[maxGraphs];
@@ -104,4 +115,5 @@ private:
     juce::Viewport viewport;
     Grid grid;
     uint32_t lastChange = 0xffffffff;
+    int liveRefreshCounter = 0;
 };

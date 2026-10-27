@@ -479,9 +479,14 @@ public:
         bool isString = false;
         bool hasHints = false;
         double hintMin = 0.0, hintMax = 1.0;
+        juce::String attributes;      // 11o argomento di chn_k ("db spark group:Name"...), vedi CsoundMonitorLayout.h
         cs_float* valuePtr = nullptr; // numerico: letto direttamente
     };
     std::vector<MonitorChannel> listMonitorChannels();
+private:
+    juce::StringArray monitorIdentChannels;             // identChannel("...") del <Cabbage>, esclusi dal Monitor
+    std::uint64_t monitorIdentChannelsGeneration = ~0ull;
+public:
     // Identita' del motore per il pannello Monitor: generazione (non il
     // puntatore, che puo' ripetersi) + nullptr quando e' fermo.
     std::uint64_t getEngineIdentity() const noexcept { return activeCsound.load() != nullptr ? engineGeneration.load() : 0; }
@@ -532,6 +537,10 @@ public:
 
     // Grafici di Csound per il pannello "Graphs" (vedi CsoundGraphs.h).
     CsoundGraphStore& getGraphStore() noexcept { return graphStore; }
+    // "Mini-watch" delle ftable: rilegge le tabelle registrate nel pannello
+    // Graphs e le ridisegna se il contenuto e' cambiato (message thread,
+    // ~4 Hz, solo con il pannello visibile - vedi CsoundGraphStore::onLiveRefresh).
+    void refreshFtableGraphs();
 
     /** Estrae gli errori con riga dal testo dei messaggi di Csound (pubblica
         e statica per poterla testare). Salta quelli dentro macro/#include:
@@ -1213,6 +1222,7 @@ private:
     // stampa "error:", "from file ...", "line N:" in chiamate separate.
     juce::Array<CodeDiagnostic> codeDiagnostics;
     CsoundGraphStore graphStore;
+    std::map<int, double> ftableChecksums; // tabella -> checksum dell'ultimo ridisegno
 
     // Sincronizzazione parametri <-> canali (chnset dal codice Csound), vedi
     // pushChannelParametersToCsound/syncChannel. Indici: float, int, bool,

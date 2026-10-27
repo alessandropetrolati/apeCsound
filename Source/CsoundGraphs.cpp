@@ -97,6 +97,22 @@ void CsoundGraphStore::draw (int slotPlusOne, const cs_float* data, int numPoint
     changeCount.fetch_add (1);
 }
 
+void CsoundGraphStore::ftableSlots (std::vector<FtableSlot>& out)
+{
+    const juce::SpinLock::ScopedLockType sl (lock);
+    out.clear();
+    for (int i = 0; i < numGraphs; ++i)
+    {
+        if (! graphs[i].isFtable)
+            continue;
+        const char* p = graphs[i].caption + 6; // dopo "ftable"
+        while (*p == ' ') ++p;
+        const int num = std::atoi (p);
+        if (num > 0)
+            out.push_back ({ i + 1, num, graphs[i].polarity });
+    }
+}
+
 void CsoundGraphStore::snapshot (std::vector<Graph>& out)
 {
     const juce::SpinLock::ScopedLockType sl (lock);
@@ -138,6 +154,13 @@ void CsoundGraphsPanel::visibilityChanged()
 
 void CsoundGraphsPanel::timerCallback()
 {
+    // Ftable dal vivo: ogni ~6 tick (25 Hz -> ~4 Hz).
+    if (++liveRefreshCounter >= 6)
+    {
+        liveRefreshCounter = 0;
+        if (store.onLiveRefresh)
+            store.onLiveRefresh();
+    }
     refresh (false);
 }
 
