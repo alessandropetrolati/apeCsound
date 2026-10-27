@@ -1,6 +1,97 @@
 APECSOUND - RELEASE NOTES
 =========================
 
+1.0.5
+-----
+
+Live coding, host transport, XY pads, Monitor, and a smarter import of
+Cabbage and CsoundQt files. No change to the .csd format: files saved by
+1.0.4 load unchanged.
+
+LIVE CODING
+
+  * Evaluate: Shift+Return (or the right-click menu) sends the selection,
+    the instr/opcode block around the caret or the current line to the
+    running engine without a full recompile. Orchestra code is merged (an
+    existing instr is redefined, notes already playing finish with the old
+    version; global code runs at once), lines that start with a score
+    statement are sent as real-time events. The sent lines flash.
+  * Evaluate line: the help bar turns into an input line (round ">_"
+    button at the top right of the console, above the trash button, or
+    Cmd+E) for one-liners such as "i 3 0 1" or
+    "gkfb = 0.9", with history (Up/Down); Esc goes back to the help bar.
+  * Nothing evaluated is saved: at the next Apply only the editor text
+    counts (the file stays the reference).
+
+HOST AND ENGINE
+
+  * Host transport as control channels, same names as Cabbage: HOST_BPM,
+    IS_PLAYING, IS_RECORDING, TIME_IN_SECONDS, TIME_IN_SAMPLES,
+    HOST_PPQ_POS, HOST_PPQ_BAR_START, TIME_SIG_NUM, TIME_SIG_DENOM -
+    updated once per block, no allocation in the audio thread. Standalone:
+    HOST_BPM = 120, 4/4.
+  * Console warning when the code uses fixed-width I/O opcodes (outs, ins,
+    out, outq...) and the track has a different channel count: prefer
+    outch / inch, which work with any nchnls.
+
+PARAMETERS PANEL
+
+  * XY pad: "; @xy "X" "Y"" in the code shows two Float parameters as one
+    two-dimensional pad card (drag, double-click to reset, both still
+    separate DAW parameters). Edit shows both channel fields plus the
+    range of one axis (Edit X / Edit Y in the "..." menu). Cabbage xypad
+    widgets and CsoundQt XY controllers become pads automatically.
+  * Monitor: channels written by chnset that are not parameters appear
+    read-only in a "Monitor" group at the bottom of the panel - value and
+    bar (range from chn_k hints, or the values seen so far), text for
+    string channels. The equivalent of CsoundQt / Cabbage meters, displays
+    and labels; channels created at run time appear within a second.
+  * Cabbage files get their groups from groupbox / plant containers of the
+    GUI, no change to the file needed; "; @group" in the code still wins.
+  * More than 4 groups: only the first starts open when a file is loaded;
+    the open/closed state is kept while the set of groups does not change.
+  * Compact cards: the channel name sits in the title row (no more
+    "SLIDER FLOAT" label); toggles and menus are single-line cards; one
+    card in edit mode at a time, outlined in the colour of its type.
+  * Per-card "..." menu: Copy chnget line, Reset to Init Value, Randomize,
+    Show in Code (selects the chnget in the editor), Remove (with
+    confirmation). The edit button shows a pencil, and a check mark
+    (apply) while the card is in edit mode. "Randomize All" in the "+"
+    menu.
+  * Live preview: while editing a Float/Int slider the real slider stays
+    visible under the name field and follows Min/Max/Init/Skew/Step as
+    you type.
+  * Inline validation of min/max/init/skew/step, options and duplicate
+    channel names.
+  * Code <-> panel link: with the caret on a chnget/chnset line the card
+    of that channel flashes briefly.
+  * A dot flashes next to the name when a value is changed from outside
+    (DAW automation, chnset, snapshot recall).
+
+IMPORT OF CABBAGE AND CSOUNDQT FILES
+
+  * Cabbage import: one channel = one parameter (a channel used by two
+    widgets, e.g. an rslider and an xypad, no longer gives duplicated
+    cards).
+  * Examples: the CsoundQt files now use chnget / chnset instead of
+    invalue / outvalue (their displays and meters show up in Monitor);
+    every example uses inch / outch; new tests in CSD/Examples/Test
+    (EvaluateTest, HostTransportTest, XYPadTest, MonitorTest).
+
+FIXES
+
+  * After Apply the parameter channels could stay at 0 (sliders and menus
+    looked reset, chnget returned 0 until the control was touched): the
+    new engine was mistaken for the old one when it got the same memory
+    address; engines are now told apart by a generation counter.
+  * The "changed from outside" dot no longer flashes when hovering or
+    clicking a toggle.
+  * Field rows of the edit card: the last field could disappear at some
+    panel widths; the fields now also stretch to the card width.
+  * Leaving edit mode no longer shows the old "SLIDER FLOAT" label.
+  * Snapshot/Parameter rebuilds no longer need a second click to leave
+    edit mode while a field has focus.
+
 1.0.4
 -----
 
@@ -49,34 +140,6 @@ PARAMETERS PANEL
     parameter values stored in the .csd and in the DAW project. Save,
     Recall, Overwrite, Rename, Delete; saving/renaming/deleting can be
     undone.
-  * Compact cards: the channel name sits in the title row (no more
-    "SLIDER FLOAT" label); toggles and menus are single-line cards.
-  * The copy icon of each card is now a "..." menu: Copy chnget line, Reset
-    to Init Value, Randomize, Show in Code, Remove (with confirmation); the edit button
-    shows a pencil, and a check mark (apply) while the card is in edit mode.
-  * "Randomize All" in the "+" menu of the Parameters panel.
-  * Live preview: while editing a Float/Int slider the real slider stays
-    visible under the name field and follows every change of Min/Max/Init/
-    Skew/Step as you type.
-  * Evaluate (live coding): Shift+Return or the right-click menu sends the
-    selection, the instr/opcode block around the caret or the current line
-    to the running engine without a full recompile (instr redefinition,
-    global code, score events); the help bar turns into an Evaluate line
-    (">_" icon or Cmd+E) for one-liners, with history.
-  * Console warning when the code uses fixed-width I/O opcodes (outs, ins,
-    out, outq...) and the track has a different channel count: prefer
-    outch / inch.
-  * Host transport channels, same names as Cabbage: HOST_BPM, IS_PLAYING,
-    IS_RECORDING, TIME_IN_SECONDS, TIME_IN_SAMPLES, HOST_PPQ_POS,
-    HOST_PPQ_BAR_START, TIME_SIG_NUM, TIME_SIG_DENOM (chnget them).
-  * Code <-> Parameters link: with the caret on a chnget/chnset line, the
-    card of that channel flashes briefly in the Parameters panel; "Show in Code"
-    in the "..." menu of a card selects its channel name in the code.
-  * One card in edit mode at a time, outlined in the colour of its type;
-    inline validation of min/max/init/skew/step, options and duplicate
-    channel names.
-  * A dot flashes next to the name when a value is changed from outside
-    (DAW automation, chnset, snapshot recall).
   * Larger sliders, with a touch-friendly thumb; on touch screens a
     horizontal drag moves the slider and a vertical one scrolls the panel.
   * Min/max labels shown as floats.

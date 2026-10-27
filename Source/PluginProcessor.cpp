@@ -732,10 +732,12 @@ void CsoundAudioProcessor::warnFixedChannelOpcodes (const juce::String& csdText,
 
 void CsoundAudioProcessor::pushChannelParametersToCsound (CSOUND* cs)
 {
-    // Nuovo motore: tutti i canali vanno riscritti dall'host.
-    if (cs != syncEngine)
+    // Nuovo motore: tutti i canali vanno riscritti dall'host (vedi
+    // engineGeneration nel .h: NON si confronta il puntatore).
+    juce::ignoreUnused (cs);
+    if (const auto gen = engineGeneration.load(); gen != syncEngineGeneration)
     {
-        syncEngine = cs;
+        syncEngineGeneration = gen;
         syncHasSent.fill (false);
         syncHold.fill (false);
         for (auto& v : syncFromCsound)
@@ -1363,6 +1365,7 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     // nel primo processBlock().
     resolveHostTransportChannels (cs);
 
+    engineGeneration.fetch_add (1);
     activeCsound.store (cs);
     ready = true;
 
@@ -1558,6 +1561,12 @@ juce::String CsoundAudioProcessor::getCsdText() const
 {
     const juce::ScopedLock sl (csdTextLock);
     return csdText;
+}
+
+juce::String CsoundAudioProcessor::getCsdTextWithSurroundings() const
+{
+    const juce::ScopedLock sl (csdTextLock);
+    return csdPreamble + csdText + csdPostamble;
 }
 
 void CsoundAudioProcessor::setCsdText (const juce::String& text)
@@ -1784,7 +1793,7 @@ namespace
     // Versione dello zip degli esempi (Resources/Examples.zip, vedi
     // scripts/make_examples_zip.sh): aumentarla quando lo zip cambia, cosi'
     // gli esempi nuovi vengono estratti anche a chi ha gia' la cartella.
-    constexpr int kExamplesVersion = 5;   // 2: + ape/  3: + Test/GroupsSnapshotsTest  4: + Test/EvaluateTest  5: + Test/HostTransportTest
+    constexpr int kExamplesVersion = 7;   // ... 6: + Test/XYPadTest  7: + Test/MonitorTest
     const char* const kExamplesVersionKey = "examplesVersion";
 }
 
@@ -2484,6 +2493,84 @@ void CsoundAudioProcessor::pushHostTransportToCsound (CSOUND* cs)
     if (auto p = pos->getPpqPosition())        set (t.ppq, *p);
     if (auto p = pos->getPpqPositionOfLastBarStart()) set (t.ppqBar, *p);
     if (auto sig = pos->getTimeSignature())  { set (t.sigNum, sig->numerator); set (t.sigDenom, sig->denominator); }
+}
+
+bool CsoundAudioProcessor::isReservedHostChannel (const juce::String& name) const
+{
+    static const char* const reserved[] = { "HOST_BPM", "IS_PLAYING", "IS_RECORDING", "TIME_IN_SECONDS", "TIME_IN_SAMPLES",
+                                            "HOST_PPQ_POS", "HOST_PPQ_BAR_START", "TIME_SIG_NUM", "TIME_SIG_DENOM" };
+    for (auto* r : reserved)
+        if (name == r)
+            return true;
+    return false;
+}
+
+std::vector<CsoundAudioProcessor::MonitorChannel> CsoundAudioProcessor::listMonitorChannels()
+{
+    std::vector<MonitorChannel> out;
+    auto* cs = activeCsound.load();
+    if (cs == nullptr || ! ready.load() || CsoundAPI::csoundListChannels == nullptr)
+        return out;
+
+    controlChannelInfo_t* list = nullptr;
+    const int n = CsoundAPI::csoundListChannels (cs, &list);
+    if (n <= 0 || list == nullptr)
+        return out;
+
+    for (int i = 0; i < n; ++i)
+    {
+        const auto& info = list[i];
+        const int type = info.type & CSOUND_CHANNEL_TYPE_MASK;
+        const bool isOutput = (info.type & CSOUND_OUTPUT_CHANNEL) != 0;
+        if (! isOutput || info.name == nullptr)
+            continue;
+        if (type != CSOUND_CONTROL_CHANNEL && type != CSOUND_STRING_CHANNEL)
+            continue;
+
+        const juce::String name (juce::CharPointer_UTF8 (info.name));
+        if (name.isEmpty() || isReservedHostChannel (name))
+            continue;
+        // Un parametro del pannello (anche se il codice lo scrive con chnset:
+        // e' gia' visibile come slider) - vedi isChannelNameUsedElsewhere.
+        if (isChannelNameUsedElsewhere (name, -1, -1))
+            continue;
+
+        MonitorChannel ch;
+        ch.name = name;
+        ch.isString = type == CSOUND_STRING_CHANNEL;
+        if (! ch.isString)
+        {
+            ch.hasHints = info.hints.behav != CSOUND_CONTROL_CHANNEL_NO_HINTS && info.hints.max > info.hints.min;
+            ch.hintMin = info.hints.min;
+            ch.hintMax = info.hints.max;
+            void* p = nullptr;
+            if (CsoundAPI::csoundGetChannelPtr != nullptr
+                && CsoundAPI::csoundGetChannelPtr (cs, &p, info.name, CSOUND_CONTROL_CHANNEL | CSOUND_OUTPUT_CHANNEL) == 0)
+                ch.valuePtr = static_cast<cs_float*> (p);
+        }
+        out.push_back (ch);
+    }
+
+    CsoundAPI::csoundDeleteChannelList (cs, list);
+    return out;
+}
+
+double CsoundAudioProcessor::readMonitorValue (const MonitorChannel& ch) const
+{
+    if (ch.valuePtr == nullptr || activeCsound.load() == nullptr || ! ready.load())
+        return 0.0;
+    return (double) *ch.valuePtr;
+}
+
+juce::String CsoundAudioProcessor::readMonitorString (const MonitorChannel& ch) const
+{
+    auto* cs = activeCsound.load();
+    if (cs == nullptr || ! ready.load() || CsoundAPI::csoundGetStringChannel == nullptr)
+        return {};
+    char buffer[1024] = { 0 };
+    CsoundAPI::csoundGetStringChannel (cs, ch.name.toRawUTF8(), buffer);
+    buffer[sizeof (buffer) - 1] = 0;
+    return juce::String (juce::CharPointer_UTF8 (buffer));
 }
 
 bool CsoundAudioProcessor::evaluateCode (const juce::String& text)
@@ -4277,6 +4364,31 @@ bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
         }
     }
 
+    // Un canale, un parametro: in Cabbage lo stesso canale puo' stare su
+    // piu' widget (es. un rslider "freq" e un xypad channel("freq","dev")
+    // che si rispecchiano). Qui resta il PRIMO widget che l'ha usato; gli
+    // altri slot vengono svuotati (stessa regola di "claim" nell'import
+    // CsoundQt). Senza, il pannello mostrava il pad E gli slider doppi.
+    int skippedDuplicate = 0;
+    {
+        std::set<juce::String> used;
+        for (int i = 0; i < numChannelParams; ++i)
+        {
+            const auto name = getChannelParamSlot (i).channelName;
+            if (name.isNotEmpty() && ! used.insert (name).second) { setChannelParamSlot (i, ChannelParamSlot{}); ++skippedDuplicate; }
+        }
+        for (int i = 0; i < numBoolParams; ++i)
+        {
+            const auto name = getBoolParamSlot (i).channelName;
+            if (name.isNotEmpty() && ! used.insert (name).second) { setBoolParamSlot (i, BoolParamSlot{}); ++skippedDuplicate; }
+        }
+        for (int i = 0; i < numChoiceParams; ++i)
+        {
+            const auto name = getChoiceParamSlot (i).channelName;
+            if (name.isNotEmpty() && ! used.insert (name).second) { setChoiceParamSlot (i, ChoiceParamSlot{}); ++skippedDuplicate; }
+        }
+    }
+
     juce::String summary;
     summary << "--- Cabbage import: " << channelIndex << " float, " << boolIndex << " bool, "
             << choiceIndex << " choice parameters mapped";
@@ -4293,6 +4405,8 @@ bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
 
     if (skippedListbox > 0)
         summary << " - " << skippedListbox << " listbox ignorato/i (nessun parametro DAW)";
+    if (skippedDuplicate > 0)
+        summary << " - " << skippedDuplicate << " widget(s) skipped: channel name already used";
 
     summary << " ---";
     handleMessage (summary);

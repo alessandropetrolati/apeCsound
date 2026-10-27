@@ -166,8 +166,44 @@ namespace
         return p;
     }
 
+    // Evaluate (riga di input nella barra di help): prompt ">_" - chevron
+    // e trattino basso, viewBox 24x24 come le altre icone.
+    juce::Path makeEvaluateIconPath()
+    {
+        juce::Path p;
+        juce::Path chevron;
+        chevron.startNewSubPath (4.0f, 5.0f);
+        chevron.lineTo (11.0f, 11.0f);
+        chevron.lineTo (4.0f, 17.0f);
+        p.addPath (juce::Path (chevron), juce::AffineTransform());
+        juce::PathStrokeType stroke (2.6f, juce::PathStrokeType::mitered, juce::PathStrokeType::rounded);
+        juce::Path stroked;
+        stroke.createStrokedPath (stroked, chevron);
+        juce::Path out;
+        out.addPath (stroked);
+        out.addRoundedRectangle (12.5f, 16.5f, 8.0f, 2.6f, 1.0f);
+        return out;
+    }
+
+    // "x" di chiusura (stesso bottone Evaluate mentre la riga e' aperta).
+    juce::Path makeCloseIconPath()
+    {
+        juce::Path lines;
+        lines.startNewSubPath (6.0f, 6.0f);  lines.lineTo (18.0f, 18.0f);
+        lines.startNewSubPath (18.0f, 6.0f); lines.lineTo (6.0f, 18.0f);
+        juce::Path out;
+        juce::PathStrokeType (2.8f, juce::PathStrokeType::mitered, juce::PathStrokeType::rounded).createStrokedPath (out, lines);
+        return out;
+    }
+
     juce::Path getIconPathForButtonName (const juce::String& name)
     {
+        if (name == "evaluate")
+            return makeEvaluateIconPath();
+
+        if (name == "evaluateClose")
+            return makeCloseIconPath();
+
         if (name == "find")
             return makeFindIconPath();
 

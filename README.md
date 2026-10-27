@@ -48,7 +48,9 @@ A fixed pool of **144 host-automatable parameters** can be mapped to Csound chan
 - Drag a parameter onto the code to insert the matching `chnget` line.
 - Two-way: `chnset` on a mapped channel moves the parameter (slider, host, automation).
 - The mapping is saved **inside the `.csd`**, in an `<apeCsoundParams>` section after `</CsoundSynthesizer>`. Csound ignores it, so the file stays a valid, portable `.csd`.
+- **XY pad**: `; @xy "X" "Y"` shows two Float parameters as one pad card; Cabbage `xypad` and CsoundQt XY controllers become pads, and Cabbage `groupbox`/`plant` containers become groups, automatically.
 - **Groups**: a `; @group Name` comment in the code puts the parameters read below it (sliders, toggles and menus alike) under one collapsible label in the panel; parameters without a group go to "Other".
+- **Monitor**: channels written with `chnset` (not parameters) are shown read-only at the bottom of the panel - meters, displays, labels.
 - **Snapshots** (camera button in the Parameters panel): named sets of parameter values, stored in the `.csd` with the mapping. Save, recall, overwrite, rename, delete.
 - **Cabbage** (`<Cabbage>`) and **CsoundQt** (`<bsbPanel>`) widgets — sliders, knobs, spin boxes, XY controllers, checkboxes, menus — are imported as parameters when the file is loaded. The rest of their GUI is ignored and the code is not changed: frontend-specific opcodes (`invalue`, `cabbageGetValue`...) must be replaced with `chnget` / `chnset`. Porting is not guaranteed; see the in-app **apeCsound Guide**.
 

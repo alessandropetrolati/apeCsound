@@ -261,16 +261,21 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     opcodeHelpBar.input.setFont (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain));
     opcodeHelpBar.input.setIndents (6, 4);
     opcodeHelpBar.input.setColour (juce::TextEditor::backgroundColourId,     juce::Colours::transparentBlack); // il placeholder lo disegna la barra sotto (resta visibile anche col focus)
-    opcodeHelpBar.input.setColour (juce::TextEditor::textColourId,           juce::Colour (0xffe6f1f3));
+    opcodeHelpBar.input.setColour (juce::TextEditor::textColourId,           juce::Colour (0xffeafcfa));
     opcodeHelpBar.input.setColour (juce::TextEditor::outlineColourId,        juce::Colours::transparentBlack);
     opcodeHelpBar.input.setColour (juce::TextEditor::focusedOutlineColourId, juce::Colours::transparentBlack);
     opcodeHelpBar.input.setColour (juce::TextEditor::highlightColourId,      juce::Colour (0xff2ec4b6).withAlpha (0.35f));
-    opcodeHelpBar.input.setColour (juce::CaretComponent::caretColourId,      juce::Colour (0xffe6f1f3));
+    opcodeHelpBar.input.setColour (juce::CaretComponent::caretColourId,      juce::Colour (0xff2ec4b6));
     opcodeHelpBar.input.onTextChange = [this] { opcodeHelpBar.repaint(); }; // placeholder via/compare
     opcodeHelpBar.input.onReturnKey = [this] { submitConsoleInput(); };
     // Esc: la barra torna all'help e il focus all'editor di codice.
     opcodeHelpBar.input.onEscapeKey = [this] { setEvaluateLineVisible (false); };
-    opcodeHelpBar.onEvaluateModeChanged = [this] (bool on) { setEvaluateLineVisible (on); };
+    evaluateButton.setName ("evaluate");
+    evaluateButton.getProperties().set ("circular", true);
+    evaluateButton.setTooltip ("Evaluate line: score event or orchestra code to the running engine (Cmd+E)");
+    evaluateButton.setClickingTogglesState (false);
+    evaluateButton.onClick = [this] { setEvaluateLineVisible (! opcodeHelpBar.isEvaluateMode()); };
+    addAndMakeVisible (evaluateButton);
     opcodeHelpBar.input.onKey = [this] (const juce::KeyPress& key)
     {
         const int n = consoleInputHistory.size();
@@ -1278,8 +1283,12 @@ void CsoundAudioProcessorEditor::resized()
             // clearConsoleButton galleggia in overlap sopra l'angolo in alto
             // a destra di logConsole (richiesto esplicitamente).
             const auto consoleTopRight = bottomArea.getTopRight();
-            clearConsoleButton.setBounds (consoleTopRight.x - clearConsoleButtonMargin*2 - clearConsoleButtonDiameter,
-                                          consoleTopRight.y + clearConsoleButtonMargin*2,
+            // In colonna: Evaluate (live code) sopra, cestino sotto, stesso
+            // diametro e stessa x - entrambi in overlap sulla consolle.
+            const int bx = consoleTopRight.x - clearConsoleButtonMargin*2 - clearConsoleButtonDiameter;
+            const int by = consoleTopRight.y + clearConsoleButtonMargin; // margine verticale ridotto (6 px)
+            evaluateButton.setBounds (bx, by, clearConsoleButtonDiameter, clearConsoleButtonDiameter);
+            clearConsoleButton.setBounds (bx, by + clearConsoleButtonDiameter + clearConsoleButtonMargin,
                                           clearConsoleButtonDiameter, clearConsoleButtonDiameter);
         }
     }
@@ -1300,6 +1309,23 @@ void CsoundAudioProcessorEditor::resized()
 
     editor.setBounds (area);
     opcodeHelpBar.setBounds (helpBarArea);
+
+    // Bottone Evaluate: con la consolle aperta sta sulla consolle, sopra
+    // il cestino (vedi sopra); con la consolle chiusa ripiega all'estrema
+    // destra della barra di help, ridotto per starci dentro.
+    if (! (showingConsole && logConsole.isVisible()))
+    {
+        const int d = juce::jmin (clearConsoleButtonDiameter, helpBarArea.getHeight() - evaluateButtonInset * 2);
+        const int x = helpBarArea.getRight() - evaluateButtonInset * 2 - d;
+        evaluateButton.setBounds (x, helpBarArea.getCentreY() - d / 2, d, d);
+        opcodeHelpBar.rightInset = juce::jmax (0, helpBarArea.getRight() - x) + 6;
+    }
+    else
+    {
+        opcodeHelpBar.rightInset = 10;
+    }
+    opcodeHelpBar.resized();
+    evaluateButton.toFront (false);
 
     // Stesse bounds di "editor", sempre ricalcolate qui cosi' da restare
     // coerenti anche quando sidebar/consolle si ridimensionano - visibile
@@ -1362,6 +1388,11 @@ void CsoundAudioProcessorEditor::submitConsoleInput()
 void CsoundAudioProcessorEditor::setEvaluateLineVisible (bool show)
 {
     opcodeHelpBar.setEvaluateMode (show);
+    evaluateButton.setToggleState (show, juce::dontSendNotification); // acceso (buttonOnColour) in Evaluate
+    evaluateButton.setName (show ? "evaluateClose" : "evaluate");       // icona: ">_" chiuso, "x" aperto
+    evaluateButton.setTooltip (show ? "Close the Evaluate line (Esc)"
+                                    : "Evaluate line: score event or orchestra code to the running engine (Cmd+E)");
+    evaluateButton.repaint();
     if (show)
     {
         opcodeHelpBar.input.grabKeyboardFocus();
@@ -2645,7 +2676,7 @@ CsoundAudioProcessorEditor::OpcodeHelpBar::OpcodeHelpBar()
 void CsoundAudioProcessorEditor::OpcodeHelpBar::resized()
 {
     auto area = getLocalBounds();
-    area.removeFromRight (toggleWidth);
+    area.removeFromRight (rightInset);
     area.removeFromLeft (22); // prompt ">"
     input.setBounds (area);
 }
@@ -2657,24 +2688,6 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::setEvaluateMode (bool on)
     evaluateMode = on;
     input.setVisible (on);
     repaint();
-}
-
-void CsoundAudioProcessorEditor::OpcodeHelpBar::mouseDown (const juce::MouseEvent& e)
-{
-    if (toggleArea().contains (e.getPosition()) && onEvaluateModeChanged)
-        onEvaluateModeChanged (! evaluateMode);
-}
-
-void CsoundAudioProcessorEditor::OpcodeHelpBar::mouseMove (const juce::MouseEvent& e)
-{
-    const bool over = toggleArea().contains (e.getPosition());
-    if (over != toggleHovered) { toggleHovered = over; repaint (toggleArea()); }
-    setMouseCursor (over ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
-}
-
-void CsoundAudioProcessorEditor::OpcodeHelpBar::mouseExit (const juce::MouseEvent&)
-{
-    if (toggleHovered) { toggleHovered = false; repaint (toggleArea()); }
 }
 
 void CsoundAudioProcessorEditor::OpcodeHelpBar::setHelpText (const juce::String& syntax, const juce::String& description, const juce::String& category)
@@ -2754,26 +2767,20 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::paint (juce::Graphics& g)
 {
     auto bounds = getLocalBounds();
 
-    // Icona ">_" a destra (commuta help <-> Evaluate): accesa in Evaluate.
-    auto paintToggle = [this, &g] (juce::Colour fg, juce::Colour bgHover)
-    {
-        const auto t = toggleArea();
-        if (toggleHovered || evaluateMode)
-        {
-            g.setColour (evaluateMode ? juce::Colour (0xff2ec4b6).withAlpha (0.25f) : bgHover);
-            g.fillRoundedRectangle (t.reduced (4, 3).toFloat(), 4.0f);
-        }
-        g.setColour (fg);
-        g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::bold)));
-        g.drawText (">_", t, juce::Justification::centred, false);
-    };
-
     if (evaluateMode)
     {
-        g.setColour (juce::Colour (0xff162129));
+        // Riga Evaluate: verde-teal scuro (NON il grigio-blu dell'editor,
+        // da cui non si distingueva), riga teal in alto e barra teal a
+        // sinistra, prompt ">" teal; il campo di input e' trasparente.
+        const auto teal = juce::Colour (0xff2ec4b6);
+        g.setColour (juce::Colour (0xff0e2a2c));
         g.fillRect (bounds);
-        g.setColour (juce::Colour (0xff2ec4b6));
-        g.fillRect (bounds.removeFromLeft (4));
+        g.setColour (teal.withAlpha (0.85f));
+        g.fillRect (bounds.removeFromTop (2));
+        g.setColour (teal);
+        g.fillRect (juce::Rectangle<int> (0, 0, 4, getHeight()));
+
+        g.setColour (teal);
         g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::bold)));
         g.drawText (">", juce::Rectangle<int> (4, 0, 18, getHeight()), juce::Justification::centred, false);
 
@@ -2782,13 +2789,12 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::paint (juce::Graphics& g)
         // caret che lampeggia, sparisce al primo carattere.
         if (input.isEmpty())
         {
-            g.setColour (juce::Colour (0xff5d7682));
+            g.setColour (juce::Colour (0xff6f9a98));
             g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain)));
             g.drawText ("score event (i 3 0 1) or orchestra code (schedule(3, 0, 1))",
                         input.getBounds().withTrimmedLeft (input.getLeftIndent() + 2), juce::Justification::centredLeft, true);
         }
 
-        paintToggle (juce::Colour (0xff2ec4b6), juce::Colours::white.withAlpha (0.08f));
         return;
     }
 
@@ -2799,10 +2805,8 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::paint (juce::Graphics& g)
     g.fillRect (bounds);
     g.setColour (juce::Colour (0xffd7c89a));
     g.drawLine (0.0f, (float) bounds.getHeight() - 0.5f, (float) bounds.getWidth(), (float) bounds.getHeight() - 0.5f, 1.0f);
-    paintToggle (juce::Colour (0xff8a7a55), juce::Colour (0xffd7c89a).withAlpha (0.5f));
-
     auto area = bounds.reduced (10, 0);
-    area.removeFromRight (toggleWidth - 6);
+    area.removeFromRight (rightInset - 6);
 
     // Errore Csound sulla riga del caret (vedi CsoundCodeEditor::kErrorHelpCategory):
     // barra rossa con "Error - line N" e il messaggio di Csound.
@@ -2813,7 +2817,6 @@ void CsoundAudioProcessorEditor::OpcodeHelpBar::paint (juce::Graphics& g)
         g.setColour (juce::Colour (0xffe5484d));
         g.fillRect (bounds.removeFromLeft (4));
         g.drawLine (0.0f, (float) getHeight() - 0.5f, (float) getWidth(), (float) getHeight() - 0.5f, 1.0f);
-        paintToggle (juce::Colour (0xffb3261e), juce::Colour (0xffe5484d).withAlpha (0.15f));
 
         const auto boldFont = juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::bold));
         juce::GlyphArrangement glyphs;
@@ -3684,7 +3687,7 @@ On iOS the apeCsound folder is not visible in the Files app. **Load**, **Open Ex
 **Shift+Return**, or **Evaluate** in the right-click menu, sends code to the engine *while it keeps running*, without the full recompile of Apply: the selection, or - with no selection - the `instr` / `opcode` block around the caret, or the current line. The lines flash when sent.
 - Orchestra code is compiled and merged: an `instr` that already exists is **redefined** (notes already playing finish with the old version, new notes use the new one); global code (`gkfb = 0.9`, `gitab = ftgen(...)`, `schedule(3, 0, 1)`) runs at once.
 - Lines that start with a score statement (`i 3 0 2`, `f 1 0 1024 10 1`) are sent as real-time events.
-- The **Evaluate line** does the same for a quick event or a one-liner: click `>_` at the right of the help bar (or **Cmd+E**), type, Return; Up/Down recall the history, Esc goes back to the help bar.
+- The **Evaluate line** does the same for a quick event or a one-liner: click the round `>_` button at the top right of the Console, above the trash button (or **Cmd+E**; with the Console hidden the button sits at the right end of the help bar), type, Return; Up/Down recall the history, Esc goes back to the help bar.
 - Nothing you evaluate is saved anywhere else: the file is the reference. At the next Apply (or when the host reloads the session) only the text in the editor counts, so keep what you want in the code.
 - Errors are reported in the console; the engine must be running (Apply first).
 ## Errors
@@ -3712,6 +3715,11 @@ By default the panel lists the parameters by type: all the Float sliders, then I
 - Each group is a frame with a teal header: tap it to collapse or expand the group. **Expand All Groups** and **Collapse All Groups** are in the panel's + menu.
 - Groups follow the **compiled** code: they update at Apply and Load, not while typing. They only change the order in the panel: the DAW still sees the parameters by their fixed indices.
 - Example: `; @group Synth` / `kcut chnget "Cutoff"` / `iwave chnget "Wave"` / `; @group Delay` / `ktime chnget "Time"` - see `Test/GroupsSnapshotsTest.csd` in the examples.
+When a file with more than 4 groups is loaded only the first group starts open; with 4 or fewer they all start open. Your open/closed choices are kept until the set of groups changes. Cabbage files get their groups from the GUI: `groupbox` / `plant` containers (with `{ }` blocks, or by position for the old syntax) become groups named after their `text(...)`, the first label inside, or the plant name. A `; @group` in the code always wins.
+## XY pad
+Two Float parameters can share one card with a two-dimensional pad instead of two sliders: write `; @xy "Cutoff" "Resonance"` anywhere in the code (X first, Y second). Both stay separate parameters for the DAW, automation and snapshots; only the card changes. Edit shows one card with both channel fields (X on the first line, Y on the second) and the range, init, skew and step of one axis - the pencil edits X, **...** > Edit Y the other; the menu also offers Copy chnget lines, Reset, Randomize, Show in Code and Remove X / Remove Y; double-click the pad to reset both. The pad sits in the group and position of its X channel. If one of the two names is not an assigned Float parameter the comment is ignored and you get two sliders. Cabbage `xypad` widgets and CsoundQt XY controllers become pads automatically (read from their `<Cabbage>` / `<bsbPanel>` sections at every Apply).
+## Monitor
+Channels the code *writes* with `chnset` (and that are not parameters) appear read-only in a **Monitor** group at the bottom of the panel: name, value and a bar for numbers (range from `chn_k "x", 2, 0, min, max` if declared, otherwise the values seen so far), the text for string channels. It is the equivalent of the meters, displays and labels of CsoundQt and Cabbage, so an `outvalue` converted to `chnset` shows up here. Channels created at run time appear within a second; the group starts closed when there are more than 8.
 ## Snapshots
 The camera button on the right of the Parameters title bar stores and recalls the **values** of all the parameters.
 - **Save Snapshot...** - asks for a name and stores the current values.

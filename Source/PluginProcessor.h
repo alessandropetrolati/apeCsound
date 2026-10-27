@@ -463,6 +463,32 @@ public:
         Thread dei messaggi. Ritorna false se il motore non e' in corsa. */
     bool evaluateCode (const juce::String& text);
 
+    /** Pannello "Monitor" (vedi CsoundParameterMappingPanel): i canali di
+        controllo/stringa che il codice SCRIVE (chnset -> flag
+        CSOUND_OUTPUT_CHANNEL, o chn_k dichiarato in uscita) e che non sono
+        ne' parametri ne' canali riservati dell'host. E' l'equivalente dei
+        widget di sola lettura (meter, display, label) di CsoundQt/Cabbage:
+        un "outvalue" convertito in chnset finisce qui invece che nel vuoto.
+        Lista ricalcolata su richiesta (csoundListChannels, alloca: thread
+        dei messaggi, ~1 Hz); i valori si leggono con readMonitorValue
+        (puntatore diretto per i numeri, csoundGetStringChannel per le
+        stringhe) a cadenza UI. */
+    struct MonitorChannel
+    {
+        juce::String name;
+        bool isString = false;
+        bool hasHints = false;
+        double hintMin = 0.0, hintMax = 1.0;
+        cs_float* valuePtr = nullptr; // numerico: letto direttamente
+    };
+    std::vector<MonitorChannel> listMonitorChannels();
+    // Identita' del motore per il pannello Monitor: generazione (non il
+    // puntatore, che puo' ripetersi) + nullptr quando e' fermo.
+    std::uint64_t getEngineIdentity() const noexcept { return activeCsound.load() != nullptr ? engineGeneration.load() : 0; }
+    double readMonitorValue (const MonitorChannel& ch) const;
+    juce::String readMonitorString (const MonitorChannel& ch) const;
+    bool isReservedHostChannel (const juce::String& name) const;
+
     // Il testo CODICE = SOLO il blocco <CsoundSynthesizer>...</CsoundSynthesizer>
     // (richiesta esplicita: "filtrare tutto tranne <CsoundSynthesizer>"): e'
     // cio' che l'editor mostra e che viene compilato. Tutto cio' che nel
@@ -472,6 +498,11 @@ public:
     // setCsdCodeFromFullText(). Csound ignora comunque le sezioni che non
     // riconosce, quindi compilare il solo blocco e' equivalente.
     juce::String getCsdText() const;
+
+    /** Codice + le parti del file fuori dal blocco <CsoundSynthesizer>
+        (es. la sezione <Cabbage>, che in Cabbage sta PRIMA del blocco):
+        per chi deve leggere anche i widget (vedi CsoundParameterGroups). */
+    juce::String getCsdTextWithSurroundings() const;
     void setCsdText (const juce::String& text);
 
     // Divide un testo .csd completo (gia' SENZA <CsoundParams>) in
@@ -1189,7 +1220,14 @@ private:
     std::array<bool, numSyncSlots> syncHasSent {};
     std::array<bool, numSyncSlots> syncHold {};
     std::array<std::atomic<float>, numSyncSlots> syncFromCsound;
-    CSOUND* syncEngine = nullptr;
+    // Generazione del motore (incrementata ad ogni nuova istanza pubblicata
+    // in activeCsound): il confronto sul PUNTATORE non basta, perche' la
+    // nuova istanza viene allocata dopo la distruzione della vecchia e
+    // riceve spesso lo stesso indirizzo (BUG: dopo Apply i canali dei
+    // parametri non venivano riscritti e restavano a 0 - slider e menu
+    // "resettati" finche' non li si toccava).
+    std::atomic<std::uint64_t> engineGeneration { 0 };
+    std::uint64_t syncEngineGeneration = 0;
 
     template <typename ToNormalized>
     void syncChannel (CSOUND* cs, int index, const juce::String& name,

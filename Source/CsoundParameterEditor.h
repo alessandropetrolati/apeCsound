@@ -652,7 +652,8 @@ private:
                                      juce::Rectangle<int>& removeArea,
                                      juce::Rectangle<int>& nameArea,
                                      juce::Rectangle<int>& fieldsArea,
-                                     juce::Rectangle<int>* previewArea = nullptr); // se non nullo: striscia cardPreviewHeight tra nome e campi
+                                     juce::Rectangle<int>* previewArea = nullptr, // se non nullo: striscia cardPreviewHeight tra nome e campi
+                                     juce::Rectangle<int>* secondNameArea = nullptr); // se non nullo: seconda riga nome (XY pad: Y sotto X)
 
     // Stesso principio di layoutCardSkeleton() sopra ma con la geometria
     // COMPATTA delle card UI (uiCardPaddingV/uiCardHeaderHeight/ecc., vedi
@@ -694,6 +695,21 @@ private:
         juce::Rectangle<int> getPreviewArea() const { return previewArea; }
         std::function<void()> onSlotChanged;
         juce::Rectangle<int> previewArea;
+        bool reservePreviewArea = true; // false: nessuna striscia anteprima (XYPadRow)
+
+        // XY pad (vedi XYPadRow): la card Edit di un asse mostra ENTRAMBI i
+        // campi canale, su due righe. nameSplit: 0 = card normale (una riga
+        // nome), 1 = questo nome sulla PRIMA riga, 2 = sulla SECONDA (in
+        // entrambi i casi la card riserva due righe nome, con uno spazio a
+        // sinistra per la lettera dell'asse, disegnata da XYPadRow).
+        // nameOnly: la card non disegna nulla e mostra SOLO il campo nome
+        // (e' l'altro asse, sovrapposto alla card piena).
+        int nameSplit = 0;
+        static constexpr int nameSplitLetterWidth = 22;
+        void setNameOnly (bool only);
+        bool nameOnly = false;
+        void setTypeLabelText (const juce::String& t) { typeLabel.setText (t, juce::dontSendNotification); } // XYPadRow: "XY PAD - X AXIS"
+        juce::Rectangle<int> channelNameEditorBounds() const { return channelNameEditor.getBounds(); }
 
         void paint (juce::Graphics& g) override;
         void resized() override;
@@ -1089,6 +1105,9 @@ private:
         void flashExternalChange();
         void timerCallback() override;
         float externalFlash = 0.0f; // 1 = appena acceso, 0 = spento
+        bool lastToggleState = false;        // vedi toggle.onStateChange
+        bool toggleClickInProgress = false;  // mouse giu' sul toggle (listener), vedi mouseDown/mouseUp
+        void mouseUp (const juce::MouseEvent& event) override;
 
         // accent/typeLabelText: stessi colori/testo della card Edit
         // corrispondente (kSliderAccent/"SLIDER FLOAT" ecc.), passati dal
@@ -1286,6 +1305,12 @@ private:
     // Menu "..." di una card: kind 0..3, slotIndex; onRemove la rimuove
     // (requestRemove della ParamRow), dopo conferma.
     void showRowMenu (int kind, int slotIndex, std::function<void()> onRemove);
+    struct XYPadRow;
+    void showPadMenu (XYPadRow& row);
+
+    // Pad in Edit sull'asse Y (vedi rowsInEditMode: la chiave del pad e'
+    // (0, xIndex)); sopravvive ai rebuild come rowsInEditMode.
+    std::set<int> padsEditingY;
 
     struct FloatUnifiedRow final : public juce::Component, public UnifiedRowInterface
     {
@@ -1323,6 +1348,80 @@ private:
         std::function<void()> onMenuRequested; // menu "..." della card (impostata dal pannello)
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FloatUnifiedRow)
+    };
+
+    // XY pad: due parametri Float (X e Y, vedi "; @xy" in
+    // CsoundParameterGroups.h) in UNA card. Vista UI: pad bidimensionale a
+    // sinistra, nomi e valori a destra. Edit: UNA card con ENTRAMBI i campi
+    // canale (X a sinistra, Y a destra) e i campi Min/Max/Init/Skew/Step
+    // dell'asse scelto (Edit X / Edit Y nel menu "...", matita = X): sono
+    // le due ParamRow sovrapposte, quella dell'altro asse in modalita'
+    // nameOnly. I due parametri restano indipendenti per DAW, snapshot,
+    // Randomize, Reset.
+    struct XYPadRow final : public juce::Component, public UnifiedRowInterface
+    {
+        XYPadRow (CsoundAudioProcessor& processorToEdit, int xSlot, int ySlot,
+                  std::function<void (const juce::String&)> onCopied,
+                  std::function<void()> onRemoved,
+                  std::function<void()> onEditModeChanged);
+        void resized() override;
+        void paint (juce::Graphics& g) override;
+        void setEditMode (bool edit) override;
+        void setEditAxis (bool yAxis);           // quale ParamRow mostra l'Edit
+        bool isEditingY() const noexcept { return editY; }
+        void focusNameField() override { (editY ? editRowY : editRowX)->focusChannelNameField(); }
+        void setCodeHighlight (bool on) override;
+        CodeFlashOverlay codeFlash;
+        int getPreferredHeight (int availableWidth) const override
+        {
+            if (! rowEditMode)
+                return uiPadCardHeight;
+
+            const auto rows = computeWrappedFieldRows (fieldsAvailableWidth (availableWidth),
+                { cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldNarrowWidth, cardFieldStepWidth },
+                cardFieldGap);
+            return cardHeightForFieldRows (rows, false) + cardNameHeight + cardNameGap; // seconda riga nome (Y)
+        }
+
+        void paintOverChildren (juce::Graphics& g) override; // lettere X / Y accanto ai campi nome
+        static constexpr int uiPadAreaHeight = 150;
+        static constexpr int uiPadCardHeight = uiCardPaddingV * 2 + uiCardHeaderHeight + uiCardHeaderGap + uiPadAreaHeight;
+
+        // Pad vero e proprio: posizione = valori normalizzati (0..1) dei due
+        // parametri, x da sinistra, y dal basso. Trascinamento = gesto host.
+        struct Pad final : public juce::Component
+        {
+            void paint (juce::Graphics& g) override;
+            void mouseDown (const juce::MouseEvent& e) override;
+            void mouseDrag (const juce::MouseEvent& e) override;
+            void mouseUp (const juce::MouseEvent& e) override;
+            void mouseDoubleClick (const juce::MouseEvent& e) override;
+            std::function<void (float x, float y, bool begin, bool end)> onDrag; // normalizzati
+            std::function<void()> onResetRequested;
+            float px = 0.0f, py = 0.0f;
+            bool dragging = false;
+            juce::Colour accent;
+        };
+
+        CsoundAudioProcessor& processor;
+        const int xIndex, yIndex;
+        std::unique_ptr<ParamRow> editRowX, editRowY;
+        Pad pad;
+        juce::Label headLabel;                      // "Cutoff  x  Resonance" nella riga di testa
+        juce::Label nameLabelX, nameLabelY;          // "X  Cutoff" / "Y  Resonance" nella colonna dei valori
+        juce::Label valueLabelX, valueLabelY;
+        std::unique_ptr<juce::ParameterAttachment> attachX, attachY;
+        juce::TextButton editIconButton;
+        juce::TextButton menuButton;
+        bool rowEditMode = false, editY = false;
+        std::function<void()> onEditModeChanged;
+        std::function<void (bool)> onEditModeToggled;
+        std::function<void()> onMenuRequested;
+
+        void updateReadouts();
+        juce::String formatValue (int slot, float normalized) const;
+
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (XYPadRow)
     };
 
     struct IntUnifiedRow final : public juce::Component, public UnifiedRowInterface
@@ -1597,9 +1696,46 @@ private:
     };
 
     std::vector<DisplayGroup> displayGroups;
+
+    // Sezione "Monitor" in fondo al pannello: i canali che il codice SCRIVE
+    // (vedi CsoundAudioProcessor::listMonitorChannels) mostrati in sola
+    // lettura - nome, valore, barra (range dagli hint di chn_k se ci sono,
+    // altrimenti min/max visti finora), testo per i canali stringa.
+    // Elenco rifatto ~1 Hz (nuovi canali possono nascere a runtime) e ad
+    // ogni cambio di motore; valori a 20 Hz. Non sono parametri: niente
+    // undo, snapshot, automazione.
+    struct MonitorRow final : public juce::Component
+    {
+        void paint (juce::Graphics& g) override;
+        juce::String name, text;
+        bool isString = false, hasHints = false;
+        double value = 0.0, hintMin = 0.0, hintMax = 1.0, seenMin = 0.0, seenMax = 0.0;
+        bool seenAny = false;
+        static constexpr int height = 46;
+    };
+    struct TickTimer final : public juce::Timer
+    {
+        std::function<void()> onTick;
+        void timerCallback() override { if (onTick) onTick(); }
+    };
+    std::vector<std::unique_ptr<MonitorRow>> monitorRows;
+    std::unique_ptr<GroupHeader> monitorHeader;
+    std::vector<CsoundAudioProcessor::MonitorChannel> monitorChannels;
+    juce::String monitorSignature;
+    std::uint64_t monitorEngine = 0;
+    TickTimer monitorListTimer, monitorValueTimer;
+    void refreshMonitorList();
+    void updateMonitorValues();
+    static constexpr int kMonitorCollapsedByDefaultAbove = 8;
     bool rebuildPending = false; // vedi sessionEditedByUndoRedo
     void scheduleDeferredRebuild();
-    std::set<juce::String> collapsedGroups; // per nome, finche' il pannello esiste
+    std::set<juce::String> collapsedGroups;
+    // Firma dell'ultimo insieme di gruppi mostrato (nomi in ordine): quando
+    // cambia (file nuovo, @group aggiunti/tolti) si applica il default
+    // aperto/chiuso - vedi rebuildDisplayGroups; altrimenti resta lo stato
+    // scelto dall'utente.
+    juce::String lastGroupSignature;
+    static constexpr int kMaxGroupsOpenByDefault = 4; // per nome, finche' il pannello esiste
     static constexpr int groupHeaderHeight = 32;
     static constexpr int groupInsetH = 8;       // rientro delle card dentro la cornice
     static constexpr int groupInsetBottom = 8;  // aria sotto l'ultima card

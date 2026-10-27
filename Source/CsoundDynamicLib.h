@@ -82,6 +82,12 @@ namespace CsoundAPI
     extern CsoundCompileCSDFn csoundCompileCSD;
     using CsoundCompileOrcFn = int32_t (*) (CSOUND*, const char*, int32_t);
     using CsoundEventStringFn = void (*) (CSOUND*, const char*, int32_t);
+    using CsoundListChannelsFn = int32_t (*) (CSOUND*, controlChannelInfo_t**);
+    using CsoundDeleteChannelListFn = void (*) (CSOUND*, controlChannelInfo_t*);
+    using CsoundGetStringChannelFn = void (*) (CSOUND*, const char*, char*);
+    extern CsoundListChannelsFn csoundListChannels;         // pannello Monitor
+    extern CsoundDeleteChannelListFn csoundDeleteChannelList;
+    extern CsoundGetStringChannelFn csoundGetStringChannel;
     using CsoundGetChannelPtrFn = int32_t (*) (CSOUND*, void**, const char*, int32_t);
     extern CsoundGetChannelPtrFn csoundGetChannelPtr; // puntatore diretto a un canale (host transport)
     extern CsoundCompileOrcFn csoundCompileOrc;   // live coding (Evaluate), async

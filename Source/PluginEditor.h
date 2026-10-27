@@ -623,28 +623,27 @@ private:
     // Barra sotto l'editor con due facce: help inline dell'opcode sotto il
     // caret (default) oppure, con evaluateMode, la riga "Evaluate" (input
     // per eventi di score / codice d'orchestra al motore in corsa). Si
-    // commuta con l'icona ">_" a destra, Cmd+E, o Esc (torna all'help).
+    // commuta con evaluateButton (rotondo, sopra la barra), Cmd+E, o Esc
+    // (torna all'help).
     struct OpcodeHelpBar final : public juce::Component
     {
         OpcodeHelpBar();
         void paint (juce::Graphics& g) override;
         void resized() override;
-        void mouseDown (const juce::MouseEvent& e) override;
-        void mouseMove (const juce::MouseEvent& e) override;
-        void mouseExit (const juce::MouseEvent& e) override;
         void setHelpText (const juce::String& syntax, const juce::String& description, const juce::String& category);
 
         void setEvaluateMode (bool on);
         bool isEvaluateMode() const noexcept { return evaluateMode; }
-        std::function<void (bool)> onEvaluateModeChanged;
 
         ConsoleInputEditor input;
-        static constexpr int toggleWidth = 34;
+        // Spazio lasciato libero a destra per il bottone Evaluate, che
+        // galleggia sopra la barra (vedi evaluateButton in PluginEditor,
+        // allineato in verticale con clearConsoleButton).
+        int rightInset = 40;
 
     private:
-        juce::Rectangle<int> toggleArea() const { return getLocalBounds().removeFromRight (toggleWidth); }
         juce::String syntaxText, descriptionText, categoryText;
-        bool evaluateMode = false, toggleHovered = false;
+        bool evaluateMode = false;
     };
 
     // This reference is provided as a quick way for your editor to
@@ -671,6 +670,12 @@ private:
     CsoundCodeEditor editor { document, &tokeniser };
 
     OpcodeHelpBar opcodeHelpBar;
+
+    // Bottone rotondo ">_" che commuta la barra di help in riga Evaluate:
+    // stesso stile e diametro del cestino della consolle, e stessa x, cosi'
+    // i due bottoni sono in colonna. Galleggia sopra la barra (vedi resized).
+    juce::TextButton evaluateButton {};
+    static constexpr int evaluateButtonInset = 2; // margine sopra/sotto dentro la barra di help (26 px -> cerchio 22)
 
     // Tastiera a schermo (iOS): keyboardInset = pixel della finestra sotto
     // il bordo superiore della tastiera. Si contrae SOLO il blocco editor +
