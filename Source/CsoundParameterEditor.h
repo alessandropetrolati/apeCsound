@@ -398,6 +398,7 @@ public:
     // "Larger Text" / "Smaller Text" (sottomenu Config): +1/-1 punto al font
     // dell'editor di codice e della consolle - vedi PluginEditor.
     std::function<void (int)> onFontSizeChangeRequested;
+    std::function<void()> onRunSelfTestsRequested;   // Config > Run Self-Tests (vedi Tests/CsoundUnitTests.h)
 
     // "Light Editor" (spunta): palette chiara dell'editor di codice (la
     // scura e' il default). isDarkEditorEnabled = stato ATTUALE scuro.

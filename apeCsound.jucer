@@ -63,6 +63,18 @@
             file="Source/CsoundTextPrompt.h"/>
       <FILE id="pGrps" name="CsoundParameterGroups.h" compile="0" resource="0"
             file="Source/CsoundParameterGroups.h"/>
+      <FILE id="cbHlp" name="CsoundCabbageHelpers.h" compile="0" resource="0"
+            file="Source/CsoundCabbageHelpers.h"/>
+      <FILE id="lyHlp" name="CsoundLayoutHelpers.h" compile="0" resource="0"
+            file="Source/CsoundLayoutHelpers.h"/>
+      <FILE id="syHlp" name="CsoundSyntaxHelpers.h" compile="0" resource="0"
+            file="Source/CsoundSyntaxHelpers.h"/>
+      <GROUP id="{7A1C2E55-0B9D-4F3A-9C11-5E2D8B6F0A42}" name="Tests">
+        <FILE id="utCpp" name="CsoundUnitTests.cpp" compile="1" resource="0"
+              file="Source/Tests/CsoundUnitTests.cpp"/>
+        <FILE id="utHdr" name="CsoundUnitTests.h" compile="0" resource="0"
+              file="Source/Tests/CsoundUnitTests.h"/>
+      </GROUP>
       <FILE id="sAppA" name="StandaloneApp.cpp" compile="1" resource="0"
             file="Source/StandaloneApp.cpp"/>
       <FILE id="pFbkA" name="PlatformFallbacks.cpp" compile="1" resource="0"

@@ -2,6 +2,7 @@
 #include "PluginEditor.h"
 #include "NativeAlertMac.h"
 #include "CsoundShortcuts.h"
+#include "Tests/CsoundUnitTests.h"
 
 // Standalone (macOS e iOS): accesso a StandalonePluginHolder (dialogo
 // Audio/MIDI Settings, AudioDeviceSelectorComponent di JUCE) - vedi
@@ -671,6 +672,18 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
         getUserSettings().saveIfNeeded();
     };
     parameterPanel.onOpenManualRequested = [] { juce::URL (kCsoundManualUrl).launchInDefaultBrowser(); };
+    parameterPanel.onRunSelfTestsRequested = [this] { runSelfTests(); };
+
+    // Standalone: "apeCsound --run-tests" esegue i test all'avvio (esito in
+    // consolle). Nei plugin la riga di comando non e' nostra: ignorata.
+   #if JucePlugin_Build_Standalone
+    if (juce::JUCEApplicationBase::getCommandLineParameters().contains ("--run-tests"))
+        juce::MessageManager::callAsync ([safeThis = juce::Component::SafePointer<CsoundAudioProcessorEditor> (this)]
+        {
+            if (safeThis != nullptr)
+                safeThis->runSelfTests();
+        });
+   #endif
 
     // Canali: Csound segue la DAW (default) o il .csd - vedi
     // CsoundAudioProcessor::setFollowCsdChannels (salvato nello stato del
@@ -3087,6 +3100,20 @@ void CsoundAudioProcessorEditor::appendToLog (const juce::String& text)
         logConsole.moveCaretToEnd();
         consoleLineCount = lines.size();
     }
+}
+
+//==============================================================================
+void CsoundAudioProcessorEditor::runSelfTests()
+{
+    appendToLog ("--- Self-tests: running (Tests/CsoundUnitTests.cpp) ---");
+    const auto summary = csoundTests::runAll (&audioProcessor, [this] (const juce::String& line)
+    {
+        // Solo esiti e fallimenti: le righe "Starting/Completed" di
+        // UnitTestRunner farebbero rumore in consolle.
+        if (line.startsWith ("!!!") || line.startsWith ("FAILED") || line.startsWith ("--- "))
+            appendToLog (line);
+    });
+    juce::ignoreUnused (summary);
 }
 
 //==============================================================================

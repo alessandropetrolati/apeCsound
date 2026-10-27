@@ -711,6 +711,9 @@ private:
 
     OpcodeHelpBar opcodeHelpBar;
 
+    // Config > Run Self-Tests / "--run-tests" (vedi Tests/CsoundUnitTests.h).
+    void runSelfTests();
+
     // Bottone rotondo ">_" che commuta la barra di help in riga Evaluate:
     // stesso stile e diametro del cestino della consolle, e stessa x, cosi'
     // i due bottoni sono in colonna. Galleggia sopra la barra (vedi resized).

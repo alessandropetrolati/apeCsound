@@ -963,6 +963,10 @@ public:
         std::vector<float> values;
     };
 
+    // Tace i riepiloghi "--- Cabbage/CsoundQt import: ... ---" in consolle
+    // (usato dai test unitari, che importano csd sintetici).
+    bool quietImportMessages = false;
+
     SessionSnapshot captureSessionSnapshot();
     void restoreSessionSnapshot (const SessionSnapshot& snapshot);
 
@@ -1078,10 +1082,10 @@ private:
     //     widget in Cabbage - assunto uguale a min; skew/increment fissi a
     //     1.0/0.001 come xypad sopra, mai letti dalla riga
     //     channel("nome"), min(min), max(max)
-    //   checkbox                        -> 1 slot Bool
-    //     channel("nome"), value(0 o 1)
+    //   checkbox, button                -> 1 slot Bool
+    //     channel("nome"), value(0 o 1)  (button: latched o momentaneo, sempre Bool)
     //   combobox                        -> 1 slot Choice
-    //     channel("nome"), text("A", "B", ...), value(indice di default, letto letteralmente)
+    //     channel("nome"), text("A", "B", ...), value(n) con n da 1 -> defaultIndex n-1
     //   listbox                         -> nessun parametro (ignorato)
     // Resetta PRIMA tutti gli slot Float/Bool/Choice (un nuovo import
     // rimpiazza la mappatura precedente, non la somma) - gli slot Int non

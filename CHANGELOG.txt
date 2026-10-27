@@ -115,7 +115,26 @@ IMPORT OF CABBAGE AND CSOUNDQT FILES
     every example uses inch / outch; new tests in CSD/Examples/Test
     (EvaluateTest, HostTransportTest, XYPadTest, MonitorTest).
 
+DEVELOPMENT
+
+  * Unit tests (juce::UnitTest, Source/Tests/CsoundUnitTests.cpp): parameter
+    groups / XY pads parser, Cabbage widget helpers, card field wrapping,
+    Csound 7 functional syntax, channel-under-caret, Cabbage and CsoundQt
+    import, parameter snapshots. Run them from Main menu > Config > Run
+    Self-Tests (Debug builds only, result in the console), with
+    "apeCsound --run-tests" (Standalone) or outside the app with
+    scripts/run_unit_tests.sh (the pure suites, juce_core only). The pure helpers now live in
+    CsoundCabbageHelpers.h, CsoundLayoutHelpers.h, CsoundSyntaxHelpers.h.
+
 FIXES
+
+  * Cabbage import: "button" widgets were not imported at all (only
+    "checkbox"), so Play/Stop/Live/Rec buttons of many examples stayed at 0
+    and the patch seemed silent; they are now Bool parameters.
+  * Cabbage import: combobox value(n) is 1-based in Cabbage; the default
+    menu entry was off by one (the next item was selected).
+  * Console: error, warning and "deactivated" lines are never hidden by
+    the flood filter (a macro expanded 16 times could bury an INIT ERROR).
 
   * After Apply the parameter channels could stay at 0 (sliders and menus
     looked reset, chnget returned 0 until the control was touched): the

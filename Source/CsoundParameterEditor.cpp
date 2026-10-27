@@ -1,4 +1,5 @@
 #include "CsoundParameterEditor.h"
+#include "CsoundLayoutHelpers.h"
 #include "CsoundShortcuts.h"
 #include "NativeAlertMac.h"
 #include "CsoundTextPrompt.h"
@@ -948,19 +949,13 @@ int CsoundParameterMappingPanel::fieldsAvailableWidth (int fullCardWidth)
 // colonne, quindi stesso numero di righe (prima i due algoritmi contavano
 // il gap in modo diverso e, per certe larghezze, l'ultimo campo finiva in
 // una riga che l'altezza della card non prevedeva: spariva).
-static int wrappedFieldColumns (int availableWidth, std::initializer_list<int> fieldWidths, int gap)
-{
-    int minW = 1;
-    for (int w : fieldWidths) minW = juce::jmax (minW, w);
-    const int n = (int) fieldWidths.size();
-    return juce::jlimit (1, juce::jmax (1, n), (availableWidth + gap) / (minW + gap));
-}
+// wrappedFieldColumns: vedi CsoundLayoutHelpers.h (testato in Tests/CsoundUnitTests.cpp).
 
 int CsoundParameterMappingPanel::computeWrappedFieldRows (int availableWidth, std::initializer_list<int> fieldWidths, int gap)
 {
     const int n = (int) fieldWidths.size();
     if (n == 0) return 1;
-    const int cols = wrappedFieldColumns (availableWidth, fieldWidths, gap);
+    const int cols = csoundLayout::wrappedFieldColumns (availableWidth, fieldWidths, gap);
     return (n + cols - 1) / cols;
 }
 
@@ -972,7 +967,7 @@ void CsoundParameterMappingPanel::layoutWrappedFields (juce::Rectangle<int> fiel
     const int n = (int) fieldWidths.size();
     if (n == 0) return;
 
-    const int cols = wrappedFieldColumns (availableWidth, fieldWidths, gap);
+    const int cols = csoundLayout::wrappedFieldColumns (availableWidth, fieldWidths, gap);
     const int cellW = juce::jmax (1, (availableWidth - gap * (cols - 1)) / cols);
     const int spare = juce::jmax (0, availableWidth - (cellW * cols + gap * (cols - 1))); // resto: all'ultima colonna
 
@@ -3720,6 +3715,19 @@ void CsoundParameterMappingPanel::showPanelMenu()
             item.icon = CsoundActionSheetIcon::textSmaller;
             config.subItems.push_back (item);
         }
+       #if JUCE_DEBUG
+        // Solo nelle build Debug: test unitari (Tests/CsoundUnitTests.cpp),
+        // esito nella consolle. In Release restano "apeCsound --run-tests"
+        // (Standalone) e scripts/run_unit_tests.sh.
+        config.subItems.push_back (CsoundActionSheetItem::separator());
+        {
+            CsoundActionSheetItem item;
+            item.id = 160; item.text = "Run Self-Tests";
+            item.enabled = onRunSelfTestsRequested != nullptr;
+            item.icon = CsoundActionSheetIcon::info;
+            config.subItems.push_back (item);
+        }
+       #endif
         items.push_back (config);
     }
     
@@ -3779,6 +3787,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 116: if (safeThis->onToggleFollowCsdChannelsRequested) safeThis->onToggleFollowCsdChannelsRequested(); break;
             case 118: if (safeThis->onFontSizeChangeRequested) safeThis->onFontSizeChangeRequested (+1); break;
             case 119: if (safeThis->onFontSizeChangeRequested) safeThis->onFontSizeChangeRequested (-1); break;
+            case 160: if (safeThis->onRunSelfTestsRequested) safeThis->onRunSelfTestsRequested(); break;
             case 120: if (safeThis->onToggleDarkEditorRequested) safeThis->onToggleDarkEditorRequested(); break;
             case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
             case 150: if (safeThis->onToggleGraphsRequested) safeThis->onToggleGraphsRequested(); break;

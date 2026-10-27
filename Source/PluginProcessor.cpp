@@ -3030,7 +3030,10 @@ juce::String CsoundAudioProcessor::makeUniqueSnapshotName (const juce::String& b
 {
     const juce::ScopedLock sl (parameterSnapshotsLock);
 
-    for (int n = parameterSnapshots.getNumChildren() + 1; ; ++n)
+    // Primo numero libero a partire da 1 (come dichiarato nel .h): prima si
+    // partiva da "numero di snapshot + 1" e, con snapshot rinominati, si
+    // saltavano numeri liberi ("Snapshot 1", "Loud" -> "Snapshot 3").
+    for (int n = 1; ; ++n)
     {
         const auto candidate = base + " " + juce::String (n);
         bool taken = false;
@@ -3258,280 +3261,8 @@ void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInByte
     });
 }
 
-//==============================================================================
-// Import automatico da <Cabbage> - vedi il commento su importCabbageParameters
-// in PluginProcessor.h per la mappatura widget -> tipo di parametro. Piccoli
-// helper regex isolati qui (std::regex, non juce - JUCE non ha un tokenizer
-// per espressioni "nomeCampo(...)" pronto all'uso) che leggono UNA riga alla
-// volta: lo stile Cabbage compatto (una dichiarazione di widget per riga) e'
-// quello assunto, righe spezzate su piu' linee non sono gestite.
-namespace
-{
-    bool cabbageMatchSingleChannel (const juce::String& line, juce::String& channelName)
-    {
-        // Delimitatore custom "re(...)re" (non il default "(...)"): il
-        // pattern contiene ")\"" al suo interno (chiusura del gruppo subito
-        // seguita dalla virgoletta letterale), che con il delimitatore di
-        // default avrebbe chiuso la raw string PRIMA della fine vera - il
-        // resto del pattern sarebbe finito fuori dalle virgolette come
-        // codice C++ invece che come testo, mandando in errore tutto cio'
-        // che segue (esattamente l'errore "undeclared identifier"/"expected
-        // ';'" segnalato).
-        static const std::regex re (R"re(channel\(\s*"([^"]*)"\s*\))re");
-        std::smatch m;
-        const auto s = line.toStdString();
-
-        if (std::regex_search (s, m, re))
-        {
-            channelName = juce::String (m[1].str());
-            return true;
-        }
-
-        return false;
-    }
-
-    bool cabbageMatchChannelPair (const juce::String& line, juce::String& channelA, juce::String& channelB)
-    {
-        // Stesso motivo del delimitatore custom spiegato in
-        // cabbageMatchSingleChannel sopra - qui il pattern ha ADDIRITTURA
-        // due occorrenze di ")\"" al suo interno.
-        static const std::regex re (R"re(channel\(\s*"([^"]*)"\s*,\s*"([^"]*)"\s*\))re");
-        std::smatch m;
-        const auto s = line.toStdString();
-
-        if (std::regex_search (s, m, re))
-        {
-            channelA = juce::String (m[1].str());
-            channelB = juce::String (m[2].str());
-            return true;
-        }
-
-        return false;
-    }
-
-    bool cabbageMatchRangeContents (const juce::String& line, juce::String& contents)
-    {
-        static const std::regex re (R"re(range\(([^)]*)\))re");
-        std::smatch m;
-        const auto s = line.toStdString();
-
-        if (std::regex_search (s, m, re))
-        {
-            contents = juce::String (m[1].str());
-            return true;
-        }
-
-        return false;
-    }
-
-    // rangeX(...)/rangeY(...) - SOLO per il widget xypad (vedi il branch
-    // "xypad" in importCabbageParameters): a differenza di range(...) sopra
-    // (riusato invariato da hslider/vslider/rslider/nslider/vrange/hrange),
-    // xypad ha due direttive SEPARATE, una per asse, invece di una singola
-    // range() condivisa - regex dedicate, "rangeX\(" non puo' confondersi
-    // con "range\(" (richiede la X subito dopo "range", non presente nella
-    // sintassi degli altri widget).
-    bool cabbageMatchRangeXContents (const juce::String& line, juce::String& contents)
-    {
-        static const std::regex re (R"re(rangeX\(([^)]*)\))re");
-        std::smatch m;
-        const auto s = line.toStdString();
-
-        if (std::regex_search (s, m, re))
-        {
-            contents = juce::String (m[1].str());
-            return true;
-        }
-
-        return false;
-    }
-
-    bool cabbageMatchRangeYContents (const juce::String& line, juce::String& contents)
-    {
-        static const std::regex re (R"re(rangeY\(([^)]*)\))re");
-        std::smatch m;
-        const auto s = line.toStdString();
-
-        if (std::regex_search (s, m, re))
-        {
-            contents = juce::String (m[1].str());
-            return true;
-        }
-
-        return false;
-    }
-
-    bool cabbageMatchValueNumber (const juce::String& line, double& value)
-    {
-        static const std::regex re (R"re(value\(([^)]*)\))re");
-        std::smatch m;
-        const auto s = line.toStdString();
-
-        if (std::regex_search (s, m, re))
-        {
-            value = juce::String (m[1].str()).trim().getDoubleValue();
-            return true;
-        }
-
-        return false;
-    }
-
-    // min(...)/max(...) - SOLO per il widget encoder (vedi il branch
-    // "encoder" in importCabbageParameters): a differenza di
-    // hslider/vslider/rslider/nslider/vrange/hrange, che prendono
-    // min/max/default/skew/increment tutti insieme da un'unica range(...),
-    // l'endless encoder di Cabbage li espone come due proprieta' separate
-    // e NIENTE default/skew/increment (fissi, vedi il branch).
-    bool cabbageMatchMinNumber (const juce::String& line, double& value)
-    {
-        static const std::regex re (R"re(min\(([^)]*)\))re");
-        std::smatch m;
-        const auto s = line.toStdString();
-
-        if (std::regex_search (s, m, re))
-        {
-            value = juce::String (m[1].str()).trim().getDoubleValue();
-            return true;
-        }
-
-        return false;
-    }
-
-    bool cabbageMatchMaxNumber (const juce::String& line, double& value)
-    {
-        static const std::regex re (R"re(max\(([^)]*)\))re");
-        std::smatch m;
-        const auto s = line.toStdString();
-
-        if (std::regex_search (s, m, re))
-        {
-            value = juce::String (m[1].str()).trim().getDoubleValue();
-            return true;
-        }
-
-        return false;
-    }
-
-    bool cabbageMatchItems (const juce::String& line, juce::StringArray& items)
-    {
-        // La proprieta' Cabbage con le etichette del combobox e'
-        // text("A", "B", ...), NON items(...) (quest'ultimo tentato prima
-        // per sbaglio - un combobox Cabbage reale usa sempre text()).
-        // Proviamo comunque anche items(...) come fallback, nel caso un
-        // file scritto a mano/esportato da un'altra versione lo usi.
-        static const std::regex reText  (R"re(text\(([^)]*)\))re");
-        static const std::regex reItems (R"re(items\(([^)]*)\))re");
-        std::smatch m;
-        const auto s = line.toStdString();
-
-        if (! std::regex_search (s, m, reText) && ! std::regex_search (s, m, reItems))
-            return false;
-
-        juce::StringArray rawTokens;
-        rawTokens.addTokens (juce::String (m[1].str()), ",", "");
-
-        for (auto token : rawTokens)
-        {
-            token = token.trim();
-
-            if (token.startsWithChar ('"') && token.endsWithChar ('"'))
-                token = token.substring (1, token.length() - 1);
-
-            items.add (token);
-        }
-
-        return true;
-    }
-
-    // Spezza "min, max, default, skew, increment" (il contenuto grezzo di
-    // range(...), vedi cabbageMatchRangeContents) in fino a 5 numeri. Il
-    // campo "default" (indice 2) puo' contenere un secondo numero separato
-    // da ':' - solo per vrange/hrange (vedi il commento in
-    // PluginProcessor.h) - che finisce in defaultB; altrimenti defaultB
-    // resta identico a values[2].
-    //
-    // Cabbage accetta range() anche con MENO di 5 campi (tipicamente solo
-    // min, max, default - skew e increment sono opzionali con un loro
-    // default): qui sovrascriviamo SOLO i campi effettivamente presenti,
-    // lasciando gli altri al valore che il chiamante ha gia' messo in
-    // "values" prima di chiamare questa funzione (gli inizializzatori
-    // {0, 1, 0, 1, 0.001} nei tre punti da cui viene chiamata) - cosi' un
-    // range(-10, 10, 6.791) con solo 3 campi imposta min/max/default e
-    // lascia skew=1.0/increment=0.001 come se non fossero stati scritti.
-    bool cabbageParseFiveFieldRange (const juce::String& contents, double values[5], double& defaultB)
-    {
-        juce::StringArray tokens;
-        tokens.addTokens (contents, ",", "");
-
-        if (tokens.isEmpty())
-            return false;
-
-        const int fieldCount = juce::jmin (tokens.size(), 5);
-        defaultB = values[2]; // valore di partenza se il campo 2 non e' presente o non ha ':'
-
-        for (int i = 0; i < fieldCount; ++i)
-        {
-            auto token = tokens[i].trim();
-
-            if (i == 2 && token.containsChar (':'))
-            {
-                const auto colon = token.indexOfChar (':');
-                values[2] = token.substring (0, colon).trim().getDoubleValue();
-                defaultB  = token.substring (colon + 1).trim().getDoubleValue();
-            }
-            else
-            {
-                values[i] = token.getDoubleValue();
-
-                if (i == 2)
-                    defaultB = values[2];
-            }
-        }
-
-        return true;
-    }
-
-    // Spezza "min, max, default" (il contenuto grezzo di rangeX(...)/
-    // rangeY(...), vedi cabbageMatchRangeXContents/cabbageMatchRangeYContents
-    // sopra) in fino a 3 numeri - SOLO per xypad: a differenza di
-    // cabbageParseFiveFieldRange sopra, qui non c'e' ne' skew/increment
-    // (fissi, vedi il branch "xypad" in importCabbageParameters) ne' la
-    // sintassi "default1:default2" di vrange/hrange (ogni asse ha gia' il
-    // proprio default separato, tramite rangeX/rangeY distinti). Stessa
-    // tolleranza di cabbageParseFiveFieldRange per un numero di campi
-    // inferiore al massimo: i campi assenti restano al valore che il
-    // chiamante ha gia' messo in "values" prima di chiamare questa funzione.
-    bool cabbageParseThreeFieldRange (const juce::String& contents, double values[3])
-    {
-        juce::StringArray tokens;
-        tokens.addTokens (contents, ",", "");
-
-        if (tokens.isEmpty())
-            return false;
-
-        const int fieldCount = juce::jmin (tokens.size(), 3);
-
-        for (int i = 0; i < fieldCount; ++i)
-            values[i] = tokens[i].trim().getDoubleValue();
-
-        return true;
-    }
-
-    // Identifica il tipo di widget dal primo token della riga (dopo aver
-    // scartato spazi iniziali) - non basta un contains() perche' "hslider"
-    // compare anche dentro commenti o altri nomi; serve il token di testa.
-    juce::String cabbageLeadingIdentifier (const juce::String& line)
-    {
-        static const std::regex re (R"re(^\s*([A-Za-z_][A-Za-z0-9_]*))re");
-        std::smatch m;
-        const auto s = line.toStdString();
-
-        if (std::regex_search (s, m, re))
-            return juce::String (m[1].str());
-
-        return {};
-    }
-}
+#include "CsoundCabbageHelpers.h"
+using namespace cabbageImport;
 
 bool CsoundAudioProcessor::saveSessionToFile (const juce::File& file, const juce::String& codeText)
 {
@@ -3798,7 +3529,7 @@ bool CsoundAudioProcessor::importCsoundQtParameters (const juce::String& csdText
 
     if (panel == nullptr)
     {
-        handleMessage ("--- CsoundQt import: <bsbPanel> found but it is not valid XML - no parameters mapped ---");
+        if (! quietImportMessages) handleMessage ("--- CsoundQt import: <bsbPanel> found but it is not valid XML - no parameters mapped ---");
         return false;
     }
 
@@ -4046,7 +3777,7 @@ bool CsoundAudioProcessor::importCsoundQtParameters (const juce::String& csdText
         summary << " - " << limitedRanges << " spin box/scroll number range(s) limited to +/-10000";
 
     summary << " ---";
-    handleMessage (summary);
+    if (! quietImportMessages) handleMessage (summary);
     return true;
 }
 
@@ -4300,8 +4031,13 @@ bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
             pushDefaultToHost (getChannelParamID (channelIndex));
             ++channelIndex;
         }
-        else if (identifier == "checkbox")
+        else if (identifier == "checkbox" || identifier == "button")
         {
+            // button: in Cabbage e' un toggle (latched(1), il default) o un
+            // pulsante momentaneo (latched(0)); qui e' sempre un Bool - il
+            // codice legge comunque 0/1 dal canale. Prima i button NON
+            // venivano importati: Play/Stop/Live/Rec di molti esempi
+            // restavano a 0 e la patch sembrava muta.
             juce::String channelName;
 
             if (! cabbageMatchSingleChannel (line, channelName) || channelName.isEmpty())
@@ -4351,7 +4087,11 @@ bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
             for (int i = 0; i < juce::jmin (items.size(), maxChoiceOptions); ++i)
                 slot.optionLabels.add (items[i]);
 
-            slot.defaultIndex = juce::jlimit (0, juce::jmax (0, slot.optionLabels.size() - 1), (int) value);
+            // Cabbage: value(n) della combobox parte da 1 (prima voce = 1);
+            // lo slot usa l'indice 0-based. Senza "- 1" il default cadeva
+            // sulla voce successiva (e la patch partiva, p.es., con la
+            // forma d'onda o il modo sbagliati).
+            slot.defaultIndex = juce::jlimit (0, juce::jmax (0, slot.optionLabels.size() - 1), (int) value - 1);
             setChoiceParamSlot (choiceIndex, slot);
             pushDefaultToHost (getChoiceParamID (choiceIndex));
             ++choiceIndex;
@@ -4409,7 +4149,7 @@ bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
         summary << " - " << skippedDuplicate << " widget(s) skipped: channel name already used";
 
     summary << " ---";
-    handleMessage (summary);
+    if (! quietImportMessages) handleMessage (summary);
 
     return true;
 }
