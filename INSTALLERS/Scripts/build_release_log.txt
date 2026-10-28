@@ -1,4 +1,4 @@
-=== lun 26 ott 2026 17:41:53 CET  macOS 27.0.1 arm64
+=== mer 28 ott 2026 11:38:23 CET  macOS 27.0.1 arm64
 === Projucer: /Users/alessandropetrolati/Desktop/Advanced 2018/JUCE/Projucer.app
 Re-saving file: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/apeCsound.jucer
 Finished saving: Xcode (macOS)
@@ -37,9 +37,9 @@ xcodebuild apeCsound - VST3 exit: 0
 === verifica moduleinfo.json
 Bundle       : /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/Builds/MacOSX/build/Release/apeCsound.vst3
 Manifest     : Contents/Resources/moduleinfo.json
-Binary       : Contents/MacOS/apeCsound  (32,735,872 bytes)
+Binary       : Contents/MacOS/apeCsound  (35,521,600 bytes)
 Plugin Name  : apeCsound
-Version      : 1.0.4
+Version      : 1.0.5
 SDK Version  : apeCsound
 
 #  Category                        CID (hex)                         ASCII             found-in-bin
@@ -59,29 +59,29 @@ rimossa estensione AUv3 dall'app: Installers/NOTORIZED/apeCsound.app/Contents/Pl
 === verifica: apeCsound.app
 Installers/NOTORIZED/apeCsound.app: valid on disk
 Installers/NOTORIZED/apeCsound.app: satisfies its Designated Requirement
-CodeDirectory v=20500 size=30624 flags=0x10000(runtime) hashes=946+7 location=embedded
-Timestamp=26 Oct 2026 at 17:45:14
+CodeDirectory v=20500 size=33280 flags=0x10000(runtime) hashes=1029+7 location=embedded
+Timestamp=28 Oct 2026 at 11:41:53
 TeamIdentifier=4863C638XM
 === verifica: apeCsound.component
 Installers/NOTORIZED/apeCsound.component: valid on disk
 Installers/NOTORIZED/apeCsound.component: satisfies its Designated Requirement
-CodeDirectory v=20500 size=30688 flags=0x10000(runtime) hashes=952+3 location=embedded
-Timestamp=26 Oct 2026 at 17:45:13
+CodeDirectory v=20500 size=33312 flags=0x10000(runtime) hashes=1034+3 location=embedded
+Timestamp=28 Oct 2026 at 11:41:52
 TeamIdentifier=4863C638XM
 === verifica: apeCsound.vst3
 Installers/NOTORIZED/apeCsound.vst3: valid on disk
 Installers/NOTORIZED/apeCsound.vst3: satisfies its Designated Requirement
-CodeDirectory v=20500 size=30720 flags=0x10000(runtime) hashes=953+3 location=embedded
-Timestamp=26 Oct 2026 at 17:45:12
+CodeDirectory v=20500 size=33376 flags=0x10000(runtime) hashes=1036+3 location=embedded
+Timestamp=28 Oct 2026 at 11:41:51
 TeamIdentifier=4863C638XM
 
 total 16
-drwxr-xr-x   6 alessandropetrolati  staff   192 26 ott 17:45 .
-drwxr-xr-x  12 alessandropetrolati  staff   384 26 ott 17:43 ..
--rw-r--r--@  1 alessandropetrolati  staff  6148 26 ott 17:36 .DS_Store
-drwxr-xr-x   3 alessandropetrolati  staff    96 26 ott 17:43 apeCsound.app
-drwxr-xr-x   3 alessandropetrolati  staff    96 11 ott 00:00 apeCsound.component
-drwxr-xr-x   3 alessandropetrolati  staff    96 11 ott 00:00 apeCsound.vst3
+drwxr-xr-x   6 alessandropetrolati  staff   192 28 ott 11:41 .
+drwxr-xr-x  12 alessandropetrolati  staff   384 28 ott 01:49 ..
+-rw-r--r--@  1 alessandropetrolati  staff  6148 28 ott 11:38 .DS_Store
+drwxr-xr-x   3 alessandropetrolati  staff    96 28 ott 11:40 apeCsound.app
+drwxr-xr-x   3 alessandropetrolati  staff    96 28 ott 11:41 apeCsound.component
+drwxr-xr-x   3 alessandropetrolati  staff    96 28 ott 11:41 apeCsound.vst3
 
 === RISULTATO: OK
 === FINE
