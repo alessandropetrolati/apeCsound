@@ -366,6 +366,8 @@ public:
     // Console". Impostate da PluginEditor.
     std::function<void()> onToggleGraphsRequested;
     std::function<bool()> isGraphsVisible;
+    std::function<void()> onToggleChannelsRequested;   // "Show Channels" (scheda diagnostica dei canali)
+    std::function<bool()> isChannelsVisible;
 
     // "Modern syntax in help" (spunta) e "Csound Manual (online)": entrambe
     // impostate da PluginEditor. isModernSyntaxEnabled serve solo a

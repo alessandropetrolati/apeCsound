@@ -10,6 +10,7 @@
 #include "IOSKeyboard.h"
 #include "CsoundAudioSettings.h"
 #include "CsoundGraphs.h"
+#include "CsoundChannelsPanel.h"
 #include "CsdBrowserView.h"
 
 /**
@@ -937,6 +938,18 @@ private:
     CsoundGraphsPanel graphsPanel { audioProcessor.getGraphStore() };
     bool showingGraphs = false;
     void toggleGraphs();
+
+    // Scheda "Channels" (diagnostica dei canali, vedi CsoundChannelsPanel.h):
+    // stesso posto di Graphs, i due si escludono a vicenda.
+    CsoundChannelsPanel channelsPanel { audioProcessor };
+    bool showingChannels = false;
+    void toggleChannels();
+    // Il pannello di destra della fascia in basso, se ce n'e' uno.
+    juce::Component* bottomRightPanel() noexcept
+    {
+        return showingChannels ? static_cast<juce::Component*> (&channelsPanel)
+             : showingGraphs   ? static_cast<juce::Component*> (&graphsPanel) : nullptr;
+    }
     int graphsWidth = 460;
     static constexpr int graphsMinWidth = 240;
     static constexpr int graphsConsoleMinWidth = 200;

@@ -4,9 +4,11 @@ APECSOUND - RELEASE NOTES
 1.0.5
 -----
 
-VoiceOver support, live coding, host transport, XY pads, Monitor, and a
-smarter import of Cabbage and CsoundQt files. No change to the .csd
-format: files saved by 1.0.4 load unchanged.
+VoiceOver support, live coding, a Channels diagnostic panel, host
+transport, XY pads, Monitor and live tables, unit tests, and a smarter
+import of Cabbage and CsoundQt files. 64 toggle parameters. No change to
+the .csd format: files saved by 1.0.4 load unchanged (see the note on
+AU parameter indices under HOST AND ENGINE).
 
 ACCESSIBILITY - VOICEOVER
 
@@ -53,23 +55,47 @@ LIVE CODING
     statement are sent as real-time events. The sent lines flash.
   * Evaluate line: the help bar turns into an input line (round ">_"
     button at the top right of the console, above the trash button, or
-    Cmd+E) for one-liners such as "i 3 0 1" or
-    "gkfb = 0.9", with history (Up/Down); Esc goes back to the help bar.
+    Cmd+E) for one-liners such as "i 3 0 1" or "gkfb = 0.9", with history
+    (Up/Down); Esc goes back to the help bar.
   * Nothing evaluated is saved: at the next Apply only the editor text
     counts (the file stays the reference).
-  * Right-click on the help bar: "Copy error" (or "Copy help") puts the
-    text shown in the bar on the clipboard.
+
+CHANNELS (diagnostics)
+
+  * Main menu > Show Channels (Cmd+4): every channel the engine knows at
+    run time - type (k/S/a/f), direction (chnget / chnset), current value
+    and who writes it (parameter, host, code, nobody). Channels read by
+    the code and written by nobody come first, in yellow: the usual reason
+    for "it does not move". "Map" turns one into a parameter (Float, Int,
+    Toggle or Menu) with range/default from chn_k hints; indexed families
+    (Acc1..Acc16) are one row with "Map 16". Parameters the code only
+    writes (GUI indicators like Cabbage LEDs, imported by mistake) are
+    flagged "never read by code" with an "Unmap" button that frees the
+    slot. Takes the place of the Graphs panel while open.
 
 HOST AND ENGINE
 
+  * 64 Bool (toggle) parameters instead of 32 (176 DAW parameters in all):
+    Cabbage step sequencers with 16 steps x On/Hold/Accent no longer lose
+    their Play/Stop buttons to the limit. Projects saved with 1.0.4 load
+    unchanged (slot indices are the same); in hosts that address
+    parameters by index (AU) the 16 Menu parameters move 32 places, so an
+    automation lane on a Menu written with 1.0.4 must be re-assigned.
   * Host transport as control channels, same names as Cabbage: HOST_BPM,
     IS_PLAYING, IS_RECORDING, TIME_IN_SECONDS, TIME_IN_SAMPLES,
     HOST_PPQ_POS, HOST_PPQ_BAR_START, TIME_SIG_NUM, TIME_SIG_DENOM -
     updated once per block, no allocation in the audio thread. Standalone:
     HOST_BPM = 120, 4/4.
+  * Real-time safety: the audio thread no longer allocates for MIDI (the
+    input queue and the midiout buffer are pre-allocated in prepareToPlay)
+    and no longer posts messages to the UI when the score ends (an atomic
+    flag read by the existing timer). The console path was already
+    allocation-free (fixed double buffer).
   * Console warning when the code uses fixed-width I/O opcodes (outs, ins,
     out, outq...) and the track has a different channel count: prefer
     outch / inch, which work with any nchnls.
+  * MIDI out test (CSD/Examples/Test/MidiOutTest.csd): notes and CC sent
+    to the host, incoming notes echoed - to check the routing in a DAW.
 
 PARAMETERS PANEL
 
@@ -83,10 +109,8 @@ PARAMETERS PANEL
     bar (range from chn_k hints, or the values seen so far), text for
     string channels. The equivalent of CsoundQt / Cabbage meters, displays
     and labels; channels created at run time appear within a second.
-  * Graphs: function tables are live - while the panel is open they are
-    re-read ~4 times per second and redrawn when their content changes
-    (tablew, regenerated ftgen, GEN in a loop): a scope or envelope viewer
-    for free. Monitor: "spark" attribute for a value history.
+    Cabbage GUI messages ("visible(1)", "bounds(...)", identChannels) are
+    kept out.
   * Monitor cards: channels "Base1, Base2..." / "Base_1, Base_2..." become
     one card with a bar per channel (spectra, LFO banks, sequencer steps);
     the 11th argument of chn_k adds attributes: "db" (linear amplitude in
@@ -95,10 +119,10 @@ PARAMETERS PANEL
   * Cabbage files get their groups from groupbox / plant containers of the
     GUI, no change to the file needed; "; @group" in the code still wins.
   * Option/Alt + click on a group header opens or closes all groups
-    (Monitor included); Expand/Collapse All in the "+" menu now include
-    the Monitor too.
-  * More than 4 groups: only the first starts open when a file is loaded;
-    the open/closed state is kept while the set of groups does not change.
+    (Monitor included); Expand/Collapse All in the "+" menu include the
+    Monitor too. More than 4 groups: only the first starts open when a
+    file is loaded; the open/closed state is kept while the set of groups
+    does not change.
   * Compact cards: the channel name sits in the title row (no more
     "SLIDER FLOAT" label); toggles and menus are single-line cards; one
     card in edit mode at a time, outlined in the colour of its type.
@@ -109,49 +133,71 @@ PARAMETERS PANEL
     menu.
   * Live preview: while editing a Float/Int slider the real slider stays
     visible under the name field and follows Min/Max/Init/Skew/Step as
-    you type.
-  * Inline validation of min/max/init/skew/step, options and duplicate
-    channel names.
+    you type. Inline validation of min/max/init/skew/step, options and
+    duplicate channel names.
   * Code <-> panel link: with the caret on a chnget/chnset line the card
-    of that channel flashes briefly.
-  * A dot flashes next to the name when a value is changed from outside
-    (DAW automation, chnset, snapshot recall).
+    of that channel flashes briefly. A dot flashes next to the name when a
+    value is changed from outside (DAW automation, chnset, snapshot
+    recall).
+
+GRAPHS AND CONSOLE
+
+  * Graphs: function tables are live - while the panel is open they are
+    re-read ~4 times per second and redrawn when their content changes
+    (tablew, regenerated ftgen, GEN in a loop): a scope or envelope viewer
+    for free, no display opcode needed.
+  * Right-click on the help bar: "Copy error" (or "Copy help") puts the
+    text shown in the bar on the clipboard.
+  * Console: error, warning and "deactivated" lines are never hidden by
+    the flood filter (a macro expanded 16 times could bury an INIT ERROR).
+
+EDITOR
+
+  * Csound 7 names looplt / loople / loopgt / loopge and the for ... in
+    loop are highlighted and have inline help; the old loop_* entries say
+    they were renamed.
 
 IMPORT OF CABBAGE AND CSOUNDQT FILES
 
-  * Cabbage import: one channel = one parameter (a channel used by two
-    widgets, e.g. an rslider and an xypad, no longer gives duplicated
-    cards).
-  * Examples: the CsoundQt files now use chnget / chnset instead of
-    invalue / outvalue (their displays and meters show up in Monitor);
-    every example uses inch / outch; new tests in CSD/Examples/Test
-    (EvaluateTest, HostTransportTest, XYPadTest, MonitorTest).
+  * Cabbage "button" widgets are imported as Bool parameters (they were
+    skipped before: Play/Stop/Live/Rec of many examples stayed at 0 and
+    the patch seemed silent).
+  * When a widget type exceeds its slots, the widgets whose channel the
+    code never reads with chnget (LEDs, meters, step indicators) are
+    dropped first, so Play/Stop-like buttons later in the file still get
+    a slot; the console says how many were skipped.
+  * combobox value(n) is 1-based in Cabbage: the default menu entry was
+    off by one.
+  * One channel = one parameter (a channel used by two widgets, e.g. an
+    rslider and an xypad, no longer gives duplicated cards).
+  * Examples: the CsoundQt files use chnget / chnset instead of invalue /
+    outvalue (their displays and meters show up in Monitor); every example
+    uses inch / outch; loop_* renamed for Csound 7; several Cabbage files
+    fixed for Csound 7 (delay lines inside UDOs, monitor, pvsadsyn at
+    init, HRTF data in SADIR, reinit loops). New tests in CSD/Examples/Test:
+    EvaluateTest, HostTransportTest, XYPadTest, MonitorTest,
+    MonitorStressTest, MidiOutTest.
 
 DEVELOPMENT
 
   * Unit tests (juce::UnitTest, Source/Tests/CsoundUnitTests.cpp): parameter
     groups / XY pads parser, Cabbage widget helpers, card field wrapping,
-    Csound 7 functional syntax, channel-under-caret, Cabbage and CsoundQt
-    import, parameter snapshots. Run them from Main menu > Config > Run
-    Self-Tests (Debug builds only, result in the console), with
-    "apeCsound --run-tests" (Standalone) or outside the app with
-    scripts/run_unit_tests.sh (the pure suites, juce_core only). The pure helpers now live in
-    CsoundCabbageHelpers.h, CsoundLayoutHelpers.h, CsoundSyntaxHelpers.h.
+    Csound 7 functional syntax, channel-under-caret, Monitor attributes and
+    grouping, channel diagnostics, Cabbage and CsoundQt import, parameter
+    snapshots. Run them from Main menu > Config > Run Self-Tests (Debug
+    builds, result in the console), with "apeCsound --run-tests"
+    (Standalone) or outside the app with scripts/run_unit_tests.sh (the
+    pure suites, juce_core only). The pure helpers live in
+    CsoundCabbageHelpers.h, CsoundLayoutHelpers.h, CsoundSyntaxHelpers.h,
+    CsoundMonitorLayout.h, CsoundChannelDiagnostics.h.
 
 FIXES
-
-  * Cabbage import: "button" widgets were not imported at all (only
-    "checkbox"), so Play/Stop/Live/Rec buttons of many examples stayed at 0
-    and the patch seemed silent; they are now Bool parameters.
-  * Cabbage import: combobox value(n) is 1-based in Cabbage; the default
-    menu entry was off by one (the next item was selected).
-  * Console: error, warning and "deactivated" lines are never hidden by
-    the flood filter (a macro expanded 16 times could bury an INIT ERROR).
 
   * After Apply the parameter channels could stay at 0 (sliders and menus
     looked reset, chnget returned 0 until the control was touched): the
     new engine was mistaken for the old one when it got the same memory
     address; engines are now told apart by a generation counter.
+  * Snapshot names: "Snapshot N" now uses the first free number.
   * The "changed from outside" dot no longer flashes when hovering or
     clicking a toggle.
   * Field rows of the edit card: the last field could disappear at some

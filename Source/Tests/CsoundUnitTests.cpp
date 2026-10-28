@@ -5,6 +5,7 @@
 #include "../CsoundLayoutHelpers.h"
 #include "../CsoundSyntaxHelpers.h"
 #include "../CsoundMonitorLayout.h"
+#include "../CsoundChannelDiagnostics.h"
 
 #ifndef CSOUND_TESTS_CORE_ONLY
  #include "../PluginProcessor.h"
@@ -390,12 +391,119 @@ struct MonitorLayoutTests final : public juce::UnitTest
             expect (cabbageIdentChannels ("no cabbage here").isEmpty());
         }
 
+        beginTest ("isCabbageGuiMessage: widget messages vs real text");
+        {
+            expect (isCabbageGuiMessage ("visible(1)"));
+            expect (isCabbageGuiMessage ("visible(1), bounds(12,34,1,50)"));
+            expect (isCabbageGuiMessage ("colour( 20, 60, 70)"));
+            expect (isCabbageGuiMessage ("tableNumber(1)"));
+            expect (isCabbageGuiMessage ("text(C#3) bounds(0,0,10,10)"));
+            expect (! isCabbageGuiMessage ("playing"));
+            expect (! isCabbageGuiMessage ("bar 3  beat 2  step 05  x"));
+            expect (! isCabbageGuiMessage ("C#3"));
+            expect (! isCabbageGuiMessage ("f(x) = 2"));
+            expect (! isCabbageGuiMessage (""));
+        }
+
         beginTest ("linearToDb");
         {
             expectWithinAbsoluteError (linearToDb (1.0), 0.0, 1e-9);
             expectWithinAbsoluteError (linearToDb (0.5), -6.0206, 1e-3);
             expectWithinAbsoluteError (linearToDb (0.0), -60.0, 1e-9);
             expectWithinAbsoluteError (linearToDb (1e-9), -60.0, 1e-9);
+        }
+    }
+};
+
+//==============================================================================
+struct ChannelDiagnosticsTests final : public juce::UnitTest
+{
+    ChannelDiagnosticsTests() : juce::UnitTest ("Channel diagnostics", kCategory) {}
+
+    void runTest() override
+    {
+        using namespace csoundChannels;
+
+        beginTest ("classify: parameter > host > read&written > written > orphan");
+        {
+            expect (classify (true,  false, true,  false) == Origin::parameter);
+            expect (classify (true,  true,  true,  true)  == Origin::parameter);
+            expect (classify (false, true,  true,  false) == Origin::host);
+            expect (classify (false, false, true,  true)  == Origin::readWritten);
+            expect (classify (false, false, false, true)  == Origin::written);
+            expect (classify (false, false, true,  false) == Origin::orphan);
+            expect (classify (false, false, false, false) == Origin::orphan);
+        }
+
+        beginTest ("isNeverReadParameter: parameter written by the code and never read (GUI indicator)");
+        {
+            Info p; p.type = Type::control; p.origin = Origin::parameter;
+            p.input = false; p.output = true;  expect (isNeverReadParameter (p));
+            p.input = true;  p.output = true;  expect (! isNeverReadParameter (p));
+            p.input = true;  p.output = false; expect (! isNeverReadParameter (p));
+            p.origin = Origin::written; p.input = false; p.output = true; expect (! isNeverReadParameter (p));
+        }
+
+        beginTest ("canMap: control channels that are not parameters/host");
+        {
+            Info k; k.type = Type::control; k.origin = Origin::orphan;
+            expect (canMap (k));
+            k.origin = Origin::written;     expect (canMap (k));
+            k.origin = Origin::parameter;   expect (! canMap (k));
+            k.origin = Origin::host;        expect (! canMap (k));
+            Info s; s.type = Type::string; s.origin = Origin::orphan;   expect (! canMap (s));
+            Info a; a.type = Type::audio;  a.origin = Origin::orphan;   expect (! canMap (a));
+        }
+
+        beginTest ("summarize and sortForDisplay");
+        {
+            std::vector<Info> infos;
+            auto add = [&] (const char* name, Origin o) { Info i; i.name = name; i.origin = o; infos.push_back (i); };
+            add ("Zeta", Origin::written);
+            add ("beta", Origin::orphan);
+            add ("HOST_BPM", Origin::host);
+            add ("alpha", Origin::orphan);
+            add ("Gain", Origin::parameter);
+            add ("fb", Origin::readWritten);
+
+            const auto s = summarize (infos);
+            expectEquals (s.total, 6); expectEquals (s.orphans, 2); expectEquals (s.parameters, 1);
+            expectEquals (s.host, 1); expectEquals (s.written, 1); expectEquals (s.readWritten, 1);
+
+            sortForDisplay (infos);
+            expectEquals (infos[0].name, juce::String ("alpha"));   // orfani prima, per nome senza maiuscole
+            expectEquals (infos[1].name, juce::String ("beta"));
+            expectEquals (infos[2].name, juce::String ("Gain"));
+            expectEquals (infos[3].name, juce::String ("fb"));
+            expectEquals (infos[4].name, juce::String ("Zeta"));
+            expectEquals (infos[5].name, juce::String ("HOST_BPM"));
+        }
+
+        beginTest ("natural sort: Acc2 before Acc10; families of indexed names");
+        {
+            std::vector<Info> infos;
+            for (const char* n : { "Acc10", "Acc2", "Acc1", "Hold1", "Hold2", "Solo", "Acc3", "Hold3", "Pair1", "Pair2" })
+            {
+                Info i; i.name = n; i.origin = Origin::readWritten; infos.push_back (i);
+            }
+            sortForDisplay (infos);
+            expectEquals (infos[0].name, juce::String ("Acc1"));
+            expectEquals (infos[1].name, juce::String ("Acc2"));
+            expectEquals (infos[2].name, juce::String ("Acc3"));
+            expectEquals (infos[3].name, juce::String ("Acc10"));
+
+            const auto fams = findFamilies (infos);
+            expectEquals ((int) fams.size(), 2);                 // Acc (4) e Hold (3); Pair (2) e Solo no
+            expectEquals (fams[0].base, juce::String ("Acc"));
+            expectEquals ((int) fams[0].channels.size(), 4);
+            expectEquals (infos[(size_t) fams[0].channels[3]].name, juce::String ("Acc10"));   // ordinati per indice
+            expectEquals (fams[1].base, juce::String ("Hold"));
+
+            // origine diversa = famiglia diversa
+            infos[0].origin = Origin::orphan;
+            const auto fams2 = findFamilies (infos);
+            expectEquals ((int) fams2.size(), 2);                 // Acc2,3,10 (3) + Hold; Acc1 da solo
+            expectEquals ((int) fams2[0].channels.size(), 3);
         }
     }
 };
@@ -493,6 +601,29 @@ struct CabbageImportTests final : public juce::UnitTest
             expect (findFloat ("X") >= 0 && findFloat ("Y") >= 0, "xypad -> two Float slots");
             if (findFloat ("Y") >= 0)
                 expectWithinAbsoluteError (proc.getChannelParamSlot (findFloat ("Y")).defaultValue, 5.0f, 1e-4f);
+        }
+
+        beginTest ("Cabbage: on overflow, widgets never read by the code (indicators) are dropped first");
+        {
+            juce::String csd = "<Cabbage>\n";
+            // 10 LED first in the file (never read), then 60 switches (read): 70 > 64 Bool slots
+            for (int i = 1; i <= 10; ++i) csd << "checkbox bounds(0,0,10,10), channel(\"Led" << i << "\"), value(0)\n";
+            for (int i = 1; i <= 60; ++i) csd << "checkbox bounds(0,0,10,10), channel(\"Sw" << i << "\"), value(0)\n";
+            csd << "</Cabbage>\n<CsoundSynthesizer><CsInstruments>\ninstr 1\n";
+            for (int i = 1; i <= 60; ++i) csd << "k" << i << " chnget \"Sw" << i << "\"\n";
+            for (int i = 1; i <= 10; ++i) csd << "chnset k1, \"Led" << i << "\"\n";
+            csd << "endin\n</CsInstruments></CsoundSynthesizer>\n";
+            expect (proc.loadSessionFromText (csd));
+
+            int sw = 0, led = 0;
+            for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
+            {
+                const auto n = proc.getBoolParamSlot (i).channelName;
+                if (n.startsWith ("Sw")) ++sw;
+                if (n.startsWith ("Led")) ++led;
+            }
+            expectEquals (sw, 60, "all read switches mapped");
+            expectEquals (led, 4, "only as many LEDs as there is room for (64 - 60)");
         }
 
         beginTest ("Cabbage: a channel used by two widgets gives ONE parameter");
@@ -633,6 +764,7 @@ Summary runAll (CsoundAudioProcessor* processor, const std::function<void (const
     static LayoutHelpersTests   layoutTests;
     static SyntaxHelpersTests   syntaxTests;
     static MonitorLayoutTests   monitorTests;
+    static ChannelDiagnosticsTests channelTests;
    #ifndef CSOUND_TESTS_CORE_ONLY
     static CabbageImportTests   importTests;
     static SnapshotTreeTests    snapshotTests;

@@ -36,13 +36,13 @@ Developed by **Alessandro Petrolati** — [apeSoft](https://www.apesoft.it).
 - A custom JUCE code view (`Source/CsoundCodeView.*`), the same on macOS, Windows, Linux and iPadOS: smooth scrolling (wheel, trackpad, one-finger pan with inertia), line numbers, and on touch screens tap to place the caret, long press to select with handles and a magnifier.
 
 ### DAW parameters
-A fixed pool of **144 host-automatable parameters** can be mapped to Csound channels and read with `chnget`:
+A fixed pool of **176 host-automatable parameters** can be mapped to Csound channels and read with `chnget`:
 
 | Type | Slots | Configuration |
 |---|---|---|
 | Float | 64 | min, max, default, skew, step |
 | Int | 32 | min, max, default |
-| Bool | 32 | default |
+| Bool | 64 | default |
 | Choice | 16 | up to 16 labelled options, default |
 
 - Drag a parameter onto the code to insert the matching `chnget` line.
@@ -50,9 +50,10 @@ A fixed pool of **144 host-automatable parameters** can be mapped to Csound chan
 - The mapping is saved **inside the `.csd`**, in an `<apeCsoundParams>` section after `</CsoundSynthesizer>`. Csound ignores it, so the file stays a valid, portable `.csd`.
 - **XY pad**: `; @xy "X" "Y"` shows two Float parameters as one pad card; Cabbage `xypad` and CsoundQt XY controllers become pads, and Cabbage `groupbox`/`plant` containers become groups, automatically.
 - **Groups**: a `; @group Name` comment in the code puts the parameters read below it (sliders, toggles and menus alike) under one collapsible label in the panel; parameters without a group go to "Other".
-- **Monitor**: channels written with `chnset` (not parameters) are shown read-only at the bottom of the panel - meters, displays, labels.
+- **Monitor**: channels written with `chnset` (not parameters) are shown read-only at the bottom of the panel - meters, displays, labels. Indexed channels (`Band_1..Band_8`) become one multi-bar card; the 11th argument of `chn_k` adds attributes (`db`, `spark`, `int`, `hidden`, `group:Name`).
+- **Channels** (Cmd+4): a diagnostic list of every channel the engine knows - type, direction, value and who writes it. Channels the code reads and nobody writes are flagged; **Map** creates the parameter.
 - **Snapshots** (camera button in the Parameters panel): named sets of parameter values, stored in the `.csd` with the mapping. Save, recall, overwrite, rename, delete.
-- **Cabbage** (`<Cabbage>`) and **CsoundQt** (`<bsbPanel>`) widgets — sliders, knobs, spin boxes, XY controllers, checkboxes, menus — are imported as parameters when the file is loaded. The rest of their GUI is ignored and the code is not changed: frontend-specific opcodes (`invalue`, `cabbageGetValue`...) must be replaced with `chnget` / `chnset`. Porting is not guaranteed; see the in-app **apeCsound Guide**.
+- **Cabbage** (`<Cabbage>`) and **CsoundQt** (`<bsbPanel>`) widgets — sliders, knobs, spin boxes, XY controllers, checkboxes, buttons, menus — are imported as parameters when the file is loaded. The rest of their GUI is ignored and the code is not changed: frontend-specific opcodes (`invalue`, `cabbageGetValue`...) must be replaced with `chnget` / `chnset`. Porting is not guaranteed; see the in-app **apeCsound Guide**.
 
 ### Audio, MIDI and OSC
 - **MIDI effect**: AU/AUv3 type "Music Effect" (`aumf`), VST3 category "Fx". The track audio reaches Csound through `inch`, MIDI through `massign` / `notnum`; MIDI written by Csound (`midiout`) goes back to the DAW. To play a `.csd` instrument, load apeCsound as an effect and send it MIDI (the Guide explains how in Logic, Ableton Live, Cubase, REAPER, Bitwig, Studio One and the iOS hosts).
@@ -70,9 +71,15 @@ A fixed pool of **144 host-automatable parameters** can be mapped to Csound chan
 - **File menu** (the file name in the centre of the toolbar): Init Session Clear / Template, Load, Open Example, Save, Save as, Reveal in Finder, **Import Files...** (copies files into the right folder by type), **Manage Files...** (desktop: opens the apeCsound folder; iPadOS: a file manager to import, export and delete files), Restore Examples.
 - On iPadOS, Load / Save use apeCsound's own file browser, because the shared folder is not visible in the Files app.
 
+### Live coding
+- **Evaluate** (Shift+Return): sends the selection, the `instr`/`opcode` block around the caret or the current line to the running engine without a full recompile; score lines become real-time events. **Evaluate line** (Cmd+E) in the help bar for one-liners.
+
 ### Graphs and console
-- **Graphs** panel: function tables and `display` / `dispfft` signals, drawn instead of ASCII graphs.
-- **Console** with Csound's messages and errors; repeated messages are summarised to keep the DAW responsive.
+- **Graphs** panel: function tables and `display` / `dispfft` signals, drawn instead of ASCII graphs; tables are redrawn live when their content changes.
+- **Console** with Csound's messages and errors; repeated messages are summarised to keep the DAW responsive, errors are never hidden. Right-click on the help bar copies the current error.
+
+### Accessibility
+- Usable with **VoiceOver** on macOS and iOS: named controls, real menus, an accessible code editor and XY pad, full keyboard navigation.
 
 ---
 
@@ -127,6 +134,10 @@ Source/
   CsoundTokeniser.*        Syntax highlighting
   CsoundParameterEditor.*  Parameters panel
   CsoundGraphs.*           Graphs panel (ftables, display, dispfft)
+  CsoundChannelsPanel.*    Channels panel (diagnostics, Map/Unmap)
+  Csound*Helpers.h, CsoundMonitorLayout.h, CsoundChannelDiagnostics.h, CsoundParameterGroups.h
+                           Pure helpers (import regex, layout, syntax, Monitor cards, channel classification, groups)
+  Tests/CsoundUnitTests.*  Unit tests (Config > Run Self-Tests, --run-tests, scripts/run_unit_tests.sh)
   CsoundActionSheet.*      Menus (touch-friendly on iPadOS)
   CsdBrowserView.h         iPadOS file browser / file manager
   CsoundAudioSettings.*    Audio/MIDI settings of the standalone app

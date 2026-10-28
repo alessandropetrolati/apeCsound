@@ -176,6 +176,20 @@ namespace csoundMonitor
         return names;
     }
 
+    /** Il VALORE di un canale stringa e' un messaggio GUI di Cabbage?
+        "visible(1)", "bounds(10,20,1,50)", "colour(20, 60, 70)",
+        "tableNumber(1)", "text(abc)", anche in sequenza separati da virgola.
+        Mandati con chnset a identChannel costruiti a runtime (sprintfk), non
+        riconoscibili dal nome: si guarda il contenuto. */
+    inline bool isCabbageGuiMessage (const juce::String& value)
+    {
+        const auto v = value.trim();
+        if (v.isEmpty() || ! v.endsWithChar (')'))
+            return false;
+        static const std::regex re (R"re(^\s*[A-Za-z_][A-Za-z0-9_:]*\s*\([^()]*\)(\s*,?\s*[A-Za-z_][A-Za-z0-9_:]*\s*\([^()]*\))*\s*$)re");
+        return std::regex_match (v.toStdString(), re);
+    }
+
     /** Ampiezza lineare -> dB, limitata in basso. */
     inline double linearToDb (double v, double floorDb = -60.0)
     {

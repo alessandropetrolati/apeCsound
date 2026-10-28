@@ -3494,6 +3494,15 @@ void CsoundParameterMappingPanel::showPanelMenu()
         item.icon = CsoundActionSheetIcon::waveform;
         items.push_back (item);
     }
+    {
+        CsoundActionSheetItem item;
+        item.id = 151; item.text = "Show Channels"; item.shortcut = CsoundShortcuts::label (CsoundShortcuts::showChannels());
+        item.enabled = onToggleChannelsRequested != nullptr;
+        item.tickedFn = [this] { return isChannelsVisible && isChannelsVisible(); };
+        item.keepOpen = true;
+        item.icon = CsoundActionSheetIcon::info;
+        items.push_back (item);
+    }
 
     // Load/Save CSD: richiamano le stesse funzioni dei vecchi bottoni
     // "Load..."/"Save as..." nella toolbar PRINCIPALE di PluginEditor, ora
@@ -3791,6 +3800,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 120: if (safeThis->onToggleDarkEditorRequested) safeThis->onToggleDarkEditorRequested(); break;
             case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
             case 150: if (safeThis->onToggleGraphsRequested) safeThis->onToggleGraphsRequested(); break;
+            case 151: if (safeThis->onToggleChannelsRequested) safeThis->onToggleChannelsRequested(); break;
             case 121: if (safeThis->onAudioSettingsRequested) safeThis->onAudioSettingsRequested(); break;
             case 123: case 124: case 125: case 126:
                 if (safeThis->onChooseCsoundFolder) safeThis->onChooseCsoundFolder (result - 123);

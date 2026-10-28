@@ -875,6 +875,11 @@ void CsoundAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock
     hostBlockSize  = samplesPerBlock;
     rebuildHostChannelMaps();
 
+    // Capacita' riservate qui, fuori dal thread audio (vedi il commento su
+    // incomingMidiQueue in PluginProcessor.h).
+    incomingMidiQueue.ensureStorageAllocated (kMidiQueueCapacity);
+    outgoingMidi.ensureSize (kMidiOutBufferBytes);
+
     // Se il motore e' gia' attivo (es. l'host richiama prepareToPlay per un
     // cambio di sample rate/buffer size mentre il plugin sta suonando) lo
     // lasciamo cosi' com'e': ricompilare qui causerebbe un glitch udibile a
@@ -1370,6 +1375,7 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     resolveHostTransportChannels (cs);
 
     engineGeneration.fetch_add (1);
+    engineFinishedPending.store (false);   // nessuno "stop" in ritardo del motore precedente
     activeCsound.store (cs);
     ready = true;
 
@@ -1438,14 +1444,19 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     incomingMidiQueue.clearQuick();
 
     for (const auto metadata : midiMessages)
+    {
+        if (incomingMidiQueue.size() >= kMidiQueueCapacity)
+            break;   // oltre la capacita' riservata: scartati (mai allocare qui)
         incomingMidiQueue.add (metadata.getMessage());
+    }
 
     // I messaggi MIDI generati da Csound in questo blocco (es. midiout)
-    // finiscono qui tramite midiOutWriteCallback; alla fine rimpiazzano il
-    // contenuto di midiMessages, come e' convenzione in JUCE per i plugin
-    // che producono MIDI.
-    juce::MidiBuffer outgoing;
-    outgoingMidiBuffer = &outgoing;
+    // finiscono in outgoingMidi (membro preallocato) tramite
+    // midiOutWriteCallback; alla fine rimpiazzano il contenuto di
+    // midiMessages, come e' convenzione in JUCE per i plugin che producono
+    // MIDI. swapWith scambia le memorie: entrambe restano allocate.
+    outgoingMidi.clear();
+    outgoingMidiBuffer = &outgoingMidi;
 
     int written = 0;
 
@@ -1515,22 +1526,18 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
                 ready = false;
 
                 outgoingMidiBuffer = nullptr;
-                midiMessages.swapWith (outgoing);
+                midiMessages.swapWith (outgoingMidi);
 
-                juce::MessageManager::callAsync ([this, alive = aliveFlag]
-                {
-                    if (! alive->load())
-                        return;
-
-                    listeners.call ([] (Listener& l) { l.csoundEngineStopped(); });
-                });
+                // Niente callAsync dal thread audio: timerCallback (message
+                // thread, ogni kMessageFlushIntervalMs) avvisa i listener.
+                engineFinishedPending.store (true);
                 return;
             }
         }
     }
 
     outgoingMidiBuffer = nullptr;
-    midiMessages.swapWith (outgoing);
+    midiMessages.swapWith (outgoingMidi);
 }
 
 //==============================================================================
@@ -1797,7 +1804,7 @@ namespace
     // Versione dello zip degli esempi (Resources/Examples.zip, vedi
     // scripts/make_examples_zip.sh): aumentarla quando lo zip cambia, cosi'
     // gli esempi nuovi vengono estratti anche a chi ha gia' la cartella.
-    constexpr int kExamplesVersion = 7;   // ... 6: + Test/XYPadTest  7: + Test/MonitorTest
+    constexpr int kExamplesVersion = 8;   // ... 7: + Test/MonitorTest  8: 1.0.5 (MonitorStressTest, MidiOutTest, Csound 7 fixes, loop_* renamed, TB-303 groups)
     const char* const kExamplesVersionKey = "examplesVersion";
 }
 
@@ -2581,9 +2588,26 @@ std::vector<CsoundAudioProcessor::MonitorChannel> CsoundAudioProcessor::listMoni
         const juce::String name (juce::CharPointer_UTF8 (info.name));
         if (name.isEmpty() || isReservedHostChannel (name))
             continue;
-        // identChannel di Cabbage (messaggi GUI come "colour(...)"): fuori.
-        if (type == CSOUND_STRING_CHANNEL && monitorIdentChannels.contains (name))
-            continue;
+        // identChannel di Cabbage (messaggi GUI come "colour(...)"): fuori -
+        // sia quelli dichiarati nel <Cabbage>, sia quelli riconosciuti dal
+        // contenuto ("visible(1), bounds(...)" scritti a nomi costruiti con
+        // sprintfk), che vengono ricordati per questo motore.
+        if (type == CSOUND_STRING_CHANNEL)
+        {
+            if (monitorIdentChannels.contains (name))
+                continue;
+            if (CsoundAPI::csoundGetStringChannel != nullptr)
+            {
+                char buffer[512] = { 0 };
+                CsoundAPI::csoundGetStringChannel (cs, info.name, buffer);
+                buffer[sizeof (buffer) - 1] = 0;
+                if (csoundMonitor::isCabbageGuiMessage (juce::String (juce::CharPointer_UTF8 (buffer))))
+                {
+                    monitorIdentChannels.add (name);
+                    continue;
+                }
+            }
+        }
         // Un parametro del pannello (anche se il codice lo scrive con chnset:
         // e' gia' visibile come slider) - vedi isChannelNameUsedElsewhere.
         if (isChannelNameUsedElsewhere (name, -1, -1))
@@ -2609,6 +2633,215 @@ std::vector<CsoundAudioProcessor::MonitorChannel> CsoundAudioProcessor::listMoni
 
     CsoundAPI::csoundDeleteChannelList (cs, list);
     return out;
+}
+
+std::vector<csoundChannels::Info> CsoundAudioProcessor::listAllChannels()
+{
+    using namespace csoundChannels;
+    std::vector<Info> out;
+    auto* cs = activeCsound.load();
+    if (cs == nullptr || ! ready.load() || CsoundAPI::csoundListChannels == nullptr)
+        return out;
+
+    controlChannelInfo_t* list = nullptr;
+    const int n = CsoundAPI::csoundListChannels (cs, &list);
+    if (n <= 0 || list == nullptr)
+        return out;
+
+    for (int i = 0; i < n; ++i)
+    {
+        const auto& info = list[i];
+        if (info.name == nullptr)
+            continue;
+
+        Info d;
+        d.name = juce::String (juce::CharPointer_UTF8 (info.name));
+        if (d.name.isEmpty())
+            continue;
+
+        switch (info.type & CSOUND_CHANNEL_TYPE_MASK)
+        {
+            case CSOUND_CONTROL_CHANNEL: d.type = Type::control; break;
+            case CSOUND_STRING_CHANNEL:  d.type = Type::string;  break;
+            case CSOUND_AUDIO_CHANNEL:   d.type = Type::audio;   break;
+            case CSOUND_PVS_CHANNEL:     d.type = Type::pvs;     break;
+            default:                     d.type = Type::other;   break;
+        }
+        d.input  = (info.type & CSOUND_INPUT_CHANNEL)  != 0;
+        d.output = (info.type & CSOUND_OUTPUT_CHANNEL) != 0;
+
+        if (d.type == Type::control && info.hints.behav != CSOUND_CONTROL_CHANNEL_NO_HINTS)
+        {
+            d.hasHints    = info.hints.max > info.hints.min;
+            d.hintMin     = info.hints.min;
+            d.hintMax     = info.hints.max;
+            d.hintDefault = info.hints.dflt;
+        }
+
+        // Di che parametro si tratta (se lo e').
+        for (int k = 0; k < numChannelParams && d.parameterKind.isEmpty(); ++k)
+            if (getChannelParamSlot (k).channelName == d.name) d.parameterKind = "Float";
+        for (int k = 0; k < numIntParams && d.parameterKind.isEmpty(); ++k)
+            if (getIntParamSlot (k).channelName == d.name) d.parameterKind = "Int";
+        for (int k = 0; k < numBoolParams && d.parameterKind.isEmpty(); ++k)
+            if (getBoolParamSlot (k).channelName == d.name) d.parameterKind = "Bool";
+        for (int k = 0; k < numChoiceParams && d.parameterKind.isEmpty(); ++k)
+            if (getChoiceParamSlot (k).channelName == d.name) d.parameterKind = "Choice";
+
+        d.origin = classify (d.parameterKind.isNotEmpty(), isReservedHostChannel (d.name), d.input, d.output);
+        out.push_back (d);
+    }
+
+    CsoundAPI::csoundDeleteChannelList (cs, list);
+    sortForDisplay (out);
+    return out;
+}
+
+juce::String CsoundAudioProcessor::readChannelValueText (const csoundChannels::Info& info)
+{
+    using namespace csoundChannels;
+    auto* cs = activeCsound.load();
+    if (cs == nullptr || ! ready.load() || CsoundAPI::csoundGetChannelPtr == nullptr)
+        return {};
+
+    const int dir = (info.input ? CSOUND_INPUT_CHANNEL : 0) | (info.output ? CSOUND_OUTPUT_CHANNEL : 0);
+
+    if (info.type == Type::string)
+    {
+        MonitorChannel ch; ch.name = info.name; ch.isString = true;
+        return "\"" + readMonitorString (ch) + "\"";
+    }
+
+    void* p = nullptr;
+    if (info.type == Type::control)
+    {
+        if (CsoundAPI::csoundGetChannelPtr (cs, &p, info.name.toRawUTF8(), CSOUND_CONTROL_CHANNEL | dir) != 0 || p == nullptr)
+            return {};
+        const double v = (double) *static_cast<cs_float*> (p);
+        auto t = juce::String (v, 4);
+        if (t.containsChar ('.')) t = t.trimCharactersAtEnd ("0").trimCharactersAtEnd (".");
+        return t == "-0" ? juce::String ("0") : t;
+    }
+
+    if (info.type == Type::audio && csKsmps > 0)
+    {
+        if (CsoundAPI::csoundGetChannelPtr (cs, &p, info.name.toRawUTF8(), CSOUND_AUDIO_CHANNEL | dir) != 0 || p == nullptr)
+            return {};
+        const auto* a = static_cast<const cs_float*> (p);
+        double sum = 0.0;
+        for (int i = 0; i < csKsmps; ++i) sum += (double) a[i] * (double) a[i];
+        const double rms = std::sqrt (sum / (double) csKsmps);
+        return "rms " + juce::String (rms > 1e-6 ? 20.0 * std::log10 (rms) : -120.0, 1) + " dB";
+    }
+
+    return "-";
+}
+
+bool CsoundAudioProcessor::mapChannelToParameter (const juce::String& name, int kind)
+{
+    if (name.isEmpty() || isChannelNameUsedElsewhere (name, -1, -1) || isReservedHostChannel (name))
+        return false;
+
+    // Hint e valore corrente dal motore (se c'e').
+    bool hasHints = false;
+    double hintMin = 0.0, hintMax = 1.0, hintDefault = 0.0, current = 0.0;
+    for (const auto& d : listAllChannels())
+        if (d.name == name)
+        {
+            hasHints = d.hasHints; hintMin = d.hintMin; hintMax = d.hintMax; hintDefault = d.hintDefault;
+            current = readChannelValueText (d).getDoubleValue();
+            break;
+        }
+
+    auto pushDefault = [this] (const juce::String& id)
+    {
+        if (auto* p = apvts.getParameter (id))
+            p->setValueNotifyingHost (p->getDefaultValue());
+    };
+
+    switch (kind)
+    {
+        case 0:
+            for (int i = 0; i < numChannelParams; ++i)
+                if (getChannelParamSlot (i).channelName.isEmpty())
+                {
+                    ChannelParamSlot slot;
+                    slot.channelName  = name;
+                    slot.minValue     = (float) (hasHints ? hintMin : juce::jmin (0.0, current));
+                    slot.maxValue     = (float) (hasHints ? hintMax : juce::jmax (1.0, current));
+                    slot.defaultValue = (float) juce::jlimit ((double) slot.minValue, (double) slot.maxValue, hasHints ? hintDefault : current);
+                    setChannelParamSlot (i, slot);
+                    pushDefault (getChannelParamID (i));
+                    notifySessionEditedByUndoRedo (false);
+                    return true;
+                }
+            return false;
+
+        case 1:
+            for (int i = 0; i < numIntParams; ++i)
+                if (getIntParamSlot (i).channelName.isEmpty())
+                {
+                    IntParamSlot slot;
+                    slot.channelName  = name;
+                    slot.minValue     = hasHints ? (int) hintMin : 0;
+                    slot.maxValue     = hasHints ? (int) hintMax : juce::jmax (127, (int) current);
+                    slot.defaultValue = juce::jlimit (slot.minValue, slot.maxValue, (int) (hasHints ? hintDefault : current));
+                    setIntParamSlot (i, slot);
+                    pushDefault (getIntParamID (i));
+                    notifySessionEditedByUndoRedo (false);
+                    return true;
+                }
+            return false;
+
+        case 2:
+            for (int i = 0; i < numBoolParams; ++i)
+                if (getBoolParamSlot (i).channelName.isEmpty())
+                {
+                    BoolParamSlot slot;
+                    slot.channelName  = name;
+                    slot.defaultValue = (hasHints ? hintDefault : current) >= 0.5;
+                    setBoolParamSlot (i, slot);
+                    pushDefault (getBoolParamID (i));
+                    notifySessionEditedByUndoRedo (false);
+                    return true;
+                }
+            return false;
+
+        case 3:
+            for (int i = 0; i < numChoiceParams; ++i)
+                if (getChoiceParamSlot (i).channelName.isEmpty())
+                {
+                    ChoiceParamSlot slot;
+                    slot.channelName = name;
+                    const int count = hasHints ? juce::jlimit (2, maxChoiceOptions, (int) hintMax) : 4;
+                    for (int o = 0; o < count; ++o) slot.optionLabels.add (juce::String (o + 1));
+                    slot.defaultIndex = juce::jlimit (0, count - 1, (int) (hasHints ? hintDefault : current) - 1);
+                    setChoiceParamSlot (i, slot);
+                    pushDefault (getChoiceParamID (i));
+                    notifySessionEditedByUndoRedo (false);
+                    return true;
+                }
+            return false;
+
+        default:
+            return false;
+    }
+}
+
+bool CsoundAudioProcessor::unmapChannelParameter (const juce::String& name)
+{
+    if (name.isEmpty())
+        return false;
+
+    for (int i = 0; i < numChannelParams; ++i)
+        if (getChannelParamSlot (i).channelName == name) { setChannelParamSlot (i, {}); notifySessionEditedByUndoRedo (false); return true; }
+    for (int i = 0; i < numIntParams; ++i)
+        if (getIntParamSlot (i).channelName == name)     { setIntParamSlot (i, {});     notifySessionEditedByUndoRedo (false); return true; }
+    for (int i = 0; i < numBoolParams; ++i)
+        if (getBoolParamSlot (i).channelName == name)    { setBoolParamSlot (i, {});    notifySessionEditedByUndoRedo (false); return true; }
+    for (int i = 0; i < numChoiceParams; ++i)
+        if (getChoiceParamSlot (i).channelName == name)  { setChoiceParamSlot (i, {});  notifySessionEditedByUndoRedo (false); return true; }
+    return false;
 }
 
 double CsoundAudioProcessor::readMonitorValue (const MonitorChannel& ch) const
@@ -3889,9 +4122,91 @@ bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
             param->setValueNotifyingHost (param->getDefaultValue());
     };
 
+    // Overflow di un tipo (es. 74 checkbox/button per 64 slot Bool): i
+    // widget il cui canale il codice NON legge mai con chnget (indicatori
+    // GUI: LED, meter, "Act1..16" di un sequencer) vengono scartati per
+    // primi, cosi' i bottoni che contano (Play, Stop...) entrano. Solo in
+    // caso di overflow: senza, tutto viene importato come prima (canali
+    // letti via sprintf/variabile non sono riconoscibili dal testo).
+    std::set<juce::String> dropAsIndicator;
+    {
+        const auto orchestra = csdText.fromFirstOccurrenceOf ("<CsInstruments>", false, false)
+                                      .upToFirstOccurrenceOf ("</CsInstruments>", false, false);
+        auto isReadByCode = [&orchestra] (const juce::String& channel)
+        {
+            // chnget "Name" / chnget:k("Name") / chngetk "Name" ...
+            const auto quoted = "\"" + channel + "\"";
+            for (int at = orchestra.indexOf (quoted); at >= 0; at = orchestra.indexOf (at + 1, quoted))
+            {
+                const int lineStart = orchestra.substring (0, at).lastIndexOfChar ('\n') + 1;   // -1 + 1 = 0 se prima riga
+                if (orchestra.substring (lineStart, at).contains ("chnget"))
+                    return true;
+            }
+            return false;
+        };
+
+        std::vector<juce::String> boolWidgets, floatWidgets, choiceWidgets; // canali nell'ordine del file
+        for (auto line : juce::StringArray::fromLines (cabbageSection))
+        {
+            const auto identifier = cabbageLeadingIdentifier (line);
+            juce::String ch, a, b;
+            if (identifier.isEmpty())
+                continue;
+            if (identifier == "xypad")
+            {
+                if (cabbageMatchChannelPair (line, a, b)) { floatWidgets.push_back (a); floatWidgets.push_back (b); }
+                continue;
+            }
+            if (! cabbageMatchSingleChannel (line, ch) || ch.isEmpty())
+                continue;
+            if (identifier == "checkbox" || identifier == "button")
+                boolWidgets.push_back (ch);
+            else if (identifier == "combobox")
+                choiceWidgets.push_back (ch);
+            else if (identifier == "hslider" || identifier == "vslider" || identifier == "rslider" || identifier == "nslider"
+                     || identifier == "encoder")
+                floatWidgets.push_back (ch);
+            else if (identifier == "vrange" || identifier == "hrange")
+            {
+                floatWidgets.push_back (ch);
+                floatWidgets.push_back (ch + "#2");   // due slot
+            }
+        }
+
+        auto dropIndicatorsIfOverflow = [&] (const std::vector<juce::String>& widgets, int limit)
+        {
+            std::set<juce::String> unique (widgets.begin(), widgets.end());
+            int excess = (int) unique.size() - limit;
+            // Dall'ultimo verso il primo: a parita' restano i primi del file.
+            for (auto it = widgets.rbegin(); it != widgets.rend() && excess > 0; ++it)
+            {
+                if (it->endsWith ("#2") || dropAsIndicator.count (*it) > 0)
+                    continue;
+                if (! isReadByCode (*it))
+                {
+                    dropAsIndicator.insert (*it);
+                    --excess;
+                }
+            }
+        };
+        dropIndicatorsIfOverflow (boolWidgets,   numBoolParams);
+        dropIndicatorsIfOverflow (floatWidgets,  numChannelParams);
+        dropIndicatorsIfOverflow (choiceWidgets, numChoiceParams);
+    }
+    int skippedIndicator = 0;
+
     for (auto line : juce::StringArray::fromLines (cabbageSection))
     {
         const auto identifier = cabbageLeadingIdentifier (line);
+
+        {
+            juce::String ch;
+            if (identifier.isNotEmpty() && cabbageMatchSingleChannel (line, ch) && dropAsIndicator.count (ch) > 0)
+            {
+                ++skippedIndicator;
+                continue;
+            }
+        }
 
         if (identifier.isEmpty())
             continue;
@@ -4200,6 +4515,8 @@ bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
     if (skippedChoice > 0)
         summary << " (" << skippedChoice << " choice widget(s) skipped: oltre il limite di " << numChoiceParams << ")";
 
+    if (skippedIndicator > 0)
+        summary << " - " << skippedIndicator << " indicator widget(s) skipped to make room (their channel is never read by the code)";
     if (skippedListbox > 0)
         summary << " - " << skippedListbox << " listbox ignorato/i (nessun parametro DAW)";
     if (skippedDuplicate > 0)
@@ -4444,6 +4761,9 @@ void CsoundAudioProcessor::timerCallback()
 {
     applyChannelValuesFromCsound();
     flushPendingMessages();
+
+    if (engineFinishedPending.exchange (false))
+        listeners.call ([] (Listener& l) { l.csoundEngineStopped(); });
 }
 
 void CsoundAudioProcessor::flushPendingMessages()
@@ -4889,7 +5209,9 @@ int CsoundAudioProcessor::midiOutWriteCallback (CSOUND* /*cs*/, void* userData, 
     // blocco da qui: il messaggio viene accodato al campione 0 del blocco
     // corrente (sufficiente per la maggior parte degli usi - note/CC generati
     // dall'opcode midiout non hanno bisogno di un sample-accuracy particolare).
-    self->outgoingMidiBuffer->addEvent (juce::MidiMessage (buffer, nBytes), 0);
+    // Overload con i byte grezzi: niente juce::MidiMessage temporaneo (per i
+    // sysex allocherebbe) - il buffer e' preallocato (vedi outgoingMidi).
+    self->outgoingMidiBuffer->addEvent (buffer, nBytes, 0);
 
     return nBytes;
 }

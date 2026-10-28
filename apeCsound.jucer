@@ -71,6 +71,12 @@
             file="Source/CsoundSyntaxHelpers.h"/>
       <FILE id="moLay" name="CsoundMonitorLayout.h" compile="0" resource="0"
             file="Source/CsoundMonitorLayout.h"/>
+      <FILE id="chDia" name="CsoundChannelDiagnostics.h" compile="0" resource="0"
+            file="Source/CsoundChannelDiagnostics.h"/>
+      <FILE id="chPnC" name="CsoundChannelsPanel.cpp" compile="1" resource="0"
+            file="Source/CsoundChannelsPanel.cpp"/>
+      <FILE id="chPnH" name="CsoundChannelsPanel.h" compile="0" resource="0"
+            file="Source/CsoundChannelsPanel.h"/>
       <GROUP id="{7A1C2E55-0B9D-4F3A-9C11-5E2D8B6F0A42}" name="Tests">
         <FILE id="utCpp" name="CsoundUnitTests.cpp" compile="1" resource="0"
               file="Source/Tests/CsoundUnitTests.cpp"/>

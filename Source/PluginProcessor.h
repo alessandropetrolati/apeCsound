@@ -28,6 +28,7 @@
 #include "CsoundDynamicLib.h"
 #include "CsoundOpcodeHelp.h"
 #include "CsoundGraphs.h"
+#include "CsoundChannelDiagnostics.h"
 #include "SecurityScopedFile.h"
 
 class CsoundAudioProcessor; // vedi ChannelHostParameter sotto
@@ -326,12 +327,13 @@ public:
     /** Inversa di denormalizeIntParam. Funzione pura, nessun lock. */
     static float normalizeIntParam (const IntParamSlot& slot, double real);
 
-    // --- 32 "macro" parametri host booleani, stesso disegno dei parametri
+    // --- 64 "macro" parametri host booleani (32 fino alla 1.0.4: gli
+    //     step sequencer di Cabbage ne usano 48-64), stesso disegno dei parametri
     //     qui sopra (pool fisso, parametro apvts stabile, metadata reali
     //     solo nello slot) - vedi BoolHostParameter e BoolParamSlot. Il
     //     valore (0.0/1.0) viene spinto al canale Csound assegnato con
     //     csoundSetControlChannel, esattamente come i parametri float.
-    static constexpr int numBoolParams = 32;
+    static constexpr int numBoolParams = 64;
 
     struct BoolParamSlot
     {
@@ -483,6 +485,21 @@ public:
         cs_float* valuePtr = nullptr; // numerico: letto direttamente
     };
     std::vector<MonitorChannel> listMonitorChannels();
+
+    // Scheda "Channels" (CsoundChannelsPanel): TUTTI i canali del motore,
+    // classificati - vedi CsoundChannelDiagnostics.h.
+    std::vector<csoundChannels::Info> listAllChannels();
+    /** Valore corrente come testo: numero (k), testo (S), RMS dell'ultimo
+        ksmps (a), "-" per il resto. Message thread. */
+    juce::String readChannelValueText (const csoundChannels::Info& info);
+    /** "Map": crea un parametro per il canale nel primo slot libero del tipo
+        (0 Float, 1 Int, 2 Bool, 3 Choice), range/default dagli hint di chn_k
+        se ci sono, altrimenti 0..1 (Int 0..127) e il valore corrente.
+        Ritorna false se non ci sono slot liberi o il nome e' gia' usato. */
+    bool mapChannelToParameter (const juce::String& name, int kind);
+    /** "Unmap": libera lo slot del parametro con quel nome (qualunque tipo).
+        Ritorna false se non c'e'. */
+    bool unmapChannelParameter (const juce::String& name);
 private:
     juce::StringArray monitorIdentChannels;             // identChannel("...") del <Cabbage>, esclusi dal Monitor
     std::uint64_t monitorIdentChannelsGeneration = ~0ull;
@@ -1297,8 +1314,18 @@ private:
     static int midiOutWriteCallback (CSOUND* cs, void* userData, const unsigned char* buffer, int nBytes);
     static int midiOutCloseCallback (CSOUND* cs, void* userData);
 
+    // Real-time safety (processBlock): nessuna allocazione nel thread audio.
+    // incomingMidiQueue ha capacita' riservata in prepareToPlay (clearQuick la
+    // conserva); outgoingMidi e' un membro preallocato (ensureSize) invece di
+    // un juce::MidiBuffer locale, che allocava al primo midiout del blocco;
+    // engineFinishedPending sostituisce la callAsync dal thread audio a fine
+    // performance (letto da timerCallback sul message thread).
     juce::Array<juce::MidiMessage> incomingMidiQueue;
+    juce::MidiBuffer outgoingMidi;
     juce::MidiBuffer* outgoingMidiBuffer = nullptr;
+    std::atomic<bool> engineFinishedPending { false };
+    static constexpr int kMidiQueueCapacity = 1024;
+    static constexpr int kMidiOutBufferBytes = 16384;
 
     std::atomic<CSOUND*> activeCsound { nullptr };
     std::atomic<bool> ready { false };

@@ -501,6 +501,8 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // Pannello Graphs (nascosto di default) e divisore verticale tra
     // consolle e grafici - vedi showingGraphs in PluginEditor.h.
     addChildComponent (graphsPanel);
+    addChildComponent (channelsPanel);
+    channelsPanel.onLog = [this] (const juce::String& line) { appendToLog (line); };
     addChildComponent (graphsDivider);
     graphsDivider.getCurrentWidth = [this] { return graphsWidth; };
     graphsDivider.onDrag = [this] (int newWidth)
@@ -830,6 +832,8 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.isConsoleVisible            = [this] { return showingConsole; };
     parameterPanel.onToggleGraphsRequested     = [this] { toggleGraphs(); };
     parameterPanel.isGraphsVisible             = [this] { return showingGraphs; };
+    parameterPanel.onToggleChannelsRequested   = [this] { toggleChannels(); };
+    parameterPanel.isChannelsVisible           = [this] { return showingChannels; };
 
     // Apre la sidebar Parametri se e' chiusa quando si aggiunge un nuovo
     // parametro (vedi il commento su onEnsurePanelVisible in
@@ -980,6 +984,7 @@ bool CsoundAudioProcessorEditor::keyPressed (const juce::KeyPress& key)
     if (key == SC::showConsole())    { toggleConsole(); return true; }
     if (key == SC::evaluateLine())   { setEvaluateLineVisible (! opcodeHelpBar.isEvaluateMode()); return true; }
     if (key == SC::showGraphs())     { toggleGraphs(); return true; }
+    if (key == SC::showChannels())   { toggleChannels(); return true; }
 
     if (key == SC::largerText() || key == SC::cmd ('+') || key == SC::cmd ('=', true))
     {
@@ -1284,9 +1289,9 @@ void CsoundAudioProcessorEditor::resized()
     // consolle). Nascosti entrambi: editor/opcodeHelpBar recuperano TUTTO lo
     // spazio, niente resta riservato/vuoto.
     clearConsoleButton.setVisible (showingConsole);
-    graphsDivider.setVisible (showingConsole && showingGraphs);
+    graphsDivider.setVisible (showingConsole && bottomRightPanel() != nullptr);
 
-    if (showingConsole || showingGraphs)
+    if (showingConsole || bottomRightPanel() != nullptr)
     {
         // Altezza ridimensionabile (consoleDivider), mai sotto
         // consoleMinHeight, mai cosi' alta da lasciare a editor/opcodeHelpBar
@@ -1301,7 +1306,7 @@ void CsoundAudioProcessorEditor::resized()
         consoleDivider.setBounds (consoleDividerArea.expanded (0, dividerGrabMargin)); // presa alta, striscia stretta
         consoleDivider.toFront (false);
 
-        if (showingGraphs)
+        if (auto* rightPanel = bottomRightPanel())
         {
             if (showingConsole)
             {
@@ -1309,13 +1314,13 @@ void CsoundAudioProcessorEditor::resized()
                                                         bottomArea.getWidth() - graphsConsoleMinWidth - sidebarDividerWidth);
                 graphsWidth = juce::jlimit (graphsMinWidth, maxGraphsWidth, graphsWidth);
 
-                graphsPanel.setBounds (bottomArea.removeFromRight (graphsWidth));
+                rightPanel->setBounds (bottomArea.removeFromRight (graphsWidth));
                 graphsDivider.setBounds (bottomArea.removeFromRight (sidebarDividerWidth).expanded (dividerGrabMargin, 0));
                 graphsDivider.toFront (false);
             }
             else
             {
-                graphsPanel.setBounds (bottomArea);
+                rightPanel->setBounds (bottomArea);
             }
         }
 
@@ -1456,7 +1461,7 @@ void CsoundAudioProcessorEditor::toggleConsole()
     // Stesso schema di toggleParameterPanel() sopra: editor/opcodeHelpBar si
     // allargano per recuperare lo spazio (vedi resized()), nessun overlay.
     logConsole.setVisible (showingConsole);
-    consoleDivider.setVisible (showingConsole || showingGraphs);
+    consoleDivider.setVisible (showingConsole || bottomRightPanel() != nullptr);
 
     resized();
     repaint();
@@ -1465,11 +1470,28 @@ void CsoundAudioProcessorEditor::toggleConsole()
 void CsoundAudioProcessorEditor::toggleGraphs()
 {
     showingGraphs = ! showingGraphs;
+    if (showingGraphs)
+        showingChannels = false;   // stesso posto: uno alla volta
 
     // visible/hidden: il pannello avvia/ferma da se' la registrazione di
     // display/dispfft (CsoundGraphsPanel::visibilityChanged).
     graphsPanel.setVisible (showingGraphs);
-    consoleDivider.setVisible (showingConsole || showingGraphs);
+    channelsPanel.setVisible (showingChannels);
+    consoleDivider.setVisible (showingConsole || bottomRightPanel() != nullptr);
+
+    resized();
+    repaint();
+}
+
+void CsoundAudioProcessorEditor::toggleChannels()
+{
+    showingChannels = ! showingChannels;
+    if (showingChannels)
+        showingGraphs = false;
+
+    channelsPanel.setVisible (showingChannels);
+    graphsPanel.setVisible (showingGraphs);
+    consoleDivider.setVisible (showingConsole || bottomRightPanel() != nullptr);
 
     resized();
     repaint();
@@ -3799,10 +3821,12 @@ On iOS the apeCsound folder is not visible in the Files app. **Load**, **Open Ex
 When Apply fails, the line reported by Csound gets a red dot, a red background and a wavy underline; with the caret on it, the help bar shows the message.
 - The mark goes away when you edit the line, and all marks are cleared at the next Apply.
 - Csound stops at the first syntax error: fix it and Apply again to see the next one.
-- `INIT ERROR` / `PERF ERROR` while running are marked too. Errors in macros or `#include` files stay in the console.
+- `INIT ERROR` / `PERF ERROR` while running are marked too. Errors in macros or `#include` files stay in the console; with a multi-line macro the reported line can be off.
+- Right-click on the help bar: **Copy error** (or **Copy help**) puts the text on the clipboard.
+- Errors, warnings and "deactivated" messages are never hidden by the console flood filter.
 
 # Parameters
-Every instance offers the DAW **144 fixed parameters**: 64 Float, 32 Int, 32 Bool and 16 Choice. The DAW always sees "Float 1 ... Float 64" and so on; in the Parameters panel you give each one a Csound channel name and its range.
+Every instance offers the DAW **176 fixed parameters**: 64 Float, 32 Int, 64 Bool and 16 Choice. The DAW always sees "Float 1 ... Float 64" and so on; in the Parameters panel you give each one a Csound channel name and its range.
 - **Float** (min, max, default, skew, step), **Int** (min, max, default), **Bool** (default), **Choice** (up to 16 options; the channel gets 1..N, as in Cabbage).
 - **+** on the panel title adds one. Each card has an **edit** (pencil) button that opens its configuration (channel name, range, default, skew, step, options) - it becomes a check mark while editing: press it to apply and go back to the control - while a slider is being edited, the slider itself stays visible under the name and follows Min/Max/Init/Skew/Step as you type - and a **...** menu: **Copy chnget line** (the `chnget` line with a configuration comment, to paste in the code), **Reset to Init Value**, **Randomize** (a random value within the range), **Show in Code**, **Remove** (asks for confirmation; can be undone). The **+** menu has **Reset to INIT Values** and **Randomize All** for the whole panel. Code and panel are linked: put the caret on a `chnget "name"` line and the card of that channel flashes briefly; **Show in Code** in the **...** menu of a card jumps to its `chnget`. One card is in edit mode at a time - opening another closes the previous one - and it is outlined in the colour of its type. Toggles and menus are single-line cards, sliders take two lines.
 - **Moved from outside**: when a value changes without you touching the control - DAW automation, `chnset` from the code, a snapshot recall - a dot in the colour of the type flashes next to the parameter name.
@@ -3841,10 +3865,22 @@ The camera button on the right of the Parameters title bar stores and recalls th
 - **Edit Snapshots...** - for each snapshot: **Overwrite with Current Values**, **Rename...**, **Delete**.
 - Snapshots are saved in the `.csd` (inside `<apeCsoundParams>`) and in the DAW project, so they travel with the session. Saving, renaming and deleting can be undone; recalling only changes the values.
 ## Cabbage and CsoundQt files
-Their widgets (sliders, knobs, checkboxes, menus, XY...) become parameters when the file is loaded. The rest of their GUI is ignored, and the code is not changed:
+Their widgets (sliders, knobs, checkboxes, buttons, menus, XY...) become parameters when the file is loaded (only when the file has no `<apeCsoundParams>` block yet: once saved by apeCsound, the saved mapping wins - delete the block and reload to import again). The rest of their GUI is ignored, and the code is not changed:
 - replace `invalue` / `cabbageGetValue` with `chnget`, `outvalue` / `cabbageSet...` with `chnset`;
+- Cabbage `button`s are toggles here; `combobox value(n)` counts from 1; a Cabbage menu with more than 16 entries is cut to 16 (use an Int slider instead);
+- when a widget type exceeds its slots (64 Float, 64 Bool, 16 Menu), the widgets whose channel the code never reads with `chnget` (LEDs, meters, step indicators) are dropped first, so the buttons that matter get a slot; the console says how many were skipped. The **Channels** panel shows what is left unmapped and can map it;
+- GUI messages sent with `chnset` to `identChannel`s (`"visible(1)"`, `"bounds(...)"`, `"colour(...)"`) are ignored and kept out of the Monitor;
 - FLTK, Python, Lua and opcodes not built into apeCsound do not work;
 - check the console after Apply. Some files need manual changes, a few cannot work.
+
+## Csound 7 notes
+apeCsound embeds Csound 7. Things that changed from Csound 6 and bite old files:
+- `loop_lt`, `loop_le`, `loop_gt`, `loop_ge` are now `looplt`, `loople`, `loopgt`, `loopge` (or use `while` / `until`);
+- `deltap*` inside a user-defined opcode no longer sees the `delayr` of the calling instrument: keep `delayr` / `deltap` / `delayw` together in the same instr or UDO, or use a table with `tablew` / `tablei`;
+- `monitor` requires exactly `nchnls` outputs, and in the plug-in `nchnls` is set by the host track: sum your output into global `a` variables instead;
+- the k-inputs of a UDO can still be 0 at the first init pass: clamp `i(k...)` values before giving them to opcodes that reject 0;
+- `fprints` takes a file handle from `fiopen`, not a file name; relative paths go to SFDIR;
+- HRTF opcodes need the `hrtf-*.dat` files in SADIR.
 
 # Audio, MIDI and channels
 - `sr` always follows the DAW. `ksmps` is respected and equals the plug-in latency (compensated by the DAW): keep it small (16-64) for live input.
@@ -3866,6 +3902,7 @@ Read them with `chnget`, e.g. a tempo-synced delay: `kdel = 60 / chnget:k("HOST_
 
 # Console and Graphs
 - **Console** - Csound messages, compile errors and apeCsound notes. Repeated messages are summarised to keep the DAW responsive. Clear empties it; it is also cleared at every Apply.
+- **Channels** (menu > Show Channels, Cmd+4) - every channel the running engine knows, with type (k, S, a, f), direction (in = read by `chnget`, out = written by `chnset`), current value and *who writes it*: a parameter, the host (`HOST_BPM`...), the code, or **nobody** - channels that the code reads and nobody writes are listed first, in yellow: that is almost always why "it does not move" (a widget that was not imported, no free slots, a typo in the name). **Map** creates the parameter for such a channel in one tap (Float, Int, Toggle or Menu; range and default from `chn_k` hints when present); families like `Acc1..Acc16` are one row with **Map 16**. The opposite case is flagged too: a parameter the code only *writes* and never reads (a Cabbage LED or meter imported as a toggle) says "never read by code" and has **Unmap** to free its slot. Shares the place of Graphs at the bottom.
 - **Graphs** (menu > Show Graphs) - function tables (f statements, `ftgen`) and `display` / `dispfft` signals, in a panel docked at the bottom. Cleared at every Apply. Tables are **live**: while the panel is open they are re-read about 4 times per second and redrawn when their content changes (`tablew`, `ftgen` regenerated, GEN routines in a loop) - a free oscilloscope or envelope viewer: write what you want to see into a table.
 
 # Shortcuts
@@ -3873,7 +3910,8 @@ Cmd on macOS, Ctrl on Windows and Linux.
 - **Cmd+Return** - Apply, **Shift+Return** - Evaluate selection / block / line, **Cmd+E** - Evaluate line in the help bar
 - **Cmd+S** Save, **Cmd+Shift+S** Save as, **Cmd+O** Load, **Cmd+N** Init Session Clear
 - **Cmd+F** - Find / Replace
-- **Cmd+1 / 2 / 3** - Parameters, Console, Graphs
+- **Cmd+1 / 2 / 3 / 4** - Parameters, Console, Graphs, Channels
+- **Option/Alt + click** on a group header - open / close all groups
 - **Cmd+= / Cmd+-** - larger / smaller text
 - **Cmd+Z / Cmd+Shift+Z** - Undo / Redo
 - **Cmd+/** - comment / uncomment, **Ctrl+I** - re-indent, **Cmd+[ / ]** - shift left / right
