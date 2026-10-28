@@ -573,6 +573,18 @@ namespace
         return filled;
     }
 
+    juce::Path makePencilPath()
+    {
+        // Matita a 45 gradi (come CsoundParameterEditor::drawButtonText), 24x24.
+        juce::Path pencil;
+        const float sz = 20.0f, half = sz * 0.5f, w = sz * 0.22f;
+        pencil.addRoundedRectangle (-w * 0.5f, -half, w, sz * 0.72f, w * 0.3f);
+        pencil.addTriangle (-w * 0.5f, -half + sz * 0.72f, w * 0.5f, -half + sz * 0.72f, 0.0f, half);
+        pencil.applyTransform (juce::AffineTransform::rotation (juce::MathConstants<float>::pi * 0.25f).translated (11.0f, 11.0f));
+        pencil.addRoundedRectangle (2.5f, 20.5f, 19.0f, 1.6f, 0.8f);
+        return pencil;
+    }
+
     juce::Path makeSheetIconPath (CsoundActionSheetIcon icon)
     {
         switch (icon)
@@ -607,6 +619,7 @@ namespace
             case CsoundActionSheetIcon::sun:           return makeSunPath();
             case CsoundActionSheetIcon::folder:        return makeFolderPath();
             case CsoundActionSheetIcon::waveform:      return makeWaveformPath();
+            case CsoundActionSheetIcon::pencil:        return makePencilPath();
             case CsoundActionSheetIcon::none:
             default:                                   return {};
         }
@@ -616,6 +629,23 @@ namespace
 juce::Path CsoundActionSheet::getIconPath (CsoundActionSheetIcon icon)
 {
     return makeSheetIconPath (icon);
+}
+
+juce::Component* CsoundActionSheet::parentForSheets (juce::Component& host)
+{
+    // Vedi il commento in show(): l'editor del plugin, non il top-level.
+    juce::Component* target = host.findParentComponentOfClass<juce::AudioProcessorEditor>();
+
+    if (target == nullptr)
+        target = dynamic_cast<juce::AudioProcessorEditor*> (&host);
+
+    if (target == nullptr)
+        target = host.getTopLevelComponent();
+
+    if (target == nullptr)
+        target = &host;
+
+    return target;
 }
 
 void CsoundActionSheet::show (juce::Component& host, const juce::String& title,
@@ -631,16 +661,7 @@ void CsoundActionSheet::show (juce::Component& host, const juce::String& title,
     // dietro all'editor pur restando "modale" (UI irresponsiva, menu
     // invisibile). Si risale da `host` (qualunque componente del plugin)
     // all'editor; se non c'e' (es. Standalone) si usa il top-level.
-    juce::Component* target = host.findParentComponentOfClass<juce::AudioProcessorEditor>();
-
-    if (target == nullptr)
-        target = dynamic_cast<juce::AudioProcessorEditor*> (&host);
-
-    if (target == nullptr)
-        target = host.getTopLevelComponent();
-
-    if (target == nullptr)
-        target = &host;
+    auto* target = parentForSheets (host);
 
     auto* sheet = new CsoundActionSheet (title, std::move (items), std::move (onSelected));
     target->addAndMakeVisible (sheet);
@@ -796,7 +817,7 @@ void CsoundActionSheet::paint (juce::Graphics& g)
                                                     sheetArea.getWidth(), titleAreaHeight);
         g.setColour (kText);
         g.setFont (juce::Font (juce::FontOptions (15.0f, juce::Font::bold)));
-        g.drawFittedText (page.title, titleBounds.reduced (16, 0), juce::Justification::centred, 1);
+        g.drawFittedText (page.titleNow(), titleBounds.reduced (16, 0), juce::Justification::centred, 1);
     }
 }
 
@@ -847,7 +868,7 @@ void CsoundActionSheet::setPressedRow (int rowIndex)
     rowsContent.repaint();
 }
 
-void CsoundActionSheet::activateRow (int rowIndex)
+void CsoundActionSheet::activateRow (int rowIndex, bool openDisclosure)
 {
     const auto& row = laidOutRows[(size_t) rowIndex];
 
@@ -859,11 +880,11 @@ void CsoundActionSheet::activateRow (int rowIndex)
 
     const auto& item = pageStack.back().items[(size_t) row.itemIndex];
 
-    if (! item.subItems.empty())
+    if (! item.subItems.empty() && (openDisclosure || ! item.keepOpen))
     {
         // Drill-down: apre una seconda pagina DENTRO lo stesso foglio
         // (con una riga "Back" in testa) invece di un sottomenu annidato.
-        pageStack.push_back ({ item.text, item.subItems });
+        pageStack.push_back ({ item.textNow(), item.subItems, item.textFn });
         recomputeLayout();
         rowsViewport.setViewPosition (0, 0);
         focusFirstRowForScreenReader();
@@ -873,8 +894,11 @@ void CsoundActionSheet::activateRow (int rowIndex)
     if (item.keepOpen)
     {
         // Azione senza chiudere il foglio (vedi keepOpen in CsoundActionSheetItem).
+        // onSelected puo' sostituire le voci (replaceRootItems): niente
+        // accessi a `item` dopo la chiamata.
+        const int id = item.id;
         if (onSelected)
-            onSelected (item.id);
+            onSelected (id);
 
         rowsContent.repaint(); // spunte (tickedFn) aggiornate
         return;
@@ -1025,12 +1049,31 @@ void CsoundActionSheet::RowsContent::paint (juce::Graphics& g)
 
         if (! item.subItems.empty())
         {
-            auto chevronArea = content.removeFromRight (28).withSizeKeepingCentre (14, 14);
-            auto chevron = makeChevronRightPath();
-            chevron.scaleToFit ((float) chevronArea.getX(), (float) chevronArea.getY(),
-                                  (float) chevronArea.getWidth(), (float) chevronArea.getHeight(), true);
-            g.setColour (kTextMuted);
-            g.fillPath (chevron);
+            if (item.keepOpen)
+            {
+                // Azione + sottopagina: BOTTONE a destra (pillola con icona,
+                // default chevron) - vedi disclosureIcon in CsoundActionSheetItem.
+                auto hotspot = bounds.removeFromRight (CsoundActionSheet::disclosureWidth);
+                auto pill = hotspot.reduced (8, 9).toFloat();
+                g.setColour (kAccent.withAlpha (0.18f));
+                g.fillRoundedRectangle (pill, pill.getHeight() * 0.5f);
+                auto icon = item.disclosureIcon != CsoundActionSheetIcon::none ? makeSheetIconPath (item.disclosureIcon)
+                                                                                : makeChevronRightPath();
+                auto iconArea = pill.withSizeKeepingCentre (16.0f, 16.0f);
+                icon.scaleToFit (iconArea.getX(), iconArea.getY(), iconArea.getWidth(), iconArea.getHeight(), true);
+                g.setColour (kAccent);
+                g.fillPath (icon);
+                content = content.withTrimmedRight (CsoundActionSheet::disclosureWidth - CsoundActionSheet::rowHorizontalPadding);
+            }
+            else
+            {
+                auto chevronArea = content.removeFromRight (28).withSizeKeepingCentre (14, 14);
+                auto chevron = makeChevronRightPath();
+                chevron.scaleToFit ((float) chevronArea.getX(), (float) chevronArea.getY(),
+                                      (float) chevronArea.getWidth(), (float) chevronArea.getHeight(), true);
+                g.setColour (kTextMuted);
+                g.fillPath (chevron);
+            }
         }
 
         // Icona (richiesta esplicita) - spazio riservato SEMPRE, come per
@@ -1088,7 +1131,11 @@ void CsoundActionSheet::RowsContent::mouseUp (const juce::MouseEvent& event)
         return;
 
     if (rowIndex == pressed && rowIndex >= 0)
-        owner.activateRow (rowIndex);
+    {
+        const auto& bounds = owner.laidOutRows[(size_t) rowIndex].bounds;
+        const bool onDisclosure = event.getPosition().getX() >= bounds.getRight() - CsoundActionSheet::disclosureWidth;
+        owner.activateRow (rowIndex, onDisclosure);
+    }
 }
 
 void CsoundActionSheet::RowsContent::mouseExit (const juce::MouseEvent&)
@@ -1098,9 +1145,25 @@ void CsoundActionSheet::RowsContent::mouseExit (const juce::MouseEvent&)
 
 void CsoundActionSheet::repaintOpenSheets (juce::Component& host)
 {
-    for (auto* child : host.getChildren())
+    for (auto* child : parentForSheets (host)->getChildren())
         if (auto* sheet = dynamic_cast<CsoundActionSheet*> (child))
             sheet->rowsContent.repaint();
+}
+
+void CsoundActionSheet::replaceRootItems (juce::Component& host, std::vector<CsoundActionSheetItem> items)
+{
+    for (auto* child : parentForSheets (host)->getChildren())
+    {
+        if (auto* sheet = dynamic_cast<CsoundActionSheet*> (child))
+        {
+            while (sheet->pageStack.size() > 1)
+                sheet->pageStack.pop_back();
+            sheet->pageStack.front().items = items;
+            sheet->recomputeLayout();
+            sheet->rowsViewport.setViewPosition (0, 0);
+            sheet->rowsContent.repaint();
+        }
+    }
 }
 
 //==============================================================================
@@ -1120,7 +1183,7 @@ juce::String CsoundActionSheet::accessibleTitleForRow (int rowIndex) const
     if (row.kind == LaidOutRow::Kind::separator)
         return {};
     juce::String t = item.textNow();
-    if (! item.subItems.empty()) t << ", submenu";
+    if (! item.subItems.empty()) t << (item.keepOpen ? ", right arrow for more options" : ", submenu");
     if (item.isTickedNow())      t << ", checked";
     if (! item.isEnabledNow())   t << ", disabled";
     return t;
@@ -1216,7 +1279,7 @@ bool CsoundActionSheet::keyPressed (const juce::KeyPress& key)
     {
         const auto& row = laidOutRows[(size_t) focusedRowIndex];
         if (row.kind == LaidOutRow::Kind::normal && ! pageStack.back().items[(size_t) row.itemIndex].subItems.empty())
-            activateRow (focusedRowIndex);
+            activateRow (focusedRowIndex, true);
         return true;
     }
     return false;

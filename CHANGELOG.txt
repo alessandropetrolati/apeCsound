@@ -99,6 +99,10 @@ HOST AND ENGINE
 
 PARAMETERS PANEL
 
+  * Snapshots menu: it stays open - tap a snapshot to recall it (check
+    mark on the last one), Save adds the new entry to the list at once, and
+    the pencil button on the right of each snapshot (or the right arrow
+    key) opens its page with Overwrite, Rename and Delete.
   * XY pad: "; @xy "X" "Y"" in the code shows two Float parameters as one
     two-dimensional pad card (drag, double-click to reset, both still
     separate DAW parameters). Edit shows both channel fields plus the

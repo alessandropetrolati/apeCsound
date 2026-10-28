@@ -3860,9 +3860,9 @@ chn_k "B1", 2, 2, 0, 0, 1, 0, 0, 0, 0, "group:Bands"
 `db` the value is a linear amplitude, shown and measured in dB (-60..0 unless min/max are given); `spark` a sparkline of the last 5 seconds instead of the bar; `int` no decimals; `hidden` the channel is written but not shown; `group:Name` puts the channel in the multi-bar card "Name" (wins over the automatic grouping). See `CSD/Examples/Test/MonitorStressTest.csd`.
 ## Snapshots
 The camera button on the right of the Parameters title bar stores and recalls the **values** of all the parameters.
-- **Save Snapshot...** - asks for a name and stores the current values.
-- Tap a snapshot in the **Recall** list to bring every parameter back to those values (sliders, DAW automation).
-- **Edit Snapshots...** - for each snapshot: **Overwrite with Current Values**, **Rename...**, **Delete**.
+- The menu stays open while you work with it. **Save Snapshot...** asks for a name and stores the current values; the new snapshot appears in the list at once.
+- Tap a snapshot to bring every parameter back to those values (sliders, DAW automation); the check mark shows the last one recalled, so you can compare snapshots in a row.
+- The pencil button on the right of a snapshot (or the right arrow key) opens its page: **Overwrite with Current Values**, **Rename...**, **Delete**; the list updates and stays open.
 - Snapshots are saved in the `.csd` (inside `<apeCsoundParams>`) and in the DAW project, so they travel with the session. Saving, renaming and deleting can be undone; recalling only changes the values.
 ## Cabbage and CsoundQt files
 Their widgets (sliders, knobs, checkboxes, buttons, menus, XY...) become parameters when the file is loaded (only when the file has no `<apeCsoundParams>` block yet: once saved by apeCsound, the saved mapping wins - delete the block and reload to import again). The rest of their GUI is ignored, and the code is not changed:

@@ -4078,60 +4078,23 @@ void CsoundParameterMappingPanel::showAddMenu()
 
 //==============================================================================
 // Snapshot dei valori dei parametri - vedi il commento su snapshotsButton nel .h.
-void CsoundParameterMappingPanel::showSnapshotsMenu()
+std::vector<CsoundActionSheetItem> CsoundParameterMappingPanel::buildSnapshotItems()
 {
     const int count = processor.getNumParameterSnapshots();
     const bool haveParams = ! unifiedRows.empty();
+    juce::Component::SafePointer<CsoundParameterMappingPanel> safeSelf (this);
 
-    // ID: 1 Save, 2 Edit (pagina), 100+i richiama, 1000+i*4+{1,2,3} =
-    // Overwrite / Rename / Delete dello snapshot i (pagine annidate: ogni
-    // id e' unico in tutto il foglio).
+    // ID: 1 Save, 100+i richiama, 1000+i*4+{1,2,3} = Overwrite / Rename /
+    // Delete dello snapshot i (pagina aperta dal bottone matita a destra
+    // della riga; ogni id e' unico in tutto il foglio).
     std::vector<CsoundActionSheetItem> items;
     {
         CsoundActionSheetItem item;
         item.id = 1; item.text = "Save Snapshot...";
         item.icon = CsoundActionSheetIcon::save;
         item.enabled = haveParams;
+        item.keepOpen = true;   // il dialogo del nome si apre SOPRA il foglio, che resta
         items.push_back (item);
-    }
-    {
-        CsoundActionSheetItem edit;
-        edit.text = "Edit Snapshots...";
-        edit.icon = CsoundActionSheetIcon::gear;
-        edit.enabled = count > 0;
-
-        for (int i = 0; i < count; ++i)
-        {
-            CsoundActionSheetItem snap;
-            snap.text = processor.getParameterSnapshotName (i);
-            snap.icon = CsoundActionSheetIcon::sliderFloat;
-
-            CsoundActionSheetItem header;
-            header.sectionHeader = snap.text;
-            snap.subItems.push_back (header);
-
-            CsoundActionSheetItem overwrite;
-            overwrite.id = 1000 + i * 4 + 1; overwrite.text = "Overwrite with Current Values";
-            overwrite.icon = CsoundActionSheetIcon::save;
-            overwrite.enabled = haveParams;
-            snap.subItems.push_back (overwrite);
-
-            CsoundActionSheetItem rename;
-            rename.id = 1000 + i * 4 + 2; rename.text = "Rename...";
-            rename.icon = CsoundActionSheetIcon::codeBraces;
-            snap.subItems.push_back (rename);
-
-            snap.subItems.push_back (CsoundActionSheetItem::separator());
-
-            CsoundActionSheetItem remove;
-            remove.id = 1000 + i * 4 + 3; remove.text = "Delete";
-            remove.icon = CsoundActionSheetIcon::trash;
-            snap.subItems.push_back (remove);
-
-            edit.subItems.push_back (snap);
-        }
-
-        items.push_back (edit);
     }
 
     items.push_back (CsoundActionSheetItem::separator());
@@ -4141,25 +4104,70 @@ void CsoundParameterMappingPanel::showSnapshotsMenu()
         CsoundActionSheetItem none;
         none.id = 0; none.text = "No snapshots yet"; none.enabled = false;
         items.push_back (none);
+        return items;
     }
-    else
+
+    items.push_back (CsoundActionSheetItem::section ("Tap to recall"));
+
+    for (int i = 0; i < count; ++i)
     {
-        items.push_back (CsoundActionSheetItem::section ("Recall"));
+        // Nomi dinamici (textFn): dopo un Rename a foglio aperto titolo,
+        // intestazione e voci si aggiornano da soli.
+        auto nameFn = [safeSelf, i] { return safeSelf != nullptr ? safeSelf->processor.getParameterSnapshotName (i) : juce::String(); };
 
-        for (int i = 0; i < count; ++i)
-        {
-            CsoundActionSheetItem item;
-            item.id = 100 + i;
-            item.text = processor.getParameterSnapshotName (i);
-            item.icon = CsoundActionSheetIcon::sliderFloat;
-            item.ticked = (i == lastRecalledSnapshot);
-            items.push_back (item);
-        }
+        // Riga: tap = richiama (foglio aperto, spunta sull'ultimo richiamato);
+        // bottone matita a destra (o tasto ->) = pagina Overwrite/Rename/Delete.
+        CsoundActionSheetItem item;
+        item.id = 100 + i;
+        item.text = processor.getParameterSnapshotName (i);
+        item.textFn = nameFn;
+        item.icon = CsoundActionSheetIcon::sliderFloat;
+        item.keepOpen = true;
+        item.disclosureIcon = CsoundActionSheetIcon::pencil;
+        item.tickedFn = [safeSelf, i] { return safeSelf != nullptr && safeSelf->lastRecalledSnapshot == i; };
+
+        CsoundActionSheetItem header;
+        header.sectionHeader = item.text;
+        header.textFn = nameFn;
+        item.subItems.push_back (header);
+
+        CsoundActionSheetItem overwrite;
+        overwrite.id = 1000 + i * 4 + 1; overwrite.text = "Overwrite with Current Values";
+        overwrite.icon = CsoundActionSheetIcon::save;
+        overwrite.enabled = haveParams;
+        overwrite.keepOpen = true;   // esegue e torna alla lista (foglio aperto)
+        item.subItems.push_back (overwrite);
+
+        CsoundActionSheetItem rename;
+        rename.id = 1000 + i * 4 + 2; rename.text = "Rename...";
+        rename.icon = CsoundActionSheetIcon::pencil;
+        rename.keepOpen = true;      // il dialogo si apre sopra il foglio, che resta sulla pagina
+        item.subItems.push_back (rename);
+
+        item.subItems.push_back (CsoundActionSheetItem::separator());
+
+        CsoundActionSheetItem remove;
+        remove.id = 1000 + i * 4 + 3; remove.text = "Delete";
+        remove.icon = CsoundActionSheetIcon::trash;
+        remove.keepOpen = true;      // la lista si ricostruisce senza la voce
+        item.subItems.push_back (remove);
+
+        items.push_back (item);
     }
 
+    return items;
+}
+
+void CsoundParameterMappingPanel::refreshOpenSnapshotsMenu()
+{
+    CsoundActionSheet::replaceRootItems (*this, buildSnapshotItems());   // stesso genitore di show()
+}
+
+void CsoundParameterMappingPanel::showSnapshotsMenu()
+{
     juce::Component::SafePointer<CsoundParameterMappingPanel> safeThis (this);
 
-    CsoundActionSheet::show (*this, "Snapshots", std::move (items), [safeThis] (int result)
+    CsoundActionSheet::show (*this, "Snapshots", buildSnapshotItems(), [safeThis] (int result)
     {
         if (safeThis == nullptr || result <= 0)
             return;
@@ -4200,6 +4208,7 @@ void CsoundParameterMappingPanel::showSnapshotsMenu()
                 self.applySnapshotsChangeUndoable (before, self.processor.getParameterSnapshotsTree(),
                                                    "--- Snapshot overwritten: " + name + " ---");
                 self.lastRecalledSnapshot = index;
+                self.refreshOpenSnapshotsMenu();   // chiude la pagina dello snapshot, resta la lista
             }
             else if (action == 2)
             {
@@ -4213,6 +4222,7 @@ void CsoundParameterMappingPanel::showSnapshotsMenu()
                                                    "--- Snapshot deleted: " + name + " ---");
                 if (self.lastRecalledSnapshot == index)      self.lastRecalledSnapshot = -1;
                 else if (self.lastRecalledSnapshot > index)  --self.lastRecalledSnapshot;
+                self.refreshOpenSnapshotsMenu();   // lista ricostruita senza la voce, foglio aperto
             }
         }
     });
@@ -4239,6 +4249,7 @@ void CsoundParameterMappingPanel::promptSaveSnapshot()
             self.applySnapshotsChangeUndoable (before, self.processor.getParameterSnapshotsTree(),
                                                "--- Snapshot saved: " + name + " ---");
             self.lastRecalledSnapshot = index;
+            self.refreshOpenSnapshotsMenu();   // la voce nuova compare nel foglio ancora aperto
         });
 }
 
@@ -4263,6 +4274,7 @@ void CsoundParameterMappingPanel::promptRenameSnapshot (int index)
             self.processor.renameParameterSnapshot (index, name);
             self.applySnapshotsChangeUndoable (before, self.processor.getParameterSnapshotsTree(),
                                                "--- Snapshot renamed: " + oldName + " -> " + name + " ---");
+            self.refreshOpenSnapshotsMenu();   // torna alla lista principale, col nome nuovo
         });
 }
 

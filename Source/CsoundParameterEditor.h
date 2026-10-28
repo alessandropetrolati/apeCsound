@@ -1566,6 +1566,8 @@ private:
     // applySnapshotsChangeUndoable); il richiamo tocca solo i valori.
     juce::TextButton snapshotsButton { "snap" };
     void showSnapshotsMenu();
+    std::vector<CsoundActionSheetItem> buildSnapshotItems();   // voci del foglio (ricostruite dopo salva/cancella a foglio aperto)
+    void refreshOpenSnapshotsMenu();
     void promptSaveSnapshot();
     void promptRenameSnapshot (int index);
     void applySnapshotsChangeUndoable (const juce::ValueTree& before, const juce::ValueTree& after,

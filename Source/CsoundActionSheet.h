@@ -31,7 +31,8 @@ enum class CsoundActionSheetIcon
     textLarger, textSmaller, // "A" grande/piccola con +/- (font dell'editor)
     sun,         // "Light Editor": sole (palette chiara)
     folder,      // "Reveal in Finder": cartella
-    waveform     // "Import Samples...": forma d'onda
+    waveform,    // "Import Samples...": forma d'onda
+    pencil       // modifica (bottone "edit" a destra di una riga, Rename)
 };
 
 /**
@@ -72,6 +73,12 @@ struct CsoundActionSheetItem
     // Scorciatoia da tastiera mostrata a destra della riga (solo testo,
     // grigio): la scorciatoia vera e' gestita altrove (keyPressed).
     juce::String shortcut;
+
+    // Riga con azione (keepOpen) E sottopagina (subItems): il tap sulla riga
+    // esegue l'azione, il BOTTONE a destra (pillola con questa icona, o il
+    // tasto ->) apre la sottopagina. Es. snapshot: tap = richiama, matita =
+    // Overwrite/Rename/Delete. Senza keepOpen la riga apre la pagina come sempre.
+    CsoundActionSheetIcon disclosureIcon = CsoundActionSheetIcon::none;
 
     juce::String textNow() const          { return textFn != nullptr ? textFn() : text; }
     juce::String sectionHeaderNow() const { return textFn != nullptr ? textFn() : sectionHeader; }
@@ -143,6 +150,16 @@ public:
         un dialogo di scelta cartella aperto da una voce keepOpen. */
     static void repaintOpenSheets (juce::Component& host);
 
+    /** Il componente in cui show() aggiunge i fogli (l'editor del plugin se
+        c'e', altrimenti il top-level): host puo' essere QUALUNQUE componente
+        del plugin, come per show(). */
+    static juce::Component* parentForSheets (juce::Component& host);
+
+    /** Sostituisce le voci della pagina RADICE dei fogli aperti in 'host' e
+        torna a quella pagina (righe aggiunte/tolte senza chiudere il foglio,
+        es. snapshot salvato o cancellato). */
+    static void replaceRootItems (juce::Component& host, std::vector<CsoundActionSheetItem> items);
+
     static void show (juce::Component& host, const juce::String& title,
                        std::vector<CsoundActionSheetItem> items,
                        std::function<void (int)> onSelected);
@@ -152,6 +169,8 @@ private:
     {
         juce::String title;
         std::vector<CsoundActionSheetItem> items;
+        std::function<juce::String()> titleFn;   // titolo dinamico (dal textFn della voce che ha aperto la pagina)
+        juce::String titleNow() const { return titleFn != nullptr ? titleFn() : title; }
     };
 
     struct LaidOutRow
@@ -248,7 +267,10 @@ private:
     void timerCallback() override;
     int findRowAt (juce::Point<int> positionInRowsContent) const;
     void setPressedRow (int rowIndex);
-    void activateRow (int rowIndex);
+    // openDisclosure: true = apre la sottopagina di una riga che ha ANCHE
+    // un'azione (bottone a destra / tasto ->), false = esegue l'azione.
+    void activateRow (int rowIndex, bool openDisclosure = false);
+    static constexpr int disclosureWidth = 56; // bottone a destra
     void goBack();
     void dismiss (int resultId);
     void animateIn();
