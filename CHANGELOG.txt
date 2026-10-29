@@ -66,6 +66,10 @@ PARAMETERS PANEL
     "Copy chn_k Declaration" (a ready-made chn_k line with the range seen
     so far, to paste in the code) and "Reset Observed Range" (also
     double-click: min/max seen, peak hold, sparkline history).
+  * Monitor compact mode: a button in the Monitor header (also Parameters
+    menu > Compact Monitor) turns every card into one line - icon, name, a
+    small indicator of its kind, the value - so dozens of channels fit on
+    screen.
   * Monitor, "no change since Apply": a card whose channel has not changed
     for two seconds after Apply is dimmed and says so - almost always a
     channel the code creates but never writes (a chnset that never runs,

@@ -4040,6 +4040,15 @@ void CsoundParameterMappingPanel::showAddMenu()
     // Diagnostica dei canali (finestra modale): da qui si mappano i canali
     // letti e mai scritti - e' una funzione dei parametri.
     items.push_back (CsoundActionSheetItem::separator());
+    if (! monitorRows.empty())
+    {
+        CsoundActionSheetItem item;
+        item.id = 115; item.text = "Compact Monitor";
+        item.tickedFn = [this] { return collapsedGroups.count (kMonitorCompactKey) > 0; };
+        item.keepOpen = true;
+        item.icon = CsoundActionSheetIcon::eyeOpen;
+        items.push_back (item);
+    }
     {
         CsoundActionSheetItem item;
         item.id = 114; item.text = "Channels...";
@@ -4075,6 +4084,7 @@ void CsoundParameterMappingPanel::showAddMenu()
             case 111: safeThis->setAllGroupsCollapsed (false); break;
             case 112: safeThis->setAllGroupsCollapsed (true); break;
             case 114: if (safeThis->onToggleChannelsRequested) safeThis->onToggleChannelsRequested(); break;
+            case 115: safeThis->setMonitorCompact (safeThis->collapsedGroups.count (kMonitorCompactKey) == 0); break;
             default: break;
         }
     });
@@ -4825,6 +4835,22 @@ void CsoundParameterMappingPanel::GroupHeader::paint (juce::Graphics& g)
     auto area = headInt.withTrimmedLeft (32).withTrimmedRight (12);
     g.drawFittedText (name, area.removeFromLeft (juce::jmin (nameWidth, area.getWidth() - 36)), juce::Justification::centredLeft, 1);
 
+    // Monitor aperto: bottone "compatto" a destra (righe fitte / card).
+    if (special && ! collapsed)
+    {
+        const auto r = compactButtonBounds().toFloat();
+        g.setColour (kOnAccent.withAlpha (compact ? 0.35f : 0.15f));
+        g.fillRoundedRectangle (r, 5.0f);
+        g.setColour (kOnAccent);
+        const float x0 = r.getX() + 7.0f, x1 = r.getRight() - 7.0f;
+        if (compact)
+            for (int i = 0; i < 4; ++i)      // quattro righe fitte
+                g.fillRect (x0, r.getY() + 6.0f + (float) i * 3.5f, x1 - x0, 1.6f);
+        else
+            for (int i = 0; i < 2; ++i)      // due card
+                g.drawRoundedRectangle (x0, r.getY() + 5.0f + (float) i * 7.5f, x1 - x0, 5.5f, 1.5f, 1.2f);
+    }
+
     // Numero di parametri, a destra, in una pillola scura sull'accento -
     // SOLO a gruppo chiuso: aperto, i parametri si vedono.
     if (collapsed)
@@ -5128,6 +5154,204 @@ namespace
 //==============================================================================
 // Card del Monitor: canale fermo, reset, info e menu.
 
+void CsoundParameterMappingPanel::setMonitorCompact (bool compact)
+{
+    if (compact) collapsedGroups.insert (kMonitorCompactKey);
+    else         collapsedGroups.erase (kMonitorCompactKey);
+    for (auto& r : monitorRows)
+        r->compact = compact;
+    if (monitorHeader != nullptr)
+    {
+        monitorHeader->compact = compact;
+        monitorHeader->repaint();
+    }
+    resized();
+}
+
+void CsoundParameterMappingPanel::MonitorRow::paintCompact (juce::Graphics& g, juce::Rectangle<int> area)
+{
+    // UNA riga: [icona] [nome] [mini-indicatore] [valore]. Ogni tipo tiene
+    // un segno riconoscibile anche in piccolo.
+    using K = csoundMonitor::Kind;
+    const auto& e = entries.front();
+    const auto k = kindOf (e);
+
+    drawKindGlyph (g, area.removeFromLeft (14).withSizeKeepingCentre (12, 12).toFloat(), k, multi);
+    area.removeFromLeft (6);
+    g.setColour (kText);
+    g.setFont (juce::Font (juce::FontOptions (12.5f, juce::Font::bold)));
+    g.drawFittedText (title, area.removeFromLeft (juce::jmin (area.getWidth() * 2 / 5, 150)), juce::Justification::centredLeft, 1);
+    area.removeFromLeft (6);
+
+    // Testo: la stringa prende il posto di indicatore e valore.
+    if (! multi && k == K::text)
+    {
+        valueArea = area;
+        g.setColour (kAccent.brighter (0.2f));
+        g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain)));
+        g.drawFittedText (e.text.isEmpty() ? juce::String ("-") : e.text, area, juce::Justification::centredLeft, 1);
+        return;
+    }
+
+    auto valueBox = area.removeFromRight (multi ? 0 : 74);
+    valueArea = valueBox.isEmpty() ? area : valueBox;
+    area.removeFromRight (6);
+    const auto strip = area.toFloat().withSizeKeepingCentre ((float) area.getWidth(), 8.0f);
+    const float cy = strip.getCentreY();
+
+    if (! multi && ! stuck())
+    {
+        juce::String text = k == K::lamp ? juce::String (e.value >= 0.5 ? "ON" : "OFF")
+                          : k == K::steps ? displayValue (e) + " / " + csoundMonitor::formatMonitorValue (e.hintMax)
+                          : displayValue (e);
+        g.setColour (k == K::audio ? meterColourForDb (shown (e)) : kTextMuted);
+        g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 11.5f, juce::Font::plain)));
+        g.drawFittedText (text, valueBox, juce::Justification::centredRight, 1);
+    }
+
+    if (multi)
+    {
+        // Mini-barre affiancate (o spie), una per canale.
+        const int n = (int) entries.size();
+        const float slot = strip.getWidth() / (float) n;
+        const float w = juce::jmax (2.0f, slot - 2.0f);
+        const auto full = area.toFloat().reduced (0.0f, 5.0f);
+        for (int i = 0; i < n; ++i)
+        {
+            const auto& m = entries[(size_t) i];
+            const float x = strip.getX() + slot * (float) i;
+            if (m.led)
+            {
+                const float d = juce::jmin (w, 9.0f);
+                const auto r = juce::Rectangle<float> (d, d).withCentre ({ x + w * 0.5f, cy });
+                g.setColour (m.value >= 0.5 ? kAccent : kPanelBg.brighter (0.15f));
+                g.fillEllipse (r);
+                continue;
+            }
+            double lo, hi; barRange (m, lo, hi);
+            g.setColour (m.isAudio ? kLcdBg : kPanelBg);
+            g.fillRect (x, full.getY(), w, full.getHeight());
+            if (hi > lo)
+            {
+                const float f = csoundMonitor::barSpan (shown (m), lo, hi).to;
+                g.setColour (m.isAudio ? meterColourForDb (shown (m)) : kAccent.withAlpha (0.85f));
+                g.fillRect (x, full.getBottom() - full.getHeight() * f, w, full.getHeight() * f);
+            }
+            if (m.clipped)
+            {
+                g.setColour (kMeterRed);
+                g.fillRect (x, full.getY(), w, 2.0f);
+            }
+        }
+        return;
+    }
+
+    double lo, hi; barRange (e, lo, hi);
+    switch (k)
+    {
+        case K::lamp:
+        {
+            const bool on = e.value >= 0.5;
+            const auto r = juce::Rectangle<float> (10.0f, 10.0f).withCentre ({ strip.getRight() - 6.0f, cy });
+            if (on) { g.setColour (kAccent.withAlpha (0.25f)); g.fillEllipse (r.expanded (3.0f)); }
+            g.setColour (on ? kAccent : kPanelBg.brighter (0.15f));
+            g.fillEllipse (r);
+            break;
+        }
+        case K::audio:
+        {
+            const int segments = 20;
+            const float gap = 1.0f, segW = (strip.getWidth() - 14.0f - gap * (float) (segments - 1)) / (float) segments;
+            const double level = shown (e);
+            for (int i = 0; i < segments; ++i)
+            {
+                const double segDb = -60.0 + 60.0 * (double) (i + 1) / (double) segments;
+                const auto c = meterColourForDb (segDb);
+                g.setColour (level >= segDb - 60.0 / segments ? c : c.withAlpha (0.13f));
+                g.fillRect (strip.getX() + (float) i * (segW + gap), strip.getY(), segW, strip.getHeight());
+            }
+            g.setColour (e.clipped ? kMeterRed : kMeterRed.withAlpha (0.15f));
+            g.fillRoundedRectangle (strip.getRight() - 10.0f, strip.getY(), 10.0f, strip.getHeight(), 2.0f);
+            break;
+        }
+        case K::spark:
+        {
+            if (e.history.empty() || ! (hi > lo)) break;
+            juce::Path line;
+            const int n = (int) e.history.size();
+            const auto plot = area.toFloat().reduced (0.0f, 4.0f);
+            for (int i = 0; i < n; ++i)
+            {
+                const float v = e.history[(size_t) ((e.historyPos + i) % n)];
+                const float x = plot.getX() + plot.getWidth() * (float) i / (float) juce::jmax (1, n - 1);
+                const float y = plot.getBottom() - plot.getHeight() * (float) juce::jlimit (0.0, 1.0, ((double) v - lo) / (hi - lo));
+                if (i == 0) line.startNewSubPath (x, y); else line.lineTo (x, y);
+            }
+            g.setColour (kAccent);
+            g.strokePath (line, juce::PathStrokeType (1.3f));
+            break;
+        }
+        case K::steps:
+        {
+            const int cells = (int) (e.hintMax - e.hintMin) + 1;
+            const int cur = juce::jlimit ((int) e.hintMin, (int) e.hintMax, (int) std::lround (e.value));
+            const float cw = (strip.getWidth() - 2.0f * (float) (cells - 1)) / (float) cells;
+            for (int i = 0; i < cells; ++i)
+            {
+                const int v = (int) e.hintMin + i;
+                g.setColour (v == cur ? kAccent : (v < cur ? kAccent.withAlpha (0.22f) : kPanelBg));
+                g.fillRect (strip.getX() + (float) i * (cw + 2.0f), strip.getY(), cw, strip.getHeight());
+            }
+            break;
+        }
+        case K::bipolar:
+        {
+            // in piccolo: barra dallo zero, con la tacca centrale
+            g.setColour (kPanelBg);
+            g.fillRoundedRectangle (strip, 3.0f);
+            if (hi > lo)
+            {
+                const auto span = csoundMonitor::barSpan (shown (e), lo, hi);
+                const bool neg = span.from < span.zero;
+                g.setColour (neg ? kNegative : kAccent);
+                g.fillRect (strip.getX() + strip.getWidth() * span.from, strip.getY(),
+                            juce::jmax (2.0f, strip.getWidth() * (span.to - span.from)), strip.getHeight());
+                g.setColour (kText);
+                g.fillRect (strip.getX() + strip.getWidth() * span.zero - 0.75f, strip.getY() - 3.0f, 1.5f, strip.getHeight() + 6.0f);
+            }
+            break;
+        }
+        case K::adaptive:
+        {
+            for (float dx = 0.0f; dx < strip.getWidth(); dx += 6.0f)
+            {
+                g.setColour (kTextMuted.withAlpha (0.5f));
+                g.fillRect (strip.getX() + dx, cy - 0.75f, 3.5f, 1.5f);
+            }
+            if (hi > lo)
+            {
+                const float mx = strip.getX() + strip.getWidth() * csoundMonitor::barSpan (shown (e), lo, hi).to;
+                g.setColour (kAccent);
+                g.drawEllipse (mx - 4.0f, cy - 4.0f, 8.0f, 8.0f, 1.8f);
+            }
+            break;
+        }
+        case K::range:
+        default:
+        {
+            g.setColour (kPanelBg);
+            g.fillRoundedRectangle (strip, 2.0f);
+            if (hi > lo)
+            {
+                const float f = csoundMonitor::barSpan (shown (e), lo, hi).to;
+                g.setColour (kAccent);
+                g.fillRoundedRectangle (strip.withWidth (strip.getWidth() * f), 2.0f);
+            }
+            break;
+        }
+    }
+}
+
 bool CsoundParameterMappingPanel::MonitorRow::stuck() const
 {
     bool anyNumeric = false;
@@ -5328,6 +5552,8 @@ csoundMonitor::Kind CsoundParameterMappingPanel::MonitorRow::kindOf (const Entry
 int CsoundParameterMappingPanel::MonitorRow::preferredHeight() const noexcept
 {
     using K = csoundMonitor::Kind;
+    if (compact)
+        return compactHeight;
     if (multi)
         return 26 + 66;                          // titolo + barre verticali con etichetta
     if (entries.empty())
@@ -5398,6 +5624,11 @@ void CsoundParameterMappingPanel::MonitorRow::paint (juce::Graphics& g)
 void CsoundParameterMappingPanel::MonitorRow::paintContent (juce::Graphics& g)
 {
     const auto b = getLocalBounds();
+    if (compact)
+    {
+        paintCompact (g, b.reduced (cardPaddingH, 0).withTrimmedLeft (6));
+        return;
+    }
 
     auto area = b.reduced (cardPaddingH, 0).withTrimmedLeft (6);
 
@@ -5922,6 +6153,7 @@ void CsoundParameterMappingPanel::refreshMonitorList()
                 row->entries.push_back (std::move (e));
             }
             row->setTitle (row->title);
+            row->compact = collapsedGroups.count (kMonitorCompactKey) > 0;
             row->onLog = [this] (const juce::String& m) { if (onParameterCopiedToClipboard) onParameterCopiedToClipboard (m); };
             rowsContainer.addAndMakeVisible (*row);
             monitorRows.push_back (std::move (row));
@@ -5950,6 +6182,7 @@ void CsoundParameterMappingPanel::refreshMonitorList()
             resized();
         };
         monitorHeader->onToggleAll = [this] (bool collapseAll) { setAllGroupsCollapsed (collapseAll); };
+        monitorHeader->onToggleCompact = [this] { setMonitorCompact (collapsedGroups.count (kMonitorCompactKey) == 0); };
         rowsContainer.addAndMakeVisible (*monitorHeader);
         monitorHeader->toBack();
     }
@@ -5958,6 +6191,7 @@ void CsoundParameterMappingPanel::refreshMonitorList()
     {
         monitorHeader->count = (int) monitorRows.size();
         monitorHeader->collapsed = collapsedGroups.count (kMonitorStateKey) > 0;
+        monitorHeader->compact = collapsedGroups.count (kMonitorCompactKey) > 0;
     }
 
     const bool empty = unifiedRows.empty() && pendingRow == nullptr && monitorRows.empty();

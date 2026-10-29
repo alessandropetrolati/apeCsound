@@ -1709,6 +1709,12 @@ private:
         {
             if (e.getPosition().getY() >= groupHeaderHeight || ! contains (e.getPosition()))
                 return;
+            // Monitor: il bottone "compatto" a destra dell'intestazione.
+            if (special && ! collapsed && onToggleCompact && compactButtonBounds().contains (e.getPosition()))
+            {
+                onToggleCompact();
+                return;
+            }
             // Option/Alt + click: apre o chiude TUTTI i gruppi (Monitor
             // compreso) nello stato opposto a quello di questo gruppo.
             if (e.mods.isAltDown() && onToggleAll)
@@ -1726,6 +1732,13 @@ private:
         bool special = false;
         std::function<void()> onToggle;
         std::function<void (bool collapseAll)> onToggleAll;
+        // Solo Monitor: card su una riga (vedi MonitorRow::compact).
+        bool compact = false;
+        std::function<void()> onToggleCompact;
+        juce::Rectangle<int> compactButtonBounds() const
+        {
+            return { getWidth() - 40, (groupHeaderHeight - 24) / 2, 28, 24 };
+        }
     };
 
     struct DisplayGroup
@@ -1813,6 +1826,10 @@ private:
         void paintLamp  (juce::Graphics&, juce::Rectangle<int>, const Entry&) const;
         void paintSteps (juce::Graphics&, juce::Rectangle<int>, const Entry&) const;
         void paintMulti (juce::Graphics&, juce::Rectangle<int>) const;
+        // Modalita' compatta: una riga - icona, nome, mini-indicatore, valore.
+        void paintCompact (juce::Graphics&, juce::Rectangle<int>);
+        bool compact = false;
+        static constexpr int compactHeight = 26;
 
         juce::String title;
         bool multi = false;
@@ -1840,6 +1857,9 @@ private:
     // Chiave dello stato aperto/chiuso del Monitor in collapsedGroups:
     // NON "Monitor", che potrebbe essere il nome di un gruppo dell'utente.
     static constexpr const char* kMonitorStateKey = "\x01monitor";
+    // Modalita' compatta del Monitor, nello stesso insieme (stessa durata).
+    static constexpr const char* kMonitorCompactKey = "\x01monitor-compact";
+    void setMonitorCompact (bool compact);
     bool rebuildPending = false; // vedi sessionEditedByUndoRedo
     void scheduleDeferredRebuild();
     std::set<juce::String> collapsedGroups;
