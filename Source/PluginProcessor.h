@@ -509,6 +509,17 @@ public:
     // puntatore, che puo' ripetersi) + nullptr quando e' fermo.
     std::uint64_t getEngineIdentity() const noexcept { return activeCsound.load() != nullptr ? engineGeneration.load() : 0; }
     double readMonitorValue (const MonitorChannel& ch) const;
+
+    /** CLIP dei meter audio del Monitor: il thread audio, dopo ogni ksmps,
+        tiene il picco di campione (|x| / 0dbfs) dei canali audio indicati
+        qui - un blocco letto ogni 50 ms dalla UI ne perderebbe quasi tutti.
+        Al massimo kMaxAudioPeakWatches canali; engine: getEngineIdentity()
+        dei puntatori (ignorati se il motore e' cambiato nel frattempo). */
+    static constexpr int kMaxAudioPeakWatches = 16;
+    void setAudioPeakWatches (const std::vector<cs_float*>& channelPtrs, std::uint64_t engine);
+    /** Picco di campione dall'ultima chiamata (e lo azzera); 0 se il canale
+        non e' sorvegliato. 1.0 = 0 dBFS. */
+    float takeAudioPeak (const cs_float* channelPtr);
     juce::String readMonitorString (const MonitorChannel& ch) const;
     bool isReservedHostChannel (const juce::String& name) const;
 
@@ -1325,6 +1336,19 @@ private:
     juce::MidiBuffer outgoingMidi;
     juce::MidiBuffer* outgoingMidiBuffer = nullptr;
     std::atomic<bool> engineFinishedPending { false };
+
+    // Vedi setAudioPeakWatches: slot contigui (il primo nullptr chiude
+    // l'elenco), azzerati quando il motore viene distrutto.
+    struct AudioPeakWatch
+    {
+        std::atomic<cs_float*> ptr { nullptr };
+        std::atomic<float> peak { 0.0f };
+    };
+    std::array<AudioPeakWatch, kMaxAudioPeakWatches> audioPeakWatches;
+    void clearAudioPeakWatches() noexcept
+    {
+        for (auto& w : audioPeakWatches) { w.ptr.store (nullptr); w.peak.store (0.0f); }
+    }
     static constexpr int kMidiQueueCapacity = 1024;
     static constexpr int kMidiOutBufferBytes = 16384;
 

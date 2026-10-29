@@ -414,6 +414,75 @@ struct MonitorLayoutTests final : public juce::UnitTest
             expect (cards[1].multi && cards[1].channels == std::vector<int> { 2, 3 });
         }
 
+        beginTest ("splitStereoName: L/R pairs by name");
+        {
+            juce::String base; int side = 0;
+            expect (splitStereoName ("Out_L", base, side));  expectEquals (base, juce::String ("Out"));  expectEquals (side, 1);
+            expect (splitStereoName ("Out_R", base, side));  expectEquals (side, 2);
+            expect (splitStereoName ("Peak-left", base, side)); expectEquals (base, juce::String ("Peak")); expectEquals (side, 1);
+            expect (splitStereoName ("Meter R", base, side)); expectEquals (base, juce::String ("Meter")); expectEquals (side, 2);
+            expect (splitStereoName ("OutL", base, side));   expectEquals (base, juce::String ("Out"));  expectEquals (side, 1);
+            expect (splitStereoName ("MixRight", base, side)); expectEquals (base, juce::String ("Mix")); expectEquals (side, 2);
+            expect (! splitStereoName ("Level", base, side), "a lowercase l is part of the word");
+            expect (! splitStereoName ("Cutoff", base, side));
+            expect (! splitStereoName ("L", base, side), "no base");
+            expect (! splitStereoName ("CPU", base, side));
+        }
+
+        beginTest ("buildCards: L/R pairs become one card, apart from indexed names");
+        {
+            std::vector<ChannelInfo> ch {
+                { "Out_L", false, true },
+                { "Out_R", false, true },
+                { "Out1",  false, true },
+                { "Out2",  false, true },
+                { "PanL",  false, false },   // alone: no R, a single card
+            };
+            const auto cards = buildCards (ch);
+            expectEquals ((int) cards.size(), 3);
+            expectEquals (cards[0].title, juce::String ("Out"));
+            expect (cards[0].multi && cards[0].channels == std::vector<int> { 0, 1 });
+            expectEquals (cards[1].title, juce::String ("Out"));
+            expect (cards[1].multi && cards[1].channels == std::vector<int> { 2, 3 });
+            expectEquals (cards[2].title, juce::String ("PanL"));
+            expect (! cards[2].multi);
+        }
+
+        beginTest ("ChangeTracker: stuck after 2 s without a change");
+        {
+            ChangeTracker t;
+            for (int i = 0; i < 39; ++i) t.observe (0.0);
+            expect (! t.looksStuck(), "not enough readings yet");
+            t.observe (0.0);
+            expect (t.looksStuck());
+            t.observe (0.5);
+            expect (! t.looksStuck(), "one change clears it for good");
+            t.observe (0.0);
+            expect (! t.looksStuck());
+            ChangeTracker k;
+            for (int i = 0; i < 50; ++i) k.observe (7.0);
+            expect (k.looksStuck(), "any constant value, not only 0");
+        }
+
+        beginTest ("chnKDeclaration: range rounded outwards, default inside");
+        {
+            expectEquals (chnKDeclaration ("Drift", 7.25, 2.0137, 19.8812, false),
+                          juce::String ("chn_k \"Drift\", 2, 2, 7.25, 2.013, 19.882"));
+            expectEquals (chnKDeclaration ("Pitch", 50.0, 110.0, 880.0, true),
+                          juce::String ("chn_k \"Pitch\", 2, 2, 110, 110, 880, 0, 0, 0, 0, \"spark\""), "default clamped into the range");
+            expectEquals (chnKDeclaration ("Const", 3.0, 3.0, 3.0, false),
+                          juce::String ("chn_k \"Const\", 2, 2, 3, 3, 4"), "an empty range gets a width");
+        }
+
+        beginTest ("describeKind: one sentence per kind");
+        {
+            for (auto k : { Kind::text, Kind::lamp, Kind::audio, Kind::spark, Kind::steps, Kind::bipolar, Kind::range, Kind::adaptive })
+                expect (describeKind (k, -1, 1).isNotEmpty());
+            expect (describeKind (Kind::range, 0, 1).contains ("0..1"));
+            for (auto k : { Kind::text, Kind::lamp, Kind::audio, Kind::spark, Kind::steps, Kind::bipolar, Kind::range, Kind::adaptive })
+                expect (shortKind (k, -100.125, 880.5).length() <= 28, "fits the menu header");
+        }
+
         beginTest ("cabbageIdentChannels: only inside <Cabbage>, unique");
         {
             const auto names = cabbageIdentChannels ("<Cabbage>\nrslider channel(\"Fb\"), identChannel(\"FbID\")\n"

@@ -3338,7 +3338,7 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
 
     // Titolo centrale della title bar (richiesta esplicita).
     titleLabel.setText ("Parameters", juce::dontSendNotification);
-    titleLabel.setJustificationType (juce::Justification::centred);
+    titleLabel.setJustificationType (juce::Justification::centredLeft);   // a sinistra, come le altre schede
     titleLabel.setFont (juce::Font (juce::FontOptions (15.0f, juce::Font::bold)));
     titleLabel.setColour (juce::Label::textColourId, kText);
     titleLabel.setInterceptsMouseClicks (false, false);
@@ -3389,6 +3389,7 @@ CsoundParameterMappingPanel::~CsoundParameterMappingPanel()
 {
     monitorListTimer.stopTimer();
     monitorValueTimer.stopTimer();
+    processor.setAudioPeakWatches ({}, 0);   // nessun pannello: niente da sorvegliare
     processor.removeListener (this);
     setLookAndFeel (nullptr);
 }
@@ -5039,6 +5040,7 @@ namespace
     const juce::Colour kMeterYellow { 0xffe6c44a };
     const juce::Colour kMeterRed    { 0xffe0503c };
     const juce::Colour kLcdBg       { 0xff0b1216 };
+    const juce::Colour kStuck       { 0xffe0b84a };   // "no change since Apply" (come gli orfani di Channels)
     const juce::Colour kNegative    { 0xff6f8fb8 };   // lato negativo delle barre bipolari
 
     // Glifo 12x12 del tipo, disegnato nel riquadro r.
@@ -5123,6 +5125,199 @@ namespace
     }
 }
 
+//==============================================================================
+// Card del Monitor: canale fermo, reset, info e menu.
+
+bool CsoundParameterMappingPanel::MonitorRow::stuck() const
+{
+    bool anyNumeric = false;
+    for (const auto& e : entries)
+    {
+        if (e.isString || e.isAudio || e.led)
+            continue;   // testo costante e silenzio sono legittimi; una spia ha visto l'1
+        anyNumeric = true;
+        if (! e.change.looksStuck())
+            return false;
+    }
+    return anyNumeric;
+}
+
+void CsoundParameterMappingPanel::MonitorRow::resetObserved()
+{
+    for (auto& e : entries)
+    {
+        e.seenAny = false;
+        e.peakHold = 0.0;
+        e.peakHoldAge = 0;
+        e.change = {};
+        e.clipped = false;
+        std::fill (e.history.begin(), e.history.end(), (float) shown (e));
+    }
+    repaint();
+}
+
+juce::String CsoundParameterMappingPanel::MonitorRow::infoText() const
+{
+    if (entries.empty())
+        return {};
+
+    juce::String text;
+    if (multi)
+    {
+        juce::String base; int side = 0;
+        const bool stereo = csoundMonitor::splitStereoName (entries.front().name, base, side);
+        text << title << ": " << (int) entries.size() << (entries.front().isAudio ? " audio channels" : " channels")
+             << (stereo ? " paired by name (L / R)" : " grouped by name (same prefix + index)")
+             << " - " << entries.front().name << " .. " << entries.back().name;
+    }
+    else
+    {
+        const auto& e = entries.front();
+        double lo, hi; barRange (e, lo, hi);
+        text << e.name << ": " << csoundMonitor::describeKind (kindOf (e), lo, hi);
+    }
+    if (stuck())
+        text << "\nNo change since Apply: the code creates this channel but never writes a new value"
+                " (a chnset that does not run, a misspelt name, a name built at run time).";
+    if (anyClipped())
+        text << "\nCLIP: a sample reached 0 dBFS. Click the card to clear it.";
+   #if JUCE_IOS
+    text << "\nDouble-tap: reset the observed range. Touch and hold: menu.";
+   #else
+    text << "\nDouble-click: reset the observed range. Right-click: menu.";
+   #endif
+    return text;
+}
+
+juce::String CsoundParameterMappingPanel::MonitorRow::getTooltip()
+{
+    return infoText();
+}
+
+juce::String CsoundParameterMappingPanel::MonitorRow::chnKLines() const
+{
+    juce::StringArray lines;
+    for (const auto& e : entries)
+    {
+        if (e.isString || e.isAudio)
+            continue;   // chn_S / chn_a: niente range da dichiarare
+        double lo, hi; barRange (e, lo, hi);
+        if (! e.hasHints && ! e.seenAny)
+            continue;
+        lines.add (csoundMonitor::chnKDeclaration (e.name, e.value, lo, hi, attrs.spark));
+    }
+    return lines.joinIntoString ("\n");
+}
+
+void CsoundParameterMappingPanel::MonitorRow::showMenu()
+{
+    std::vector<CsoundActionSheetItem> items;
+    // Intestazione breve (la spiegazione lunga e' nel tooltip): il tipo e
+    // il range, e una seconda riga se la card e' ferma o in CLIP.
+    {
+        CsoundActionSheetItem info;
+        if (multi)
+        {
+            juce::String base; int side = 0;
+            info.sectionHeader = csoundMonitor::splitStereoName (entries.front().name, base, side)
+                                   ? juce::String ("Stereo pair, L / R")
+                                   : juce::String ((int) entries.size()) + " channels, by name";
+        }
+        else
+        {
+            double lo, hi; barRange (entries.front(), lo, hi);
+            info.sectionHeader = csoundMonitor::shortKind (kindOf (entries.front()), lo, hi);
+        }
+        items.push_back (info);
+    }
+    if (stuck())
+    {
+        CsoundActionSheetItem note;
+        note.sectionHeader = "No change since Apply";
+        items.push_back (note);
+    }
+    if (anyClipped())
+    {
+        CsoundActionSheetItem note;
+        note.sectionHeader = "Clipped at 0 dBFS";
+        items.push_back (note);
+    }
+    {
+        CsoundActionSheetItem item;
+        item.id = 1;
+        item.text = entries.size() > 1 ? "Copy chn_k Declarations" : "Copy chn_k Declaration";
+        item.enabled = chnKLines().isNotEmpty();
+        item.icon = CsoundActionSheetIcon::copy;
+        items.push_back (item);
+    }
+    if (anyClipped())
+    {
+        CsoundActionSheetItem item;
+        item.id = 3;
+        item.text = "Reset Clip";
+        item.icon = CsoundActionSheetIcon::resetDefault;
+        items.push_back (item);
+    }
+    {
+        CsoundActionSheetItem item;
+        item.id = 2;
+        item.text = "Reset Observed Range";
+        item.icon = CsoundActionSheetIcon::resetDefault;
+        items.push_back (item);
+    }
+
+    juce::Component::SafePointer<MonitorRow> safeThis (this);
+    CsoundActionSheet::show (*this, title, std::move (items), [safeThis] (int result)
+    {
+        if (safeThis == nullptr)
+            return;
+        if (result == 1)
+        {
+            const auto lines = safeThis->chnKLines();
+            juce::SystemClipboard::copyTextToClipboard (lines);
+            if (safeThis->onLog)
+                safeThis->onLog ("--- Copied to the clipboard (paste it in the orchestra header) ---\n" + lines);
+        }
+        else if (result == 2)
+        {
+            safeThis->resetObserved();
+        }
+        else if (result == 3)
+        {
+            safeThis->resetClip();
+        }
+    });
+}
+
+void CsoundParameterMappingPanel::MonitorRow::mouseUp (const juce::MouseEvent& e)
+{
+    const bool longPress = e.getLengthOfMousePress() > 450 && ! e.mouseWasDraggedSinceMouseDown();
+    if (e.mods.isPopupMenu() || longPress)
+        showMenu();
+    else if (anyClipped() && e.getNumberOfClicks() == 1)
+        resetClip();
+}
+
+bool CsoundParameterMappingPanel::MonitorRow::anyClipped() const
+{
+    for (const auto& e : entries)
+        if (e.clipped)
+            return true;
+    return false;
+}
+
+void CsoundParameterMappingPanel::MonitorRow::resetClip()
+{
+    for (auto& e : entries)
+        e.clipped = false;
+    repaint();
+}
+
+void CsoundParameterMappingPanel::MonitorRow::mouseDoubleClick (const juce::MouseEvent&)
+{
+    resetObserved();
+}
+
 csoundMonitor::Kind CsoundParameterMappingPanel::MonitorRow::kindOf (const Entry& e) const
 {
     double lo, hi;
@@ -5143,6 +5338,8 @@ int CsoundParameterMappingPanel::MonitorRow::preferredHeight() const noexcept
         case K::text:  return 26 + 30;           // titolo + display
         case K::spark: return 26 + 42;           // titolo + curva
         case K::audio: return 26 + 30;           // titolo + meter a segmenti + scala
+        case K::range:    return 26 + 32;        // titolo + barra + righello + estremi
+        case K::adaptive: return 26 + 32;        // titolo + binario + estremi
         case K::bipolar: return 26 + 50;         // titolo + quadrante
         default:       return height;            // titolo + barra + etichette
     }
@@ -5183,6 +5380,25 @@ void CsoundParameterMappingPanel::MonitorRow::paint (juce::Graphics& g)
     if (entries.empty())
         return;
 
+    // Canale fermo dall'Apply: card attenuata e, al posto del valore, la
+    // spiegazione (il codice lo crea ma non lo scrive).
+    if (stuck())
+    {
+        g.beginTransparencyLayer (0.4f);
+        paintContent (g);
+        g.endTransparencyLayer();
+        g.setColour (kStuck.withAlpha (0.9f));
+        g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::italic)));
+        g.drawFittedText ("no change since Apply", valueArea, juce::Justification::centredRight, 1);
+        return;
+    }
+    paintContent (g);
+}
+
+void CsoundParameterMappingPanel::MonitorRow::paintContent (juce::Graphics& g)
+{
+    const auto b = getLocalBounds();
+
     auto area = b.reduced (cardPaddingH, 0).withTrimmedLeft (6);
 
     if (multi)
@@ -5208,7 +5424,8 @@ void CsoundParameterMappingPanel::MonitorRow::paint (juce::Graphics& g)
     g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
     const int nameW = juce::jmin (head.getWidth() / 2, 180);
     g.drawFittedText (title, head.removeFromLeft (nameW), juce::Justification::centredLeft, 1);
-    if (k != csoundMonitor::Kind::text)
+    valueArea = head.withTrimmedLeft (8);
+    if (k != csoundMonitor::Kind::text && ! stuck())
     {
         g.setColour (k == csoundMonitor::Kind::audio ? meterColourForDb (shown (e)) : kTextMuted);
         g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain)));
@@ -5262,7 +5479,7 @@ void CsoundParameterMappingPanel::MonitorRow::paintRange (juce::Graphics& g, juc
         g.fillRect (tx, tickTop, 1.0f, i % 2 == 0 ? 4.0f : 2.5f);
     }
 
-    auto labels = area.withTrimmedTop (17).withHeight (11);
+    auto labels = area.withTrimmedTop (18).withHeight (11);
     g.setFont (juce::Font (juce::FontOptions (10.0f)));
     g.drawText (csoundMonitor::formatMonitorValue (lo), labels, juce::Justification::centredLeft, false);
     g.drawText (csoundMonitor::formatMonitorValue (hi), labels, juce::Justification::centredRight, false);
@@ -5296,7 +5513,7 @@ void CsoundParameterMappingPanel::MonitorRow::paintAdaptive (juce::Graphics& g, 
         g.drawEllipse (mx - 5.5f, cy - 5.5f, 11.0f, 11.0f, 2.0f);
     }
 
-    auto labels = area.withTrimmedTop (16).withHeight (11);
+    auto labels = area.withTrimmedTop (17).withHeight (11);
     g.setColour (kTextMuted.withAlpha (0.8f));
     g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::italic)));
     const juce::String down (juce::CharPointer_UTF8 ("\xe2\x86\x93 ")), up (juce::CharPointer_UTF8 (" \xe2\x86\x91"));
@@ -5359,6 +5576,15 @@ void CsoundParameterMappingPanel::MonitorRow::paintBipolar (juce::Graphics& g, j
 void CsoundParameterMappingPanel::MonitorRow::paintAudio (juce::Graphics& g, juce::Rectangle<int> area, const Entry& e) const
 {
     // Meter a segmenti -60..0 dB: verde fino a -18, giallo fino a -6, rosso.
+    // A destra la spia CLIP: si accende a 0 dBFS e resta accesa finche'
+    // non si clicca la card (come su un mixer).
+    auto clipBox = area.removeFromRight (34).withHeight (12).toFloat().withTrimmedLeft (6.0f).translated (0.0f, -1.0f);
+    g.setColour (e.clipped ? kMeterRed : kMeterRed.withAlpha (0.12f));
+    g.fillRoundedRectangle (clipBox, 2.0f);
+    g.setColour (e.clipped ? juce::Colours::white : kMeterRed.withAlpha (0.45f));
+    g.setFont (juce::Font (juce::FontOptions (8.5f, juce::Font::bold)));
+    g.drawText ("CLIP", clipBox, juce::Justification::centred, false);
+
     auto meter = area.withHeight (10).toFloat();
     g.setColour (kLcdBg);
     g.fillRoundedRectangle (meter.expanded (1.0f), 2.0f);
@@ -5525,9 +5751,13 @@ void CsoundParameterMappingPanel::MonitorRow::paintMulti (juce::Graphics& g, juc
     g.setColour (kText);
     g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
     g.drawFittedText (title, head.removeFromLeft (juce::jmin (head.getWidth() / 2, 180)), juce::Justification::centredLeft, 1);
-    g.setColour (kTextMuted);
-    g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain)));
-    g.drawFittedText (juce::String ((int) entries.size()) + (audio ? " audio" : " ch"), head, juce::Justification::centredRight, 1);
+    valueArea = head;
+    if (! stuck())
+    {
+        g.setColour (kTextMuted);
+        g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain)));
+        g.drawFittedText (juce::String ((int) entries.size()) + (audio ? " audio" : " ch"), head, juce::Justification::centredRight, 1);
+    }
 
     auto plot = area.withTrimmedTop (2).withTrimmedBottom (4);
     const int labelH = 12;
@@ -5563,9 +5793,12 @@ void CsoundParameterMappingPanel::MonitorRow::paintMulti (juce::Graphics& g, juc
         }
         else if (audio)
         {
-            // Meter verticale a segmenti, verde/giallo/rosso.
+            // Meter verticale a segmenti, verde/giallo/rosso, con la spia
+            // CLIP in cima (resta accesa finche' non si clicca la card).
+            g.setColour (e.clipped ? kMeterRed : kMeterRed.withAlpha (0.12f));
+            g.fillRect (x, (float) bars.getY() + 2.0f, barW, 5.0f);
             const int segments = 12;
-            const float segH = ((float) bars.getHeight() - 4.0f - (float) (segments - 1)) / (float) segments;
+            const float segH = ((float) bars.getHeight() - 4.0f - 7.0f - (float) (segments - 1)) / (float) segments;
             const double level = shown (e);
             for (int s2 = 0; s2 < segments; ++s2)
             {
@@ -5620,6 +5853,15 @@ void CsoundParameterMappingPanel::refreshMonitorList()
     monitorSignature = signature;
     monitorChannels = std::move (channels);
 
+    // CLIP: il thread audio sorveglia il picco dei canali audio del Monitor.
+    {
+        std::vector<cs_float*> audioPtrs;
+        for (const auto& c : monitorChannels)
+            if (c.isAudio && c.valuePtr != nullptr && (int) audioPtrs.size() < CsoundAudioProcessor::kMaxAudioPeakWatches)
+                audioPtrs.push_back (c.valuePtr);
+        processor.setAudioPeakWatches (audioPtrs, engine);
+    }
+
     if (! sameRows || monitorRows.empty())
     {
         // Card dai canali: attributi di chn_k + accorpamento per nome
@@ -5655,7 +5897,10 @@ void CsoundParameterMappingPanel::refreshMonitorList()
                 e.name = c.name; e.channelIndex = idx; e.isString = c.isString; e.isAudio = c.isAudio;
                 e.hasHints = c.hasHints; e.hintMin = c.hintMin; e.hintMax = c.hintMax;
                 juce::String base; int index = -1;
-                e.label = csoundMonitor::splitIndexedName (c.name, base, index) ? juce::String (index) : c.name;
+                if (csoundMonitor::splitStereoName (c.name, base, index))
+                    e.label = index == 1 ? "L" : "R";
+                else
+                    e.label = csoundMonitor::splitIndexedName (c.name, base, index) ? juce::String (index) : c.name;
                 if (row->attrs.spark)
                     e.history.assign ((size_t) MonitorRow::kHistoryLength, 0.0f);
                 if (const auto it = previous.find (c.name); it != previous.end() && it->second.isAudio == e.isAudio)
@@ -5666,6 +5911,8 @@ void CsoundParameterMappingPanel::refreshMonitorList()
                     e.peakHold = old.peakHold; e.peakHoldAge = old.peakHoldAge;
                     e.binary = old.binary; e.led = old.led;
                     e.ints = old.ints; e.steps = old.steps;
+                    e.change = old.change;
+                    e.clipped = old.clipped;
                     if (old.history.size() == e.history.size())
                     {
                         e.history = old.history;
@@ -5675,6 +5922,7 @@ void CsoundParameterMappingPanel::refreshMonitorList()
                 row->entries.push_back (std::move (e));
             }
             row->setTitle (row->title);
+            row->onLog = [this] (const juce::String& m) { if (onParameterCopiedToClipboard) onParameterCopiedToClipboard (m); };
             rowsContainer.addAndMakeVisible (*row);
             monitorRows.push_back (std::move (row));
         }
@@ -5733,6 +5981,14 @@ void CsoundParameterMappingPanel::updateMonitorValues()
 
     bool layoutChanged = false;
 
+    // Solo le card nella parte visibile del pannello vengono ridisegnate.
+    // I valori si leggono comunque per tutte (spia, passi, min/max visti,
+    // storia, "fermo" e CLIP restano giusti anche fuori vista); quando una
+    // card rientra scorrendo, il viewport la ridisegna con lo stato attuale.
+    // (JUCE scarterebbe gia' il ridisegno fuori dal viewport, ma cosi' non
+    // si percorre nemmeno la catena dei repaint() 20 volte al secondo.)
+    const auto viewArea = viewport.getViewArea();
+
     for (auto& rowPtr : monitorRows)
     {
         auto& row = *rowPtr;
@@ -5758,6 +6014,11 @@ void CsoundParameterMappingPanel::updateMonitorValues()
             {
                 const double raw = v;
                 v = csoundMonitor::meterBallistics (v, e.value);   // un blocco di ksmps letto ogni 50 ms: balistica
+                if (processor.takeAudioPeak (ch.valuePtr) >= 1.0f && ! e.clipped)
+                {
+                    e.clipped = true;
+                    changed = true;
+                }
                 // Picco tenuto: 1 s fermo, poi scende.
                 if (raw >= e.peakHold) { e.peakHold = raw; e.peakHoldAge = 0; }
                 else if (++e.peakHoldAge > 20) e.peakHold *= 0.9;
@@ -5767,6 +6028,10 @@ void CsoundParameterMappingPanel::updateMonitorValues()
             e.seenMax = juce::jmax (e.seenMax, v);
             if (v != e.value) { e.value = v; changed = true; }
 
+            const bool wasStuck = e.change.looksStuck();
+            e.change.observe (v);
+            if (wasStuck != e.change.looksStuck())
+                changed = true;
             e.binary.observe (v);
             e.ints.observe (v);
             if (! row.multi && ! e.isAudio)
@@ -5809,7 +6074,7 @@ void CsoundParameterMappingPanel::updateMonitorValues()
                 if (e.led != led) { e.led = led; changed = true; }
         }
 
-        if (changed)
+        if (changed && row.getBounds().intersects (viewArea))
             row.repaint();
     }
 
@@ -6030,12 +6295,17 @@ void CsoundParameterMappingPanel::resized()
     // centrato nel pannello. titleBarBounds salvato per paint() sopra.
     titleBarBounds = full.removeFromTop (panelTitleBarHeight);
     {
+        // Titolo a SINISTRA; a destra [+] [snapshot]. Il "+" e' allineato in
+        // verticale alla lente della toolbar principale (setMenuButtonCentreX),
+        // lo snapshot al burger.
         auto bar = titleBarBounds.reduced (panelTitleBarPaddingH, 0);
-        addButton.setBounds (bar.removeFromLeft (panelTitleBarButtonDiameter)
-                                 .withSizeKeepingCentre (panelTitleBarButtonDiameter, panelTitleBarButtonDiameter));
-        snapshotsButton.setBounds (bar.removeFromRight (panelTitleBarButtonDiameter)
-                                      .withSizeKeepingCentre (panelTitleBarButtonDiameter, panelTitleBarButtonDiameter));
-        titleLabel.setBounds (titleBarBounds);
+        const int d = panelTitleBarButtonDiameter;
+        snapshotsButton.setBounds (bar.removeFromRight (d).withSizeKeepingCentre (d, d));
+        int addX = bar.getRight() - 10 - d;   // default: subito a sinistra dello snapshot
+        if (menuButtonCentreX > 0)
+            addX = juce::jlimit (bar.getX() + 60, snapshotsButton.getX() - 4 - d, menuButtonCentreX - d / 2);
+        addButton.setBounds (addX, bar.getCentreY() - d / 2, d, d);
+        titleLabel.setBounds (bar.withRight (addX - 6).withTrimmedLeft (-4));
     }
 
     auto area = full.reduced (4);

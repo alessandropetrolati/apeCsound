@@ -56,6 +56,24 @@ namespace csoundMonitor
         return base.isNotEmpty();
     }
 
+    /** Coppia stereo per nome: "Out_L"/"Out_R", "Out-left", "Peak L",
+        "OutL"/"OutR", "MixLeft"/"MixRight". side: 1 = sinistra, 2 = destra.
+        Senza separatore solo L/R/Left/Right maiuscoli dopo una minuscola o
+        una cifra ("Level" non e' "Leve" + "l"). */
+    inline bool splitStereoName (const juce::String& name, juce::String& base, int& side)
+    {
+        static const std::regex withSep (R"re(^(.*?[^_\- ])[_\- ]+(L|R|l|r|Left|Right|left|right|LEFT|RIGHT)$)re");
+        static const std::regex camel   (R"re(^(.*?[a-z0-9])(L|R|Left|Right)$)re");
+        const auto s = name.toStdString();
+        std::smatch m;
+        if (! std::regex_match (s, m, withSep) && ! std::regex_match (s, m, camel))
+            return false;
+        base = juce::String (m[1].str());
+        const auto tag = juce::String (m[2].str()).toLowerCase();
+        side = tag.startsWithChar ('l') ? 1 : 2;
+        return base.isNotEmpty();
+    }
+
     struct ChannelInfo
     {
         juce::String name;
@@ -83,6 +101,15 @@ namespace csoundMonitor
         {
             const auto& c = channels[(size_t) i];
             juce::String base; int index = -1;
+            if (! c.isString && splitStereoName (c.name, base, index))
+            {
+                // coppia L/R: chiave separata da quella dei nomi con indice
+                const auto key = base + "\x02" "stereo" + (c.isAudio ? "\x01" "audio" : "");
+                if (byBase.find (key) == byBase.end())
+                    baseOrder.push_back (key);
+                byBase[key].push_back ({ i, index });
+                continue;
+            }
             if (! c.isString && splitIndexedName (c.name, base, index))
             {
                 const auto key = base + (c.isAudio ? "\x01" "audio" : "");
@@ -107,7 +134,8 @@ namespace csoundMonitor
             std::sort (members.begin(), members.end(), [] (auto& a, auto& b) { return a.second < b.second; });
             if (members.size() >= 2)
             {
-                Card card { base.upToFirstOccurrenceOf ("\x01", false, false), {}, true, firstIndex };
+                Card card { base.upToFirstOccurrenceOf ("\x02", false, false).upToFirstOccurrenceOf ("\x01", false, false),
+                            {}, true, firstIndex };
                 for (const auto& m : members) card.channels.push_back (m.first);
                 pending.push_back ({ firstIndex, card });
             }
@@ -265,6 +293,46 @@ namespace csoundMonitor
         return cells >= 3.0 && cells <= (double) kMaxStepCells && t.looksInteger();
     }
 
+    /** Canale FERMO: nessun cambiamento dalla prima lettura dopo Apply
+        (minObservations letture, ~2 s a 20 Hz). Quasi sempre un canale che
+        il codice crea ma non scrive (un chnset in un ramo mai eseguito, un
+        nome sbagliato, il "Light0" di un nome costruito con sprintfk). */
+    struct ChangeTracker
+    {
+        int observations = 0;
+        bool any = false, changed = false;
+        double first = 0.0;
+
+        void observe (double v)
+        {
+            if (! any) { first = v; any = true; }
+            else if (v != first) changed = true;
+            ++observations;
+        }
+        bool looksStuck (int minObservations = 40) const
+        {
+            return any && ! changed && observations >= minObservations;
+        }
+    };
+
+    /** Riga chn_k da incollare nel codice per dichiarare il range di un
+        canale: estremi arrotondati verso l'esterno a 3 decimali, default
+        dentro il range (Csound rifiuta un default fuori). */
+    inline juce::String formatMonitorValue (double raw, bool audioDb);
+
+    inline juce::String chnKDeclaration (const juce::String& name, double value, double lo, double hi, bool spark)
+    {
+        double dn = std::floor (lo * 1000.0) / 1000.0;
+        double up = std::ceil  (hi * 1000.0) / 1000.0;
+        if (! (up > dn)) up = dn + 1.0;
+        const double def = juce::jlimit (dn, up, std::round (value * 1000.0) / 1000.0);
+        auto line = "chn_k \"" + name + "\", 2, 2, " + formatMonitorValue (def, false) + ", "
+                  + formatMonitorValue (dn, false) + ", " + formatMonitorValue (up, false);
+        if (spark)
+            line << ", 0, 0, 0, 0, \"spark\"";
+        return line;
+    }
+
     /** I tipi di card, ciascuno con il suo aspetto (vedi MonitorRow::paint). */
     enum class Kind { text, lamp, audio, spark, steps, bipolar, range, adaptive };
 
@@ -279,6 +347,43 @@ namespace csoundMonitor
         if (steps)    return Kind::steps;
         if (hi > lo && lo < 0.0 && hi > 0.0) return Kind::bipolar;
         return hasHints ? Kind::range : Kind::adaptive;
+    }
+
+    /** Versione breve per l'intestazione del menu della card (una riga
+        stretta, maiuscola): "TRACK, SEEN 2..19.8". */
+    inline juce::String shortKind (Kind k, double lo, double hi)
+    {
+        const auto range = formatMonitorValue (lo, false) + ".." + formatMonitorValue (hi, false);
+        switch (k)
+        {
+            case Kind::text:     return "Text";
+            case Kind::lamp:     return "Lamp, 0 / 1";
+            case Kind::audio:    return "Audio meter";
+            case Kind::spark:    return "Sparkline, " + range;
+            case Kind::steps:    return "Steps, " + range;
+            case Kind::bipolar:  return "Dial, " + range;
+            case Kind::range:    return "Level bar, " + range;
+            case Kind::adaptive: return "Track, seen " + range;
+        }
+        return {};
+    }
+
+    /** Perche' una card ha quell'aspetto, in una riga (tooltip). */
+    inline juce::String describeKind (Kind k, double lo, double hi)
+    {
+        const auto range = formatMonitorValue (lo, false) + ".." + formatMonitorValue (hi, false);
+        switch (k)
+        {
+            case Kind::text:     return "Text: a string channel (S), shown as it is - format it with sprintfk";
+            case Kind::lamp:     return "Lamp: only 0 and 1 seen";
+            case Kind::audio:    return "Audio meter: an audio channel (chnset asig), RMS in dB with peak hold";
+            case Kind::spark:    return "Sparkline: chn_k attribute \"spark\", the last 5 seconds";
+            case Kind::steps:    return "Steps: whole-number range " + range + " from chn_k, only whole numbers seen";
+            case Kind::bipolar:  return "Dial: range " + range + " goes through zero";
+            case Kind::range:    return "Level bar: range " + range + " declared with chn_k";
+            case Kind::adaptive: return "Track: no range declared with chn_k - " + range + " is the range seen so far";
+        }
+        return {};
     }
 
     /** Il testo del valore di una card numerica: fino a 3 decimali, senza

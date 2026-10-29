@@ -1543,7 +1543,7 @@ private:
 
     // Bottone multifunzione (richiesta esplicita: "il bottone + ... ormai e'
     // multifunzionale") - vive ora DENTRO la title bar di QUESTO pannello,
-    // a SINISTRA (vedi titleLabel/resized() per il resto della barra), non
+    // a DESTRA, accanto allo snapshot e allineato alla lente (Find) della toolbar (vedi setMenuButtonCentreX), non
     // piu' riparentato nella toolbar principale di PluginEditor. Nome
     // "paramsMenu" (non piu' generico "circular" con icona "+" - vedi
     // CsoundParameterPanelLookAndFeel::drawButtonText) perche' apre un
@@ -1581,6 +1581,16 @@ private:
     // presenza di addButton a sinistra, come un titolo di finestra/sheet
     // standard.
     juce::Label titleLabel;
+public:
+    /** x (coordinate del pannello) del centro del "+": PluginEditor lo
+        allinea in verticale alla lente (Find) della toolbar principale.
+        -1 = subito a sinistra del bottone snapshot. */
+    void setMenuButtonCentreX (int x)
+    {
+        if (x != menuButtonCentreX) { menuButtonCentreX = x; resized(); }
+    }
+private:
+    int menuButtonCentreX = -1;
 
     // Calcolato in resized(), riusato da paint() per disegnare lo sfondo
     // della title bar senza ripetere lo stesso calcolo di layout due volte.
@@ -1744,7 +1754,8 @@ private:
     // Una card del Monitor: un canale (barra, sparkline o testo) oppure un
     // gruppo di canali numerici (una barra verticale ciascuno) - vedi
     // CsoundMonitorLayout.h per attributi di chn_k e accorpamento per nome.
-    struct MonitorRow final : public juce::Component
+    struct MonitorRow final : public juce::Component,
+                              public juce::TooltipClient
     {
         struct Entry
         {
@@ -1762,7 +1773,27 @@ private:
             bool led = false;                     // mostrato come spia (solo 0/1)
             csoundMonitor::IntegerTracker ints;   // riconoscimento automatico dei passi
             bool steps = false;                   // mostrato a passi (interi in un range intero)
+            csoundMonitor::ChangeTracker change;  // fermo dall'Apply? (card attenuata)
+            bool clipped = false;                 // audio: un campione a 0 dBFS o oltre (resta acceso)
         };
+
+        bool anyClipped() const;
+        void resetClip();
+
+        // Card ferma: tutti i canali numerici (non audio) mai cambiati.
+        bool stuck() const;
+        // Doppio clic: azzera min/max visti, picco tenuto, storia, "fermo".
+        void resetObserved();
+        // Clic destro / pressione lunga: info, Copy chn_k, Reset.
+        void showMenu();
+        juce::String infoText() const;
+        juce::String chnKLines() const;
+        juce::String getTooltip() override;
+        void mouseUp (const juce::MouseEvent& e) override;
+        void mouseDoubleClick (const juce::MouseEvent& e) override;
+        std::function<void (const juce::String&)> onLog;   // messaggi in consolle
+        mutable juce::Rectangle<int> valueArea;            // dove va "no change since Apply"
+        void paintContent (juce::Graphics& g);
 
         void paint (juce::Graphics& g) override;
         int preferredHeight() const noexcept;

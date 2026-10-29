@@ -54,7 +54,25 @@ PARAMETERS PANEL
   * Monitor audio meters: audio channels written with chnset asig (or
     chnmix) appear as level meters with meter ballistics; indexed names
     (Out1..Out8) become one card of vertical segmented meters. Read by the
-    panel from the channel buffer, nothing added to the audio thread.
+    panel from the channel buffer.
+  * Monitor CLIP: every audio meter has a CLIP lamp that lights when a
+    sample reaches 0 dBFS and stays on until the card is clicked. The
+    audio thread keeps the sample peak of the monitored audio channels
+    (up to 16, a few comparisons per ksmps, no locks): a block read 20
+    times per second by the panel would miss almost every overload.
+  * Monitor audio meters follow 0dbfs (they assumed 0dbfs = 1).
+  * Monitor, reading a card: hover a card to read what it is and why it
+    looks like that; right-click (long press on iOS) for its menu with
+    "Copy chn_k Declaration" (a ready-made chn_k line with the range seen
+    so far, to paste in the code) and "Reset Observed Range" (also
+    double-click: min/max seen, peak hold, sparkline history).
+  * Monitor, "no change since Apply": a card whose channel has not changed
+    for two seconds after Apply is dimmed and says so - almost always a
+    channel the code creates but never writes (a chnset that never runs,
+    a misspelt name, a name built at run time).
+  * Monitor stereo pairs: Out_L/Out_R, Out-left/Out-right, OutL/OutR,
+    MixLeft/MixRight become one card with two meters labelled L and R,
+    like the indexed names (Out1..Out8).
   * Monitor lamps: a channel that only takes 0 and 1 (Overload, Gate, the
     steps of a sequencer) becomes a lamp by itself after a second; in
     multi-bar cards a row of lights.

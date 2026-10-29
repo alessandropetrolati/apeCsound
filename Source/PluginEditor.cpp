@@ -1282,6 +1282,8 @@ void CsoundAudioProcessorEditor::resized()
         auto dividerArea = area.removeFromRight (sidebarDividerWidth);
 
         parameterPanel.setBounds (sidebarArea);
+        // "+" del pannello sulla stessa verticale della lente (Find).
+        parameterPanel.setMenuButtonCentreX (findButton.getBounds().getCentreX() - sidebarArea.getX());
         sidebarDivider.setBounds (dividerArea.expanded (dividerGrabMargin, 0)); // presa larga, striscia stretta
         sidebarDivider.toFront (false);
     }
@@ -4060,11 +4062,16 @@ Nothing to learn: the look comes from what the channel *is* - its type, its rang
 - **Adaptive meter** - just `chnset kval, "Name"`: no fill, a ring that slides along a dashed track between the lowest and highest values seen so far (shown in italics, with arrows).
 - **Steps** - a declared range with whole ends and 3 to 33 values (`chn_k "Step", 2, 2, 0, 0, 7`) that only ever receives whole numbers: a row of cells, one per value, the current one lit, the ones before it dimmed (the position of a sequencer, a choice among N), and "3 / 7" on the right. A fractional value turns it back into a bar for good.
 - **Bipolar dial** - when the range goes through zero (an LFO -1..1, a pan): a half-moon dial with a needle, zero at the top, negative values to the left in blue, positive to the right.
-- **Audio meter** - `chnset asig, "Voice"`: a segmented green / yellow / red meter in dB (-60..0, scale underneath), rising at once and falling slowly, with a peak-hold line. The value is read from the channel buffer by the panel, never by the audio thread.
+- **Audio meter** - `chnset asig, "Voice"`: a segmented green / yellow / red meter in dB (-60..0, scale underneath), rising at once and falling slowly, with a peak-hold line, and a **CLIP** lamp on the right that lights when a sample reaches 0 dBFS and stays on until you click the card (like a mixer). The level is read from the channel buffer by the panel; for CLIP the audio thread keeps the sample peak of each monitored audio channel (up to 16), since a block read 20 times per second would miss almost every overload.
 - **Lamp** - a channel that only ever takes 0 and 1 (Overload, Gate, Play) becomes a glowing lamp with ON/OFF by itself after a second. A declared range other than 0..1 keeps it a number.
 - **Text** - `chnset Sval, "Name"` on a string: an LCD-like display (a state, a note name, a message). Build formatted text yourself with `sprintfk`.
 - **Sparkline** - the only attribute (see below): the last 5 seconds as a filled curve, with a dot on the current value.
-- **Multi-bar card** - channels with the same prefix and a trailing number (`Band1, Band2...`, `Band_1, Band_2...`, at least two) become one card with a vertical bar per channel: segmented meters for audio channels (`Out1..Out8`), a row of lamps for 0/1 channels (the steps of a sequencer).
+- **Multi-bar card** - channels with the same prefix and a trailing number (`Band1, Band2...`, `Band_1, Band_2...`, at least two) become one card with a vertical bar per channel: segmented meters for audio channels (`Out1..Out8`), a row of lamps for 0/1 channels (the steps of a sequencer). Left/right pairs are joined the same way: `Out_L`/`Out_R`, `Out-left`/`Out-right`, `OutL`/`OutR`, `MixLeft`/`MixRight` - one card, two meters labelled L and R.
+## Reading a card
+- **Hover** a card (or open its menu) to read what it is and why it looks like that: "Track: no range declared with chn_k - 2..19.8 is the range seen so far".
+- **Right-click** (long press on iOS) opens the card menu: **Copy chn_k Declaration** copies a ready-made `chn_k` line with the range seen so far (or the declared one), to paste in the orchestra header - an adaptive track becomes a fixed level bar. For a multi-bar card it copies one line per channel.
+- **Double-click** resets what the card has observed: the min/max seen, the peak hold, the sparkline history. Useful after a spike at start-up squashed the range.
+- **No change since Apply**: a card dimmed, with this note in place of the value, belongs to a channel that has not changed for two seconds after Apply. Almost always the code creates the channel but never writes it: a `chnset` in a branch that never runs, a misspelt name, or a name built at run time (see above).
 ## Ranges and the spark attribute
 `chn_k` declares an output channel with a range and, as 11th argument, free text that Csound stores and hands to the host without reading it. apeCsound reads one word there, `spark`; other frontends ignore it, so the `.csd` stays portable.
 ```

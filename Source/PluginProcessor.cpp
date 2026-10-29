@@ -1076,6 +1076,7 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     if (auto* old = activeCsound.exchange (nullptr))
     {
         ready = false;
+        clearAudioPeakWatches();   // puntatori ai canali del motore che sta per sparire
         CsoundAPI::csoundReset (old);
         CsoundAPI::csoundDestroy (old);
     }
@@ -1391,6 +1392,7 @@ void CsoundAudioProcessor::stopEngine()
     if (auto* old = activeCsound.exchange (nullptr))
     {
         ready = false;
+        clearAudioPeakWatches();
         CsoundAPI::csoundReset (old);
         CsoundAPI::csoundDestroy (old);
 
@@ -1518,7 +1520,22 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         {
             ksmpsPos = 0;
 
-            if (CsoundAPI::csoundPerformKsmps (cs) != 0)
+            const int perfResult = CsoundAPI::csoundPerformKsmps (cs);
+
+            // CLIP dei meter audio del Monitor: picco di campione dei canali
+            // sorvegliati (al piu' 16 x ksmps confronti, niente lock).
+            for (auto& w : audioPeakWatches)
+            {
+                const cs_float* p = w.ptr.load (std::memory_order_acquire);
+                if (p == nullptr)
+                    break;
+                float m = w.peak.load (std::memory_order_relaxed);
+                for (int i = 0; i < csKsmps; ++i)
+                    m = juce::jmax (m, std::abs ((float) p[i]) * csOutScale);
+                w.peak.store (m, std::memory_order_relaxed);
+            }
+
+            if (perfResult != 0)
             {
                 // Performance/score terminati: silenzio per il resto del
                 // buffer e segnaliamo lo stop.
@@ -2861,8 +2878,42 @@ double CsoundAudioProcessor::readMonitorValue (const MonitorChannel& ch) const
     if (ch.valuePtr == nullptr || activeCsound.load() == nullptr || ! ready.load())
         return 0.0;
     if (ch.isAudio)
-        return csoundMonitor::blockRms (ch.valuePtr, csKsmps);   // RMS lineare dell'ultimo blocco
+        return csoundMonitor::blockRms (ch.valuePtr, csKsmps) * (double) csOutScale;   // RMS dell'ultimo blocco, 1 = 0 dBFS
     return (double) *ch.valuePtr;
+}
+
+void CsoundAudioProcessor::setAudioPeakWatches (const std::vector<cs_float*>& channelPtrs, std::uint64_t engine)
+{
+    if (engine == 0 || engine != getEngineIdentity())
+    {
+        clearAudioPeakWatches();
+        return;
+    }
+    for (int i = 0; i < kMaxAudioPeakWatches; ++i)
+    {
+        auto& w = audioPeakWatches[(size_t) i];
+        cs_float* p = i < (int) channelPtrs.size() ? channelPtrs[(size_t) i] : nullptr;
+        if (w.ptr.load() != p)
+        {
+            w.peak.store (0.0f);
+            w.ptr.store (p, std::memory_order_release);
+        }
+    }
+}
+
+float CsoundAudioProcessor::takeAudioPeak (const cs_float* channelPtr)
+{
+    if (channelPtr == nullptr)
+        return 0.0f;
+    for (auto& w : audioPeakWatches)
+    {
+        const cs_float* p = w.ptr.load();
+        if (p == nullptr)
+            break;
+        if (p == channelPtr)
+            return w.peak.exchange (0.0f);
+    }
+    return 0.0f;
 }
 
 juce::String CsoundAudioProcessor::readMonitorString (const MonitorChannel& ch) const

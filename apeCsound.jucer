@@ -9,7 +9,7 @@
               microphonePermissionsText="apeCsound needs the microphone for live audio input."
               pluginEditorRequiresKeys="1" pluginIsSynth="0" pluginWantsMidiIn="1"
               pluginProducesMidiOut="1" pluginIsMidiEffectPlugin="0" pluginAAXDisableBypass="0"
-              pluginAAXDisableMultiMono="0" version="1.0.5">
+              pluginAAXDisableMultiMono="0" version="1.0.7">
   <MAINGROUP id="tNvtiW" name="apeCsound">
     <GROUP id="{9680A1AA-7764-28DB-226D-D2086CE2E1B8}" name="Resources">
       <FILE id="QhPr70" name="cs-icon.png" compile="0" resource="1" file="Resources/cs-icon.png"/>
