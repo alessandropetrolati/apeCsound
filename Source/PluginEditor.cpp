@@ -501,8 +501,8 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // Pannello Graphs (nascosto di default) e divisore verticale tra
     // consolle e grafici - vedi showingGraphs in PluginEditor.h.
     addChildComponent (graphsPanel);
-    addChildComponent (channelsPanel);
-    channelsPanel.onLog = [this] (const juce::String& line) { appendToLog (line); };
+    addChildComponent (channelsView);
+    channelsView.card.panel.onLog = [this] (const juce::String& line) { appendToLog (line); };
     addChildComponent (graphsDivider);
     graphsDivider.getCurrentWidth = [this] { return graphsWidth; };
     graphsDivider.onDrag = [this] (int newWidth)
@@ -833,7 +833,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.onToggleGraphsRequested     = [this] { toggleGraphs(); };
     parameterPanel.isGraphsVisible             = [this] { return showingGraphs; };
     parameterPanel.onToggleChannelsRequested   = [this] { toggleChannels(); };
-    parameterPanel.isChannelsVisible           = [this] { return showingChannels; };
+    parameterPanel.isChannelsVisible           = [this] { return channelsView.isVisible(); };
 
     // Apre la sidebar Parametri se e' chiusa quando si aggiunge un nuovo
     // parametro (vedi il commento su onEnsurePanelVisible in
@@ -1188,6 +1188,7 @@ void CsoundAudioProcessorEditor::resized()
     aboutView.setBounds (area);
     guideView.setBounds (area);
     audioSettingsView.setBounds (area);
+    channelsView.setBounds (area);
     csdBrowser.setBounds (area);
 
     toolbarBounds = area.removeFromTop (toolbarHeight);
@@ -1328,16 +1329,8 @@ void CsoundAudioProcessorEditor::resized()
         {
             logConsole.setBounds (bottomArea);
 
-            // clearConsoleButton galleggia in overlap sopra l'angolo in alto
-            // a destra di logConsole (richiesto esplicitamente).
-            const auto consoleTopRight = bottomArea.getTopRight();
-            // In colonna: Evaluate (live code) sopra, cestino sotto, stesso
-            // diametro e stessa x - entrambi in overlap sulla consolle.
-            const int bx = consoleTopRight.x - clearConsoleButtonMargin*2 - clearConsoleButtonDiameter;
-            const int by = consoleTopRight.y + clearConsoleButtonMargin; // margine verticale ridotto (6 px)
-            evaluateButton.setBounds (bx, by, clearConsoleButtonDiameter, clearConsoleButtonDiameter);
-            clearConsoleButton.setBounds (bx, by + clearConsoleButtonDiameter + clearConsoleButtonMargin,
-                                          clearConsoleButtonDiameter, clearConsoleButtonDiameter);
+            // Il cestino della consolle sta nella barra di help, accanto a
+            // Evaluate (vedi sotto).
         }
     }
 
@@ -1358,19 +1351,21 @@ void CsoundAudioProcessorEditor::resized()
     editor.setBounds (area);
     opcodeHelpBar.setBounds (helpBarArea);
 
-    // Bottone Evaluate: con la consolle aperta sta sulla consolle, sopra
-    // il cestino (vedi sopra); con la consolle chiusa ripiega all'estrema
-    // destra della barra di help, ridotto per starci dentro.
-    if (! (showingConsole && logConsole.isVisible()))
+    // Bottoni della barra di help, allineati in orizzontale all'estrema
+    // destra: [Evaluate] [cestino della consolle]. Il cestino c'e' solo con
+    // la consolle aperta; senza, Evaluate prende il suo posto sul margine.
     {
         const int d = juce::jmin (clearConsoleButtonDiameter, helpBarArea.getHeight() - evaluateButtonInset * 2);
-        const int x = helpBarArea.getRight() - evaluateButtonInset * 2 - d;
-        evaluateButton.setBounds (x, helpBarArea.getCentreY() - d / 2, d, d);
+        const int y = helpBarArea.getCentreY() - d / 2;
+        int x = helpBarArea.getRight() - evaluateButtonInset * 2 - d;
+        if (showingConsole && logConsole.isVisible())
+        {
+            clearConsoleButton.setBounds (x, y, d, d);
+            clearConsoleButton.toFront (false);
+            x -= d + clearConsoleButtonMargin;
+        }
+        evaluateButton.setBounds (x, y, d, d);
         opcodeHelpBar.rightInset = juce::jmax (0, helpBarArea.getRight() - x) + 6;
-    }
-    else
-    {
-        opcodeHelpBar.rightInset = 10;
     }
     opcodeHelpBar.resized();
     evaluateButton.toFront (false);
@@ -1393,6 +1388,7 @@ void CsoundAudioProcessorEditor::keepOverlaysOnTop()
     for (juce::Component* overlay : { static_cast<juce::Component*> (&aboutView),
                                       static_cast<juce::Component*> (&guideView),
                                       static_cast<juce::Component*> (&audioSettingsView),
+                                      static_cast<juce::Component*> (&channelsView),
                                       static_cast<juce::Component*> (&csdBrowser) })
         if (overlay->isVisible())
             overlay->toFront (false);
@@ -1470,13 +1466,10 @@ void CsoundAudioProcessorEditor::toggleConsole()
 void CsoundAudioProcessorEditor::toggleGraphs()
 {
     showingGraphs = ! showingGraphs;
-    if (showingGraphs)
-        showingChannels = false;   // stesso posto: uno alla volta
 
     // visible/hidden: il pannello avvia/ferma da se' la registrazione di
     // display/dispfft (CsoundGraphsPanel::visibilityChanged).
     graphsPanel.setVisible (showingGraphs);
-    channelsPanel.setVisible (showingChannels);
     consoleDivider.setVisible (showingConsole || bottomRightPanel() != nullptr);
 
     resized();
@@ -1485,16 +1478,10 @@ void CsoundAudioProcessorEditor::toggleGraphs()
 
 void CsoundAudioProcessorEditor::toggleChannels()
 {
-    showingChannels = ! showingChannels;
-    if (showingChannels)
-        showingGraphs = false;
-
-    channelsPanel.setVisible (showingChannels);
-    graphsPanel.setVisible (showingGraphs);
-    consoleDivider.setVisible (showingConsole || bottomRightPanel() != nullptr);
-
-    resized();
-    repaint();
+    if (channelsView.isVisible())
+        channelsView.hide();
+    else
+        channelsView.show();
 }
 
 void CsoundAudioProcessorEditor::updateApplyButtonDirtyState()
@@ -3404,7 +3391,132 @@ CsoundAudioProcessorEditor::GuideView::Card::Card()
     viewport.setViewedComponent (&content, false);
     viewport.setScrollBarsShown (true, false);
     viewport.setScrollOnDragMode (juce::Viewport::ScrollOnDragMode::all);
+    viewport.onScroll = [this] { updateActiveAnchor(); };
     addAndMakeVisible (viewport);
+
+    tocViewport.setViewedComponent (&tocList, false);
+    tocViewport.setScrollBarsShown (true, false);
+    tocViewport.setScrollBarThickness (6);
+    tocViewport.setTitle ("Contents");
+    addAndMakeVisible (tocViewport);
+    rebuildToc();
+
+    contentsButton.setTitle ("Contents");
+    contentsButton.setTooltip ("Jump to a section");
+    contentsButton.setColour (juce::TextButton::buttonColourId, kAboutBorder);
+    contentsButton.setColour (juce::TextButton::textColourOffId, kAboutText);
+    contentsButton.onClick = [this] { showContentsMenu(); };
+    addChildComponent (contentsButton);
+}
+
+//==============================================================================
+// Indice della guida - vedi il commento su Card::jumpTo nel .h.
+CsoundAudioProcessorEditor::GuideView::Card::TocEntry::TocEntry (const juce::String& title, int lvl, int index)
+    : juce::Button (title), level (lvl), anchorIndex (index)
+{
+    setTitle (title);
+    setMouseCursor (juce::MouseCursor::PointingHandCursor);
+}
+
+void CsoundAudioProcessorEditor::GuideView::Card::TocEntry::paintButton (juce::Graphics& g, bool highlighted, bool down)
+{
+    auto b = getLocalBounds().toFloat().reduced (2.0f, 1.0f);
+    if (active || highlighted || down)
+    {
+        g.setColour (active ? kAboutAccent.withAlpha (0.18f) : kAboutBorder.withAlpha (0.6f));
+        g.fillRoundedRectangle (b, 5.0f);
+    }
+    if (active)
+    {
+        g.setColour (kAboutAccent);
+        g.fillRoundedRectangle (b.getX(), b.getY() + 4.0f, 3.0f, b.getHeight() - 8.0f, 1.5f);
+    }
+
+    g.setColour (active ? kAboutAccent : (level == 0 ? kAboutText : kAboutTextMuted));
+    g.setFont (juce::Font (juce::FontOptions (level == 0 ? 15.0f : 14.0f, level == 0 ? juce::Font::bold : juce::Font::plain)));
+    g.drawFittedText (getButtonText(), b.toNearestInt().withTrimmedLeft (level == 0 ? 12 : 26).withTrimmedRight (6),
+                      juce::Justification::centredLeft, 1);
+}
+
+void CsoundAudioProcessorEditor::GuideView::Card::rebuildToc()
+{
+    tocEntries.clear();
+    int y = 4;
+    for (int i = 0; i < (int) content.anchors.size(); ++i)
+    {
+        const auto& a = content.anchors[(size_t) i];
+        auto entry = std::make_unique<TocEntry> (a.title, a.level, i);
+        entry->onClick = [this, i] { jumpTo (i); };
+        const int h = a.level == 0 ? 32 : 27;
+        if (a.level == 0 && i > 0) y += 6;
+        entry->setBounds (0, y, sidebarWidth - 12, h);
+        y += h;
+        tocList.addAndMakeVisible (*entry);
+        tocEntries.push_back (std::move (entry));
+    }
+    tocList.setSize (sidebarWidth - 12, y + 8);
+}
+
+void CsoundAudioProcessorEditor::GuideView::Card::jumpTo (int anchorIndex)
+{
+    if (! juce::isPositiveAndBelow (anchorIndex, (int) content.anchors.size()))
+        return;
+    viewport.setViewPosition (0, juce::jmax (0, (int) content.anchorY (anchorIndex) - 8));
+    updateActiveAnchor();
+}
+
+void CsoundAudioProcessorEditor::GuideView::Card::updateActiveAnchor()
+{
+    // La sezione "attiva" e' l'ultima il cui titolo e' sopra il primo terzo
+    // della parte visibile; in fondo al testo, l'ultima.
+    const float probe = (float) viewport.getViewPositionY() + (float) viewport.getViewHeight() * 0.25f;
+    int active = content.anchors.empty() ? -1 : 0;
+    for (int i = 0; i < (int) content.anchors.size(); ++i)
+        if (content.anchorY (i) <= probe)
+            active = i;
+    if (viewport.getViewPositionY() + viewport.getViewHeight() >= content.getHeight() - 2 && ! content.anchors.empty())
+        active = (int) content.anchors.size() - 1;
+
+    if (active == activeAnchor)
+        return;
+    activeAnchor = active;
+
+    for (auto& e : tocEntries)
+    {
+        const bool on = e->anchorIndex == activeAnchor;
+        if (on != e->active) { e->active = on; e->repaint(); }
+    }
+
+    // Voce attiva sempre visibile nell'indice.
+    if (sidebarMode && juce::isPositiveAndBelow (activeAnchor, (int) tocEntries.size()))
+    {
+        const auto r = tocEntries[(size_t) activeAnchor]->getBounds();
+        const int top = tocViewport.getViewPositionY(), bottom = top + tocViewport.getViewHeight();
+        if (r.getY() < top)            tocViewport.setViewPosition (0, r.getY() - 4);
+        else if (r.getBottom() > bottom) tocViewport.setViewPosition (0, r.getBottom() - tocViewport.getViewHeight() + 4);
+    }
+}
+
+void CsoundAudioProcessorEditor::GuideView::Card::showContentsMenu()
+{
+    std::vector<CsoundActionSheetItem> items;
+    for (int i = 0; i < (int) content.anchors.size(); ++i)
+    {
+        const auto& a = content.anchors[(size_t) i];
+        CsoundActionSheetItem item;
+        item.id = i + 1;
+        item.text = a.level == 0 ? a.title : juce::String (juce::CharPointer_UTF8 ("\xe2\x80\x83")) + a.title; // em space: sottosezione
+        item.icon = a.level == 0 ? CsoundActionSheetIcon::book : CsoundActionSheetIcon::none;
+        item.ticked = (i == activeAnchor);
+        items.push_back (item);
+    }
+
+    juce::Component::SafePointer<Card> safeThis (this);
+    CsoundActionSheet::show (*this, "Contents", std::move (items), [safeThis] (int result)
+    {
+        if (safeThis != nullptr && result > 0)
+            safeThis->jumpTo (result - 1);
+    });
 }
 
 //==============================================================================
@@ -3422,12 +3534,12 @@ CsoundAudioProcessorEditor::GuideView::Card::Card()
 // cosi' a tutto schermo le righe non diventano lunghissime.
 namespace
 {
-    constexpr float kGuideBodySize   = 14.5f;
-    constexpr float kGuideCodeSize   = 13.5f;
-    constexpr float kGuideH1Size     = 19.0f;
-    constexpr float kGuideH2Size     = 15.5f;
-    constexpr float kGuideLineGap    = 3.5f;   // spazio extra fra le righe di un blocco
-    constexpr float kGuideMaxColumn  = 760.0f; // larghezza massima della colonna di testo
+    constexpr float kGuideBodySize   = 16.0f;
+    constexpr float kGuideCodeSize   = 14.5f;
+    constexpr float kGuideH1Size     = 21.0f;
+    constexpr float kGuideH2Size     = 17.0f;
+    constexpr float kGuideLineGap    = 4.0f;    // spazio extra fra le righe di un blocco
+    constexpr float kGuideMaxColumn  = 820.0f; // larghezza massima della colonna di testo
     constexpr float kGuideBulletIndent = 22.0f;
     constexpr float kGuideSubIndent    = 20.0f;
 
@@ -3495,8 +3607,35 @@ CsoundAudioProcessorEditor::GuideView::Card::Content::Content()
     juce::StringArray lines;
     lines.addLines (GuideView::guideText());
 
+    const juce::Font code { juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), kGuideCodeSize, juce::Font::plain) };
+    bool inCode = false;
+    juce::String codeText;
+
     for (const auto& raw : lines)
     {
+        // Blocco di codice tra due righe "```": monospaziato, righe vuote e
+        // allineamenti conservati, nessun a capo automatico.
+        if (raw.trim().startsWith ("```"))
+        {
+            if (inCode)
+            {
+                Block block;
+                block.type = Block::Type::code;
+                block.text.append (codeText.trimEnd(), code, kAboutAccent.brighter (0.15f));
+                block.text.setWordWrap (juce::AttributedString::none);
+                block.text.setLineSpacing (1.0f);
+                blocks.push_back (std::move (block));
+                codeText.clear();
+            }
+            inCode = ! inCode;
+            continue;
+        }
+        if (inCode)
+        {
+            codeText << raw << "\n";
+            continue;
+        }
+
         if (raw.trim().isEmpty())
             continue;
 
@@ -3506,11 +3645,13 @@ CsoundAudioProcessorEditor::GuideView::Card::Content::Content()
         {
             block.type = Block::Type::h2;
             appendGuideInline (block.text, raw.substring (3), h2, kAboutText);
+            anchors.push_back ({ raw.substring (3).replace ("**", "").replace ("`", ""), 1, (int) blocks.size() });
         }
         else if (raw.startsWith ("# "))
         {
             block.type = Block::Type::h1;
             appendGuideInline (block.text, raw.substring (2), h1, kAboutAccent);
+            anchors.push_back ({ raw.substring (2).replace ("**", "").replace ("`", ""), 0, (int) blocks.size() });
         }
         else if (raw.trimStart().startsWith ("- "))
         {
@@ -3553,6 +3694,7 @@ int CsoundAudioProcessorEditor::GuideView::Card::Content::layoutForWidth (int wi
                 case T::para:   gap = prev->type == T::h1 || prev->type == T::h2 ? 10.0f : 12.0f; break;
                 case T::bullet: gap = prev->type == T::bullet ? (block.level > 0 ? 4.0f : 8.0f)
                                                               : 10.0f; break;
+                case T::code:   gap = 14.0f; break;
             }
         }
 
@@ -3562,11 +3704,17 @@ int CsoundAudioProcessorEditor::GuideView::Card::Content::layoutForWidth (int wi
         if (block.type == T::bullet)
             indent = kGuideBulletIndent + (float) block.level * kGuideSubIndent;
 
-        const float w = juce::jmax (40.0f, columnWidth - indent);
-        block.layout.createLayout (block.text, w);
-        block.area = { columnX + indent, y, w, block.layout.getHeight() };
+        if (block.type == T::code)
+            indent = 12.0f;   // dentro il riquadro
 
-        y += block.layout.getHeight();
+        const float w = juce::jmax (40.0f, columnWidth - indent - (block.type == T::code ? 12.0f : 0.0f));
+        if (block.type == T::code)
+            block.layout.createLayout (block.text, 100000.0f);   // nessun a capo
+        else
+            block.layout.createLayout (block.text, w);
+        block.area = { columnX + indent, y + (block.type == T::code ? 10.0f : 0.0f), w, block.layout.getHeight() };
+
+        y += block.layout.getHeight() + (block.type == T::code ? 20.0f : 0.0f);
 
         // Titolo di sezione: linea sottile sotto, con un po' d'aria.
         if (block.type == T::h1)
@@ -3608,6 +3756,17 @@ void CsoundAudioProcessorEditor::GuideView::Card::Content::paint (juce::Graphics
             }
         }
 
+        if (block.type == T::code)
+        {
+            g.setColour (kAboutBorder.withAlpha (0.55f));
+            g.fillRoundedRectangle (columnX, block.area.getY() - 10.0f, columnWidth, block.area.getHeight() + 20.0f, 6.0f);
+            g.saveState();
+            g.reduceClipRegion (juce::Rectangle<float> (columnX, block.area.getY() - 10.0f, columnWidth, block.area.getHeight() + 20.0f).toNearestInt());
+            block.layout.draw (g, block.area.withWidth (juce::jmax (block.area.getWidth(), block.layout.getWidth())));
+            g.restoreState();
+            continue;
+        }
+
         block.layout.draw (g, block.area);
 
         if (block.type == T::h1)
@@ -3624,11 +3783,13 @@ void CsoundAudioProcessorEditor::GuideView::Card::paint (juce::Graphics& g)
     g.fillAll (kAboutCardBg);
 
     g.setColour (kAboutText);
-    g.setFont (juce::Font (juce::FontOptions (18.0f, juce::Font::bold)));
+    g.setFont (juce::Font (juce::FontOptions (20.0f, juce::Font::bold)));
     g.drawFittedText ("apeCsound Guide", 24, 16, getWidth() - 48 - 36, 28, juce::Justification::centredLeft, 1);
 
     g.setColour (kAboutBorder);
     g.drawLine (16.0f, 54.5f, (float) getWidth() - 16.0f, 54.5f, 1.0f);
+    if (sidebarMode)
+        g.fillRect (16 + sidebarWidth + 5, 62, 1, getHeight() - 78);
 
     // x di chiusura.
     const auto close = closeButtonBounds().toFloat();
@@ -3646,13 +3807,32 @@ juce::Rectangle<int> CsoundAudioProcessorEditor::GuideView::Card::closeButtonBou
 
 void CsoundAudioProcessorEditor::GuideView::Card::resized()
 {
-    viewport.setBounds (getLocalBounds().withTrimmedTop (62).reduced (16, 0).withTrimmedBottom (16));
+    auto body = getLocalBounds().withTrimmedTop (62).reduced (16, 0).withTrimmedBottom (16);
+
+    sidebarMode = getWidth() >= sidebarMinWindowWidth;
+    tocViewport.setVisible (sidebarMode);
+    contentsButton.setVisible (! sidebarMode);
+
+    if (sidebarMode)
+    {
+        tocViewport.setBounds (body.removeFromLeft (sidebarWidth));
+        body.removeFromLeft (12);
+    }
+    else
+    {
+        const auto close = closeButtonBounds();
+        contentsButton.setBounds (close.getX() - 8 - 96, close.getY(), 96, close.getHeight());
+    }
+
+    viewport.setBounds (body);
 
     // Contenuto largo quanto il viewport (meno la scrollbar) e alto quanto
     // il testo impaginato: e' il Viewport a scorrere.
     const int w = juce::jmax (100, viewport.getWidth() - viewport.getScrollBarThickness() - 4);
     const int h = content.layoutForWidth (w);
     content.setSize (w, h);
+    activeAnchor = -2;          // forza il ricalcolo (posizioni cambiate)
+    updateActiveAnchor();
 }
 
 void CsoundAudioProcessorEditor::GuideView::Card::mouseUp (const juce::MouseEvent& e)
@@ -3735,8 +3915,9 @@ juce::String CsoundAudioProcessorEditor::GuideView::guideText()
 {
     return R"GUIDE(**apeCsound** runs Csound 7 code live inside the DAW. Write or load a `.csd`, press **Apply**, and the engine recompiles while the track keeps playing.
 The track audio reaches the code through `inch`, MIDI through `massign` / `notnum`, and what the code writes with `outs` / `outch` goes back to the track, on as many channels as the track has.
+Use the **Contents** list (on the left, or the Contents button on a narrow window) to jump to a section.
 
-# Using apeCsound in a DAW
+# Getting started
 apeCsound is a **MIDI effect**: an audio effect that also receives MIDI (Audio Unit / AUv3 "Music Effect", VST3 "Fx"). There is one plug-in for every use, so it is **always loaded as an effect**, also when the `.csd` is an instrument.
 - **As an effect** - insert it on an audio track. The track audio arrives through `inch`.
 - **As an instrument** - insert it as an effect on a track and send it MIDI notes. An empty audio track is fine: the code generates the sound from MIDI.
@@ -3748,14 +3929,15 @@ apeCsound is a **MIDI effect**: an audio effect that also receives MIDI (Audio U
 - **iOS** (AUM, Loopy Pro, Drambo, Cubasis...) - load it in an effect slot and select it as a MIDI destination.
 - **Standalone** - choose the MIDI inputs (also Bluetooth MIDI) in Audio/MIDI Settings.
 
-# Toolbar
+
+# Toolbar and File menu
 - **Apply** - recompiles and restarts Csound with the editor text. A red ring means the editor differs from the running code.
 - **Pause** - pauses Csound (the audio passes through); Apply restarts it.
 - **File capsule** (centre) - name, folder and state of the linked `.csd` (coloured dot: saved, unsaved changes, file not found). Tap it for the File menu.
 - **Magnifier** - Find / Replace: match case `Aa`, whole word `W`, Replace, Replace All. Enter = next match, Esc closes.
 - **Menu** - Parameters, Console, Graphs, Undo / Redo, Audio/MIDI Settings (standalone), Config, this guide, Csound Manual, About.
 
-# File menu (file capsule)
+## File menu (file capsule)
 - **Init Session Clear** - empty `.csd`, no parameters, no linked file.
 - **Init Session Template** - the built-in template (synth + delay with its parameters).
 - **Load...** - opens a `.csd`. You can also drop a `.csd` on the window.
@@ -3771,14 +3953,15 @@ apeCsound is a **MIDI effect**: an audio effect that also receives MIDI (Audio U
 - **Manage Files...** - the apeCsound folder. On desktop it opens in Finder / Explorer; on iOS see "Files on iOS".
 - **Restore Examples** - copies the factory examples again (your files in `CSD/User` are not touched).
 
-# Sessions
+
+# Sessions and folders
 The `.csd` file on disk is the reference. A DAW project stores the path of the linked file, an embedded copy of the code and of the parameter mapping, and the parameter values.
 - **Save** writes the code and the parameter structure (an `<apeCsoundParams>` block after `</CsoundSynthesizer>`).
 - Unsaved changes are protected by a dialog before Load or Init.
 - If the linked file is missing when a project reopens, the embedded copy is used and a yellow bar offers **Relocate...** and **Save As...**.
 - The editor shows only the `<CsoundSynthesizer>` block; anything before or after it (Cabbage, CsoundQt panels) is kept.
 
-# The apeCsound folder
+## The apeCsound folder
 `~/Documents/apeCsound` on desktop; on iOS a folder shared by the app and the AUv3 plug-in.
 - `CSD/Examples` - factory examples. `CSD/User` - your sessions.
 - `SSDIR` - audio files to read: `diskin2 "loop.wav"`, GEN01. Use just the file name.
@@ -3803,6 +3986,7 @@ On iOS the apeCsound folder is not visible in the Files app. **Load**, **Open Ex
 - **Import Files Here...** copies files into the open folder, of any type;
 - the bin icon deletes a file (factory examples excepted).
 
+
 # Code editor
 - **Auto-indent** for `instr`/`endin`, `opcode`/`endop`, `if`/`then`, loops. Tab = 4 spaces.
 - **Right-click** (long press on touch) - Cut, Copy, Paste, Delete, Select All, Undo, Redo, **Indent**, **Comment / Uncomment**.
@@ -3814,7 +3998,7 @@ On iOS the apeCsound folder is not visible in the Files app. **Load**, **Open Ex
 **Shift+Return**, or **Evaluate** in the right-click menu, sends code to the engine *while it keeps running*, without the full recompile of Apply: the selection, or - with no selection - the `instr` / `opcode` block around the caret, or the current line. The lines flash when sent.
 - Orchestra code is compiled and merged: an `instr` that already exists is **redefined** (notes already playing finish with the old version, new notes use the new one); global code (`gkfb = 0.9`, `gitab = ftgen(...)`, `schedule(3, 0, 1)`) runs at once.
 - Lines that start with a score statement (`i 3 0 2`, `f 1 0 1024 10 1`) are sent as real-time events.
-- The **Evaluate line** does the same for a quick event or a one-liner: click the round `>_` button at the top right of the Console, above the trash button (or **Cmd+E**; with the Console hidden the button sits at the right end of the help bar), type, Return; Up/Down recall the history, Esc goes back to the help bar.
+- The **Evaluate line** does the same for a quick event or a one-liner: click the round `>_` button at the right end of the help bar, next to the Console trash button (or **Cmd+E**), type, Return; Up/Down recall the history, Esc goes back to the help bar.
 - Nothing you evaluate is saved anywhere else: the file is the reference. At the next Apply (or when the host reloads the session) only the text in the editor counts, so keep what you want in the code.
 - Errors are reported in the console; the engine must be running (Apply first).
 ## Errors
@@ -3825,15 +4009,21 @@ When Apply fails, the line reported by Csound gets a red dot, a red background a
 - Right-click on the help bar: **Copy error** (or **Copy help**) puts the text on the clipboard.
 - Errors, warnings and "deactivated" messages are never hidden by the console flood filter.
 
+
 # Parameters
-Every instance offers the DAW **176 fixed parameters**: 64 Float, 32 Int, 64 Bool and 16 Choice. The DAW always sees "Float 1 ... Float 64" and so on; in the Parameters panel you give each one a Csound channel name and its range.
+Every instance offers the DAW **176 fixed parameters**: 64 Float, 32 Int, 64 Bool and 16 Choice. The DAW always sees "Float 1 ... Float 64" and so on; in the Parameters panel you give each one a Csound channel name and its range. The code reads them with `chnget`; `chnset` on the same channel moves the parameter (slider and DAW automation).
 - **Float** (min, max, default, skew, step), **Int** (min, max, default), **Bool** (default), **Choice** (up to 16 options; the channel gets 1..N, as in Cabbage).
-- **+** on the panel title adds one. Each card has an **edit** (pencil) button that opens its configuration (channel name, range, default, skew, step, options) - it becomes a check mark while editing: press it to apply and go back to the control - while a slider is being edited, the slider itself stays visible under the name and follows Min/Max/Init/Skew/Step as you type - and a **...** menu: **Copy chnget line** (the `chnget` line with a configuration comment, to paste in the code), **Reset to Init Value**, **Randomize** (a random value within the range), **Show in Code**, **Remove** (asks for confirmation; can be undone). The **+** menu has **Reset to INIT Values** and **Randomize All** for the whole panel. Code and panel are linked: put the caret on a `chnget "name"` line and the card of that channel flashes briefly; **Show in Code** in the **...** menu of a card jumps to its `chnget`. One card is in edit mode at a time - opening another closes the previous one - and it is outlined in the colour of its type. Toggles and menus are single-line cards, sliders take two lines.
-- **Moved from outside**: when a value changes without you touching the control - DAW automation, `chnset` from the code, a snapshot recall - a dot in the colour of the type flashes next to the parameter name.
-- **Validation**: in edit mode a wrong value turns its field red and the caption says why (Min not below Max, Init outside the range, Skew not positive, Step larger than the range, no options, channel name already used by another parameter). The value is kept as typed: fix it before saving.
-- The code reads them with `chnget`. `chnset` on the same channel moves the parameter (slider and DAW automation).
-- **Drag a card into the code** - drag the handle on its left and drop it on a line of the editor to insert `kCutoff chnget "Cutoff"` with a comment describing the parameter. **Copy chnget line** in the card menu puts the same text in the clipboard.
+- **+** on the panel title adds one; its menu also has **Reset to INIT Values**, **Randomize All**, Expand / Collapse All Groups.
+- **Drag a card into the code** - drag the handle on its left and drop it on a line of the editor to insert `kCutoff chnget "Cutoff"` with a comment describing the parameter.
 - A parameter channel is a control channel: do not use the same name with audio variables (`a...`) - the console warns about it.
+## Cards
+- The **pencil** opens the configuration of a card (channel name, range, default, skew, step, options); it becomes a check mark while editing: press it to apply and go back to the control. One card is in edit mode at a time, outlined in the colour of its type.
+- While a slider is being edited, the slider itself stays visible under the name and follows Min/Max/Init/Skew/Step as you type.
+- **Validation**: a wrong value turns its field red and the caption says why (Min not below Max, Init outside the range, Skew not positive, Step larger than the range, no options, channel name already used).
+- The **...** menu: **Copy chnget line**, **Reset to Init Value**, **Randomize**, **Show in Code** (jumps to its `chnget`), **Remove** (asks for confirmation; can be undone).
+- Code and panel are linked: put the caret on a `chnget "name"` line and the card of that channel flashes briefly.
+- **Moved from outside**: when a value changes without you touching the control - DAW automation, `chnset` from the code, a snapshot recall - a dot in the colour of the type flashes next to the name.
+- Toggles and menus are single-line cards, sliders take two lines.
 ## Groups
 By default the panel lists the parameters by type: all the Float sliders, then Int, Bool and Choice. A comment in the code groups them the way you want, so that the controls of one instrument - its sliders, toggles and menus together - stay under one label:
 - `; @group Synth` on its own line, before the `chnget` lines. Every parameter read below it belongs to "Synth", until the next `@group`, or `endin` / `endop`. Also `;@group` and `// @group`; names can contain spaces.
@@ -3847,40 +4037,56 @@ By default the panel lists the parameters by type: all the Float sliders, then I
 When a file with more than 4 groups is loaded only the first group starts open; with 4 or fewer they all start open. Your open/closed choices are kept until the set of groups changes. Cabbage files get their groups from the GUI: `groupbox` / `plant` containers (with `{ }` blocks, or by position for the old syntax) become groups named after their `text(...)`, the first label inside, or the plant name. A `; @group` in the code always wins.
 ## XY pad
 Two Float parameters can share one card with a two-dimensional pad instead of two sliders: write `; @xy "Cutoff" "Resonance"` anywhere in the code (X first, Y second). Both stay separate parameters for the DAW, automation and snapshots; only the card changes. Edit shows one card with both channel fields (X on the first line, Y on the second) and the range, init, skew and step of one axis - the pencil edits X, **...** > Edit Y the other; the menu also offers Copy chnget lines, Reset, Randomize, Show in Code and Remove X / Remove Y; double-click the pad to reset both. The pad sits in the group and position of its X channel. If one of the two names is not an assigned Float parameter the comment is ignored and you get two sliders. Cabbage `xypad` widgets and CsoundQt XY controllers become pads automatically (read from their `<Cabbage>` / `<bsbPanel>` sections at every Apply).
-## Monitor
-Channels the code *writes* with `chnset` (and that are not parameters) appear read-only in a **Monitor** group at the bottom of the panel: name, value and a bar for numbers (range from `chn_k "x", 2, 0, min, max` if declared, otherwise the values seen so far), the text for string channels. It is the equivalent of the meters, displays and labels of CsoundQt and Cabbage, so an `outvalue` converted to `chnset` shows up here. Channels created at run time appear within a second; the group starts closed when there are more than 8.
-
-Channels named `Base1, Base2...` or `Base_1, Base_2...` (same prefix, trailing number, at least two) are shown as **one card with a bar per channel** - a spectrum, a step sequencer, a bank of LFOs. The 11th argument of `chn_k` adds **attributes** (words separated by spaces):
-
-```
-chn_k "Level", 2, 2, 0, 0, 0, 0, 0, 0, 0, "db spark"
-chn_k "B1", 2, 2, 0, 0, 1, 0, 0, 0, 0, "group:Bands"
-```
-
-`db` the value is a linear amplitude, shown and measured in dB (-60..0 unless min/max are given); `spark` a sparkline of the last 5 seconds instead of the bar; `int` no decimals; `hidden` the channel is written but not shown; `group:Name` puts the channel in the multi-bar card "Name" (wins over the automatic grouping). See `CSD/Examples/Test/MonitorStressTest.csd`.
 ## Snapshots
 The camera button on the right of the Parameters title bar stores and recalls the **values** of all the parameters.
 - The menu stays open while you work with it. **Save Snapshot...** asks for a name and stores the current values; the new snapshot appears in the list at once.
 - Tap a snapshot to bring every parameter back to those values (sliders, DAW automation); the check mark shows the last one recalled, so you can compare snapshots in a row.
 - The pencil button on the right of a snapshot (or the right arrow key) opens its page: **Overwrite with Current Values**, **Rename...**, **Delete**; the list updates and stays open.
 - Snapshots are saved in the `.csd` (inside `<apeCsoundParams>`) and in the DAW project, so they travel with the session. Saving, renaming and deleting can be undone; recalling only changes the values.
-## Cabbage and CsoundQt files
-Their widgets (sliders, knobs, checkboxes, buttons, menus, XY...) become parameters when the file is loaded (only when the file has no `<apeCsoundParams>` block yet: once saved by apeCsound, the saved mapping wins - delete the block and reload to import again). The rest of their GUI is ignored, and the code is not changed:
-- replace `invalue` / `cabbageGetValue` with `chnget`, `outvalue` / `cabbageSet...` with `chnset`;
-- Cabbage `button`s are toggles here; `combobox value(n)` counts from 1; a Cabbage menu with more than 16 entries is cut to 16 (use an Int slider instead);
-- when a widget type exceeds its slots (64 Float, 64 Bool, 16 Menu), the widgets whose channel the code never reads with `chnget` (LEDs, meters, step indicators) are dropped first, so the buttons that matter get a slot; the console says how many were skipped. The **Channels** panel shows what is left unmapped and can map it;
-- GUI messages sent with `chnset` to `identChannel`s (`"visible(1)"`, `"bounds(...)"`, `"colour(...)"`) are ignored and kept out of the Monitor;
-- FLTK, Python, Lua and opcodes not built into apeCsound do not work;
-- check the console after Apply. Some files need manual changes, a few cannot work.
 
-## Csound 7 notes
-apeCsound embeds Csound 7. Things that changed from Csound 6 and bite old files:
-- `loop_lt`, `loop_le`, `loop_gt`, `loop_ge` are now `looplt`, `loople`, `loopgt`, `loopge` (or use `while` / `until`);
-- `deltap*` inside a user-defined opcode no longer sees the `delayr` of the calling instrument: keep `delayr` / `deltap` / `delayw` together in the same instr or UDO, or use a table with `tablew` / `tablei`;
-- `monitor` requires exactly `nchnls` outputs, and in the plug-in `nchnls` is set by the host track: sum your output into global `a` variables instead;
-- the k-inputs of a UDO can still be 0 at the first init pass: clamp `i(k...)` values before giving them to opcodes that reject 0;
-- `fprints` takes a file handle from `fiopen`, not a file name; relative paths go to SFDIR;
-- HRTF opcodes need the `hrtf-*.dat` files in SADIR.
+# Monitor
+The **Monitor** is the grey group at the bottom of the Parameters panel. It shows the channels that the code *writes* with `chnset` and that are not parameters: the equivalent of the meters, displays and labels of CsoundQt and Cabbage (an `outvalue` converted to `chnset` ends up here). It appears even when there are no parameters.
+- **Inside your groups**: a `chnset` written below a `; @group Name` line puts its card in that group, next to the parameters, in the order of the code - e.g. the meter of a filter right under its Cutoff slider. Cabbage meters inside a `groupbox` go to that group too. Only the cards without a group end up in the Monitor group at the bottom.
+- Channels created at run time appear within a second. Note that `chnset` creates its channel at *init* time, even inside an `if` that is false: to make a channel appear later, start an instrument later. A name built with `sprintfk` and an expression (`"Light%d", kl + 1`) is wrong at init and leaves a ghost channel stuck at 0 (`Light0`): prefer literal names. With more than 8 entries the group starts closed; its open/closed state is separate from a parameter group that happens to be called "Monitor".
+- Values are read about 20 times per second from the running engine, never from the audio thread: a busy Monitor costs nothing to the sound.
+- See `Test/MonitorTest.csd` (every kind once, commented) and `Test/MonitorStressTest.csd` (dozens of channels).
+## What is shown and what is not
+- Shown: every control (`k`) or string (`S`) channel written with `chnset` that is not a parameter.
+- Shown too: **audio** channels written with `chnset asig, "Name"` (or `chnmix`), as a level meter.
+- Not shown: **parameters** (a `chnset` on a parameter moves its control instead); the **host channels** (`HOST_BPM`, `IS_PLAYING`...); Cabbage `identChannel`s and strings that are GUI messages (`"visible(1)"`, `"bounds(...)"`, `"colour(...)"`); `pvs` channels.
+## The kinds of display
+Nothing to learn: the look comes from what the channel *is* - its type, its range, the values it takes, its name. Each kind has its own look and a small icon next to the name.
+- **Meter with a range** - declare the range with `chn_k`: a solid level bar filled from the left, with a ruler and min/max underneath.
+- **Adaptive meter** - just `chnset kval, "Name"`: no fill, a ring that slides along a dashed track between the lowest and highest values seen so far (shown in italics, with arrows).
+- **Steps** - a declared range with whole ends and 3 to 33 values (`chn_k "Step", 2, 2, 0, 0, 7`) that only ever receives whole numbers: a row of cells, one per value, the current one lit, the ones before it dimmed (the position of a sequencer, a choice among N), and "3 / 7" on the right. A fractional value turns it back into a bar for good.
+- **Bipolar dial** - when the range goes through zero (an LFO -1..1, a pan): a half-moon dial with a needle, zero at the top, negative values to the left in blue, positive to the right.
+- **Audio meter** - `chnset asig, "Voice"`: a segmented green / yellow / red meter in dB (-60..0, scale underneath), rising at once and falling slowly, with a peak-hold line. The value is read from the channel buffer by the panel, never by the audio thread.
+- **Lamp** - a channel that only ever takes 0 and 1 (Overload, Gate, Play) becomes a glowing lamp with ON/OFF by itself after a second. A declared range other than 0..1 keeps it a number.
+- **Text** - `chnset Sval, "Name"` on a string: an LCD-like display (a state, a note name, a message). Build formatted text yourself with `sprintfk`.
+- **Sparkline** - the only attribute (see below): the last 5 seconds as a filled curve, with a dot on the current value.
+- **Multi-bar card** - channels with the same prefix and a trailing number (`Band1, Band2...`, `Band_1, Band_2...`, at least two) become one card with a vertical bar per channel: segmented meters for audio channels (`Out1..Out8`), a row of lamps for 0/1 channels (the steps of a sequencer).
+## Ranges and the spark attribute
+`chn_k` declares an output channel with a range and, as 11th argument, free text that Csound stores and hands to the host without reading it. apeCsound reads one word there, `spark`; other frontends ignore it, so the `.csd` stays portable.
+```
+;      name     mode itype dflt min max  x y w h  attributes
+chn_k "Env",    2,   2,    0,   0,  1                       ; fixed range
+chn_k "LFO",    2,   2,    0,  -1,  1                       ; bipolar
+chn_k "Pitch",  2,   2,    220, 110,880, 0,0,0,0, "spark"   ; sparkline
+```
+- Mode `2` is output (written by the code). Use itype `2` (linear): with itype `0` Csound drops the hints, attribute included. `min = max = 0` means "no range" (adaptive).
+- The default must lie between min and max, otherwise Csound rejects the line.
+- `x, y, w, h` are the CsoundQt / Cabbage geometry: apeCsound ignores them.
+- The attributes of 1.0.5 (`db`, `int`, `hidden`, `group:`) are no longer read: for a level meter write the audio itself with `chnset asig`; for integers or units format a string with `sprintfk`.
+## Monitor, Channels or Graphs?
+- One value, a few values, a state: **Monitor**.
+- "Why doesn't it move?": the **Channels** panel lists every channel with *who writes it* (see Channels, Graphs and Console).
+- A curve, an array, a waveform: write it into a table and open **Graphs** - tables are redrawn live.
+
+# Channels, Graphs and Console
+- **Console** - Csound messages, compile errors and apeCsound notes. Repeated messages are summarised to keep the DAW responsive. Clear empties it; it is also cleared at every Apply.
+- **Channels** (Parameters menu **+** > Channels..., Cmd+4) - every channel the running engine knows, with type (k, S, a, f), direction (in = read by `chnget`, out = written by `chnset`), current value and *who writes it*: a parameter, the host (`HOST_BPM`...), the code, or **nobody** - channels that the code reads and nobody writes are listed first, in yellow: that is almost always why "it does not move" (a widget that was not imported, no free slots, a typo in the name). **Map** creates the parameter for such a channel in one tap (Float, Int, Toggle or Menu; range and default from `chn_k` hints when present); families like `Acc1..Acc16` are one row with **Map 16**. The opposite case is flagged too: a parameter the code only *writes* and never reads (a Cabbage LED or meter imported as a toggle) says "never read by code" and has **Unmap** to free its slot. Opens as a window over the editor: close it with the x, Esc or a click outside.
+- **Graphs** (menu > Show Graphs) - function tables (f statements, `ftgen`) and `display` / `dispfft` signals, in a panel docked at the bottom. Cleared at every Apply. Tables are **live**: while the panel is open they are re-read about 4 times per second and redrawn when their content changes (`tablew`, `ftgen` regenerated, GEN routines in a loop) - a free oscilloscope or envelope viewer: write what you want to see into a table.
+
 
 # Audio, MIDI and channels
 - `sr` always follows the DAW. `ksmps` is respected and equals the plug-in latency (compensated by the DAW): keep it small (16-64) for live input.
@@ -3900,10 +4106,33 @@ Read them with `chnget`, e.g. a tempo-synced delay: `kdel = 60 / chnget:k("HOST_
 ## Audio I/O opcodes
 `nchnls` / `nchnls_i` follow the track, so write the code with the **per-channel** opcodes: `aL inch 1`, `aR inch 2`, `outch 1, aL, 2, aR`. They work with any channel count: on a mono track `outch 2` is simply dropped, on a 6-channel track `outch 3`...`outch 6` reach the extra channels. The fixed-width opcodes (`outs`, `ins`, `out`, `outq`, `inq`...) fail on a track with fewer channels and ignore the extra ones; apeCsound warns in the console when the count does not match.
 
-# Console and Graphs
-- **Console** - Csound messages, compile errors and apeCsound notes. Repeated messages are summarised to keep the DAW responsive. Clear empties it; it is also cleared at every Apply.
-- **Channels** (menu > Show Channels, Cmd+4) - every channel the running engine knows, with type (k, S, a, f), direction (in = read by `chnget`, out = written by `chnset`), current value and *who writes it*: a parameter, the host (`HOST_BPM`...), the code, or **nobody** - channels that the code reads and nobody writes are listed first, in yellow: that is almost always why "it does not move" (a widget that was not imported, no free slots, a typo in the name). **Map** creates the parameter for such a channel in one tap (Float, Int, Toggle or Menu; range and default from `chn_k` hints when present); families like `Acc1..Acc16` are one row with **Map 16**. The opposite case is flagged too: a parameter the code only *writes* and never reads (a Cabbage LED or meter imported as a toggle) says "never read by code" and has **Unmap** to free its slot. Shares the place of Graphs at the bottom.
-- **Graphs** (menu > Show Graphs) - function tables (f statements, `ftgen`) and `display` / `dispfft` signals, in a panel docked at the bottom. Cleared at every Apply. Tables are **live**: while the panel is open they are re-read about 4 times per second and redrawn when their content changes (`tablew`, `ftgen` regenerated, GEN routines in a loop) - a free oscilloscope or envelope viewer: write what you want to see into a table.
+
+# Cabbage and CsoundQt files
+Their widgets (sliders, knobs, checkboxes, buttons, menus, XY...) become parameters when the file is loaded (only when the file has no `<apeCsoundParams>` block yet: once saved by apeCsound, the saved mapping wins - delete the block and reload to import again). The rest of their GUI is ignored, and the code is not changed:
+- replace `invalue` / `cabbageGetValue` with `chnget`, `outvalue` / `cabbageSet...` with `chnset`;
+- Cabbage `button`s are toggles here; `combobox value(n)` counts from 1; a Cabbage menu with more than 16 entries is cut to 16 (use an Int slider instead);
+- when a widget type exceeds its slots (64 Float, 64 Bool, 16 Menu), the widgets whose channel the code never reads with `chnget` (LEDs, meters, step indicators) are dropped first, so the buttons that matter get a slot; the console says how many were skipped. The **Channels** panel shows what is left unmapped and can map it;
+- GUI messages sent with `chnset` to `identChannel`s (`"visible(1)"`, `"bounds(...)"`, `"colour(...)"`) are ignored and kept out of the Monitor;
+- FLTK, Python, Lua and opcodes not built into apeCsound do not work;
+- check the console after Apply. Some files need manual changes, a few cannot work.
+
+
+# Csound 7 notes
+apeCsound embeds Csound 7. Things that changed from Csound 6 and bite old files:
+- `loop_lt`, `loop_le`, `loop_gt`, `loop_ge` are now `looplt`, `loople`, `loopgt`, `loopge` (or use `while` / `until`);
+- `deltap*` inside a user-defined opcode no longer sees the `delayr` of the calling instrument: keep `delayr` / `deltap` / `delayw` together in the same instr or UDO, or use a table with `tablew` / `tablei`;
+- `monitor` requires exactly `nchnls` outputs, and in the plug-in `nchnls` is set by the host track: sum your output into global `a` variables instead;
+- the k-inputs of a UDO can still be 0 at the first init pass: clamp `i(k...)` values before giving them to opcodes that reject 0;
+- `fprints` takes a file handle from `fiopen`, not a file name; relative paths go to SFDIR;
+- HRTF opcodes need the `hrtf-*.dat` files in SADIR.
+
+
+# Accessibility
+apeCsound can be used with **VoiceOver** on macOS and iOS (and other screen readers that use the system accessibility API), and entirely from the keyboard.
+- Every control has a name: toolbar buttons, the file capsule (a real button: Tab, Return/Space), console and panel buttons, every card ("amp", "Edit amp", "amp menu") and the fields of the edit card.
+- Menus are real menus: entries are announced with their state (checked, disabled, submenu) and the focus starts on the first one. Up/Down or Tab move, Return activates, Right opens a submenu or the options of a row, Left/Esc go back or close.
+- The code editor is an accessible text area: reading by character, word and line, caret and selection announced; the help bar is read when it changes.
+- The XY pad announces both axes with their channel names and values; the arrow keys move X and Y (Shift for larger steps), Home/End and PageUp/PageDown jump to the ends.
 
 # Shortcuts
 Cmd on macOS, Ctrl on Windows and Linux.
@@ -4298,4 +4527,106 @@ void CsoundAudioProcessorEditor::AudioSettingsView::hide()
     // Rilascia il selettore (timer, meter di livello, listener sul device
     // manager): alla prossima apertura se ne crea uno nuovo.
     card.content.settings.reset();
+}
+
+//==============================================================================
+CsoundAudioProcessorEditor::ChannelsView::Card::Card (CsoundAudioProcessor& processor)
+    : panel (processor)
+{
+    addChildComponent (panel);   // visibile solo a scheda aperta: il pannello avvia/ferma il suo timer
+}
+
+void CsoundAudioProcessorEditor::ChannelsView::Card::paint (juce::Graphics& g)
+{
+    auto bounds = getLocalBounds().toFloat();
+    g.setColour (kAboutCardBg);
+    g.fillRoundedRectangle (bounds, 16.0f);
+    g.setColour (kAboutBorder);
+    g.drawRoundedRectangle (bounds.reduced (0.5f), 15.5f, 1.0f);
+
+    g.setColour (kAboutText);
+    g.setFont (juce::Font (juce::FontOptions (18.0f, juce::Font::bold)));
+    g.drawFittedText ("Channels", 24, 16, getWidth() - 48 - 36, 28, juce::Justification::centredLeft, 1);
+
+    g.setColour (kAboutBorder);
+    g.drawLine (16.0f, 54.5f, (float) getWidth() - 16.0f, 54.5f, 1.0f);
+
+    const auto close = closeButtonBounds().toFloat();
+    g.setColour (kAboutTextMuted);
+    juce::Path x;
+    x.startNewSubPath (close.getX() + 9.0f, close.getY() + 9.0f); x.lineTo (close.getRight() - 9.0f, close.getBottom() - 9.0f);
+    x.startNewSubPath (close.getRight() - 9.0f, close.getY() + 9.0f); x.lineTo (close.getX() + 9.0f, close.getBottom() - 9.0f);
+    g.strokePath (x, juce::PathStrokeType (1.8f));
+}
+
+juce::Rectangle<int> CsoundAudioProcessorEditor::ChannelsView::Card::closeButtonBounds() const
+{
+    return { getWidth() - 16 - 28, 14, 28, 28 };
+}
+
+void CsoundAudioProcessorEditor::ChannelsView::Card::resized()
+{
+    panel.setBounds (getLocalBounds().withTrimmedTop (60).reduced (12, 0).withTrimmedBottom (14));
+}
+
+void CsoundAudioProcessorEditor::ChannelsView::Card::mouseUp (const juce::MouseEvent& e)
+{
+    if (closeButtonBounds().contains (e.getPosition()) && onClose)
+        onClose();
+}
+
+CsoundAudioProcessorEditor::ChannelsView::ChannelsView (CsoundAudioProcessor& processor)
+    : card (processor)
+{
+    setWantsKeyboardFocus (true);
+    setTitle ("Channels");
+    card.onClose = [this] { hide(); };
+    addAndMakeVisible (card);
+}
+
+void CsoundAudioProcessorEditor::ChannelsView::paint (juce::Graphics& g)
+{
+    g.fillAll (juce::Colours::black.withAlpha (0.45f));
+}
+
+void CsoundAudioProcessorEditor::ChannelsView::resized()
+{
+   #if JUCE_IOS
+    auto area = getLocalBounds().reduced (juce::jmin (24, getWidth() / 20), juce::jmin (16, getHeight() / 20));
+    card.setBounds (area.withSizeKeepingCentre (juce::jmin (cardMaxWidth, area.getWidth()), area.getHeight()));
+   #else
+    auto area = getLocalBounds().reduced (juce::jmin (32, getWidth() / 12), juce::jmin (24, getHeight() / 12));
+    card.setBounds (area.withSizeKeepingCentre (juce::jmin (cardMaxWidth, area.getWidth()),
+                                                juce::jmin (cardMaxHeight, area.getHeight())));
+   #endif
+}
+
+void CsoundAudioProcessorEditor::ChannelsView::mouseUp (const juce::MouseEvent& e)
+{
+    if (e.eventComponent == this)
+        hide();
+}
+
+bool CsoundAudioProcessorEditor::ChannelsView::keyPressed (const juce::KeyPress& key)
+{
+    if (key == juce::KeyPress::escapeKey)
+    {
+        hide();
+        return true;
+    }
+    return false;
+}
+
+void CsoundAudioProcessorEditor::ChannelsView::show()
+{
+    card.panel.setVisible (true);   // rilegge l'elenco e avvia l'aggiornamento
+    toFront (true);
+    juce::Desktop::getInstance().getAnimator().fadeIn (this, 140);
+    grabKeyboardFocus();
+}
+
+void CsoundAudioProcessorEditor::ChannelsView::hide()
+{
+    juce::Desktop::getInstance().getAnimator().fadeOut (this, 120);
+    card.panel.setVisible (false);  // ferma il timer del pannello
 }

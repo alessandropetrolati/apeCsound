@@ -124,6 +124,45 @@ struct ParameterGroupsTests final : public juce::UnitTest
             expectEquals (p.groupNames[p.channels.at ("att").group], juce::String ("Env"));
         }
 
+        beginTest ("chnset channels get the group of their @group section (Monitor cards inside groups)");
+        {
+            const auto p = parse ("instr 1\n"
+                                  "; @group Filter\n"
+                                  "kcf chnget \"cutoff\"\n"
+                                  "chnset kcf, \"CutoffOut\"\n"
+                                  "chnset limit(kdb, -60, 0), \"Level\"   ; commas inside the expression\n"
+                                  "chnset(kx, \"Func\")\n"
+                                  "chnset:k(ky, \"FuncK\")\n"
+                                  "chnset \"text\", \"Status\"            ; string value first\n"
+                                  "chnsetks Sx, \"NotThisOne\"\n"
+                                  "endin\n"
+                                  "instr 2\n"
+                                  "chnset k1, \"Ungrouped\"\n"
+                                  "chnset k1, Sname                       ; name built at run time\n"
+                                  "endin\n");
+            expectEquals ((int) p.written.size(), 6);
+            for (const char* n : { "CutoffOut", "Level", "Func", "FuncK", "Status" })
+            {
+                expect (p.written.count (n) == 1, n);
+                if (p.written.count (n)) expectEquals (p.written.at (n).group, 0, n);
+            }
+            expectEquals (p.written.at ("Ungrouped").group, -1);
+            expectEquals ((int) p.written.count ("NotThisOne"), 0);
+            // order is shared with chnget: CutoffOut comes right after cutoff
+            expect (p.channels.at ("cutoff").order < p.written.at ("CutoffOut").order);
+            expect (p.written.at ("CutoffOut").order < p.written.at ("Level").order);
+        }
+
+        beginTest ("Cabbage groupbox also groups a meter written with chnset");
+        {
+            const auto p = parse ("<Cabbage>\n"
+                                  "groupbox bounds(0,0,200,100), text(\"Meters\") {\n"
+                                  "vmeter bounds(0,20,20,60), channel(\"vu\")\n"
+                                  "}\n</Cabbage>\n<CsoundSynthesizer><CsInstruments>\nchnset krms, \"vu\"\n</CsInstruments></CsoundSynthesizer>\n");
+            expect (p.written.count ("vu") == 1);
+            if (p.written.count ("vu")) expectEquals (p.groupNames[p.written.at ("vu").group], juce::String ("Meters"));
+        }
+
         beginTest ("parseNameList: quoted and bare names");
         {
             const auto a = parseNameList ("\"a b\" \"c\"");
@@ -313,17 +352,12 @@ struct MonitorLayoutTests final : public juce::UnitTest
     {
         using namespace csoundMonitor;
 
-        beginTest ("parseAttributes: keywords, case, separators, group:Name");
+        beginTest ("parseAttributes: only spark; 1.0.5 attributes are ignored");
         {
-            const auto a = parseAttributes ("db SPARK, int;hidden group:Spectrum 8");
-            expect (a.db && a.spark && a.isInt && a.hidden);
-            expectEquals (a.group, juce::String ("Spectrum"));
-            const auto b = parseAttributes ("group=My Bands");
-            expectEquals (b.group, juce::String ("My"));   // uno spazio separa i token: usare "group:MyBands"
-            const auto c = parseAttributes ("");
-            expect (! c.db && ! c.spark && ! c.isInt && ! c.hidden && c.group.isEmpty());
-            const auto d = parseAttributes ("unknown words");
-            expect (! d.db && d.group.isEmpty());
+            expect (parseAttributes ("spark").spark);
+            expect (parseAttributes ("db SPARK, int;hidden").spark);
+            expect (! parseAttributes ("").spark);
+            expect (! parseAttributes ("db int hidden group:X led note").spark);
         }
 
         beginTest ("splitIndexedName");
@@ -342,13 +376,13 @@ struct MonitorLayoutTests final : public juce::UnitTest
         beginTest ("buildCards: name groups of >= 2, singles stay single, order of first appearance, strings never grouped");
         {
             std::vector<ChannelInfo> ch {
-                { "Level", false, {} },
-                { "Band_2", false, {} },
-                { "Status", true, {} },
-                { "Band_1", false, {} },
-                { "Only1", false, {} },
-                { "Band_3", false, {} },
-                { "Name1", true, {} }, { "Name2", true, {} },
+                { "Level", false, false },
+                { "Band_2", false, false },
+                { "Status", true, false },
+                { "Band_1", false, false },
+                { "Only1", false, false },
+                { "Band_3", false, false },
+                { "Name1", true, false }, { "Name2", true, false },
             };
             const auto cards = buildCards (ch);
             expectEquals ((int) cards.size(), 6);
@@ -364,21 +398,20 @@ struct MonitorLayoutTests final : public juce::UnitTest
             expectEquals (cards[5].title, juce::String ("Name2"));
         }
 
-        beginTest ("buildCards: group: attribute wins over the name, hidden channels disappear");
+        beginTest ("buildCards: audio channels group only with audio channels");
         {
             std::vector<ChannelInfo> ch {
-                { "Peak_L", false, parseAttributes ("group:Meters") },
-                { "Peak_R", false, parseAttributes ("group:Meters") },
-                { "Secret", false, parseAttributes ("hidden") },
-                { "Rms_1", false, parseAttributes ("group:Meters") },
-                { "Rms_2", false, {} },
+                { "Out_1", false, true },
+                { "Out_2", false, true },
+                { "Out_3", false, false },
+                { "Out_4", false, false },
             };
             const auto cards = buildCards (ch);
             expectEquals ((int) cards.size(), 2);
-            expectEquals (cards[0].title, juce::String ("Meters"));
-            expectEquals ((int) cards[0].channels.size(), 3);
-            expectEquals (cards[1].title, juce::String ("Rms_2"));
-            expect (! cards[1].multi);
+            expectEquals (cards[0].title, juce::String ("Out"));
+            expect (cards[0].multi && cards[0].channels == std::vector<int> { 0, 1 });
+            expectEquals (cards[1].title, juce::String ("Out"));
+            expect (cards[1].multi && cards[1].channels == std::vector<int> { 2, 3 });
         }
 
         beginTest ("cabbageIdentChannels: only inside <Cabbage>, unique");
@@ -403,6 +436,119 @@ struct MonitorLayoutTests final : public juce::UnitTest
             expect (! isCabbageGuiMessage ("C#3"));
             expect (! isCabbageGuiMessage ("f(x) = 2"));
             expect (! isCabbageGuiMessage (""));
+        }
+
+        beginTest ("barSpan: unipolar from the left, bipolar from zero");
+        {
+            auto b = barSpan (0.25, 0.0, 1.0);
+            expectWithinAbsoluteError (b.from, 0.0f, 1e-6f); expectWithinAbsoluteError (b.to, 0.25f, 1e-6f); expect (b.zero < 0.0f);
+            b = barSpan (0.5, -1.0, 1.0);                       // LFO +0.5
+            expectWithinAbsoluteError (b.zero, 0.5f, 1e-6f);
+            expectWithinAbsoluteError (b.from, 0.5f, 1e-6f); expectWithinAbsoluteError (b.to, 0.75f, 1e-6f);
+            b = barSpan (-1.0, -1.0, 1.0);                      // LFO -1
+            expectWithinAbsoluteError (b.from, 0.0f, 1e-6f); expectWithinAbsoluteError (b.to, 0.5f, 1e-6f);
+            b = barSpan (0.0, -8.0, 12.0);                      // asymmetric, at zero: empty bar on the zero mark
+            expectWithinAbsoluteError (b.zero, 0.4f, 1e-6f);
+            expectWithinAbsoluteError (b.from, 0.4f, 1e-6f); expectWithinAbsoluteError (b.to, 0.4f, 1e-6f);
+            b = barSpan (5.0, 0.0, 1.0);                        // clamped
+            expectWithinAbsoluteError (b.to, 1.0f, 1e-6f);
+            b = barSpan (1.0, 1.0, 1.0);                        // no range
+            expectWithinAbsoluteError (b.to, 0.0f, 1e-6f);
+        }
+
+        beginTest ("LED: automatic 0/1 detection, sticky exclusion");
+        {
+
+            BinaryTracker gate;
+            for (int i = 0; i < 25; ++i) gate.observe (i % 2);
+            expect (gate.looksBinary());
+            expect (showsAsLed (false, 0, 0, gate));
+            expect (showsAsLed (true, 0, 1, gate), "hints exactly 0..1 still allow it");
+            expect (! showsAsLed (true, 0, 7, gate), "a declared range that is not 0..1 says it is not a switch");
+
+            BinaryTracker few;
+            for (int i = 0; i < 5; ++i) few.observe (1);
+            expect (! few.looksBinary(), "not enough observations yet");
+
+            BinaryTracker zeros;
+            for (int i = 0; i < 50; ++i) zeros.observe (0);
+            expect (! zeros.looksBinary(), "never on: a counter at 0, not a lamp");
+
+            // a row of lights: each member is 1 only now and then, the card decides
+            BinaryTracker off, on;
+            for (int i = 0; i < 25; ++i) { off.observe (0); on.observe (i == 3 ? 1 : 0); }
+            expect (! off.looksBinary());
+            expect (combine (off, on).looksBinary(), "one lit member is enough for the whole card");
+            BinaryTracker bad;
+            for (int i = 0; i < 25; ++i) bad.observe (i == 3 ? 0.5 : 0);
+            expect (! combine (on, bad).looksBinary(), "one non-binary member excludes the whole card");
+            BinaryTracker young;
+            young.observe (1);
+            expect (! combine (on, young).looksBinary(), "the member with fewest readings decides when");
+
+            BinaryTracker counter;
+            for (int i = 0; i < 25; ++i) counter.observe (i % 2);
+            counter.observe (2);
+            for (int i = 0; i < 25; ++i) counter.observe (i % 2);
+            expect (! counter.looksBinary(), "one non-binary value excludes it for good");
+        }
+
+        beginTest ("formatMonitorValue: up to 3 decimals, audio in dB");
+        {
+            expectEquals (formatMonitorValue (1.23456), juce::String ("1.235"));
+            expectEquals (formatMonitorValue (7.0), juce::String ("7"));
+            expectEquals (formatMonitorValue (0.5), juce::String ("0.5"));
+            expectEquals (formatMonitorValue (-0.0001), juce::String ("0"));
+            expectEquals (formatMonitorValue (1.0, true), juce::String ("0 dB"));
+            expectEquals (formatMonitorValue (0.5, true), juce::String ("-6 dB"));
+            expectEquals (formatMonitorValue (0.0, true), juce::String ("-60 dB"));
+        }
+
+        beginTest ("kindOf: one look per kind");
+        {
+            expect (kindOf (true,  false, false, false, false, 0, 0)  == Kind::text);
+            expect (kindOf (false, true,  true,  false, false, 0, 0)  == Kind::audio,   "audio wins over spark");
+            expect (kindOf (false, false, true,  true,  false, 0, 1)  == Kind::lamp,    "a lamp wins over spark");
+            expect (kindOf (false, false, true,  false, true,  0, 1)  == Kind::spark);
+            expect (kindOf (false, false, false, false, true, -1, 1)  == Kind::bipolar);
+            expect (kindOf (false, false, false, false, false, -8, 12) == Kind::bipolar, "seen range across zero");
+            expect (kindOf (false, false, false, false, true,  0, 1)  == Kind::range);
+            expect (kindOf (false, false, false, false, false, 0, 5)  == Kind::adaptive);
+            expect (kindOf (false, false, false, false, true,  0, 7, true) == Kind::steps);
+            expect (kindOf (false, false, false, true,  true,  0, 1, true) == Kind::lamp, "0..1 is a lamp, not steps");
+        }
+
+        beginTest ("steps: integer range of 3..33 values, only integers seen");
+        {
+            IntegerTracker ints;
+            for (int i = 0; i < 12; ++i) ints.observe (i % 8);
+            expect (ints.looksInteger());
+            expect (showsAsSteps (true, 0, 7, ints));
+            expect (showsAsSteps (true, -2, 2, ints), "negative integer ranges too");
+            expect (! showsAsSteps (false, 0, 0, ints), "no declared range: a counter, not steps");
+            expect (! showsAsSteps (true, 0, 1, ints), "two values: that is a lamp");
+            expect (! showsAsSteps (true, 0, 100, ints), "too many cells");
+            expect (! showsAsSteps (true, 0, 7.5, ints), "range ends must be integers");
+            IntegerTracker pan;
+            for (int i = 0; i < 12; ++i) pan.observe (i == 4 ? 0.3 : 0);
+            expect (! showsAsSteps (true, -1, 1, pan), "one fractional value excludes it (a Pan -1..1)");
+            IntegerTracker young;
+            young.observe (3);
+            expect (! young.looksInteger(), "not enough readings yet");
+        }
+
+        beginTest ("audio channels: block RMS and meter ballistics");
+        {
+            const float sine[4] = { 0.0f, 1.0f, 0.0f, -1.0f };
+            expectWithinAbsoluteError (blockRms (sine, 4), std::sqrt (0.5), 1e-9);
+            const double dc[3] = { 0.5, 0.5, 0.5 };
+            expectWithinAbsoluteError (blockRms (dc, 3), 0.5, 1e-12);
+            expectWithinAbsoluteError (blockRms<float> (nullptr, 4), 0.0, 1e-12);
+            expectWithinAbsoluteError (blockRms (dc, 0), 0.0, 1e-12);
+
+            expectWithinAbsoluteError (meterBallistics (0.8, 0.2), 0.8, 1e-12);          // rises at once
+            expectWithinAbsoluteError (meterBallistics (0.0, 1.0), 0.82, 1e-12);         // falls slowly
+            expectWithinAbsoluteError (meterBallistics (0.9, 1.0), 0.9, 1e-12);          // never below the new value
         }
 
         beginTest ("linearToDb");

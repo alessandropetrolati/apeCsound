@@ -55,6 +55,7 @@ namespace
     const juce::Colour kKnobAccent   { 0xff9370db }; // viola
     const juce::Colour kToggleAccent { 0xff2ecc9a }; // verde/teal
     const juce::Colour kMenuAccent   { 0xffe8954a }; // arancione
+    const juce::Colour kMonitorAccent { 0xff8a9aa5 }; // grigio-azzurro neutro: il Monitor (sola lettura), nessun tipo di parametro
 
     void applyDarkFieldColours (juce::TextEditor& field)
     {
@@ -3494,15 +3495,6 @@ void CsoundParameterMappingPanel::showPanelMenu()
         item.icon = CsoundActionSheetIcon::waveform;
         items.push_back (item);
     }
-    {
-        CsoundActionSheetItem item;
-        item.id = 151; item.text = "Show Channels"; item.shortcut = CsoundShortcuts::label (CsoundShortcuts::showChannels());
-        item.enabled = onToggleChannelsRequested != nullptr;
-        item.tickedFn = [this] { return isChannelsVisible && isChannelsVisible(); };
-        item.keepOpen = true;
-        item.icon = CsoundActionSheetIcon::info;
-        items.push_back (item);
-    }
 
     // Load/Save CSD: richiamano le stesse funzioni dei vecchi bottoni
     // "Load..."/"Save as..." nella toolbar PRINCIPALE di PluginEditor, ora
@@ -3800,7 +3792,6 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 120: if (safeThis->onToggleDarkEditorRequested) safeThis->onToggleDarkEditorRequested(); break;
             case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
             case 150: if (safeThis->onToggleGraphsRequested) safeThis->onToggleGraphsRequested(); break;
-            case 151: if (safeThis->onToggleChannelsRequested) safeThis->onToggleChannelsRequested(); break;
             case 121: if (safeThis->onAudioSettingsRequested) safeThis->onAudioSettingsRequested(); break;
             case 123: case 124: case 125: case 126:
                 if (safeThis->onChooseCsoundFolder) safeThis->onChooseCsoundFolder (result - 123);
@@ -3942,8 +3933,8 @@ void CsoundParameterMappingPanel::setAllGroupsCollapsed (bool collapsed)
     {
         monitorHeader->collapsed = collapsed;
         monitorHeader->repaint();
-        if (collapsed) collapsedGroups.insert ("Monitor");
-        else           collapsedGroups.erase ("Monitor");
+        if (collapsed) collapsedGroups.insert (kMonitorStateKey);
+        else           collapsedGroups.erase (kMonitorStateKey);
     }
 
     resized();
@@ -4045,6 +4036,17 @@ void CsoundParameterMappingPanel::showAddMenu()
         item.icon = CsoundActionSheetIcon::sliderFloat;
         items.push_back (item);
     }
+    // Diagnostica dei canali (finestra modale): da qui si mappano i canali
+    // letti e mai scritti - e' una funzione dei parametri.
+    items.push_back (CsoundActionSheetItem::separator());
+    {
+        CsoundActionSheetItem item;
+        item.id = 114; item.text = "Channels...";
+        item.shortcut = CsoundShortcuts::label (CsoundShortcuts::showChannels());
+        item.enabled = onToggleChannelsRequested != nullptr;
+        item.icon = CsoundActionSheetIcon::info;
+        items.push_back (item);
+    }
 
     // SafePointer: vedi il commento identico su showPanelMenu() sopra.
     juce::Component::SafePointer<CsoundParameterMappingPanel> safeThis (this);
@@ -4071,6 +4073,7 @@ void CsoundParameterMappingPanel::showAddMenu()
                 break;
             case 111: safeThis->setAllGroupsCollapsed (false); break;
             case 112: safeThis->setAllGroupsCollapsed (true); break;
+            case 114: if (safeThis->onToggleChannelsRequested) safeThis->onToggleChannelsRequested(); break;
             default: break;
         }
     });
@@ -4783,9 +4786,14 @@ void CsoundParameterMappingPanel::GroupHeader::paint (juce::Graphics& g)
     // Cornice: sfondo nettamente diverso dal pannello (tinta dell'accento)
     // e bordo nel colore dell'accento, cosi' il gruppo si vede subito come
     // un blocco. Chiuso: e' alta quanto la sola intestazione.
-    g.setColour (kAccent.withAlpha (0.14f));
+    // Monitor (special): grigio neutro invece del teal dei gruppi di
+    // parametri - NON un colore dei tipi (blu/viola/verde/arancione), che
+    // farebbe pensare a un tipo di parametro.
+    const auto accent = special ? kMonitorAccent : kAccent;
+
+    g.setColour (accent.withAlpha (0.14f));
     g.fillRoundedRectangle (b, radius);
-    g.setColour (kAccent.withAlpha (0.7f));
+    g.setColour (accent.withAlpha (0.7f));
     g.drawRoundedRectangle (b.reduced (0.75f), radius, 1.5f);
 
     // Intestazione: fascia PIENA nel colore dell'accento, testo scuro -
@@ -4795,7 +4803,7 @@ void CsoundParameterMappingPanel::GroupHeader::paint (juce::Graphics& g)
         juce::Path p;
         p.addRoundedRectangle (head.getX(), head.getY(), head.getWidth(), head.getHeight(),
                                radius, radius, true, true, collapsed, collapsed);
-        g.setColour (kAccent);
+        g.setColour (accent);
         g.fillPath (p);
     }
 
@@ -4839,10 +4847,19 @@ void CsoundParameterMappingPanel::rebuildDisplayGroups()
     // saltano mentre si scrive.
     const auto parsed = CsoundParameterGroups::parse (processor.getCsdTextWithSurroundings());
 
-    if (! parsed.hasGroups() || unifiedRows.empty())
+    // Canali scritti (chnset) sotto un @group: le loro card del Monitor
+    // vanno in quel gruppo, mescolate ai parametri nell'ordine del codice.
+    monitorPlacement.clear();
+    for (const auto& [channel, placement] : parsed.written)
+        if (placement.group >= 0 && placement.group < parsed.groupNames.size())
+            monitorPlacement[channel] = { parsed.groupNames[placement.group], placement.order };
+
+    if (! parsed.hasGroups() || (unifiedRows.empty() && monitorPlacement.empty()))
     {
         for (auto& row : unifiedRows)
             row->setVisible (true);
+        monitorPlacement.clear();
+        assignMonitorGroups();
         return;
     }
 
@@ -4872,13 +4889,20 @@ void CsoundParameterMappingPanel::rebuildDisplayGroups()
             buckets[(size_t) numNamed].emplace_back ((int) r, unifiedRows[r].get()); // ordine del pannello
     }
 
+    // Gruppi che contengono solo card del Monitor (nessun parametro): esistono
+    // comunque (si mostrano quando il motore scrive quei canali).
+    std::vector<bool> hasMonitor ((size_t) numNamed + 1, false);
+    for (const auto& [channel, placement] : parsed.written)
+        if (placement.group >= 0 && placement.group < numNamed)
+            hasMonitor[(size_t) placement.group] = true;
+
     // Default all'arrivo di un insieme di gruppi NUOVO (file caricato,
     // @group cambiati): pochi gruppi -> tutti aperti; molti -> aperto solo
     // il primo, cosi' la lista resta un'overview. Poi comanda l'utente.
     {
         juce::StringArray presentNames;
         for (int gi = 0; gi <= numNamed; ++gi)
-            if (! buckets[(size_t) gi].empty())
+            if (! buckets[(size_t) gi].empty() || hasMonitor[(size_t) gi])
                 presentNames.add (gi < numNamed ? parsed.groupNames[gi] : juce::String ("Other"));
 
         const auto signature = presentNames.joinIntoString ("\n");
@@ -4895,7 +4919,7 @@ void CsoundParameterMappingPanel::rebuildDisplayGroups()
     for (int gi = 0; gi <= numNamed; ++gi)
     {
         auto& bucket = buckets[(size_t) gi];
-        if (bucket.empty())
+        if (bucket.empty() && ! hasMonitor[(size_t) gi])
             continue;
 
         std::sort (bucket.begin(), bucket.end(), [] (const auto& a, const auto& b) { return a.first < b.first; });
@@ -4903,7 +4927,10 @@ void CsoundParameterMappingPanel::rebuildDisplayGroups()
         DisplayGroup group;
         group.name = gi < numNamed ? parsed.groupNames[gi] : juce::String ("Other");
         for (auto& [order, row] : bucket)
+        {
             group.rows.push_back (row);
+            group.rowOrders.push_back (order);
+        }
 
         group.header = std::make_unique<GroupHeader>();
         group.header->name = group.name;
@@ -4925,6 +4952,31 @@ void CsoundParameterMappingPanel::rebuildDisplayGroups()
         rowsContainer.addAndMakeVisible (*group.header);
         group.header->toBack(); // dietro alle card del gruppo
         displayGroups.push_back (std::move (group));
+    }
+
+    assignMonitorGroups();
+}
+
+void CsoundParameterMappingPanel::assignMonitorGroups()
+{
+    // Una card va nel gruppo del suo primo canale, se quel gruppo esiste nel
+    // pannello; altrimenti nel gruppo Monitor in fondo.
+    for (auto& row : monitorRows)
+    {
+        row->groupName = {};
+        row->order = 0;
+        if (row->entries.empty())
+            continue;
+        const auto it = monitorPlacement.find (row->entries.front().name);
+        if (it == monitorPlacement.end())
+            continue;
+        for (const auto& group : displayGroups)
+            if (group.name == it->second.first)
+            {
+                row->groupName = it->second.first;
+                row->order = it->second.second;
+                break;
+            }
     }
 }
 
@@ -4967,22 +5019,149 @@ void CsoundParameterMappingPanel::setHighlightedChannel (const juce::String& cha
 
 //==============================================================================
 // Monitor - vedi il commento nel .h.
+//==============================================================================
+// Card del Monitor - un aspetto per tipo (vedi csoundMonitor::Kind):
+//
+//   range     barra con tacche ogni quarto e min/max sotto (range da chn_k)
+//   adaptive  barra tratteggiata: il range e' quello visto finora (min/max
+//             in corsivo) - "non dichiarato"
+//   bipolar   barra dallo zero, tacca centrale marcata, lati in due toni
+//   audio     meter a segmenti verde/giallo/rosso in dB, scala -48..0,
+//             picco tenuto
+//   spark     curva con area piena e punto sul valore corrente
+//   text      display "LCD": riquadro incassato, testo monospaziato
+//   lamp      spia tonda con alone
+//
+// Ogni card ha a sinistra del nome un glifo del suo tipo.
+namespace
+{
+    const juce::Colour kMeterGreen  { 0xff4cc46a };
+    const juce::Colour kMeterYellow { 0xffe6c44a };
+    const juce::Colour kMeterRed    { 0xffe0503c };
+    const juce::Colour kLcdBg       { 0xff0b1216 };
+    const juce::Colour kNegative    { 0xff6f8fb8 };   // lato negativo delle barre bipolari
+
+    // Glifo 12x12 del tipo, disegnato nel riquadro r.
+    void drawKindGlyph (juce::Graphics& g, juce::Rectangle<float> r, csoundMonitor::Kind k, bool multi)
+    {
+        using K = csoundMonitor::Kind;
+        g.setColour (kTextMuted);
+        const float x = r.getX(), y = r.getY(), w = r.getWidth(), h = r.getHeight();
+        juce::Path p;
+
+        if (multi)
+        {
+            for (int i = 0; i < 3; ++i)
+            {
+                const float bh = h * (0.4f + 0.3f * (float) ((i * 2) % 3));
+                g.fillRect (x + (float) i * w * 0.36f, y + h - bh, w * 0.24f, bh);
+            }
+            return;
+        }
+
+        switch (k)
+        {
+            case K::audio:
+                // tre segmenti di meter crescenti: verde, giallo, rosso
+                g.setColour (kMeterGreen);  g.fillRect (x,             y + h * 0.55f, w * 0.28f, h * 0.45f);
+                g.setColour (kMeterYellow); g.fillRect (x + w * 0.36f, y + h * 0.30f, w * 0.28f, h * 0.70f);
+                g.setColour (kMeterRed);    g.fillRect (x + w * 0.72f, y,             w * 0.28f, h);
+                break;
+            case K::spark:
+                p.startNewSubPath (x, y + h * 0.8f);
+                p.lineTo (x + w * 0.3f, y + h * 0.35f);
+                p.lineTo (x + w * 0.55f, y + h * 0.6f);
+                p.lineTo (x + w, y + h * 0.1f);
+                g.strokePath (p, juce::PathStrokeType (1.4f));
+                break;
+            case K::text:
+                g.drawRoundedRectangle (r.reduced (0.5f), 2.0f, 1.0f);
+                g.fillRect (x + 3.0f, y + h * 0.5f - 0.75f, w - 6.0f, 1.5f);
+                break;
+            case K::lamp:
+                g.drawEllipse (r.reduced (1.0f), 1.3f);
+                g.fillEllipse (r.reduced (3.5f));
+                break;
+            case K::steps:
+                for (int i = 0; i < 4; ++i)
+                {
+                    const auto cell = juce::Rectangle<float> (x + (float) i * w * 0.26f, y + h * 0.3f, w * 0.2f, h * 0.4f);
+                    if (i == 2) g.fillRect (cell); else g.drawRect (cell, 1.0f);
+                }
+                break;
+            case K::bipolar:
+            {
+                // quadrante a mezzaluna con lancetta
+                juce::Path arc;
+                arc.addCentredArc (x + w * 0.5f, y + h * 0.9f, w * 0.5f, h * 0.75f, 0.0f,
+                                   -juce::MathConstants<float>::halfPi, juce::MathConstants<float>::halfPi, true);
+                g.strokePath (arc, juce::PathStrokeType (1.3f));
+                g.drawLine (x + w * 0.5f, y + h * 0.9f, x + w * 0.78f, y + h * 0.3f, 1.4f);
+                break;
+            }
+            case K::range:
+                // barra piena con righello sotto
+                g.fillRect (x, y + h * 0.2f, w * 0.65f, h * 0.35f);
+                g.drawRect (x, y + h * 0.2f, w, h * 0.35f, 1.0f);
+                for (int i = 0; i <= 4; ++i)
+                    g.fillRect (x + (w - 1.0f) * (float) i / 4.0f, y + h * 0.65f, 1.0f, h * 0.25f);
+                break;
+            case K::adaptive:
+            {
+                // binario tratteggiato con un indice ad anello
+                for (float dx = 0.0f; dx < w; dx += 3.0f)
+                    g.fillRect (x + dx, y + h * 0.5f - 0.5f, 1.5f, 1.0f);
+                g.drawEllipse (x + w * 0.55f - 3.0f, y + h * 0.5f - 3.0f, 6.0f, 6.0f, 1.4f);
+                break;
+            }
+        }
+    }
+
+    juce::Colour meterColourForDb (double db)
+    {
+        return db >= -6.0 ? kMeterRed : (db >= -18.0 ? kMeterYellow : kMeterGreen);
+    }
+}
+
+csoundMonitor::Kind CsoundParameterMappingPanel::MonitorRow::kindOf (const Entry& e) const
+{
+    double lo, hi;
+    barRange (e, lo, hi);
+    return csoundMonitor::kindOf (e.isString, e.isAudio, attrs.spark, e.led, e.hasHints, lo, hi, e.steps);
+}
+
 int CsoundParameterMappingPanel::MonitorRow::preferredHeight() const noexcept
 {
-    if (multi)        return 24 + 64;   // titolo + barre verticali con etichetta
-    if (attrs.spark)  return 24 + 40;   // titolo/valore + sparkline
-    return height;
+    using K = csoundMonitor::Kind;
+    if (multi)
+        return 26 + 66;                          // titolo + barre verticali con etichetta
+    if (entries.empty())
+        return height;
+    switch (kindOf (entries.front()))
+    {
+        case K::lamp:  return 36;                // una riga
+        case K::text:  return 26 + 30;           // titolo + display
+        case K::spark: return 26 + 42;           // titolo + curva
+        case K::audio: return 26 + 30;           // titolo + meter a segmenti + scala
+        case K::bipolar: return 26 + 50;         // titolo + quadrante
+        default:       return height;            // titolo + barra + etichette
+    }
+}
+
+bool CsoundParameterMappingPanel::MonitorRow::isLed (const Entry& e) const
+{
+    return ! e.isString && ! e.isAudio && csoundMonitor::showsAsLed (e.hasHints, e.hintMin, e.hintMax, e.binary);
 }
 
 double CsoundParameterMappingPanel::MonitorRow::shown (const Entry& e) const
 {
-    return attrs.db ? csoundMonitor::linearToDb (e.value) : e.value;
+    return e.isAudio ? csoundMonitor::linearToDb (e.value) : e.value;
 }
 
 void CsoundParameterMappingPanel::MonitorRow::barRange (const Entry& e, double& lo, double& hi) const
 {
-    if (e.hasHints)      { lo = e.hintMin; hi = e.hintMax; }
-    else if (attrs.db)   { lo = -60.0;     hi = 0.0; }
+    if (e.isAudio)       { lo = -60.0;     hi = 0.0; }
+    else if (e.hasHints) { lo = e.hintMin; hi = e.hintMax; }
     else                 { lo = e.seenMin; hi = e.seenMax; }
 }
 
@@ -4990,13 +5169,7 @@ juce::String CsoundParameterMappingPanel::MonitorRow::displayValue (const Entry&
 {
     if (e.isString)
         return e.text;
-    const double v = shown (e);
-    if (attrs.isInt)
-        return juce::String (juce::roundToInt (v));
-    auto t = juce::String (v, attrs.db ? 1 : 3);
-    if (t.containsChar ('.')) t = t.trimCharactersAtEnd ("0").trimCharactersAtEnd (".");
-    if (t == "-0") t = "0";
-    return attrs.db ? t + " dB" : t;
+    return csoundMonitor::formatMonitorValue (e.value, e.isAudio);
 }
 
 void CsoundParameterMappingPanel::MonitorRow::paint (juce::Graphics& g)
@@ -5004,107 +5177,427 @@ void CsoundParameterMappingPanel::MonitorRow::paint (juce::Graphics& g)
     const auto b = getLocalBounds();
     g.setColour (kCardBg);
     g.fillRect (b);
-    g.setColour (kTextMuted.withAlpha (0.6f));
+    g.setColour (kMonitorAccent.withAlpha (0.6f));
     g.fillRect (b.getX(), b.getY(), 5, b.getHeight());
-
-    auto area = b.reduced (cardPaddingH, 0).withTrimmedLeft (6);
-    const auto monoFont = juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain));
 
     if (entries.empty())
         return;
 
-    // ---- card multipla: titolo a sinistra, barre verticali sotto
+    auto area = b.reduced (cardPaddingH, 0).withTrimmedLeft (6);
+
     if (multi)
     {
-        g.setColour (kText);
-        g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
-        auto head = area.removeFromTop (24);
-        g.drawFittedText (title, head.removeFromLeft (juce::jmin (head.getWidth() / 2, 180)), juce::Justification::centredLeft, 1);
-        g.setColour (kTextMuted);
-        g.setFont (monoFont);
-        g.drawFittedText (juce::String ((int) entries.size()) + " ch", head, juce::Justification::centredRight, 1);
-
-        auto plot = area.withTrimmedTop (2).withTrimmedBottom (4);
-        const int labelH = 12;
-        auto bars = plot.withTrimmedBottom (labelH);
-        const int n = (int) entries.size();
-        const float slot = (float) bars.getWidth() / (float) n;
-        const float barW = juce::jmax (2.0f, slot - 3.0f);
-
-        g.setColour (kPanelBg);
-        g.fillRoundedRectangle (bars.toFloat(), 3.0f);
-
-        for (int i = 0; i < n; ++i)
-        {
-            const auto& e = entries[(size_t) i];
-            double lo, hi; barRange (e, lo, hi);
-            const float x = (float) bars.getX() + slot * (float) i + (slot - barW) * 0.5f;
-            if (hi > lo)
-            {
-                const float f = (float) juce::jlimit (0.0, 1.0, (shown (e) - lo) / (hi - lo));
-                const float hgt = juce::jmax (2.0f, (float) bars.getHeight() * f);
-                g.setColour (kAccent.withAlpha (0.8f));
-                g.fillRoundedRectangle (x, (float) bars.getBottom() - hgt, barW, hgt, 2.0f);
-            }
-            if (slot >= 14.0f)
-            {
-                g.setColour (kTextMuted);
-                g.setFont (juce::Font (juce::FontOptions (9.0f)));
-                g.drawFittedText (e.label, juce::Rectangle<int> ((int) x - 4, bars.getBottom(), (int) barW + 8, labelH),
-                                  juce::Justification::centred, 1);
-            }
-        }
+        paintMulti (g, area);
         return;
     }
 
-    // ---- card singola
     const auto& e = entries.front();
+    const auto k = kindOf (e);
+
+    if (k == csoundMonitor::Kind::lamp)
+    {
+        paintLamp (g, area, e);
+        return;
+    }
+
+    // Intestazione comune: glifo del tipo, nome, valore a destra.
+    auto head = area.removeFromTop (26);
+    drawKindGlyph (g, head.removeFromLeft (14).withSizeKeepingCentre (12, 12).toFloat(), k, false);
+    head.removeFromLeft (6);
     g.setColour (kText);
     g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
-    auto head = area.removeFromTop (e.isString ? height : 24);
     const int nameW = juce::jmin (head.getWidth() / 2, 180);
     g.drawFittedText (title, head.removeFromLeft (nameW), juce::Justification::centredLeft, 1);
-    g.setColour (kTextMuted);
-    g.setFont (monoFont);
-    g.drawFittedText (displayValue (e), head.withTrimmedLeft (8), juce::Justification::centredRight, 1);
-
-    if (e.isString)
-        return;
-
-    double lo, hi; barRange (e, lo, hi);
-
-    if (attrs.spark)
+    if (k != csoundMonitor::Kind::text)
     {
-        // Sparkline degli ultimi kHistoryLength valori (ring buffer).
-        auto plot = area.withTrimmedTop (2).withTrimmedBottom (6).toFloat();
-        g.setColour (kPanelBg);
-        g.fillRoundedRectangle (plot, 3.0f);
-        if (hi > lo && ! e.history.empty())
-        {
-            juce::Path path;
-            const int n = (int) e.history.size();
-            for (int i = 0; i < n; ++i)
-            {
-                const float v = e.history[(size_t) ((e.historyPos + i) % n)];
-                const float f = (float) juce::jlimit (0.0, 1.0, ((double) v - lo) / (hi - lo));
-                const float x = plot.getX() + plot.getWidth() * (float) i / (float) juce::jmax (1, n - 1);
-                const float y = plot.getBottom() - 2.0f - (plot.getHeight() - 4.0f) * f;
-                if (i == 0) path.startNewSubPath (x, y); else path.lineTo (x, y);
-            }
-            g.setColour (kAccent.withAlpha (0.9f));
-            g.strokePath (path, juce::PathStrokeType (1.5f));
-        }
-        return;
+        g.setColour (k == csoundMonitor::Kind::audio ? meterColourForDb (shown (e)) : kTextMuted);
+        g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain)));
+        const auto valueText = k == csoundMonitor::Kind::steps
+            ? displayValue (e) + " / " + csoundMonitor::formatMonitorValue (e.hintMax)
+            : displayValue (e);
+        g.drawFittedText (valueText, head.withTrimmedLeft (8), juce::Justification::centredRight, 1);
     }
 
-    auto bar = area.withTrimmedTop (4).withHeight (8).toFloat();
+    switch (k)
+    {
+        case csoundMonitor::Kind::audio:    paintAudio (g, area, e); break;
+        case csoundMonitor::Kind::spark:    paintSpark (g, area, e); break;
+        case csoundMonitor::Kind::text:     paintText  (g, area, e); break;
+        case csoundMonitor::Kind::bipolar:  paintBipolar  (g, area, e); break;
+        case csoundMonitor::Kind::steps:    paintSteps    (g, area, e); break;
+        case csoundMonitor::Kind::adaptive: paintAdaptive (g, area, e); break;
+        default:                            paintRange    (g, area, e); break;
+    }
+}
+
+void CsoundParameterMappingPanel::MonitorRow::paintRange (juce::Graphics& g, juce::Rectangle<int> area, const Entry& e) const
+{
+    // RANGE DICHIARATO - una barra di livello solida: fondo incassato,
+    // riempimento pieno da sinistra, righello con 5 tacche sotto e gli
+    // estremi dichiarati.
+    double lo, hi; barRange (e, lo, hi);
+    auto bar = area.withHeight (11).toFloat();
+
     g.setColour (kPanelBg);
-    g.fillRoundedRectangle (bar, 3.0f);
+    g.fillRoundedRectangle (bar, 2.0f);
+    g.setColour (kAccent.withAlpha (0.35f));
+    g.drawRoundedRectangle (bar.reduced (0.5f), 2.0f, 1.0f);
+
     if (hi > lo)
     {
-        const float f = (float) juce::jlimit (0.0, 1.0, (shown (e) - lo) / (hi - lo));
-        g.setColour (kAccent.withAlpha (0.8f));
-        g.fillRoundedRectangle (bar.withWidth (juce::jmax (3.0f, bar.getWidth() * f)), 3.0f);
+        const float f = csoundMonitor::barSpan (shown (e), lo, hi).to;
+        auto fill = bar.reduced (1.5f);
+        fill.setWidth (fill.getWidth() * f);
+        g.setGradientFill (juce::ColourGradient (kAccent.darker (0.3f), fill.getX(), 0.0f,
+                                                 kAccent.brighter (0.15f), bar.getRight(), 0.0f, false));
+        g.fillRoundedRectangle (fill, 1.5f);
+    }
+
+    // righello: 5 tacche (0, 1/4, 1/2, 3/4, 1) sotto la barra
+    const float tickTop = bar.getBottom() + 2.0f;
+    g.setColour (kTextMuted.withAlpha (0.7f));
+    for (int i = 0; i <= 4; ++i)
+    {
+        const float tx = bar.getX() + (bar.getWidth() - 1.0f) * (float) i / 4.0f;
+        g.fillRect (tx, tickTop, 1.0f, i % 2 == 0 ? 4.0f : 2.5f);
+    }
+
+    auto labels = area.withTrimmedTop (17).withHeight (11);
+    g.setFont (juce::Font (juce::FontOptions (10.0f)));
+    g.drawText (csoundMonitor::formatMonitorValue (lo), labels, juce::Justification::centredLeft, false);
+    g.drawText (csoundMonitor::formatMonitorValue (hi), labels, juce::Justification::centredRight, false);
+}
+
+void CsoundParameterMappingPanel::MonitorRow::paintAdaptive (juce::Graphics& g, juce::Rectangle<int> area, const Entry& e) const
+{
+    // RANGE NON DICHIARATO - nessun riempimento: un binario tratteggiato e
+    // un indice ad anello che si sposta fra il minimo e il massimo visti
+    // finora (in corsivo, con le frecce: osservati, non dichiarati).
+    double lo, hi; barRange (e, lo, hi);
+    auto track = area.withHeight (14).toFloat().reduced (6.0f, 0.0f);
+    const float cy = track.getCentreY();
+
+    const float dash[] = { 4.0f, 3.0f };
+    juce::Path line; line.startNewSubPath (track.getX(), cy); line.lineTo (track.getRight(), cy);
+    juce::Path dashed;
+    juce::PathStrokeType (1.5f).createDashedStroke (dashed, line, dash, 2);
+    g.setColour (kTextMuted.withAlpha (0.6f));
+    g.fillPath (dashed);
+    g.fillRect (track.getX() - 0.75f, cy - 4.0f, 1.5f, 8.0f);       // estremi
+    g.fillRect (track.getRight() - 0.75f, cy - 4.0f, 1.5f, 8.0f);
+
+    if (hi > lo)
+    {
+        const float f = csoundMonitor::barSpan (shown (e), lo, hi).to;
+        const float mx = track.getX() + track.getWidth() * f;
+        g.setColour (kAccent.withAlpha (0.25f));
+        g.fillEllipse (mx - 8.0f, cy - 8.0f, 16.0f, 16.0f);
+        g.setColour (kAccent);
+        g.drawEllipse (mx - 5.5f, cy - 5.5f, 11.0f, 11.0f, 2.0f);
+    }
+
+    auto labels = area.withTrimmedTop (16).withHeight (11);
+    g.setColour (kTextMuted.withAlpha (0.8f));
+    g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::italic)));
+    const juce::String down (juce::CharPointer_UTF8 ("\xe2\x86\x93 ")), up (juce::CharPointer_UTF8 (" \xe2\x86\x91"));
+    g.drawText (down + csoundMonitor::formatMonitorValue (lo), labels, juce::Justification::centredLeft, false);
+    g.drawText (csoundMonitor::formatMonitorValue (hi) + up, labels, juce::Justification::centredRight, false);
+}
+
+void CsoundParameterMappingPanel::MonitorRow::paintBipolar (juce::Graphics& g, juce::Rectangle<int> area, const Entry& e) const
+{
+    // RANGE ATTRAVERSO LO ZERO - quadrante a mezzaluna con lancetta: lo zero
+    // in alto, i negativi a sinistra (blu), i positivi a destra; l'arco si
+    // colora dallo zero al valore.
+    double lo, hi; barRange (e, lo, hi);
+    auto dial = area.withTrimmedBottom (4).toFloat();
+    const float radius = juce::jmax (10.0f, juce::jmin (dial.getHeight() - 4.0f, dial.getWidth() * 0.5f - 40.0f));
+    const float cx = dial.getCentreX(), cy = dial.getBottom() - 2.0f;
+    constexpr float halfPi = juce::MathConstants<float>::halfPi;
+    const juce::Point<float> centre (cx, cy);
+
+    const auto angleOf = [&] (double v)
+    {
+        const float f = (float) juce::jlimit (0.0, 1.0, (v - lo) / (hi - lo));
+        return -halfPi + f * 2.0f * halfPi;
+    };
+
+    juce::Path trackArc;
+    trackArc.addCentredArc (cx, cy, radius, radius, 0.0f, -halfPi, halfPi, true);
+    g.setColour (kPanelBg.brighter (0.1f));
+    g.strokePath (trackArc, juce::PathStrokeType (7.0f, juce::PathStrokeType::curved, juce::PathStrokeType::butt));
+
+    if (hi > lo)
+    {
+        const float a0 = angleOf (0.0), a1 = angleOf (shown (e));
+        if (std::abs (a1 - a0) > 0.001f)
+        {
+            juce::Path valueArc;
+            valueArc.addCentredArc (cx, cy, radius, radius, 0.0f, juce::jmin (a0, a1), juce::jmax (a0, a1), true);
+            g.setColour (a1 < a0 ? kNegative : kAccent);
+            g.strokePath (valueArc, juce::PathStrokeType (7.0f, juce::PathStrokeType::curved, juce::PathStrokeType::butt));
+        }
+
+        // tacca dello zero
+        g.setColour (kText);
+        g.drawLine ({ centre.getPointOnCircumference (radius - 6.0f, a0), centre.getPointOnCircumference (radius + 6.0f, a0) }, 1.5f);
+
+        // lancetta
+        g.drawLine ({ centre, centre.getPointOnCircumference (radius - 2.0f, a1) }, 2.0f);
+        g.fillEllipse (cx - 3.5f, cy - 3.5f, 7.0f, 7.0f);
+    }
+
+    // estremi ai due lati dell'arco
+    g.setColour (kTextMuted.withAlpha (0.8f));
+    g.setFont (juce::Font (juce::FontOptions (10.0f, e.hasHints ? juce::Font::plain : juce::Font::italic)));
+    g.drawText (csoundMonitor::formatMonitorValue (lo), juce::Rectangle<float> (cx - radius - 60.0f, cy - 12.0f, 50.0f, 12.0f).toNearestInt(),
+                juce::Justification::centredRight, false);
+    g.drawText (csoundMonitor::formatMonitorValue (hi), juce::Rectangle<float> (cx + radius + 10.0f, cy - 12.0f, 50.0f, 12.0f).toNearestInt(),
+                juce::Justification::centredLeft, false);
+}
+
+void CsoundParameterMappingPanel::MonitorRow::paintAudio (juce::Graphics& g, juce::Rectangle<int> area, const Entry& e) const
+{
+    // Meter a segmenti -60..0 dB: verde fino a -18, giallo fino a -6, rosso.
+    auto meter = area.withHeight (10).toFloat();
+    g.setColour (kLcdBg);
+    g.fillRoundedRectangle (meter.expanded (1.0f), 2.0f);
+
+    const int segments = 30;
+    const float gap = 1.5f;
+    const float segW = (meter.getWidth() - gap * (float) (segments - 1)) / (float) segments;
+    const double level = shown (e);
+    for (int i = 0; i < segments; ++i)
+    {
+        const double segDb = -60.0 + 60.0 * (double) (i + 1) / (double) segments;
+        const bool lit = level >= segDb - 60.0 / segments;
+        const auto colour = meterColourForDb (segDb);
+        g.setColour (lit ? colour : colour.withAlpha (0.13f));
+        g.fillRect (meter.getX() + (float) i * (segW + gap), meter.getY(), segW, meter.getHeight());
+    }
+
+    // Picco tenuto: una linea chiara.
+    const double peakDb = csoundMonitor::linearToDb (e.peakHold);
+    if (peakDb > -59.0)
+    {
+        const float px = meter.getX() + meter.getWidth() * (float) ((peakDb + 60.0) / 60.0);
+        g.setColour (meterColourForDb (peakDb).brighter (0.4f));
+        g.fillRect (px - 1.0f, meter.getY() - 2.0f, 2.0f, meter.getHeight() + 4.0f);
+    }
+
+    // Scala in dB.
+    auto scale = area.withTrimmedTop (13).withHeight (11);
+    g.setColour (kTextMuted.withAlpha (0.8f));
+    g.setFont (juce::Font (juce::FontOptions (9.5f)));
+    for (const int db : { -48, -24, -12, -6, 0 })
+    {
+        const int x = scale.getX() + (int) ((float) scale.getWidth() * (float) (db + 60) / 60.0f);
+        g.drawText (juce::String (db), x - 14, scale.getY(), 28, scale.getHeight(),
+                    db == 0 ? juce::Justification::centredRight : juce::Justification::centred, false);
+    }
+}
+
+void CsoundParameterMappingPanel::MonitorRow::paintSpark (juce::Graphics& g, juce::Rectangle<int> area, const Entry& e) const
+{
+    double lo, hi; barRange (e, lo, hi);
+    auto plot = area.withTrimmedBottom (6).toFloat();
+    g.setColour (kPanelBg);
+    g.fillRoundedRectangle (plot, 3.0f);
+    if (! (hi > lo) || e.history.empty())
+        return;
+
+    const auto yOf = [&] (double v) { return plot.getBottom() - 3.0f - (plot.getHeight() - 6.0f) * (float) juce::jlimit (0.0, 1.0, (v - lo) / (hi - lo)); };
+
+    if (lo < 0.0 && hi > 0.0)
+    {
+        g.setColour (kTextMuted.withAlpha (0.35f));
+        g.fillRect (plot.getX() + 2.0f, yOf (0.0) - 0.5f, plot.getWidth() - 4.0f, 1.0f);
+    }
+
+    juce::Path line, area2;
+    const int n = (int) e.history.size();
+    float lastX = 0.0f, lastY = 0.0f;
+    for (int i = 0; i < n; ++i)
+    {
+        const float v = e.history[(size_t) ((e.historyPos + i) % n)];
+        const float x = plot.getX() + 2.0f + (plot.getWidth() - 8.0f) * (float) i / (float) juce::jmax (1, n - 1);
+        const float y = yOf (v);
+        if (i == 0) { line.startNewSubPath (x, y); area2.startNewSubPath (x, plot.getBottom() - 2.0f); area2.lineTo (x, y); }
+        else        { line.lineTo (x, y); area2.lineTo (x, y); }
+        lastX = x; lastY = y;
+    }
+    area2.lineTo (lastX, plot.getBottom() - 2.0f);
+    area2.closeSubPath();
+
+    g.setGradientFill (juce::ColourGradient (kAccent.withAlpha (0.35f), 0.0f, plot.getY(), kAccent.withAlpha (0.02f), 0.0f, plot.getBottom(), false));
+    g.fillPath (area2);
+    g.setColour (kAccent);
+    g.strokePath (line, juce::PathStrokeType (1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    g.fillEllipse (lastX - 3.0f, lastY - 3.0f, 6.0f, 6.0f);
+}
+
+void CsoundParameterMappingPanel::MonitorRow::paintText (juce::Graphics& g, juce::Rectangle<int> area, const Entry& e) const
+{
+    // Display incassato tipo LCD, testo monospaziato in accento.
+    auto box = area.withTrimmedBottom (6).toFloat();
+    g.setColour (kLcdBg);
+    g.fillRoundedRectangle (box, 4.0f);
+    g.setColour (kMonitorAccent.withAlpha (0.35f));
+    g.drawRoundedRectangle (box.reduced (0.5f), 4.0f, 1.0f);
+    g.setColour (kAccent.brighter (0.2f));
+    g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain)));
+    g.drawFittedText (e.text.isEmpty() ? juce::String ("-") : e.text, box.reduced (10.0f, 0.0f).toNearestInt(),
+                      juce::Justification::centredLeft, 1);
+}
+
+void CsoundParameterMappingPanel::MonitorRow::paintLamp (juce::Graphics& g, juce::Rectangle<int> area, const Entry& e) const
+{
+    auto row = area;
+    drawKindGlyph (g, row.removeFromLeft (14).withSizeKeepingCentre (12, 12).toFloat(), csoundMonitor::Kind::lamp, false);
+    row.removeFromLeft (6);
+    g.setColour (kText);
+    g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+    g.drawFittedText (title, row.removeFromLeft (juce::jmin (row.getWidth() / 2, 180)), juce::Justification::centredLeft, 1);
+
+    const bool on = e.value >= 0.5;
+    auto right = row.removeFromRight (64);
+    g.setColour (on ? kText : kTextMuted);
+    g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain)));
+    g.drawFittedText (on ? "ON" : "OFF", right.removeFromRight (34), juce::Justification::centredRight, 1);
+    const auto lamp = juce::Rectangle<float> (14.0f, 14.0f).withCentre (right.toFloat().getCentre());
+    if (on)
+    {
+        g.setColour (kAccent.withAlpha (0.25f));
+        g.fillEllipse (lamp.expanded (4.0f));
+    }
+    g.setColour (on ? kAccent : kPanelBg.brighter (0.15f));
+    g.fillEllipse (lamp);
+    g.setColour (kAccent.withAlpha (on ? 1.0f : 0.35f));
+    g.drawEllipse (lamp, 1.2f);
+}
+
+void CsoundParameterMappingPanel::MonitorRow::paintSteps (juce::Graphics& g, juce::Rectangle<int> area, const Entry& e) const
+{
+    // Una cella per valore intero del range: la corrente piena e luminosa,
+    // le precedenti tenui (la "strada fatta" di un sequencer), le altre
+    // vuote. Il numero nella cella se c'e' posto.
+    const int lo = (int) e.hintMin, hi = (int) e.hintMax;
+    const int cells = hi - lo + 1;
+    const int current = juce::jlimit (lo, hi, (int) std::lround (e.value));
+    auto strip = area.withHeight (18).toFloat();
+    const float gap = cells > 16 ? 2.0f : 3.0f;
+    const float cellW = (strip.getWidth() - gap * (float) (cells - 1)) / (float) cells;
+
+    g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 10.0f, juce::Font::bold)));
+    for (int i = 0; i < cells; ++i)
+    {
+        const int v = lo + i;
+        const auto cell = juce::Rectangle<float> (strip.getX() + (float) i * (cellW + gap), strip.getY(), cellW, strip.getHeight());
+        if (v == current)
+        {
+            g.setColour (kAccent.withAlpha (0.3f));
+            g.fillRoundedRectangle (cell.expanded (1.5f), 4.0f);
+            g.setColour (kAccent);
+            g.fillRoundedRectangle (cell, 3.0f);
+        }
+        else
+        {
+            g.setColour (v < current ? kAccent.withAlpha (0.22f) : kPanelBg);
+            g.fillRoundedRectangle (cell, 3.0f);
+            g.setColour (kAccent.withAlpha (0.35f));
+            g.drawRoundedRectangle (cell.reduced (0.5f), 3.0f, 1.0f);
+        }
+
+        if (cellW >= 14.0f)
+        {
+            g.setColour (v == current ? kOnAccent : kTextMuted);
+            g.drawText (juce::String (v), cell, juce::Justification::centred, false);
+        }
+    }
+}
+
+void CsoundParameterMappingPanel::MonitorRow::paintMulti (juce::Graphics& g, juce::Rectangle<int> area) const
+{
+    const bool audio = entries.front().isAudio;
+    auto head = area.removeFromTop (26);
+    drawKindGlyph (g, head.removeFromLeft (14).withSizeKeepingCentre (12, 12).toFloat(), csoundMonitor::Kind::range, true);
+    head.removeFromLeft (6);
+    g.setColour (kText);
+    g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+    g.drawFittedText (title, head.removeFromLeft (juce::jmin (head.getWidth() / 2, 180)), juce::Justification::centredLeft, 1);
+    g.setColour (kTextMuted);
+    g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::plain)));
+    g.drawFittedText (juce::String ((int) entries.size()) + (audio ? " audio" : " ch"), head, juce::Justification::centredRight, 1);
+
+    auto plot = area.withTrimmedTop (2).withTrimmedBottom (4);
+    const int labelH = 12;
+    auto bars = plot.withTrimmedBottom (labelH);
+    const int n = (int) entries.size();
+    const float slot = (float) bars.getWidth() / (float) n;
+    const float barW = juce::jmax (2.0f, slot - 3.0f);
+
+    g.setColour (audio ? kLcdBg : kPanelBg);
+    g.fillRoundedRectangle (bars.toFloat(), 3.0f);
+
+    for (int i = 0; i < n; ++i)
+    {
+        const auto& e = entries[(size_t) i];
+        double lo, hi; barRange (e, lo, hi);
+        const float x = (float) bars.getX() + slot * (float) i + (slot - barW) * 0.5f;
+
+        if (e.led)
+        {
+            // Spia: cerchio pieno se acceso (es. i passi di un sequencer).
+            const float d = juce::jmin (barW, (float) bars.getHeight() * 0.5f, 18.0f);
+            const auto r = juce::Rectangle<float> (d, d).withCentre ({ x + barW * 0.5f, (float) bars.getCentreY() });
+            const bool on = e.value >= 0.5;
+            if (on)
+            {
+                g.setColour (kAccent.withAlpha (0.25f));
+                g.fillEllipse (r.expanded (3.0f));
+            }
+            g.setColour (on ? kAccent : kPanelBg.brighter (0.15f));
+            g.fillEllipse (r);
+            g.setColour (kAccent.withAlpha (on ? 1.0f : 0.35f));
+            g.drawEllipse (r, 1.2f);
+        }
+        else if (audio)
+        {
+            // Meter verticale a segmenti, verde/giallo/rosso.
+            const int segments = 12;
+            const float segH = ((float) bars.getHeight() - 4.0f - (float) (segments - 1)) / (float) segments;
+            const double level = shown (e);
+            for (int s2 = 0; s2 < segments; ++s2)
+            {
+                const double segDb = -60.0 + 60.0 * (double) (s2 + 1) / (double) segments;
+                const auto colour = meterColourForDb (segDb);
+                g.setColour (level >= segDb - 60.0 / segments ? colour : colour.withAlpha (0.13f));
+                g.fillRect (x, (float) bars.getBottom() - 2.0f - (float) (s2 + 1) * (segH + 1.0f) + 1.0f, barW, segH);
+            }
+        }
+        else if (hi > lo)
+        {
+            // Barra verticale; bipolare (range attraverso lo zero) = dallo zero.
+            const auto span = csoundMonitor::barSpan (shown (e), lo, hi);
+            const float bottom = (float) bars.getBottom(), h = (float) bars.getHeight();
+            const float y1 = bottom - h * span.to, y0 = bottom - h * span.from;
+            const bool negative = span.zero >= 0.0f && span.from < span.zero;
+            g.setColour ((negative ? kNegative : kAccent).withAlpha (e.hasHints ? 0.85f : 0.6f));
+            g.fillRoundedRectangle (x, y1, barW, juce::jmax (2.0f, y0 - y1), 2.0f);
+            if (span.zero >= 0.0f)
+            {
+                g.setColour (kText.withAlpha (0.7f));
+                g.fillRect (x - 1.0f, bottom - h * span.zero - 0.75f, barW + 2.0f, 1.5f);
+            }
+        }
+
+        if (slot >= 14.0f)
+        {
+            g.setColour (kTextMuted);
+            g.setFont (juce::Font (juce::FontOptions (9.0f)));
+            g.drawFittedText (e.label, juce::Rectangle<int> ((int) x - 4, bars.getBottom(), (int) barW + 8, labelH),
+                              juce::Justification::centred, 1);
+        }
     }
 }
 
@@ -5122,6 +5615,7 @@ void CsoundParameterMappingPanel::refreshMonitorList()
 
     const bool wasEmpty = monitorRows.empty();
     const bool sameRows = signature == monitorSignature;   // stesso elenco, motore nuovo: solo i puntatori cambiano
+    const bool sameEngine = engine == monitorEngine;
     monitorEngine = engine;
     monitorSignature = signature;
     monitorChannels = std::move (channels);
@@ -5132,7 +5626,18 @@ void CsoundParameterMappingPanel::refreshMonitorList()
         // (CsoundMonitorLayout.h). Ricreate solo se cambia l'elenco.
         std::vector<csoundMonitor::ChannelInfo> infos;
         for (const auto& c : monitorChannels)
-            infos.push_back ({ c.name, c.isString, csoundMonitor::parseAttributes (c.attributes) });
+            infos.push_back ({ c.name, c.isString, c.isAudio });
+
+        // Stesso motore, elenco cambiato (un canale nuovo creato a runtime):
+        // le card si ricostruiscono, ma lo stato osservato dei canali che
+        // c'erano gia' resta - riconoscimento della spia, min/max visti,
+        // storia, picco. Altrimenti a ogni canale nuovo una spia tornerebbe
+        // barra per un secondo e i range adattivi ripartirebbero da zero.
+        std::map<juce::String, MonitorRow::Entry> previous;
+        if (sameEngine)
+            for (const auto& r : monitorRows)
+                for (const auto& old : r->entries)
+                    previous[old.name] = old;
 
         monitorRows.clear();
         for (const auto& card : csoundMonitor::buildCards (infos))
@@ -5141,24 +5646,39 @@ void CsoundParameterMappingPanel::refreshMonitorList()
             row->title = card.title;
             row->multi = card.multi;
             if (! card.channels.empty())
-                row->attrs = infos[(size_t) card.channels.front()].attributes;
+                row->attrs = csoundMonitor::parseAttributes (monitorChannels[(size_t) card.channels.front()].attributes);
 
             for (int idx : card.channels)
             {
                 const auto& c = monitorChannels[(size_t) idx];
                 MonitorRow::Entry e;
-                e.name = c.name; e.channelIndex = idx; e.isString = c.isString;
+                e.name = c.name; e.channelIndex = idx; e.isString = c.isString; e.isAudio = c.isAudio;
                 e.hasHints = c.hasHints; e.hintMin = c.hintMin; e.hintMax = c.hintMax;
                 juce::String base; int index = -1;
                 e.label = csoundMonitor::splitIndexedName (c.name, base, index) ? juce::String (index) : c.name;
                 if (row->attrs.spark)
                     e.history.assign ((size_t) MonitorRow::kHistoryLength, 0.0f);
+                if (const auto it = previous.find (c.name); it != previous.end() && it->second.isAudio == e.isAudio)
+                {
+                    const auto& old = it->second;
+                    e.text = old.text; e.value = old.value;
+                    e.seenMin = old.seenMin; e.seenMax = old.seenMax; e.seenAny = old.seenAny;
+                    e.peakHold = old.peakHold; e.peakHoldAge = old.peakHoldAge;
+                    e.binary = old.binary; e.led = old.led;
+                    e.ints = old.ints; e.steps = old.steps;
+                    if (old.history.size() == e.history.size())
+                    {
+                        e.history = old.history;
+                        e.historyPos = old.historyPos;
+                    }
+                }
                 row->entries.push_back (std::move (e));
             }
             row->setTitle (row->title);
             rowsContainer.addAndMakeVisible (*row);
             monitorRows.push_back (std::move (row));
         }
+        assignMonitorGroups();
     }
 
     if (monitorRows.empty())
@@ -5169,13 +5689,15 @@ void CsoundParameterMappingPanel::refreshMonitorList()
     {
         monitorHeader = std::make_unique<GroupHeader>();
         monitorHeader->name = "Monitor";
+        monitorHeader->special = true;
+        monitorHeader->setTitle ("Monitor, channels written by the code");
         if (wasEmpty && (int) monitorRows.size() > kMonitorCollapsedByDefaultAbove)
-            collapsedGroups.insert ("Monitor");
+            collapsedGroups.insert (kMonitorStateKey);
         monitorHeader->onToggle = [this]
         {
             monitorHeader->collapsed = ! monitorHeader->collapsed;
-            if (monitorHeader->collapsed) collapsedGroups.insert ("Monitor");
-            else                          collapsedGroups.erase ("Monitor");
+            if (monitorHeader->collapsed) collapsedGroups.insert (kMonitorStateKey);
+            else                          collapsedGroups.erase (kMonitorStateKey);
             monitorHeader->repaint();
             resized();
         };
@@ -5187,7 +5709,7 @@ void CsoundParameterMappingPanel::refreshMonitorList()
     if (monitorHeader != nullptr)
     {
         monitorHeader->count = (int) monitorRows.size();
-        monitorHeader->collapsed = collapsedGroups.count ("Monitor") > 0;
+        monitorHeader->collapsed = collapsedGroups.count (kMonitorStateKey) > 0;
     }
 
     const bool empty = unifiedRows.empty() && pendingRow == nullptr && monitorRows.empty();
@@ -5209,12 +5731,13 @@ void CsoundParameterMappingPanel::updateMonitorValues()
         return;
     }
 
-    if (monitorHeader != nullptr && monitorHeader->collapsed)
-        return;
+    bool layoutChanged = false;
 
     for (auto& rowPtr : monitorRows)
     {
         auto& row = *rowPtr;
+        if (! row.isVisible())
+            continue;   // gruppo chiuso (Monitor o gruppo dei parametri)
         bool changed = false;
 
         for (auto& e : row.entries)
@@ -5230,11 +5753,37 @@ void CsoundParameterMappingPanel::updateMonitorValues()
                 continue;
             }
 
-            const double v = processor.readMonitorValue (ch);
+            double v = processor.readMonitorValue (ch);
+            if (e.isAudio)
+            {
+                const double raw = v;
+                v = csoundMonitor::meterBallistics (v, e.value);   // un blocco di ksmps letto ogni 50 ms: balistica
+                // Picco tenuto: 1 s fermo, poi scende.
+                if (raw >= e.peakHold) { e.peakHold = raw; e.peakHoldAge = 0; }
+                else if (++e.peakHoldAge > 20) e.peakHold *= 0.9;
+            }
             if (! e.seenAny) { e.seenMin = e.seenMax = v; e.seenAny = true; }
             e.seenMin = juce::jmin (e.seenMin, v);
             e.seenMax = juce::jmax (e.seenMax, v);
             if (v != e.value) { e.value = v; changed = true; }
+
+            e.binary.observe (v);
+            e.ints.observe (v);
+            if (! row.multi && ! e.isAudio)
+            {
+                const bool steps = csoundMonitor::showsAsSteps (e.hasHints, e.hintMin, e.hintMax, e.ints);
+                if (steps != e.steps) { e.steps = steps; changed = true; }
+            }
+            if (! row.multi)
+            {
+                const bool led = row.isLed (e);
+                if (led != e.led)
+                {
+                    e.led = led;
+                    changed = true;
+                    layoutChanged = true;   // card singola: altezza diversa
+                }
+            }
 
             if (! e.history.empty())
             {
@@ -5244,9 +5793,28 @@ void CsoundParameterMappingPanel::updateMonitorValues()
             }
         }
 
+        // Card multipla: tutti i membri spie o nessuno (csoundMonitor::combine).
+        if (row.multi && ! row.entries.empty() && ! row.entries.front().isAudio)
+        {
+            auto group = row.entries.front().binary;
+            bool hintsAllow = true;
+            for (const auto& e : row.entries)
+            {
+                group = csoundMonitor::combine (group, e.binary);
+                if (e.isString || (e.hasHints && ! (e.hintMin == 0.0 && e.hintMax == 1.0)))
+                    hintsAllow = false;
+            }
+            const bool led = hintsAllow && group.looksBinary();
+            for (auto& e : row.entries)
+                if (e.led != led) { e.led = led; changed = true; }
+        }
+
         if (changed)
             row.repaint();
     }
+
+    if (layoutChanged)
+        resized();   // una card e' diventata (o non e' piu') una spia: altezza diversa
 }
 
 void CsoundParameterMappingPanel::scrollRowIntoView (juce::Component& row)
@@ -5507,6 +6075,25 @@ void CsoundParameterMappingPanel::resized()
         // righe del gruppo; chiuso = righe nascoste.
         for (auto& group : displayGroups)
         {
+            // Parametri + card del Monitor del gruppo, nell'ordine del codice.
+            struct Item { int order; juce::Component* comp; MonitorRow* monitor; };
+            std::vector<Item> items;
+            for (size_t i = 0; i < group.rows.size(); ++i)
+                items.push_back ({ i < group.rowOrders.size() ? group.rowOrders[i] : (int) i, group.rows[i], nullptr });
+            for (auto& m : monitorRows)
+                if (m->groupName == group.name)
+                    items.push_back ({ m->order, m.get(), m.get() });
+            std::stable_sort (items.begin(), items.end(), [] (const Item& a, const Item& b) { return a.order < b.order; });
+
+            // Gruppo con sole card del Monitor non ancora scritte (motore fermo): nascosto.
+            if (items.empty())
+            {
+                group.header->setVisible (false);
+                continue;
+            }
+            group.header->setVisible (true);
+            group.header->count = (int) items.size();
+
             const int groupTop = y;
             const int innerWidth = contentWidth - groupInsetH * 2;
             y += groupHeaderHeight;
@@ -5515,12 +6102,15 @@ void CsoundParameterMappingPanel::resized()
             {
                 y += gapBetweenRows;
 
-                for (auto* row : group.rows)
+                for (auto& item : items)
                 {
-                    auto* iface = dynamic_cast<UnifiedRowInterface*> (row);
-                    const int h = iface != nullptr ? iface->getPreferredHeight (innerWidth) : rowHeight;
-                    row->setVisible (true);
-                    row->setBounds (groupInsetH, y, innerWidth, h);
+                    int h = rowHeight;
+                    if (item.monitor != nullptr)
+                        h = item.monitor->preferredHeight();
+                    else if (auto* iface = dynamic_cast<UnifiedRowInterface*> (item.comp))
+                        h = iface->getPreferredHeight (innerWidth);
+                    item.comp->setVisible (true);
+                    item.comp->setBounds (groupInsetH, y, innerWidth, h);
                     y += h + gapBetweenRows;
                 }
 
@@ -5528,8 +6118,8 @@ void CsoundParameterMappingPanel::resized()
             }
             else
             {
-                for (auto* row : group.rows)
-                    row->setVisible (false);
+                for (auto& item : items)
+                    item.comp->setVisible (false);
             }
 
             group.header->setBounds (0, groupTop, contentWidth, y - groupTop);
@@ -5545,9 +6135,19 @@ void CsoundParameterMappingPanel::resized()
         y += h + gapBetweenRows;
     }
 
-    // Sezione Monitor in coda (vedi refreshMonitorList).
-    if (monitorHeader != nullptr && ! monitorRows.empty())
+    // Sezione Monitor in coda (vedi refreshMonitorList): solo le card che
+    // non stanno in un gruppo dei parametri.
+    int ungroupedMonitor = 0;
+    for (auto& row : monitorRows)
+        if (row->groupName.isEmpty())
+            ++ungroupedMonitor;
+
+    if (monitorHeader != nullptr)
+        monitorHeader->setVisible (ungroupedMonitor > 0);
+
+    if (monitorHeader != nullptr && ungroupedMonitor > 0)
     {
+        monitorHeader->count = ungroupedMonitor;
         const int groupTop = y;
         const int innerWidth = contentWidth - groupInsetH * 2;
         y += groupHeaderHeight;
@@ -5557,6 +6157,8 @@ void CsoundParameterMappingPanel::resized()
             y += gapBetweenRows;
             for (auto& row : monitorRows)
             {
+                if (row->groupName.isNotEmpty())
+                    continue;
                 const int h = row->preferredHeight();
                 row->setVisible (true);
                 row->setBounds (groupInsetH, y, innerWidth, h);
@@ -5567,7 +6169,8 @@ void CsoundParameterMappingPanel::resized()
         else
         {
             for (auto& row : monitorRows)
-                row->setVisible (false);
+                if (row->groupName.isEmpty())
+                    row->setVisible (false);
         }
 
         monitorHeader->setBounds (0, groupTop, contentWidth, y - groupTop);

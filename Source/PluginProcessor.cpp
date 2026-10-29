@@ -1804,7 +1804,7 @@ namespace
     // Versione dello zip degli esempi (Resources/Examples.zip, vedi
     // scripts/make_examples_zip.sh): aumentarla quando lo zip cambia, cosi'
     // gli esempi nuovi vengono estratti anche a chi ha gia' la cartella.
-    constexpr int kExamplesVersion = 8;   // ... 7: + Test/MonitorTest  8: 1.0.5 (MonitorStressTest, MidiOutTest, Csound 7 fixes, loop_* renamed, TB-303 groups)
+    constexpr int kExamplesVersion = 10;  // ... 8: 1.0.5 (MonitorStressTest, MidiOutTest, Csound 7 fixes...)  9: MonitorTest rewritten  10: Monitor tests without attributes (spark only)
     const char* const kExamplesVersionKey = "examplesVersion";
 }
 
@@ -2582,8 +2582,8 @@ std::vector<CsoundAudioProcessor::MonitorChannel> CsoundAudioProcessor::listMoni
         const bool isOutput = (info.type & CSOUND_OUTPUT_CHANNEL) != 0;
         if (! isOutput || info.name == nullptr)
             continue;
-        if (type != CSOUND_CONTROL_CHANNEL && type != CSOUND_STRING_CHANNEL)
-            continue;
+        if (type != CSOUND_CONTROL_CHANNEL && type != CSOUND_STRING_CHANNEL && type != CSOUND_AUDIO_CHANNEL)
+            continue;   // pvs: no
 
         const juce::String name (juce::CharPointer_UTF8 (info.name));
         if (name.isEmpty() || isReservedHostChannel (name))
@@ -2616,7 +2616,19 @@ std::vector<CsoundAudioProcessor::MonitorChannel> CsoundAudioProcessor::listMoni
         MonitorChannel ch;
         ch.name = name;
         ch.isString = type == CSOUND_STRING_CHANNEL;
-        if (! ch.isString)
+        ch.isAudio  = type == CSOUND_AUDIO_CHANNEL;
+        if (ch.isAudio)
+        {
+            // Canale audio (chnset asig, "x"): puntatore al buffer di ksmps
+            // campioni; il Monitor ne legge l'RMS dal message thread (una
+            // lettura "sporca" mentre il thread audio scrive e' innocua per
+            // un meter, e nessun lock tocca l'audio).
+            void* p = nullptr;
+            if (CsoundAPI::csoundGetChannelPtr != nullptr
+                && CsoundAPI::csoundGetChannelPtr (cs, &p, info.name, CSOUND_AUDIO_CHANNEL | CSOUND_OUTPUT_CHANNEL) == 0)
+                ch.valuePtr = static_cast<cs_float*> (p);
+        }
+        else if (! ch.isString)
         {
             ch.hasHints = info.hints.behav != CSOUND_CONTROL_CHANNEL_NO_HINTS && info.hints.max > info.hints.min;
             ch.hintMin = info.hints.min;
@@ -2848,6 +2860,8 @@ double CsoundAudioProcessor::readMonitorValue (const MonitorChannel& ch) const
 {
     if (ch.valuePtr == nullptr || activeCsound.load() == nullptr || ! ready.load())
         return 0.0;
+    if (ch.isAudio)
+        return csoundMonitor::blockRms (ch.valuePtr, csKsmps);   // RMS lineare dell'ultimo blocco
     return (double) *ch.valuePtr;
 }
 

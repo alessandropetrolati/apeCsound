@@ -336,6 +336,7 @@ private:
             juce::Rectangle<int> closeButtonBounds() const;
 
             std::function<void()> onClose;
+
             juce::Image icon;
             LinkRow githubRow, websiteRow;
 
@@ -385,6 +386,38 @@ private:
 
             std::function<void()> onClose;
 
+            // Navigazione: indice delle sezioni ("# " e "## ") a sinistra
+            // quando la finestra e' larga, altrimenti un bottone "Contents"
+            // nell'intestazione che apre lo stesso elenco come menu. La voce
+            // della sezione visibile e' evidenziata mentre si scorre.
+            void jumpTo (int anchorIndex);
+            void updateActiveAnchor();
+            void showContentsMenu();
+            void rebuildToc();
+
+            struct TocEntry final : public juce::Button
+            {
+                TocEntry (const juce::String& title, int level, int anchorIndex);
+                void paintButton (juce::Graphics& g, bool highlighted, bool down) override;
+                int level = 0, anchorIndex = 0;
+                bool active = false;
+            };
+
+            struct GuideViewport final : public juce::Viewport
+            {
+                std::function<void()> onScroll;
+                void visibleAreaChanged (const juce::Rectangle<int>&) override { if (onScroll) onScroll(); }
+            };
+
+            juce::Viewport tocViewport;
+            juce::Component tocList;
+            std::vector<std::unique_ptr<TocEntry>> tocEntries;
+            juce::TextButton contentsButton { "Contents" };
+            int activeAnchor = -1;
+            bool sidebarMode = true;
+            static constexpr int sidebarWidth = 252;
+            static constexpr int sidebarMinWindowWidth = 820;
+
             // Testo della guida impaginato a blocchi (vedi Content): titoli,
             // paragrafi, elenchi con rientro sospeso, colonna di lettura a
             // larghezza massima. Dentro un Viewport: scorre con rotellina,
@@ -398,7 +431,7 @@ private:
 
                 struct Block
                 {
-                    enum class Type { h1, h2, para, bullet } type = Type::para;
+                    enum class Type { h1, h2, para, bullet, code } type = Type::para;
                     int level = 0;            // bullet: 0, 1 (sotto-elenco)
                     juce::AttributedString text;
                     juce::TextLayout layout;
@@ -408,9 +441,14 @@ private:
                 std::vector<Block> blocks;
                 int laidOutWidth = -1;
                 float columnX = 0.0f, columnWidth = 0.0f;
+
+                // Titoli di sezione ("# " livello 0, "## " livello 1) per l'indice.
+                struct Anchor { juce::String title; int level = 0; int blockIndex = 0; };
+                std::vector<Anchor> anchors;
+                float anchorY (int i) const { return blocks[(size_t) anchors[(size_t) i].blockIndex].area.getY(); }
             };
 
-            juce::Viewport viewport;
+            GuideViewport viewport;
             Content content;
         };
 
@@ -489,6 +527,37 @@ private:
     };
 
     AudioSettingsView audioSettingsView;
+
+    // "Channels..." (menu Parameters, Cmd+4): overlay modale come la Guida,
+    // con dentro CsoundChannelsPanel. Si chiude con la x, Esc o un clic
+    // fuori dalla scheda. I menu di Map (CsoundActionSheet) si aprono sopra.
+    struct ChannelsView final : public juce::Component
+    {
+        explicit ChannelsView (CsoundAudioProcessor& processor);
+        void paint (juce::Graphics& g) override;
+        void resized() override;
+        void mouseUp (const juce::MouseEvent& e) override;
+        bool keyPressed (const juce::KeyPress& key) override;
+
+        void show();
+        void hide();
+
+        struct Card final : public juce::Component
+        {
+            explicit Card (CsoundAudioProcessor& processor);
+            void paint (juce::Graphics& g) override;
+            void resized() override;
+            void mouseUp (const juce::MouseEvent& e) override;
+            juce::Rectangle<int> closeButtonBounds() const;
+
+            std::function<void()> onClose;
+            CsoundChannelsPanel panel;
+        };
+
+        Card card;
+        static constexpr int cardMaxWidth  = 760;
+        static constexpr int cardMaxHeight = 640;
+    };
 
     // Barra Cerca/Sostituisci (richiesta esplicita) sotto la toolbar, aperta
     // e chiusa dal bottone lente (findButton). La ricerca vera e propria e
@@ -940,15 +1009,15 @@ private:
     void toggleGraphs();
 
     // Scheda "Channels" (diagnostica dei canali, vedi CsoundChannelsPanel.h):
-    // stesso posto di Graphs, i due si escludono a vicenda.
-    CsoundChannelsPanel channelsPanel { audioProcessor };
-    bool showingChannels = false;
+    // finestra modale come la Guida (ChannelsView), non piu' un pannello in
+    // basso: si consulta, si mappa, si chiude. Dichiarata dopo
+    // audioProcessor (la usa nel costruttore).
+    ChannelsView channelsView { audioProcessor };
     void toggleChannels();
     // Il pannello di destra della fascia in basso, se ce n'e' uno.
     juce::Component* bottomRightPanel() noexcept
     {
-        return showingChannels ? static_cast<juce::Component*> (&channelsPanel)
-             : showingGraphs   ? static_cast<juce::Component*> (&graphsPanel) : nullptr;
+        return showingGraphs ? static_cast<juce::Component*> (&graphsPanel) : nullptr;
     }
     int graphsWidth = 460;
     static constexpr int graphsMinWidth = 240;

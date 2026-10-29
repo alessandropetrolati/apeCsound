@@ -63,6 +63,8 @@ namespace CsoundParameterGroups
     {
         juce::StringArray groupNames;                  // nell'ordine di prima apparizione
         std::map<juce::String, Placement> channels;    // canale -> gruppo/ordine (primo chnget)
+        std::map<juce::String, Placement> written;     // canale -> gruppo/ordine (primo chnset): le card del Monitor
+                                                       // di un canale scritto sotto un @group vanno in quel gruppo
         std::vector<XYPad> xyPads;                     // "; @xy "X" "Y"" nell'ordine del codice
 
         bool hasGroups() const { return ! groupNames.isEmpty(); }
@@ -418,6 +420,54 @@ namespace CsoundParameterGroups
                 if (channel.isNotEmpty() && out.channels.find (channel) == out.channels.end())
                     out.channels[channel] = { currentGroup, order++ };
             }
+
+            // Tutti i chnset della riga: il nome e' il letterale DOPO la prima
+            // virgola dell'opcode (chnset kval, "x" / chnset(kval, "x") /
+            // chnset limit(k, 0, 1), "x"): le virgole dentro le parentesi
+            // dell'espressione non contano.
+            searchFrom = 0;
+            while (true)
+            {
+                const int at = codePart.indexOf (searchFrom, "chnset");
+                if (at < 0)
+                    break;
+                searchFrom = at + 6;
+
+                if (at > 0 && (juce::CharacterFunctions::isLetterOrDigit (codePart[at - 1]) || codePart[at - 1] == '_'))
+                    continue;
+                int p = at + 6;
+                if (p < codePart.length() && juce::CharacterFunctions::isLetterOrDigit (codePart[p]))
+                    continue; // chnsetks, chnseti...
+                if (p < codePart.length() && codePart[p] == ':')
+                {
+                    ++p;
+                    while (p < codePart.length() && juce::CharacterFunctions::isLetterOrDigit (codePart[p])) ++p;
+                }
+                while (p < codePart.length() && (codePart[p] == ' ' || codePart[p] == '\t')) ++p;
+
+                int base = 0, depth = 0;
+                if (p < codePart.length() && codePart[p] == '(') { base = depth = 1; ++p; }
+
+                bool commaSeen = false;
+                juce::String channel;
+                for (; p < codePart.length(); ++p)
+                {
+                    const auto c = codePart[p];
+                    if (c == '(') { ++depth; continue; }
+                    if (c == ')') { if (--depth < base) break; continue; }
+                    if (c == ',' && depth == base) { commaSeen = true; continue; }
+                    if (c == '"')
+                    {
+                        const int close = codePart.indexOfChar (p + 1, '"');
+                        if (close < 0) break;
+                        if (commaSeen && depth == base) { channel = codePart.substring (p + 1, close); break; }
+                        p = close; // stringa nel valore (chnset "testo", "x"): si salta
+                    }
+                }
+
+                if (channel.isNotEmpty() && out.written.find (channel) == out.written.end())
+                    out.written[channel] = { currentGroup, order++ };
+            }
         }
 
         // Gruppi dalla GUI Cabbage (groupbox/plant): SOLO per i canali che il
@@ -439,6 +489,12 @@ namespace CsoundParameterGroups
                     it->second.group = gi;
                 else
                     out.channels[channel] = { gi, widgetOrder++ };
+
+                // Meter/display Cabbage dentro un groupbox: anche la card del
+                // Monitor va nel gruppo, se il codice non l'ha gia' deciso.
+                auto w = out.written.find (channel);
+                if (w != out.written.end() && w->second.group < 0)
+                    w->second.group = gi;
             }
         }
 

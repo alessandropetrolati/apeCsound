@@ -1,6 +1,92 @@
 APECSOUND - RELEASE NOTES
 =========================
 
+1.0.6 (in progress)
+-------------------
+
+BREAKING CHANGES
+
+  * Monitor: the chn_k attributes of 1.0.5 are no longer read. Only
+    "spark" is left. What changes in a patch written for 1.0.5:
+      - "db"      the channel is shown as a plain number on an adaptive
+                  bar, no longer in dB. For a level meter write the audio
+                  itself: chnset asig, "Level" (segmented meter in dB).
+      - "int"     no effect needed any more: whole numbers are shown
+                  without decimals by themselves. Fractional values keep
+                  their decimals (round them in the code: chnset round(k)).
+      - "hidden"  the channel is shown. To keep it out of the Monitor,
+                  don't write it (or remove the chnset used for debugging).
+      - "group:"  channels are no longer joined by attribute: give them the
+                  same prefix and an index (PeakL/PeakR -> Peak1/Peak2).
+      - "led", "note", "pitch", "fmt:", "unit:" (added during 1.0.6
+                  development, never released) are gone: lamps are
+                  recognised from the 0/1 values, formatted text is built
+                  with sprintfk.
+    Patches still load and run unchanged: Csound itself ignores the
+    attributes, only the look of their Monitor cards changes.
+  * Factory examples Test/MonitorTest.csd and Test/MonitorStressTest.csd
+    rewritten without those attributes; on first launch the new versions
+    are installed (a copy you modified is not overwritten).
+
+GUIDE
+
+  * The apeCsound Guide has a Contents list: a sidebar with every section
+    on wide windows (the section you are reading is highlighted while you
+    scroll), a Contents button with the same list on narrow windows and
+    on iPhone. Code examples are shown as code blocks.
+  * Reorganised in shorter sections; new sections: Monitor (every kind of
+    display, ranges and attributes with chn_k, what is shown and what is
+    not) and Accessibility (VoiceOver and keyboard).
+
+PARAMETERS PANEL
+
+  * Monitor, simpler: no attributes to learn. The look of a card comes
+    from the channel itself - its type, its chn_k range, the values it
+    takes, its name - and each kind now has its own look and icon:
+    solid level bar with a ruler (declared range), a ring sliding on a
+    dashed track between the seen min/max (adaptive), a half-moon dial
+    with a needle, zero at the top (bipolar),
+    segmented green/yellow/red meter in dB with peak hold (audio), glowing
+    lamp with ON/OFF (0/1 channels), LCD-like display (strings), filled
+    curve (sparkline), a row of cells with the current one lit (steps: a
+    whole-number range of 3..33 values that only receives whole numbers,
+    like the position of a sequencer).
+  * Monitor audio meters: audio channels written with chnset asig (or
+    chnmix) appear as level meters with meter ballistics; indexed names
+    (Out1..Out8) become one card of vertical segmented meters. Read by the
+    panel from the channel buffer, nothing added to the audio thread.
+  * Monitor lamps: a channel that only takes 0 and 1 (Overload, Gate, the
+    steps of a sequencer) becomes a lamp by itself after a second; in
+    multi-bar cards a row of lights.
+  * The only chn_k attribute left is "spark" (see BREAKING CHANGES).
+  * Monitor cards inside groups: a chnset written below a "; @group Name"
+    line shows its card in that group, mixed with the parameters in the
+    order of the code (a meter right under the slider it belongs to).
+    Cabbage meters in a groupbox follow their group too. Only the cards
+    without a group stay in the Monitor group at the bottom.
+  * Channels (the diagnostic list of every engine channel, with Map and
+    Unmap) opens as a window over the editor, like the Guide, instead of
+    taking the place of Graphs at the bottom; close it with the x, Esc or a
+    click outside. Its menu entry moved from the main menu to the
+    Parameters menu (+): "Channels...", still Cmd+4.
+  * The Monitor group has its own neutral grey colour, and keeps its open/closed state apart from a parameter group that
+    happens to be called "Monitor".
+
+EXAMPLES
+
+  * Test/MonitorTest.csd rewritten: every kind of Monitor display once
+    (fixed range, adaptive, bipolar, audio meter, multi-meter, lamp, row
+    of lamps, text, sparkline, multi-bar, cards in a group, created at run
+    time), with comments, plus what is deliberately not shown.
+  * Test/MonitorStressTest.csd: no attributes but spark.
+  * Test/MonitorTest.csd: one card per kind, no duplicates (Step = the
+    position, Light = which steps play in a 4-pattern rhythm with rests;
+    one text card for note, tempo and pattern; Drift stays positive so
+    that Pan is the only bipolar bar; the row of lamps is also the card
+    created at run time, 3 seconds after Apply).
+  * Test/MonitorStressTest.csd: note names in a string array (gS...), as
+    Csound 7 requires.
+
 1.0.5
 -----
 

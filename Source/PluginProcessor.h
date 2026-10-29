@@ -482,7 +482,8 @@ public:
         bool hasHints = false;
         double hintMin = 0.0, hintMax = 1.0;
         juce::String attributes;      // 11o argomento di chn_k ("db spark group:Name"...), vedi CsoundMonitorLayout.h
-        cs_float* valuePtr = nullptr; // numerico: letto direttamente
+        cs_float* valuePtr = nullptr; // numerico: letto direttamente; audio: inizio del buffer di ksmps campioni
+        bool isAudio = false;         // chnset asig: mostrato come meter RMS in dB
     };
     std::vector<MonitorChannel> listMonitorChannels();
 

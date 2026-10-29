@@ -1710,6 +1710,10 @@ private:
         juce::String name;
         int count = 0;
         bool collapsed = false;
+        // Gruppo speciale "Monitor" (sola lettura, canali scritti dal codice):
+        // colore proprio (grigio neutro), cosi' non si confonde con un
+        // gruppo di parametri che si chiami "Monitor".
+        bool special = false;
         std::function<void()> onToggle;
         std::function<void (bool collapseAll)> onToggleAll;
     };
@@ -1718,8 +1722,15 @@ private:
     {
         juce::String name;
         std::vector<juce::Component*> rows;
+        std::vector<int> rowOrders;          // posizione nel codice (primo chnget), parallela a rows
         std::unique_ptr<GroupHeader> header;
     };
+
+    // Card del Monitor che stanno in un gruppo (il loro chnset e' sotto un
+    // "; @group", o il widget Cabbage e' in un groupbox): canale -> (nome
+    // del gruppo, posizione nel codice). Vedi assignMonitorGroups().
+    std::map<juce::String, std::pair<juce::String, int>> monitorPlacement;
+    void assignMonitorGroups();
 
     std::vector<DisplayGroup> displayGroups;
 
@@ -1740,24 +1751,46 @@ private:
             juce::String name, label, text;   // label: indice del membro nelle card multiple
             int channelIndex = -1;            // in monitorChannels
             bool isString = false, hasHints = false;
+            bool isAudio = false;             // canale audio: RMS in dB con balistica da meter
             double value = 0.0, hintMin = 0.0, hintMax = 1.0, seenMin = 0.0, seenMax = 0.0;
+            double peakHold = 0.0;            // audio: picco tenuto (scende lentamente)
+            int peakHoldAge = 0;
             bool seenAny = false;
             std::vector<float> history;       // sparkline: ultimi kHistoryLength valori (ring)
             int historyPos = 0;
+            csoundMonitor::BinaryTracker binary;  // riconoscimento automatico della spia
+            bool led = false;                     // mostrato come spia (solo 0/1)
+            csoundMonitor::IntegerTracker ints;   // riconoscimento automatico dei passi
+            bool steps = false;                   // mostrato a passi (interi in un range intero)
         };
 
         void paint (juce::Graphics& g) override;
         int preferredHeight() const noexcept;
         juce::String displayValue (const Entry& e) const;
         void barRange (const Entry& e, double& lo, double& hi) const;
-        double shown (const Entry& e) const;       // valore come lo misura la barra (dB se "db")
+        double shown (const Entry& e) const;       // valore come lo misura la barra (dB per l'audio)
+        bool isLed (const Entry& e) const;         // vedi csoundMonitor::showsAsLed
+        csoundMonitor::Kind kindOf (const Entry& e) const;
+
+        // Un renderer per tipo: ciascuno ha il suo aspetto (vedi il .cpp).
+        void paintRange    (juce::Graphics&, juce::Rectangle<int>, const Entry&) const;   // barra piena con righello
+        void paintAdaptive (juce::Graphics&, juce::Rectangle<int>, const Entry&) const;   // indice su binario tratteggiato
+        void paintBipolar  (juce::Graphics&, juce::Rectangle<int>, const Entry&) const;   // quadrante a lancetta
+        void paintAudio (juce::Graphics&, juce::Rectangle<int>, const Entry&) const;
+        void paintSpark (juce::Graphics&, juce::Rectangle<int>, const Entry&) const;
+        void paintText  (juce::Graphics&, juce::Rectangle<int>, const Entry&) const;
+        void paintLamp  (juce::Graphics&, juce::Rectangle<int>, const Entry&) const;
+        void paintSteps (juce::Graphics&, juce::Rectangle<int>, const Entry&) const;
+        void paintMulti (juce::Graphics&, juce::Rectangle<int>) const;
 
         juce::String title;
         bool multi = false;
-        csoundMonitor::Attributes attrs;           // del primo canale della card
+        juce::String groupName;                    // vuoto = nel gruppo Monitor in fondo
+        int order = 0;                             // posizione del chnset nel codice (dentro il gruppo)
+        csoundMonitor::Attributes attrs;           // del primo canale della card ("spark")
         std::vector<Entry> entries;
         static constexpr int kHistoryLength = 100; // 5 s a 20 Hz
-        static constexpr int height = 46;          // card semplice (barra o testo)
+        static constexpr int height = 50;          // card semplice
     };
     struct TickTimer final : public juce::Timer
     {
@@ -1773,6 +1806,9 @@ private:
     void refreshMonitorList();
     void updateMonitorValues();
     static constexpr int kMonitorCollapsedByDefaultAbove = 8;
+    // Chiave dello stato aperto/chiuso del Monitor in collapsedGroups:
+    // NON "Monitor", che potrebbe essere il nome di un gruppo dell'utente.
+    static constexpr const char* kMonitorStateKey = "\x01monitor";
     bool rebuildPending = false; // vedi sessionEditedByUndoRedo
     void scheduleDeferredRebuild();
     std::set<juce::String> collapsedGroups;

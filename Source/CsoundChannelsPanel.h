@@ -8,7 +8,7 @@
 class CsoundAudioProcessor;
 
 /**
-    Scheda "Channels" (menu principale > Show Channels, Cmd+4): tutti i
+    Scheda "Channels" (menu Parameters > Channels..., Cmd+4): tutti i
     canali del motore a runtime - nome, tipo (k/S/a/f), direzione (in = lo
     legge chnget, out = lo scrive chnset), valore corrente e origine (chi lo
     scrive). I canali LETTI DA NESSUNO SCRITTI stanno in testa, in giallo:
@@ -16,8 +16,8 @@ class CsoundAudioProcessor;
     slot finiti, nome sbagliato). "Map" crea il parametro nel primo slot
     libero (Float/Int/Bool/Choice).
 
-    Occupa lo stesso posto del pannello Graphs (in basso, accanto alla
-    consolle): i due si escludono a vicenda. Elenco rifatto 2 volte al
+    Mostrata in una finestra modale (CsoundAudioProcessorEditor::ChannelsView,
+    menu Parameters > Channels..., Cmd+4). Elenco rifatto 2 volte al
     secondo, valori 10 volte al secondo, solo mentre e' visibile.
 */
 class CsoundChannelsPanel final : public juce::Component,

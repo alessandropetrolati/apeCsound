@@ -275,11 +275,7 @@ void CsoundChannelsPanel::paint (juce::Graphics& g)
     g.fillAll (kPanelBg);
 
     auto header = getLocalBounds().removeFromTop (headerHeight).reduced (10, 0);
-    g.setColour (kTextMuted);
-    g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
-    g.drawText ("CHANNELS", header.removeFromLeft (80), juce::Justification::centredLeft, false);
-
-    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+    g.setFont (juce::Font (juce::FontOptions (11.5f)));
     juce::String text;
     if (summary.total > 0)
     {
@@ -289,7 +285,7 @@ void CsoundChannelsPanel::paint (juce::Graphics& g)
             text << ", " << summary.orphans << " read but never written";
     }
     g.setColour (summary.orphans > 0 ? kWarn : kTextMuted);
-    g.drawFittedText (text, header, juce::Justification::centredRight, 1);
+    g.drawFittedText (text, header, juce::Justification::centredLeft, 1);
 
     if (rows.empty())
     {

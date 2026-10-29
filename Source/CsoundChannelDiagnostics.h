@@ -5,7 +5,7 @@
 #include <vector>
 
 /*
-    Scheda "Channels" (menu principale > Show Channels): TUTTI i canali che
+    Scheda "Channels" (menu Parameters > Channels...): TUTTI i canali che
     il motore conosce a runtime, con tipo, direzione, valore e "origine" -
     chi li scrive. La classificazione e' qui, pura, per i test unitari
     (Tests/CsoundUnitTests.cpp); la lettura dal motore sta in
