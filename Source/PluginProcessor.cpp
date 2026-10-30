@@ -3243,6 +3243,11 @@ void CsoundAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         e->setAttribute ("value",   (double) p.getProperty ("value"));
     }
 
+    // Layout dell'editor (vedi editorViewState): non fa parte della sessione.
+    if (const auto view = getEditorViewState(); view.isValid())
+        if (auto viewXml = view.createXml())
+            root.addChildElement (viewXml.release());
+
     copyXmlToBinary (root, destData);
 }
 
@@ -3516,6 +3521,10 @@ void CsoundAudioProcessor::setStateInformation (const void* data, int sizeInByte
 
     if (! xml->hasTagName (kStateRoot))
         return;
+
+    // Layout dell'editor salvato con l'istanza (vedi editorViewState).
+    if (auto* view = xml->getChildByName ("EDITOR_VIEW"))
+        setEditorViewState (juce::ValueTree::fromXml (*view));
 
     // --- 1. Risolve il file collegato ---------------------------------
     const auto csdPath = xml->getStringAttribute ("csd");

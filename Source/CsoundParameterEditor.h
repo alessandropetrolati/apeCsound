@@ -1938,6 +1938,15 @@ private:
     // aperto/chiuso - vedi rebuildDisplayGroups; altrimenti resta lo stato
     // scelto dall'utente.
     juce::String lastGroupSignature;
+public:
+    /** Gruppi chiusi, Monitor chiuso / compatto: parte del layout salvato
+        dall'editor (vedi CsoundAudioProcessorEditor::saveViewState). */
+    juce::ValueTree getViewState() const;
+    void applyViewState (const juce::ValueTree& state);
+    /** Chiamata quando l'utente apre/chiude un gruppo o cambia il Monitor. */
+    std::function<void()> onViewStateChanged;
+    std::function<void()> onResetLayoutRequested;   // Config > Reset Layout
+private:
     static constexpr int kMaxGroupsOpenByDefault = 4; // per nome, finche' il pannello esiste
     static constexpr int groupHeaderHeight = 32;
     static constexpr int groupInsetH = 8;       // rientro delle card dentro la cornice

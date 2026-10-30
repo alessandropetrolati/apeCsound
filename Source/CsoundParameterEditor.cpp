@@ -4020,6 +4020,14 @@ void CsoundParameterMappingPanel::showPanelMenu()
             item.icon = CsoundActionSheetIcon::textSmaller;
             config.subItems.push_back (item);
         }
+        config.subItems.push_back (CsoundActionSheetItem::separator());
+        {
+            CsoundActionSheetItem item;
+            item.id = 161; item.text = "Reset Layout";
+            item.enabled = onResetLayoutRequested != nullptr;
+            item.icon = CsoundActionSheetIcon::resetDefault;
+            config.subItems.push_back (item);
+        }
        #if JUCE_DEBUG
         // Solo nelle build Debug: test unitari (Tests/CsoundUnitTests.cpp),
         // esito nella consolle. In Release restano "apeCsound --run-tests"
@@ -4048,9 +4056,10 @@ void CsoundParameterMappingPanel::showPanelMenu()
         CsoundActionSheetItem item;
         item.id = 117; item.text = "apeCsound Guide";
         item.enabled = onGuideRequested != nullptr;
-        item.icon = CsoundActionSheetIcon::info;
+        item.icon = CsoundActionSheetIcon::help;
         items.push_back (item);
     }
+    items.push_back (CsoundActionSheetItem::separator());   // About a parte: non e' documentazione
     {
         CsoundActionSheetItem item;
         item.id = 113; item.text = "About";//About " + juce::String (ProjectInfo::projectName);
@@ -4093,6 +4102,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 118: if (safeThis->onFontSizeChangeRequested) safeThis->onFontSizeChangeRequested (+1); break;
             case 119: if (safeThis->onFontSizeChangeRequested) safeThis->onFontSizeChangeRequested (-1); break;
             case 160: if (safeThis->onRunSelfTestsRequested) safeThis->onRunSelfTestsRequested(); break;
+            case 161: if (safeThis->onResetLayoutRequested) safeThis->onResetLayoutRequested(); break;
             case 120: if (safeThis->onToggleDarkEditorRequested) safeThis->onToggleDarkEditorRequested(); break;
             case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
             case 150: if (safeThis->onToggleGraphsRequested) safeThis->onToggleGraphsRequested(); break;
@@ -4230,6 +4240,7 @@ void CsoundParameterMappingPanel::setAllGroupsCollapsed (bool collapsed)
 
         if (collapsed) collapsedGroups.insert (group.name);
         else           collapsedGroups.erase (group.name);
+        if (onViewStateChanged) onViewStateChanged();
     }
 
     // Anche il Monitor (menu "+" e Option+click su un'intestazione).
@@ -4239,6 +4250,7 @@ void CsoundParameterMappingPanel::setAllGroupsCollapsed (bool collapsed)
         monitorHeader->repaint();
         if (collapsed) collapsedGroups.insert (kMonitorStateKey);
         else           collapsedGroups.erase (kMonitorStateKey);
+        if (onViewStateChanged) onViewStateChanged();
     }
 
     resized();
@@ -5264,7 +5276,11 @@ void CsoundParameterMappingPanel::rebuildDisplayGroups()
         if (signature != lastGroupSignature)
         {
             lastGroupSignature = signature;
+            const bool monitorClosed  = collapsedGroups.count (kMonitorStateKey) > 0;
+            const bool monitorCompact = collapsedGroups.count (kMonitorCompactKey) > 0;
             collapsedGroups.clear();
+            if (monitorClosed)  collapsedGroups.insert (kMonitorStateKey);
+            if (monitorCompact) collapsedGroups.insert (kMonitorCompactKey);
             if (presentNames.size() > kMaxGroupsOpenByDefault)
                 for (int i = 1; i < presentNames.size(); ++i)
                     collapsedGroups.insert (presentNames[i]);
@@ -5299,6 +5315,7 @@ void CsoundParameterMappingPanel::rebuildDisplayGroups()
             header->collapsed = ! header->collapsed;
             if (header->collapsed) collapsedGroups.insert (name);
             else                   collapsedGroups.erase (name);
+            if (onViewStateChanged) onViewStateChanged();
             header->repaint();
             resized();
         };
@@ -5482,10 +5499,47 @@ namespace
 //==============================================================================
 // Card del Monitor: canale fermo, reset, info e menu.
 
+juce::ValueTree CsoundParameterMappingPanel::getViewState() const
+{
+    juce::ValueTree v ("PANEL");
+    juce::StringArray closed;
+    for (const auto& name : collapsedGroups)
+        closed.add (name);
+    v.setProperty ("collapsed", closed.joinIntoString ("\n"), nullptr);
+    v.setProperty ("groups", lastGroupSignature, nullptr);
+    return v;
+}
+
+void CsoundParameterMappingPanel::applyViewState (const juce::ValueTree& state)
+{
+    if (! state.isValid())
+        return;
+    juce::StringArray closed;
+    closed.addLines (state.getProperty ("collapsed").toString());
+    closed.removeEmptyStrings();
+    collapsedGroups.clear();
+    for (const auto& name : closed)
+        collapsedGroups.insert (name);
+    // stessi gruppi di quando e' stato salvato: niente default "nuovo file"
+    // che riaprirebbe/chiuderebbe tutto
+    lastGroupSignature = state.getProperty ("groups").toString();
+
+    const bool compact = collapsedGroups.count (kMonitorCompactKey) > 0;
+    for (auto& r : monitorRows)
+        r->compact = compact;
+    if (monitorHeader != nullptr)
+    {
+        monitorHeader->compact = compact;
+        monitorHeader->collapsed = collapsedGroups.count (kMonitorStateKey) > 0;
+    }
+    rebuildUnifiedRows();
+}
+
 void CsoundParameterMappingPanel::setMonitorCompact (bool compact)
 {
     if (compact) collapsedGroups.insert (kMonitorCompactKey);
     else         collapsedGroups.erase (kMonitorCompactKey);
+    if (onViewStateChanged) onViewStateChanged();
     for (auto& r : monitorRows)
         r->compact = compact;
     if (monitorHeader != nullptr)
@@ -6506,6 +6560,7 @@ void CsoundParameterMappingPanel::refreshMonitorList()
             monitorHeader->collapsed = ! monitorHeader->collapsed;
             if (monitorHeader->collapsed) collapsedGroups.insert (kMonitorStateKey);
             else                          collapsedGroups.erase (kMonitorStateKey);
+            if (onViewStateChanged) onViewStateChanged();
             monitorHeader->repaint();
             resized();
         };
@@ -6878,7 +6933,14 @@ void CsoundParameterMappingPanel::resized()
         snapshotsButton.setBounds (bar.removeFromRight (d).withSizeKeepingCentre (d, d));
         int addX = bar.getRight() - 10 - d;   // default: subito a sinistra dello snapshot
         if (menuButtonCentreX > 0)
-            addX = juce::jlimit (bar.getX() + 60, snapshotsButton.getX() - 4 - d, menuButtonCentreX - d / 2);
+        {
+            // Limiti SEMPRE ordinati (BUG iOS: con il pannello stretto - o
+            // ancora a larghezza 0 al primo layout - il minimo superava il
+            // massimo e jlimit faceva scattare l'asserzione).
+            const int hi = snapshotsButton.getX() - 4 - d;
+            const int lo = juce::jmin (bar.getX() + 60, hi);
+            addX = juce::jlimit (lo, hi, menuButtonCentreX - d / 2);
+        }
         addButton.setBounds (addX, bar.getCentreY() - d / 2, d, d);
         titleLabel.setBounds (bar.withRight (addX - 6).withTrimmedLeft (-4));
     }

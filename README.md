@@ -33,6 +33,7 @@ Developed by **Alessandro Petrolati** — [apeSoft](https://www.apesoft.it).
 - **Apply** recompiles without restarting the host; the button is outlined in red while the editor differs from the running code. **Pause** stops Csound and lets the audio pass through.
 - **Inline errors**: the line of a compile error (and of INIT/PERF errors at run time) is marked with a red dot, red background and wavy underline; the help bar shows the message.
 - Find / Replace, Comment / Uncomment, re-indent, keyboard shortcuts, undo / redo shared with the Parameters panel.
+- **Jump to Definition** (Cmd+click, like Xcode): variables, globals, UDOs, instruments, macros, channels and labels; a "Back to line N" button and Cmd+Option+Left to go back.
 - A custom JUCE code view (`Source/CsoundCodeView.*`), the same on macOS, Windows, Linux and iPadOS: smooth scrolling (wheel, trackpad, one-finger pan with inertia), line numbers, and on touch screens tap to place the caret, long press to select with handles and a magnifier.
 
 ### DAW parameters
@@ -42,16 +43,17 @@ A fixed pool of **176 host-automatable parameters** can be mapped to Csound chan
 |---|---|---|
 | Float | 64 | min, max, default, skew, step |
 | Int | 32 | min, max, default |
-| Bool | 64 | default |
-| Choice | 16 | up to 16 labelled options, default |
+| Button (Bool) | 64 | Toggle or Momentary, INIT, optional EVENT ON / OFF score lines |
+| Menu (Choice) | 16 | up to 16 labelled options, default |
 
 - Drag a parameter onto the code to insert the matching `chnget` line.
 - Two-way: `chnset` on a mapped channel moves the parameter (slider, host, automation).
 - The mapping is saved **inside the `.csd`**, in an `<apeCsoundParams>` section after `</CsoundSynthesizer>`. Csound ignores it, so the file stays a valid, portable `.csd`.
 - **XY pad**: `; @xy "X" "Y"` shows two Float parameters as one pad card; Cabbage `xypad` and CsoundQt XY controllers become pads, and Cabbage `groupbox`/`plant` containers become groups, automatically.
-- **Groups**: a `; @group Name` comment in the code puts the parameters read below it (sliders, toggles and menus alike) under one collapsible label in the panel; parameters without a group go to "Other".
-- **Monitor**: channels written with `chnset` (not parameters) are shown read-only at the bottom of the panel - meters, displays, labels. Indexed channels (`Band_1..Band_8`) become one multi-bar card; the 11th argument of `chn_k` adds attributes (`db`, `spark`, `int`, `hidden`, `group:Name`).
-- **Channels** (Cmd+4): a diagnostic list of every channel the engine knows - type, direction, value and who writes it. Channels the code reads and nobody writes are flagged; **Map** creates the parameter.
+- **Buttons**: Toggle (a switch) or Momentary (on while held). Optional **EVENT ON / OFF** score lines are sent on press and release (a held note `i 10.1 0 -1` / `i -10.1 0 0` plays like a key), or the code reacts to the press with `trigger` (**Copy Trigger Code**).
+- **Groups**: a `; @group Name` comment in the code puts the parameters read below it (sliders, buttons and menus alike) under one collapsible label in the panel; parameters without a group go to "Other".
+- **Monitor**: channels written with `chnset` (not parameters) are shown at the bottom of the panel, or in their `@group`. The look comes from the channel itself - level bar (range from `chn_k`), adaptive track, dial (range through zero), steps, lamp (0/1), text, sparkline (`chn_k` attribute `spark`), segmented audio meter in dB with CLIP. Indexed names (`Band_1..Band_8`) and stereo pairs (`Out_L/Out_R`) become one card. Compact mode, "Copy chn_k Declaration", "no change since Apply".
+- **Channels** (Cmd+4, a window over the editor): a diagnostic list of every channel the engine knows - type, direction, value and who writes it. Channels the code reads and nobody writes are flagged; **Map** creates the parameter.
 - **Snapshots** (camera button in the Parameters panel): named sets of parameter values, stored in the `.csd` with the mapping. Save, recall, overwrite, rename, delete.
 - **Cabbage** (`<Cabbage>`) and **CsoundQt** (`<bsbPanel>`) widgets — sliders, knobs, spin boxes, XY controllers, checkboxes, buttons, menus — are imported as parameters when the file is loaded. The rest of their GUI is ignored and the code is not changed: frontend-specific opcodes (`invalue`, `cabbageGetValue`...) must be replaced with `chnget` / `chnset`. Porting is not guaranteed; see the in-app **apeCsound Guide**.
 
@@ -77,6 +79,9 @@ A fixed pool of **176 host-automatable parameters** can be mapped to Csound chan
 ### Graphs and console
 - **Graphs** panel: function tables and `display` / `dispfft` signals, drawn instead of ASCII graphs; tables are redrawn live when their content changes.
 - **Console** with Csound's messages and errors; repeated messages are summarised to keep the DAW responsive, errors are never hidden. Right-click on the help bar copies the current error.
+
+### Layout
+- Each instance remembers its window size, open panels, divider positions, closed groups and the position in the code, with the DAW project (not in the `.csd`). New instances start from the last layout; **Config > Reset Layout** restores the default.
 
 ### Accessibility
 - Usable with **VoiceOver** on macOS and iOS: named controls, real menus, an accessible code editor and XY pad, full keyboard navigation.

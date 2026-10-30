@@ -32,7 +32,8 @@ enum class CsoundActionSheetIcon
     sun,         // "Light Editor": sole (palette chiara)
     folder,      // "Reveal in Finder": cartella
     waveform,    // "Import Samples...": forma d'onda
-    pencil       // modifica (bottone "edit" a destra di una riga, Rename)
+    pencil,      // modifica (bottone "edit" a destra di una riga, Rename)
+    help         // guida: punto interrogativo in un cerchio ("apeCsound Guide")
 };
 
 /**

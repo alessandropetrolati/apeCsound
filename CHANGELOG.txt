@@ -1,160 +1,164 @@
 APECSOUND - RELEASE NOTES
 =========================
 
-1.0.6 (in progress)
--------------------
+1.0.7 (October 2026)
+--------------------
+
+Buttons that start instruments (Toggle / Momentary, EVENT ON / OFF), a
+Monitor without attributes where every kind of card has its own look,
+Jump to Definition in the code editor, and a layout that is remembered.
+(There is no 1.0.6: the number was skipped.)
 
 BREAKING CHANGES
 
   * Monitor: the chn_k attributes of 1.0.5 are no longer read. Only
     "spark" is left. What changes in a patch written for 1.0.5:
       - "db"      the channel is shown as a plain number on an adaptive
-                  bar, no longer in dB. For a level meter write the audio
-                  itself: chnset asig, "Level" (segmented meter in dB).
-      - "int"     no effect needed any more: whole numbers are shown
-                  without decimals by themselves. Fractional values keep
-                  their decimals (round them in the code: chnset round(k)).
+                  track, no longer in dB. For a level meter write the
+                  audio itself: chnset asig, "Level" (meter in dB).
+      - "int"     no longer needed: whole numbers are shown without
+                  decimals by themselves (round fractional values in the
+                  code: chnset round(k)).
       - "hidden"  the channel is shown. To keep it out of the Monitor,
-                  don't write it (or remove the chnset used for debugging).
-      - "group:"  channels are no longer joined by attribute: give them the
-                  same prefix and an index (PeakL/PeakR -> Peak1/Peak2).
-      - "led", "note", "pitch", "fmt:", "unit:" (added during 1.0.6
-                  development, never released) are gone: lamps are
-                  recognised from the 0/1 values, formatted text is built
-                  with sprintfk.
+                  don't write it.
+      - "group:"  channels are no longer joined by attribute: give them
+                  the same prefix and an index (PeakL/PeakR -> Peak1/Peak2,
+                  or a stereo pair Peak_L/Peak_R).
     Patches still load and run unchanged: Csound itself ignores the
     attributes, only the look of their Monitor cards changes.
-  * Factory examples Test/MonitorTest.csd and Test/MonitorStressTest.csd
-    rewritten without those attributes; on first launch the new versions
-    are installed (a copy you modified is not overwritten).
+  * "Toggle" parameters are now called Button. Nothing changes in the
+    .csd: they are the same 64 Bool slots and load as before.
 
-GUIDE
+BUTTONS
 
-  * The apeCsound Guide has a Contents list: a sidebar with every section
-    on wide windows (the section you are reading is highlighted while you
-    scroll), a Contents button with the same list on narrow windows and
-    on iPhone. Code examples are shown as code blocks.
-  * Reorganised in shorter sections; new sections: Monitor (every kind of
-    display, ranges and attributes with chn_k, what is shown and what is
-    not) and Accessibility (VoiceOver and keyboard).
-
-PARAMETERS PANEL
-
-  * "Toggle" is now called Button (Add Button, BUTTON cards), with a MODE:
-    Toggle (a switch, as before) or Momentary - on while held, off when
-    released; the DAW records press and release and plays them back.
-    Momentary buttons are not randomized and not stored in snapshots.
-  * Button configuration redesigned: MODE (Toggle | Momentary) and INIT
-    (Off | On) side by side as segmented controls - one tap, no menus,
-    touch friendly; INIT is disabled in Momentary but keeps its value for
-    when you go back to Toggle. EVENT ON and EVENT OFF below, full width,
-    with examples as placeholder text.
-  * Button EVENT ON / EVENT OFF (optional, like a CsoundQt event button):
-    score lines sent when the button goes from 0 to 1 (press, switch on,
-    DAW automation) and from 1 to 0 (release, switch off), once per edge.
+  * A Button has a MODE: Toggle (a switch, as before) or Momentary - on
+    while held, off when released. The DAW records press and release and
+    plays them back. Momentary buttons are not randomized and not stored
+    in snapshots (they would come back "pressed").
+  * EVENT ON / EVENT OFF (optional, like a CsoundQt event button): score
+    lines sent when the button goes from 0 to 1 (press, switch on, DAW
+    automation) and from 1 to 0 (release, switch off), once per edge.
     With a held note - ON "i 10.1 0 -1", OFF "i -10.1 0 0" - the button
     plays like a key. Run by a small instrument apeCsound adds to the
-    running engine (not to the .csd), updated as you type; no code to
-    write. Buttons with EVENT lines are not randomized.
-  * Copy Trigger Code (card menu ... of a Button): the other way, as in
-    Cabbage - the lines that start an instrument once per press from your
-    code (trigger + event), visible and portable.
-  * Parameters title on the left (like the Guide and the other views);
-    the + menu button moved to the right, next to Snapshots, in line with
-    the Find button of the main toolbar.
+    running engine (not to the .csd), updated as you type. Buttons with
+    EVENT lines are not randomized.
+  * Copy Trigger Code (card menu ...): the other way, as in Cabbage - the
+    lines that start an instrument once per press from your own code
+    (trigger + event), visible and portable.
+  * New configuration: MODE (Toggle | Momentary) and INIT (Off | On) as
+    segmented controls - one tap, touch friendly; INIT is disabled in
+    Momentary but keeps its value. EVENT ON and EVENT OFF below, full
+    width, with examples as placeholder text.
+
+MONITOR
+
+  * No attributes to learn: the look of a card comes from the channel
+    itself - its type, its chn_k range, its values, its name - and each
+    kind has its own look and icon:
+      level bar with a ruler      range declared with chn_k
+      ring on a dashed track      no range: between the min/max seen
+      half-moon dial, needle      range through zero (LFO, pan)
+      row of cells                whole numbers in a whole range of 3..33
+                                  values (the position of a sequencer)
+      glowing lamp, ON/OFF        a channel that only takes 0 and 1
+      LCD-like display            strings (format them with sprintfk)
+      filled curve                chn_k attribute "spark"
+      segmented meter in dB       audio channels (chnset asig), with peak
+                                  hold and a CLIP lamp
+  * Multi cards by name: Base1, Base2... and stereo pairs Out_L/Out_R,
+    OutL/OutR, MixLeft/MixRight; audio channels get vertical meters,
+    0/1 channels a row of lamps.
+  * CLIP: lights when a sample reaches 0 dBFS and stays on until the card
+    is clicked. The audio thread keeps the sample peak of up to 16
+    monitored audio channels (a few comparisons per ksmps, no locks).
+    Meters follow 0dbfs.
+  * Reading a card: hover for what it is and why it looks like that;
+    right-click (long press on iOS) for "Copy chn_k Declaration" (a ready
+    chn_k line with the range seen so far) and "Reset Observed Range"
+    (also double-click).
+  * "No change since Apply": a card whose channel never changes is dimmed
+    and says so - usually a channel the code creates but never writes.
+  * Compact mode (button in the Monitor header, or Parameters menu >
+    Compact Monitor): one line per card, dozens of channels on screen.
+  * Cards written below a "; @group Name" line sit in that group, next to
+    the parameters; the Monitor group has its own grey colour.
+  * Only the cards on screen are redrawn.
+
+EDITOR
+
+  * Jump to Definition, like Xcode: Cmd+click a name (Ctrl+click on
+    Windows/Linux). A local variable goes to the first line that writes
+    it in its instr/opcode, a global to its first assignment, a UDO to its
+    opcode line, an instrument (event, schedule, scoreline, score lines)
+    to its instr, a macro to its #define, a channel to its chn_k (or first
+    chnget/chnset), a label to its line. With Cmd held the name under the
+    mouse is underlined.
+  * Go Back: the "Back to line N" button at the top right after a jump
+    (it hides itself after a few seconds, a click, an edit or Esc), or
+    Cmd+Option+Left (also Ctrl+Cmd+Left, Ctrl+-; Alt+Left on Windows and
+    Linux). Jump from the caret: Ctrl+Cmd+J (Alt+J). Both are also in the
+    right-click menu and, on touch, in the edit menu of a selected name.
+  * Evaluate (>_) and Clear console sit side by side at the right end of
+    the help bar.
+
+LAYOUT
+
+  * Each instance remembers its layout in the plug-in state (DAW project,
+    standalone app on quit): window size (not on iOS), open panels
+    (Parameters, Console, Graphs), panel widths, console height, closed
+    groups, Monitor closed/compact, and the position in the code (scroll
+    and caret). Not in the .csd; it never marks the session as modified.
+  * A new instance starts from the last layout used. Config > Reset Layout
+    restores the factory layout.
+  * Channels (every engine channel, with Map and Unmap) opens as a window
+    over the editor; its entry moved to the Parameters menu (+) as
+    "Channels...", still Cmd+4.
+  * Parameters title on the left; the + menu button on the right, next to
+    Snapshots, in line with the Find button of the toolbar.
+  * Main menu: apeCsound Guide has its own icon; About is set apart.
+
+IMPORT (CABBAGE AND CSOUNDQT)
+
+  * Cabbage buttons with latched(0) and CsoundQt value buttons without
+    latch become Momentary buttons (they were switches that stayed on).
+  * CsoundQt latch is read from <latch> (the mode), not from <latched>
+    (the saved state, now the INIT of a Toggle): latched buttons no longer
+    start "on" by mistake.
+  * CsoundQt event buttons become Buttons with their score line as EVENT
+    ON - Momentary, or Toggle with latch - and, for a held note (negative
+    duration), an EVENT OFF that stops it as CsoundQt does ("i 11.1 0 -1"
+    -> "i -11.1 0 -1", named instruments too). They are named after their
+    text ("Bell") instead of the generated objectName ("b3682"). The code
+    is not changed.
+
+FIXES
+
   * Done on a new parameter now leaves edit mode (the click was lost when
     the name was confirmed by that same click).
   * Typing the name of a new parameter no longer leaves "a", "ap"... as
     stray channels in the Monitor and in Channels.
-  * Evaluate (>_) and Clear console sit side by side at the right end of
-    the help bar.
-  * Import: Cabbage buttons with latched(0) and CsoundQt value buttons
-    without latch become Momentary buttons (they were switches that
-    stayed on). CsoundQt latch is now read from <latch> (the mode), not
-    from <latched> (the saved state, now the INIT of a Toggle).
-    CsoundQt event buttons become Buttons with their score line as EVENT
-    ON - Momentary, or Toggle with latch - and, for a held note (negative
-    duration), EVENT OFF stops it as CsoundQt does ("i 11.1 0 -1" ->
-    "i -11.1 0 -1", "i \"Drone\" ..." -> "i \"-Drone\" ..."). They are
-    named after their text ("Bell") instead of the generated objectName
-    ("b3682"). The code is not changed.
+  * A momentary press no longer flashes the "moved from outside" dot.
+  * New groups no longer reset the Monitor closed / compact state.
 
-  * Monitor, simpler: no attributes to learn. The look of a card comes
-    from the channel itself - its type, its chn_k range, the values it
-    takes, its name - and each kind now has its own look and icon:
-    solid level bar with a ruler (declared range), a ring sliding on a
-    dashed track between the seen min/max (adaptive), a half-moon dial
-    with a needle, zero at the top (bipolar),
-    segmented green/yellow/red meter in dB with peak hold (audio), glowing
-    lamp with ON/OFF (0/1 channels), LCD-like display (strings), filled
-    curve (sparkline), a row of cells with the current one lit (steps: a
-    whole-number range of 3..33 values that only receives whole numbers,
-    like the position of a sequencer).
-  * Monitor audio meters: audio channels written with chnset asig (or
-    chnmix) appear as level meters with meter ballistics; indexed names
-    (Out1..Out8) become one card of vertical segmented meters. Read by the
-    panel from the channel buffer.
-  * Monitor CLIP: every audio meter has a CLIP lamp that lights when a
-    sample reaches 0 dBFS and stays on until the card is clicked. The
-    audio thread keeps the sample peak of the monitored audio channels
-    (up to 16, a few comparisons per ksmps, no locks): a block read 20
-    times per second by the panel would miss almost every overload.
-  * Monitor audio meters follow 0dbfs (they assumed 0dbfs = 1).
-  * Monitor, reading a card: hover a card to read what it is and why it
-    looks like that; right-click (long press on iOS) for its menu with
-    "Copy chn_k Declaration" (a ready-made chn_k line with the range seen
-    so far, to paste in the code) and "Reset Observed Range" (also
-    double-click: min/max seen, peak hold, sparkline history).
-  * Monitor compact mode: a button in the Monitor header (also Parameters
-    menu > Compact Monitor) turns every card into one line - icon, name, a
-    small indicator of its kind, the value - so dozens of channels fit on
-    screen.
-  * Monitor, "no change since Apply": a card whose channel has not changed
-    for two seconds after Apply is dimmed and says so - almost always a
-    channel the code creates but never writes (a chnset that never runs,
-    a misspelt name, a name built at run time).
-  * Monitor stereo pairs: Out_L/Out_R, Out-left/Out-right, OutL/OutR,
-    MixLeft/MixRight become one card with two meters labelled L and R,
-    like the indexed names (Out1..Out8).
-  * Monitor lamps: a channel that only takes 0 and 1 (Overload, Gate, the
-    steps of a sequencer) becomes a lamp by itself after a second; in
-    multi-bar cards a row of lights.
-  * The only chn_k attribute left is "spark" (see BREAKING CHANGES).
-  * Monitor cards inside groups: a chnset written below a "; @group Name"
-    line shows its card in that group, mixed with the parameters in the
-    order of the code (a meter right under the slider it belongs to).
-    Cabbage meters in a groupbox follow their group too. Only the cards
-    without a group stay in the Monitor group at the bottom.
-  * Channels (the diagnostic list of every engine channel, with Map and
-    Unmap) opens as a window over the editor, like the Guide, instead of
-    taking the place of Graphs at the bottom; close it with the x, Esc or a
-    click outside. Its menu entry moved from the main menu to the
-    Parameters menu (+): "Channels...", still Cmd+4.
-  * The Monitor group has its own neutral grey colour, and keeps its open/closed state apart from a parameter group that
-    happens to be called "Monitor".
+GUIDE
 
-EXAMPLES
+  * Contents list: a sidebar on wide windows (the current section is
+    highlighted), a Contents button on narrow windows and iPhone; code
+    examples as code blocks; shorter sections.
+  * New sections: Buttons, Starting instruments with a button, Monitor
+    (kinds of cards, reading a card), Jump to Definition, Layout and
+    settings, Accessibility.
 
-  * Test/MonitorTest.csd rewritten: every kind of Monitor display once
-    (fixed range, adaptive, bipolar, audio meter, multi-meter, lamp, row
-    of lamps, text, sparkline, multi-bar, cards in a group, created at run
-    time), with comments, plus what is deliberately not shown.
-  * Test/MonitorStressTest.csd: no attributes but spark.
+EXAMPLES (installed on first launch; a copy you modified is kept)
+
+  * Test/ButtonTest.csd (new): every way to use a Button, one group each -
+    Toggle (INIT Off / On), Momentary, EVENT lines (a bell, a held-note
+    pad), events from the code (a chord, an arpeggio started and stopped).
   * Test/CsoundQtButtons.csd (new): a CsoundQt file with every kind of
-    CsoundQt button (event, held-note event, latched event, value with and
-    without latch) to test the import.
-  * Test/ButtonTest.csd (new): every way to use a Button - Toggle with
-    INIT Off/On, Momentary, Momentary + EVENT ON, a held note with EVENT
-    ON/OFF (Pad), each kind in its own group (Toggle, Momentary, Event
-    lines, Events from the code), a press handled by
-    the code (trigger), a Toggle that starts and stops a held note.
-  * Test/MonitorTest.csd: one card per kind, no duplicates (Step = the
-    position, Light = which steps play in a 4-pattern rhythm with rests;
-    one text card for note, tempo and pattern; Drift stays positive so
-    that Pan is the only bipolar bar; the row of lamps is also the card
-    created at run time, 3 seconds after Apply).
-  * Test/MonitorStressTest.csd: note names in a string array (gS...), as
-    Csound 7 requires.
+    CsoundQt button, to check the import.
+  * Test/MonitorTest.csd rewritten: one card per kind, explained, with a
+    "try this" list. Test/MonitorStressTest.csd without attributes but
+    spark.
 
 1.0.5
 -----

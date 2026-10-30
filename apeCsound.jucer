@@ -69,6 +69,8 @@
             file="Source/CsoundLayoutHelpers.h"/>
       <FILE id="syHlp" name="CsoundSyntaxHelpers.h" compile="0" resource="0"
             file="Source/CsoundSyntaxHelpers.h"/>
+      <FILE id="navHl" name="CsoundNavigation.h" compile="0" resource="0"
+            file="Source/CsoundNavigation.h"/>
       <FILE id="moLay" name="CsoundMonitorLayout.h" compile="0" resource="0"
             file="Source/CsoundMonitorLayout.h"/>
       <FILE id="chDia" name="CsoundChannelDiagnostics.h" compile="0" resource="0"

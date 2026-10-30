@@ -1,5 +1,6 @@
 #include "CsoundCodeEditor.h"
 #include "CsoundSyntaxHelpers.h"
+#include "CsoundNavigation.h"
 #include "CsoundActionSheet.h"
 #include "CsoundShortcuts.h"
 #include "IOSKeyboard.h"
@@ -13,6 +14,14 @@ CsoundCodeEditor::CsoundCodeEditor (juce::CodeDocument& doc, juce::CodeTokeniser
 {
     setTabSize (indentSpaces, true); // Tab = 4 spazi, mai caratteri tab reali.
     codeDocument.addListener (this);
+
+    jumpBackButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff4aa3b8).withAlpha (0.92f));
+    jumpBackButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff0b1116));
+    jumpBackButton.getProperties().set ("circular", true);
+    jumpBackButton.setMouseCursor (juce::MouseCursor::PointingHandCursor);
+    jumpBackButton.setWantsKeyboardFocus (false);
+    jumpBackButton.onClick = [this] { jumpBack(); grabKeyboardFocus(); };
+    addChildComponent (jumpBackButton);
 
     // Autocompletamento disponibile da subito, prima ancora che il motore
     // Csound sia mai partito: seed con la tabella del manuale, che poi
@@ -171,6 +180,10 @@ bool CsoundCodeEditor::keyPressed (const juce::KeyPress& key)
 {
     // Scorciatoie come Xcode: Cmd+/ commenta/decommenta le righe selezionate,
     // Ctrl+I re-indenta (Cmd+] / Cmd+[ indent/unindent sono in CodeView).
+    if (key == juce::KeyPress::escapeKey && jumpBackButton.isVisible()) { dismissJumpBackButton(); return true; }
+    if (CsoundShortcuts::isJumpToDefinition (key)) { jumpToDefinitionAt (getCaretPos()); return true; }
+    if (CsoundShortcuts::isJumpBack (key) && jumpBack()) return true;   // cronologia vuota: il tasto fa il suo solito lavoro
+
     if (! isReadOnly())
     {
         if (CsoundShortcuts::isToggleComment (key)) { toggleCommentOnSelectedLines(); return true; }
@@ -310,8 +323,13 @@ bool CsoundCodeEditor::keyPressed (const juce::KeyPress& key)
     return handled;
 }
 
-void CsoundCodeEditor::showContextMenu (juce::Point<int>)
+void CsoundCodeEditor::showContextMenu (juce::Point<int> localPos)
 {
+    const auto contextMenuPos = getPositionAt (localPos.x, localPos.y);
+    contextMenuIndex = contextMenuPos.getPosition();
+    int tl = 0, tc = 0, tlen = 0;
+    const bool hasDefinition = definitionAt (contextMenuPos, tl, tc, tlen);
+
     const bool hasSelection = getHighlightedRegion().getLength() > 0;
     const bool canPaste = IOSKeyboard::clipboardHasText(); // non legge gli appunti (avviso iOS 16+)
 
@@ -334,12 +352,20 @@ void CsoundCodeEditor::showContextMenu (juce::Point<int>)
             case ctxIndent:    item.shortcut = SC::label (SC::reindent()); break;
             case ctxComment:   item.shortcut = SC::label (SC::toggleComment()); break;
             case ctxEvaluate:  item.shortcut = SC::label (SC::evaluate()); break;
+            case ctxJumpToDefinition: item.shortcut = SC::label (SC::jumpToDefinition()); break;
+            case ctxJumpBack:  item.shortcut = SC::label (SC::jumpBack()); break;
             default: break;
         }
 
         items.push_back (item);
     };
 
+    if (hasDefinition || canJumpBack())
+    {
+        add (ctxJumpToDefinition, "Jump to Definition", CsoundActionSheetIcon::codeBraces, hasDefinition);
+        add (ctxJumpBack,         "Go Back",            CsoundActionSheetIcon::undo,       canJumpBack());
+        items.push_back (CsoundActionSheetItem::separator());
+    }
     add (ctxCut,       "Cut",        CsoundActionSheetIcon::cut,       hasSelection);
     add (ctxCopy,      "Copy",       CsoundActionSheetIcon::copy,      hasSelection);
     add (ctxPaste,     "Paste",      CsoundActionSheetIcon::paste,     canPaste);
@@ -378,6 +404,8 @@ void CsoundCodeEditor::performContextMenuItem (int result)
         case ctxIndent:    indentSelectedLines(); break;
         case ctxComment:   toggleCommentOnSelectedLines(); break;
         case ctxEvaluate:  evaluateSelectionOrBlock(); break;
+        case ctxJumpToDefinition: jumpToDefinitionAt (juce::CodeDocument::Position (codeDocument, contextMenuIndex)); break;
+        case ctxJumpBack:  jumpBack(); break;
         default: break;
     }
 
@@ -397,6 +425,16 @@ void CsoundCodeEditor::showTouchEditMenu (juce::Rectangle<int> selectionArea)
     {
         items.push_back ({ id, text, enabled, icon });
     };
+
+    // Jump to Definition sul nome selezionato (iOS: nessun Cmd+clic).
+    contextMenuIndex = getSelectionStart().getPosition();
+    {
+        int tl = 0, tc = 0, tlen = 0;
+        if (definitionAt (getSelectionStart(), tl, tc, tlen))
+            add (ctxJumpToDefinition, "Definition", CsoundActionSheetIcon::codeBraces);
+        if (canJumpBack())
+            add (ctxJumpBack, "Back", CsoundActionSheetIcon::undo);
+    }
 
     add (ctxCut,       "Cut",        CsoundActionSheetIcon::cut,       hasSelection);
     add (ctxCopy,      "Copy",       CsoundActionSheetIcon::copy,      hasSelection);
@@ -432,6 +470,7 @@ void CsoundCodeEditor::focusLost (juce::Component::FocusChangeType cause)
 
 void CsoundCodeEditor::caretPositionMoved()
 {
+    if (onViewMoved) onViewMoved();
     // Click, tap, trascinamento o freccie: l'help della barra segue il
     // caret (prima era fatto in mouseDown/mouseUp, ora e' CodeView a
     // gestire mouse e touch e a notificare qui).
@@ -616,6 +655,20 @@ void CsoundCodeEditor::itemDropped (const SourceDetails& dragSourceDetails)
 
 void CsoundCodeEditor::paintOverChildren (juce::Graphics& g)
 {
+    // Jump to Definition: nome sotto il mouse con Cmd premuto, sottolineato
+    // nel colore del caret (come un link).
+    if (! definitionLink.isEmpty())
+    {
+        const juce::CodeDocument::Position a (codeDocument, definitionLink.getStart());
+        const juce::CodeDocument::Position b (codeDocument, definitionLink.getEnd());
+        const auto ra = getCharacterBounds (a), rb = getCharacterBounds (b);
+        if (a.getLineNumber() == b.getLineNumber())
+        {
+            g.setColour (findColour (CodeView::caretColourId).withAlpha (0.9f));
+            g.fillRect ((float) ra.getX(), (float) ra.getBottom() - 2.0f, (float) (rb.getX() - ra.getX()), 1.5f);
+        }
+    }
+
     // Lampo "Evaluate" sulle righe appena inviate al motore.
     if (evalFlash > 0.0f)
     {
@@ -684,6 +737,7 @@ void CsoundCodeEditor::paintOverChildren (juce::Graphics& g)
 void CsoundCodeEditor::resized()
 {
     CodeView::resized();
+    updateJumpBackButton();
 
     // La posizione del popup e' calcolata rispetto al caret al momento in
     // cui viene mostrato: dopo un resize (es. l'utente ridimensiona la
@@ -701,6 +755,7 @@ void CsoundCodeEditor::resized()
 void CsoundCodeEditor::codeDocumentTextInserted (const juce::String& newText, int insertIndex)
 {
     userOpcodesDirty = true;
+    dismissJumpBackButton();
 
     // Ricerca attiva: le occorrenze seguono il testo (anche durante un
     // re-indent, un undo o una sostituzione - tranne replaceAll, che
@@ -734,6 +789,7 @@ void CsoundCodeEditor::codeDocumentTextInserted (const juce::String& newText, in
 void CsoundCodeEditor::codeDocumentTextDeleted (int /*startIndex*/, int /*endIndex*/)
 {
     userOpcodesDirty = true;
+    dismissJumpBackButton();
 
     if (searchQuery.isNotEmpty() && ! suspendSearchRefresh)
         refreshSearchMatches();
@@ -1693,7 +1749,210 @@ bool CsoundCodeEditor::selectParameterToken (bool forward)
 void CsoundCodeEditor::mouseDown (const juce::MouseEvent& e)
 {
     exitParameterMode(); // come CsoundQt: un click esce dalla modalita' parametri
+
+    // Cmd+clic (Ctrl+clic su Windows/Linux): Jump to Definition, come Xcode.
+    // Se non c'e' niente da raggiungere e' un clic normale.
+    if (e.mods.isCommandDown() && ! e.mods.isPopupMenu() && ! e.mods.isShiftDown() && ! e.mods.isAltDown()
+        && e.source.isMouse())
+    {
+        const auto pos = getPositionAt (e.x, e.y);
+        if (jumpToDefinitionAt (pos))
+        {
+            clearDefinitionLink();
+            return;
+        }
+    }
+    dismissJumpBackButton();   // un clic normale: si e' passati ad altro
     CodeView::mouseDown (e);
+}
+
+//==============================================================================
+// Jump to Definition
+bool CsoundCodeEditor::definitionAt (const juce::CodeDocument::Position& pos, int& targetLine, int& targetColumn,
+                                     int& targetLength, juce::Range<int>* clickedWord)
+{
+    rescanUserOpcodesIfNeeded();
+    auto isOpcode = [this] (const juce::String& w)
+    {
+        return CsoundOpcodeHelpData::find (w) != nullptr
+            || liveSignatureLines.count (w.toLowerCase()) > 0
+            || findUserOpcode (w) != nullptr
+            || w == "init";
+    };
+
+    const int line = pos.getLineNumber();
+    const int col  = pos.getIndexInLine();
+    const auto target = csoundNav::findDefinition (codeDocument.getAllContent(), line, col, isOpcode);
+    if (! target.isValid())
+        return false;
+    if (target.line == line)
+    {
+        // gia' sulla definizione stessa (il clic e' sul nome definito)
+        if (col >= target.column && col <= target.column + target.length)
+            return false;
+    }
+
+    targetLine = target.line;
+    targetColumn = target.column;
+    targetLength = target.length;
+
+    if (clickedWord != nullptr)
+    {
+        const auto lineText = codeDocument.getLine (line);
+        int s = 0, e = 0;
+        // dentro una stringa: tutto il contenuto tra virgolette
+        int open = -1;
+        bool inStr = false;
+        for (int i = 0; i < lineText.length() && i <= col; ++i)
+            if (lineText[i] == '"') { inStr = ! inStr; open = inStr ? i : -1; }
+        if (inStr && open >= 0)
+        {
+            const int close = lineText.indexOfChar (open + 1, '"');
+            s = open + 1; e = close < 0 ? lineText.length() : close;
+        }
+        else if (! csoundNav::wordAt (lineText, col, s, e))
+            return false;
+        const int base = juce::CodeDocument::Position (codeDocument, line, 0).getPosition();
+        *clickedWord = { base + s, base + e };
+    }
+    return true;
+}
+
+bool CsoundCodeEditor::jumpToDefinitionAt (const juce::CodeDocument::Position& pos)
+{
+    int line = 0, column = 0, length = 0;
+    if (! definitionAt (pos, line, column, length))
+        return false;
+
+    // Si torna al punto da cui si e' saltato: dove si e' fatto Cmd+clic (o il
+    // menu / il caret per la scorciatoia) - NON il caret di prima, che con
+    // Cmd+clic non si e' mosso e puo' essere ovunque (es. in fondo al file).
+    auto from = std::make_unique<juce::CodeDocument::Position> (codeDocument, pos.getPosition());
+    from->setPositionMaintained (true);
+    jumpHistory.push_back (std::move (from));
+    if (jumpHistory.size() > 50)
+        jumpHistory.erase (jumpHistory.begin());
+    jumpBackButtonDismissed = false;
+    updateJumpBackButton();
+    // sparisce dopo qualche secondo se non serve
+    {
+        const int generation = ++jumpBackButtonGeneration;
+        juce::Component::SafePointer<CsoundCodeEditor> safeThis (this);
+        juce::Timer::callAfterDelay (8000, [safeThis, generation]
+        {
+            if (safeThis != nullptr && safeThis->jumpBackButtonGeneration == generation)
+                safeThis->dismissJumpBackButton();
+        });
+    }
+
+    const juce::CodeDocument::Position start (codeDocument, line, column);
+    selectRegion (start, start.movedBy (length));
+    // il Cmd+clic non passa da CodeView::mouseDown: senza il focus le
+    // scorciatoie (Go Back) andrebbero altrove
+   #if ! JUCE_IOS
+    if (! hasKeyboardFocus (true))
+        grabKeyboardFocus();
+   #endif
+    // la riga di destinazione verso il centro della vista, non sul bordo
+    scrollToLine (juce::jmax (0, line - getNumLinesOnScreen() / 3));
+    scrollToKeepCaretOnScreen();
+    return true;
+}
+
+bool CsoundCodeEditor::jumpBack()
+{
+    if (jumpHistory.empty())
+        return false;
+    const int back = jumpHistory.back()->getPosition();
+    jumpHistory.pop_back();
+    updateJumpBackButton();
+    const juce::CodeDocument::Position pos (codeDocument, juce::jlimit (0, codeDocument.getNumCharacters(), back));
+    moveCaretTo (pos, false);
+    scrollToLine (juce::jmax (0, pos.getLineNumber() - getNumLinesOnScreen() / 3));
+    scrollToKeepCaretOnScreen();
+    return true;
+}
+
+void CsoundCodeEditor::dismissJumpBackButton()
+{
+    if (jumpBackButtonDismissed && ! jumpBackButton.isVisible())
+        return;
+    jumpBackButtonDismissed = true;
+    jumpBackButton.setVisible (false);
+}
+
+void CsoundCodeEditor::updateJumpBackButton()
+{
+    if (jumpHistory.empty())
+    {
+        jumpBackButton.setVisible (false);
+        return;
+    }
+    if (jumpBackButtonDismissed)
+    {
+        jumpBackButton.setVisible (false);
+        return;
+    }
+    const juce::CodeDocument::Position from (codeDocument, juce::jlimit (0, codeDocument.getNumCharacters(), jumpHistory.back()->getPosition()));
+    const juce::String text = juce::String (juce::CharPointer_UTF8 ("\xe2\x97\x80  Back to line ")) + juce::String (from.getLineNumber() + 1);
+    jumpBackButton.setButtonText (text);
+    jumpBackButton.setTooltip ("Go back to where you jumped from ("
+                               + CsoundShortcuts::label (CsoundShortcuts::jumpBack()) + ")");
+    jumpBackButton.setTitle (text);
+    const int h = 26;
+    const int w = juce::GlyphArrangement::getStringWidthInt (juce::Font (juce::FontOptions ((float) h * 0.55f)), text) + 28;
+    // in alto a destra, lontano dalla barra di scorrimento verticale
+    jumpBackButton.setBounds (getWidth() - w - 22, 8, w, h);
+    jumpBackButton.setVisible (true);
+    jumpBackButton.toFront (false);
+}
+
+void CsoundCodeEditor::updateDefinitionLink (juce::Point<int> mousePos, bool commandDown)
+{
+    juce::Range<int> word;
+    int l = 0, c = 0, n = 0;
+    if (commandDown && definitionAt (getPositionAt (mousePos.x, mousePos.y), l, c, n, &word))
+    {
+        if (word != definitionLink)
+        {
+            definitionLink = word;
+            setMouseCursor (juce::MouseCursor::PointingHandCursor);
+            repaint();
+        }
+        return;
+    }
+    clearDefinitionLink();
+}
+
+void CsoundCodeEditor::clearDefinitionLink()
+{
+    if (definitionLink.isEmpty())
+        return;
+    definitionLink = {};
+    setMouseCursor (juce::MouseCursor::IBeamCursor);
+    repaint();
+}
+
+void CsoundCodeEditor::mouseMove (const juce::MouseEvent& e)
+{
+    CodeView::mouseMove (e);
+    if (e.source.isMouse())
+        updateDefinitionLink (e.getPosition(), e.mods.isCommandDown());
+}
+
+void CsoundCodeEditor::mouseExit (const juce::MouseEvent& e)
+{
+    CodeView::mouseExit (e);
+    clearDefinitionLink();
+}
+
+void CsoundCodeEditor::modifierKeysChanged (const juce::ModifierKeys& mods)
+{
+    CodeView::modifierKeysChanged (mods);
+    if (isMouseOver (true))
+        updateDefinitionLink (getMouseXYRelative(), mods.isCommandDown());
+    else
+        clearDefinitionLink();
 }
 
 void CsoundCodeEditor::moveSuggestionSelection (int delta)

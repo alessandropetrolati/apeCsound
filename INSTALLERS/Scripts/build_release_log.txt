@@ -1,4 +1,4 @@
-=== mer 28 ott 2026 11:38:23 CET  macOS 27.0.1 arm64
+=== ven 30 ott 2026 23:51:51 CET  macOS 27.0.1 arm64
 === Projucer: /Users/alessandropetrolati/Desktop/Advanced 2018/JUCE/Projucer.app
 Re-saving file: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/apeCsound.jucer
 Finished saving: Xcode (macOS)
@@ -6,82 +6,3 @@ Finished saving: Xcode (iOS)
 Finished saving: Linux Makefile
 Finished saving: Visual Studio 2022
 === xcodebuild apeCsound - Standalone Plugin (Release)
-warning: Building targets in manual order is deprecated - check "Parallelize build for command-line builds" in the project editor, or set DISABLE_MANUAL_TARGET_ORDER_BUILD_WARNING in any of the targets in the current build to suppress this warning
-note: Target dependency graph (3 targets)
-    Target 'apeCsound - Standalone Plugin' in project 'apeCsound'
-        ➜ Explicit dependency on target 'apeCsound - Shared Code' in project 'apeCsound'
-        ➜ Explicit dependency on target 'apeCsound - AUv3 AppExtension' in project 'apeCsound'
-    Target 'apeCsound - AUv3 AppExtension' in project 'apeCsound'
-        ➜ Explicit dependency on target 'apeCsound - Shared Code' in project 'apeCsound'
-    Target 'apeCsound - Shared Code' in project 'apeCsound' (no dependencies)
-warning: not stripping binary because it is signed: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/Builds/MacOSX/build/Release/apeCsound.appex/Contents/MacOS/apeCsound (in target 'apeCsound - Standalone Plugin' from project 'apeCsound')
-xcodebuild apeCsound - Standalone Plugin exit: 0
-=== xcodebuild apeCsound - AU (Release)
-warning: Building targets in manual order is deprecated - check "Parallelize build for command-line builds" in the project editor, or set DISABLE_MANUAL_TARGET_ORDER_BUILD_WARNING in any of the targets in the current build to suppress this warning
-note: Target dependency graph (2 targets)
-    Target 'apeCsound - AU' in project 'apeCsound'
-        ➜ Explicit dependency on target 'apeCsound - Shared Code' in project 'apeCsound'
-    Target 'apeCsound - Shared Code' in project 'apeCsound' (no dependencies)
-eyJibHVlcHJpbnRfYmx1ZXByaW50SWRlbnRpZmllciI6IjYwMTk1MjY2NTRGMjVEMkRFQkQ2NzQ2NiIsImJsdWVwcmludF9wcm92aWRlckZpbGVQYXRoU3RyaW5nIjoiXC9Vc2Vyc1wvYWxlc3NhbmRyb3BldHJvbGF0aVwvRGVza3RvcFwvQWR2YW5jZWQgMjAxOFwvYXBlQ3NvdW5kXC9CdWlsZHNcL01hY09TWFwvYXBlQ3NvdW5kLnhjb2RlcHJvaiIsInR5cGUiOnsiYmx1ZXByaW50Ijp7fX19
-xcodebuild apeCsound - AU exit: 0
-=== xcodebuild apeCsound - VST3 (Release)
-warning: Building targets in manual order is deprecated - check "Parallelize build for command-line builds" in the project editor, or set DISABLE_MANUAL_TARGET_ORDER_BUILD_WARNING in any of the targets in the current build to suppress this warning
-note: Target dependency graph (3 targets)
-    Target 'apeCsound - VST3' in project 'apeCsound'
-        ➜ Explicit dependency on target 'apeCsound - Shared Code' in project 'apeCsound'
-        ➜ Explicit dependency on target 'apeCsound - VST3 Manifest Helper' in project 'apeCsound'
-    Target 'apeCsound - VST3 Manifest Helper' in project 'apeCsound' (no dependencies)
-    Target 'apeCsound - Shared Code' in project 'apeCsound' (no dependencies)
-eyJibHVlcHJpbnRfYmx1ZXByaW50SWRlbnRpZmllciI6IjYwMTk1MjY2NTRGMjVEMkRFQkQ2NzQ2NiIsImJsdWVwcmludF9wcm92aWRlckZpbGVQYXRoU3RyaW5nIjoiXC9Vc2Vyc1wvYWxlc3NhbmRyb3BldHJvbGF0aVwvRGVza3RvcFwvQWR2YW5jZWQgMjAxOFwvYXBlQ3NvdW5kXC9CdWlsZHNcL01hY09TWFwvYXBlQ3NvdW5kLnhjb2RlcHJvaiIsInR5cGUiOnsiYmx1ZXByaW50Ijp7fX19
-xcodebuild apeCsound - VST3 exit: 0
-=== verifica moduleinfo.json
-Bundle       : /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/Builds/MacOSX/build/Release/apeCsound.vst3
-Manifest     : Contents/Resources/moduleinfo.json
-Binary       : Contents/MacOS/apeCsound  (35,521,600 bytes)
-Plugin Name  : apeCsound
-Version      : 1.0.5
-SDK Version  : apeCsound
-
-#  Category                        CID (hex)                         ASCII             found-in-bin
----------------------------------------------------------------------------------------------------------
-1  Audio Module Class              ABCDEF019182FAEB4170657343736E64  ........ApesCsnd  1x  OK
-2  Component Controller Class      ABCDEF011234ABCD4170657343736E64  .....4..ApesCsnd  1x  OK
-
-RESULT: OK — every manifest CID is registered by the binary.
-        Fast-scan hosts (Camelot, Cubase, etc.) will match the factory.
-copiato: Installers/NOTORIZED/apeCsound.app
-copiato: Installers/NOTORIZED/apeCsound.component
-copiato: Installers/NOTORIZED/apeCsound.vst3
-rimossa estensione AUv3 dall'app: Installers/NOTORIZED/apeCsound.app/Contents/PlugIns/apeCsound.appex
-=== firma: apeCsound.vst3
-=== firma: apeCsound.component
-=== firma: apeCsound.app
-=== verifica: apeCsound.app
-Installers/NOTORIZED/apeCsound.app: valid on disk
-Installers/NOTORIZED/apeCsound.app: satisfies its Designated Requirement
-CodeDirectory v=20500 size=33280 flags=0x10000(runtime) hashes=1029+7 location=embedded
-Timestamp=28 Oct 2026 at 11:41:53
-TeamIdentifier=4863C638XM
-=== verifica: apeCsound.component
-Installers/NOTORIZED/apeCsound.component: valid on disk
-Installers/NOTORIZED/apeCsound.component: satisfies its Designated Requirement
-CodeDirectory v=20500 size=33312 flags=0x10000(runtime) hashes=1034+3 location=embedded
-Timestamp=28 Oct 2026 at 11:41:52
-TeamIdentifier=4863C638XM
-=== verifica: apeCsound.vst3
-Installers/NOTORIZED/apeCsound.vst3: valid on disk
-Installers/NOTORIZED/apeCsound.vst3: satisfies its Designated Requirement
-CodeDirectory v=20500 size=33376 flags=0x10000(runtime) hashes=1036+3 location=embedded
-Timestamp=28 Oct 2026 at 11:41:51
-TeamIdentifier=4863C638XM
-
-total 16
-drwxr-xr-x   6 alessandropetrolati  staff   192 28 ott 11:41 .
-drwxr-xr-x  12 alessandropetrolati  staff   384 28 ott 01:49 ..
--rw-r--r--@  1 alessandropetrolati  staff  6148 28 ott 11:38 .DS_Store
-drwxr-xr-x   3 alessandropetrolati  staff    96 28 ott 11:40 apeCsound.app
-drwxr-xr-x   3 alessandropetrolati  staff    96 28 ott 11:41 apeCsound.component
-drwxr-xr-x   3 alessandropetrolati  staff    96 28 ott 11:41 apeCsound.vst3
-
-=== RISULTATO: OK
-=== FINE

@@ -4,6 +4,7 @@
 #include "../CsoundCabbageHelpers.h"
 #include "../CsoundLayoutHelpers.h"
 #include "../CsoundSyntaxHelpers.h"
+#include "../CsoundNavigation.h"
 #include "../CsoundMonitorLayout.h"
 #include "../CsoundChannelDiagnostics.h"
 
@@ -413,6 +414,116 @@ struct SyntaxHelpersTests final : public juce::UnitTest
             expectEquals (channelNameInLine ("kx = chnget:k(\"xx\") + chnget:k(\"yy\")", 0), juce::String ("xx"));
             expectEquals (channelNameInLine ("asig oscili 1, 440 ; \"quoted\"", 3), juce::String());
             expectEquals (channelNameInLine ("Smychnget = \"no\"", 3), juce::String ());
+        }
+    }
+};
+
+//==============================================================================
+struct NavigationTests final : public juce::UnitTest
+{
+    NavigationTests() : juce::UnitTest ("Jump to Definition", kCategory) {}
+
+    void runTest() override
+    {
+        using namespace csoundNav;
+        const juce::StringArray opcodes { "madsr", "vco2", "oscili", "outch", "chnget", "chnset", "xin", "xout",
+                                          "event", "moogladder", "port", "fillarray", "rand", "metro", "schedule" };
+        auto isOp = [opcodes] (const juce::String& w) { return opcodes.contains (w) || w == "MyFilt"; };
+
+        const juce::String code =
+            "gkVol init 0.5\n"                                           // 0
+            "#define DUR #2#\n"                                          // 1
+            "chn_k \"Cutoff\", 1, 2, 1000, 20, 20000\n"                  // 2
+            "opcode MyFilt, a, ak\n"                                     // 3
+            "  ain, kcf xin\n"                                           // 4
+            "  aout moogladder ain, kcf, 0.2\n"                          // 5
+            "  xout aout\n"                                              // 6
+            "endop\n"                                                    // 7
+            "instr 1\n"                                                  // 8
+            "  kenv madsr 0.01, 0.1, 0.7, 0.4   ; kenv here\n"          // 9
+            "  kcf chnget \"Cutoff\"\n"                                  // 10
+            "  asig = vco2(0.2, 220) * kenv * gkVol\n"                   // 11
+            "  afilt MyFilt asig, kcf\n"                                 // 12
+            "  outch 1, afilt, 2, afilt\n"                               // 13
+            "  event \"i\", 10, 0, $DUR\n"                               // 14
+            "  schedule \"Bell\", 0, 1\n"                                // 15
+            "  kcount init 0\n"                                          // 16
+            "loop:\n"                                                    // 17
+            "  kcount += 1\n"                                            // 18
+            "  if kcount < 4 kgoto loop\n"                               // 19
+            "  kArr[] fillarray 1, 2, 3\n"                               // 20
+            "  kx:k = kArr[0]\n"                                         // 21
+            "  kenv2 = kx /* kenv in a comment */\n"                     // 22
+            "endin\n"                                                    // 23
+            "instr 10, Bell\n"                                           // 24
+            "  kenv madsr 0.1, 0.1, 0.5, 0.2\n"                          // 25
+            "  aout oscili kenv, 440\n"                                  // 26
+            "  outch 1, aout\n"                                          // 27
+            "endin\n";                                                   // 28
+
+        auto at = [&] (int line, const juce::String& word, int occurrence = 0)
+        {
+            juce::StringArray lines; lines.addLines (code);
+            int c = -1;
+            for (int k = 0; k <= occurrence; ++k) c = lines[line].indexOf (c + 1, word);
+            return findDefinition (code, line, c + 1, isOp);
+        };
+
+        beginTest ("outputsOfLine");
+        {
+            expect (outputsOfLine ("kenv madsr 0.01, 0.1", isOp) == juce::StringArray { "kenv" });
+            expect (outputsOfLine ("ain, kcf xin", isOp) == juce::StringArray { "ain", "kcf" });
+            expect (outputsOfLine ("asig = vco2(0.2, 220)", isOp) == juce::StringArray { "asig" });
+            expect (outputsOfLine ("kx:k = 3", isOp) == juce::StringArray { "kx" });
+            expect (outputsOfLine ("kArr[] fillarray 1, 2", isOp) == juce::StringArray { "kArr" });
+            expect (outputsOfLine ("kc init 0", isOp) == juce::StringArray { "kc" });
+            expect (outputsOfLine ("loop: kc init 0", isOp) == juce::StringArray { "kc" }, "label in front");
+            expect (outputsOfLine ("outch 1, aL", isOp).isEmpty(), "outch writes nothing");
+            expect (outputsOfLine ("xout aout", isOp).isEmpty(), "aout is not an opcode: xout writes nothing");
+            expect (outputsOfLine ("kc += 1", isOp).isEmpty(), "+= is not a definition");
+            expect (outputsOfLine ("if kc == 1 then", isOp).isEmpty());
+            expect (outputsOfLine ("event \"i\", 10, 0, 1", isOp).isEmpty());
+        }
+
+        beginTest ("local variables stay in their instr / opcode");
+        {
+            auto t = at (11, "kenv");
+            expectEquals (t.line, 9);  expectEquals (t.kind, juce::String ("variable"));
+            expectEquals (t.column, 2); expectEquals (t.length, 4);
+            expectEquals (at (26, "kenv").line, 25, "the kenv of instr 10, not of instr 1");
+            expectEquals (at (5, "ain").line, 4, "UDO input from xin");
+            expectEquals (at (6, "aout").line, 5);
+            expectEquals (at (12, "kcf").line, 10, "kcf of instr 1, not of the UDO");
+            expectEquals (at (21, "kArr").line, 20);
+            expectEquals (at (22, "kx").line, 21, "typed kx:k");
+            expectEquals (at (18, "kcount").line, 16);
+        }
+
+        beginTest ("globals, UDO, instruments, macros, channels, labels");
+        {
+            auto g = at (11, "gkVol");
+            expectEquals (g.line, 0); expectEquals (g.kind, juce::String ("global"));
+            auto u = at (12, "MyFilt");
+            expectEquals (u.line, 3); expectEquals (u.kind, juce::String ("opcode"));
+            auto i10 = at (14, "10");
+            expectEquals (i10.line, 24); expectEquals (i10.kind, juce::String ("instrument"));
+            expectEquals (at (15, "Bell").line, 24, "named instrument in a string");
+            auto m = at (14, "DUR");
+            expectEquals (m.line, 1); expectEquals (m.kind, juce::String ("macro"));
+            auto ch = at (10, "Cutoff");
+            expectEquals (ch.line, 2, "chn_k declaration first"); expectEquals (ch.kind, juce::String ("channel"));
+            auto lb = at (19, "loop", 0);
+            expectEquals (lb.line, 17); expectEquals (lb.kind, juce::String ("label"));
+        }
+
+        beginTest ("nothing to jump to");
+        {
+            expect (! at (13, "outch").isValid(), "a built-in opcode");
+            expect (! at (9, "0.01").isValid(), "a number that is not an instrument");
+            juce::StringArray lines; lines.addLines (code);
+            expect (! findDefinition (code, 9, lines[9].indexOf ("here") + 1, isOp).isValid(), "inside a comment");
+            expect (! findDefinition (code, 22, lines[22].indexOf ("comment") + 1, isOp).isValid(), "inside a block comment");
+            expect (! findDefinition (code, 99, 0, isOp).isValid());
         }
     }
 };
@@ -930,6 +1041,29 @@ struct CabbageImportTests final : public juce::UnitTest
             expectEquals (count, 1);
         }
 
+        beginTest ("Editor layout: saved in the plug-in state, not in the .csd");
+        {
+            juce::ValueTree view ("EDITOR_VIEW");
+            view.setProperty ("width", 1300, nullptr);
+            view.setProperty ("console", false, nullptr);
+            juce::ValueTree panel ("PANEL");
+            panel.setProperty ("collapsed", "Synth", nullptr);
+            view.appendChild (panel, nullptr);
+            proc.setEditorViewState (view);
+
+            expect (! proc.buildSessionText().contains ("EDITOR_VIEW"), "not part of the session / .csd");
+            juce::MemoryBlock state;
+            proc.getStateInformation (state);
+            proc.setEditorViewState ({});
+            proc.setStateInformation (state.getData(), (int) state.getSize());
+            const auto back = proc.getEditorViewState();
+            expect (back.isValid(), "restored with the instance");
+            expectEquals ((int) back.getProperty ("width"), 1300);
+            expect (! (bool) back.getProperty ("console"));
+            expectEquals (back.getChildWithName ("PANEL").getProperty ("collapsed").toString(), juce::String ("Synth"));
+            proc.setEditorViewState ({});
+        }
+
         beginTest ("Button: MODE, INIT, EVENT ON/OFF survive save and reload");
         {
             const juce::String csd =
@@ -1150,6 +1284,7 @@ Summary runAll (CsoundAudioProcessor* processor, const std::function<void (const
     static LayoutHelpersTests   layoutTests;
     static SyntaxHelpersTests   syntaxTests;
     static MonitorLayoutTests   monitorTests;
+    static NavigationTests      navigationTests;
     static ChannelDiagnosticsTests channelTests;
    #ifndef CSOUND_TESTS_CORE_ONLY
     static CabbageImportTests   importTests;

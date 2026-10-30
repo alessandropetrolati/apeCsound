@@ -1369,6 +1369,16 @@ private:
     void markSlotEventsDirty();
     void refreshSlotEventsInstrument();
 
+    // Layout dell'editor di QUESTA istanza (finestra, pannelli, gruppi
+    // chiusi...): salvato nello stato del plugin (progetto della DAW,
+    // standalone all'uscita), MAI nel .csd ne' nel confronto "modificato".
+    juce::ValueTree editorViewState;
+    mutable juce::CriticalSection editorViewStateLock;
+public:
+    juce::ValueTree getEditorViewState() const    { const juce::ScopedLock sl (editorViewStateLock); return editorViewState.createCopy(); }
+    void setEditorViewState (const juce::ValueTree& v) { const juce::ScopedLock sl (editorViewStateLock); editorViewState = v.createCopy(); }
+private:
+
     juce::StringArray hostTouchedChannels;
     juce::CriticalSection hostTouchedChannelsLock;
     void noteHostChannelName (const juce::String& name);

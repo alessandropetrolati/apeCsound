@@ -372,6 +372,28 @@ namespace
         return filled;
     }
 
+    // Punto interrogativo in un cerchio: la guida dell'app (distinto da
+    // "i" di About e dal libro del manuale Csound).
+    juce::Path makeHelpPath()
+    {
+        juce::Path circle;
+        circle.addEllipse (3.0f, 3.0f, 18.0f, 18.0f);
+        auto filled = strokeOpenPath (circle, 1.7f);
+
+        juce::Path hook;
+        hook.startNewSubPath (9.3f, 9.6f);
+        hook.cubicTo (9.3f, 7.6f, 10.6f, 6.8f, 12.1f, 6.8f);
+        hook.cubicTo (13.8f, 6.8f, 14.9f, 7.9f, 14.9f, 9.3f);
+        hook.cubicTo (14.9f, 10.9f, 13.6f, 11.4f, 12.8f, 12.0f);
+        hook.cubicTo (12.2f, 12.5f, 12.0f, 13.0f, 12.0f, 14.0f);
+        filled.addPath (strokeOpenPath (hook, 1.9f));
+
+        juce::Path dot;
+        dot.addEllipse (10.8f, 15.8f, 2.4f, 2.4f);
+        filled.addPath (dot);
+        return filled;
+    }
+
     // Libro aperto: due pagine con il dorso al centro.
     juce::Path makeBookPath()
     {
@@ -606,6 +628,7 @@ namespace
             case CsoundActionSheetIcon::newDocument:   return makeNewDocumentPath();
             case CsoundActionSheetIcon::info:          return makeInfoPath();
             case CsoundActionSheetIcon::book:          return makeBookPath();
+            case CsoundActionSheetIcon::help:          return makeHelpPath();
             case CsoundActionSheetIcon::codeBraces:    return makeCodeBracesPath();
             case CsoundActionSheetIcon::cut:           return makeCutPath();
             case CsoundActionSheetIcon::copy:          return makeCopyPath();

@@ -927,6 +927,25 @@ private:
     bool showingParameterPanel = true;
     void toggleParameterPanel();
 
+    // Layout salvato (finestra, pannelli, divisori, gruppi): nello stato
+    // dell'istanza (progetto della DAW / standalone) e, come default per le
+    // istanze nuove, nelle impostazioni utente. Salvato poco dopo l'ultimo
+    // cambiamento (viewSaveTimer), mai durante la costruzione.
+    juce::ValueTree captureViewState() const;
+    void applyViewState (const juce::ValueTree& state);
+    void scheduleViewStateSave();
+    void saveViewState();
+    void resetLayout();
+    bool viewStateReady = false;
+    struct ViewSaveTimer final : public juce::Timer
+    {
+        std::function<void()> onTick;
+        void timerCallback() override { stopTimer(); if (onTick) onTick(); }
+    };
+    ViewSaveTimer viewSaveTimer;
+    static constexpr const char* kLastEditorViewKey = "lastEditorView";
+    static constexpr int kDefaultWidth = 1024, kDefaultHeight = 768;
+
     // Larghezza corrente della sidebar (ridimensionabile trascinando
     // sidebarDivider sotto) - inizializzata a una larghezza stretta ma
     // comoda (le card si adattano comunque, vedi wrap dinamico dei campi),

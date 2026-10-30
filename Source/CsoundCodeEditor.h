@@ -69,6 +69,9 @@ public:
     void resized() override;
     void focusLost (juce::Component::FocusChangeType cause) override;
     void caretPositionMoved() override;
+    void editorViewportPositionChanged() override { if (onViewMoved) onViewMoved(); }
+    /** Scroll o caret spostati: l'editor della finestra salva il layout. */
+    std::function<void()> onViewMoved;
     void errorMarkersChanged() override; // aggiorna la barra di help se il caret e' su una riga con errore
 
     // juce::DragAndDropTarget - vedi il commento in testa alla classe.
@@ -241,7 +244,42 @@ private:
     void toggleCommentOnSelectedLines();
     bool areSelectedLinesCommented() const;
 
-    enum ContextMenuItem { ctxCut = 1, ctxCopy, ctxPaste, ctxDelete, ctxSelectAll, ctxUndo, ctxRedo, ctxIndent, ctxComment, ctxEvaluate };
+    enum ContextMenuItem { ctxCut = 1, ctxCopy, ctxPaste, ctxDelete, ctxSelectAll, ctxUndo, ctxRedo, ctxIndent, ctxComment, ctxEvaluate,
+                           ctxJumpToDefinition, ctxJumpBack };
+
+    //--------------------------------------------------------------------------
+    // Jump to Definition (Cmd+clic, come Xcode): vedi CsoundNavigation.h.
+    // Con Cmd premuto il nome sotto il mouse si sottolinea se ha una
+    // definizione da raggiungere; Ctrl+Cmd+Left (Go Back) torna indietro.
+public:
+    /** Salta alla definizione di cio' che c'e' in pos; false se niente. */
+    bool jumpToDefinitionAt (const juce::CodeDocument::Position& pos);
+    /** Torna dove si era prima dell'ultimo salto; false se la cronologia e' vuota. */
+    bool jumpBack();
+    bool canJumpBack() const noexcept { return ! jumpHistory.empty(); }
+    void mouseMove (const juce::MouseEvent& e) override;
+    void mouseExit (const juce::MouseEvent& e) override;
+    void modifierKeysChanged (const juce::ModifierKeys& mods) override;
+private:
+    bool definitionAt (const juce::CodeDocument::Position& pos, int& targetLine, int& targetColumn, int& targetLength,
+                       juce::Range<int>* clickedWord = nullptr);
+    void updateDefinitionLink (juce::Point<int> mousePos, bool commandDown);
+    void clearDefinitionLink();
+    juce::Range<int> definitionLink;          // nome sottolineato (indici nel documento)
+    // Posizioni di partenza per Go Back, "mantenute": seguono il testo
+    // inserito o cancellato prima di loro (restano sulla riga giusta).
+    std::vector<std::unique_ptr<juce::CodeDocument::Position>> jumpHistory;
+    // Pillola "< Back to line N" in alto a destra dopo un salto: il modo
+    // visibile di tornare indietro (oltre a Ctrl+Cmd+Left e al menu).
+    juce::TextButton jumpBackButton;
+    void updateJumpBackButton();
+    // La pillola sparisce da sola (la cronologia resta per scorciatoia e
+    // menu): dopo un clic normale nell'editor, una modifica del testo, Esc o
+    // qualche secondo senza usarla.
+    void dismissJumpBackButton();
+    bool jumpBackButtonDismissed = false;
+    int jumpBackButtonGeneration = 0;
+    int contextMenuIndex = 0;                 // dove e' stato aperto il menu (indice nel documento)
 
     // Riga evidenziata mentre si trascina uno slot sopra l'editor (-1 =
     // nessun drag in corso) - solo feedback visivo, vedi itemDragMove/

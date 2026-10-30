@@ -897,7 +897,22 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     setResizeLimits (minWindowWidth, minWindowHeight, 8192, 8192);
 
     //setSize (960, 680);
-    setSize (1024, 768);
+    setSize (kDefaultWidth, kDefaultHeight);
+
+    // Layout salvato: quello di questa istanza, altrimenti l'ultimo usato
+    // (impostazioni utente), altrimenti i default qui sopra.
+    {
+        auto view = audioProcessor.getEditorViewState();
+        if (! view.isValid())
+            if (auto xml = juce::parseXML (getUserSettings().getValue (kLastEditorViewKey)))
+                view = juce::ValueTree::fromXml (*xml);
+        applyViewState (view);
+    }
+    viewSaveTimer.onTick = [this] { saveViewState(); };
+    parameterPanel.onViewStateChanged = [this] { scheduleViewStateSave(); };
+    editor.onViewMoved = [this] { scheduleViewStateSave(); };
+    parameterPanel.onResetLayoutRequested = [this] { resetLayout(); };
+    viewStateReady = true;
 
     // Nessun focus da tastiera automatico all'apertura (richiesta esplicita,
     // su tutte le piattaforme): su iOS farebbe comparire subito la tastiera
@@ -906,6 +921,9 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
 
 CsoundAudioProcessorEditor::~CsoundAudioProcessorEditor()
 {
+    viewSaveTimer.stopTimer();
+    if (viewStateReady)
+        saveViewState();   // ultimo layout, anche se cambiato da meno di mezzo secondo
     IOSKeyboard::getBroadcaster().removeChangeListener (&keyboardWatcher);
     document.removeListener (this);
 
@@ -983,6 +1001,8 @@ bool CsoundAudioProcessorEditor::keyPressed (const juce::KeyPress& key)
     if (key == SC::showParameters()) { toggleParameterPanel(); return true; }
     if (key == SC::showConsole())    { toggleConsole(); return true; }
     if (key == SC::evaluateLine())   { setEvaluateLineVisible (! opcodeHelpBar.isEvaluateMode()); return true; }
+    // Go Back anche se il focus non e' nell'editor di codice.
+    if (SC::isJumpBack (key) && editor.canJumpBack()) { editor.jumpBack(); editor.grabKeyboardFocus(); return true; }
     if (key == SC::showGraphs())     { toggleGraphs(); return true; }
     if (key == SC::showChannels())   { toggleChannels(); return true; }
 
@@ -1181,6 +1201,7 @@ void CsoundAudioProcessorEditor::updateKeyboardInset()
 
 void CsoundAudioProcessorEditor::resized()
 {
+    scheduleViewStateSave();   // finestra, divisori, pannelli: salvato poco dopo (vedi saveViewState)
     auto area = getLocalBounds();
 
     // Overlay "About": sempre a tutta finestra (anche se nascosto, cosi' e'
@@ -1399,6 +1420,125 @@ void CsoundAudioProcessorEditor::keepOverlaysOnTop()
     for (auto* child : getChildren())
         if (dynamic_cast<CsoundActionSheet*> (child) != nullptr)
             child->toFront (false);
+}
+
+//==============================================================================
+// Layout salvato - vedi captureViewState in PluginEditor.h.
+juce::ValueTree CsoundAudioProcessorEditor::captureViewState() const
+{
+    juce::ValueTree v ("EDITOR_VIEW");
+   #if ! JUCE_IOS
+    v.setProperty ("width",  getWidth(),  nullptr);
+    v.setProperty ("height", getHeight(), nullptr);
+   #endif
+    v.setProperty ("parameters", showingParameterPanel, nullptr);
+    v.setProperty ("console",    showingConsole,        nullptr);
+    v.setProperty ("graphs",     showingGraphs,         nullptr);
+    v.setProperty ("sidebarWidth",  sidebarWidth,  nullptr);
+    v.setProperty ("consoleHeight", consoleHeight, nullptr);
+    v.setProperty ("graphsWidth",   graphsWidth,   nullptr);
+    v.appendChild (parameterPanel.getViewState(), nullptr);
+
+    // Dove si era nel codice: scroll e caret (solo per QUESTA istanza, non
+    // per il default delle istanze nuove - vedi saveViewState).
+    v.setProperty ("codeScrollY", editor.getScrollPosition().y, nullptr);
+    v.setProperty ("codeScrollX", editor.getScrollPosition().x, nullptr);
+    v.setProperty ("codeCaret",   editor.getCaretPos().getPosition(), nullptr);
+    return v;
+}
+
+void CsoundAudioProcessorEditor::applyViewState (const juce::ValueTree& v)
+{
+    if (! v.isValid())
+        return;
+
+    sidebarWidth  = (int) v.getProperty ("sidebarWidth",  sidebarWidth);
+    consoleHeight = (int) v.getProperty ("consoleHeight", consoleHeight);
+    graphsWidth   = (int) v.getProperty ("graphsWidth",   graphsWidth);
+
+    if ((bool) v.getProperty ("parameters", showingParameterPanel) != showingParameterPanel) toggleParameterPanel();
+    if ((bool) v.getProperty ("console",    showingConsole)        != showingConsole)        toggleConsole();
+    if ((bool) v.getProperty ("graphs",     showingGraphs)         != showingGraphs)         toggleGraphs();
+
+    parameterPanel.applyViewState (v.getChildWithName ("PANEL"));
+
+    // Scroll e caret del codice: dopo il primo layout (la dimensione del
+    // contenuto serve per non tagliare lo scroll), dentro i limiti del testo
+    // attuale (il file puo' essere cambiato nel frattempo).
+    if (v.hasProperty ("codeScrollY"))
+    {
+        const double sx = (double) v.getProperty ("codeScrollX", 0.0), sy = (double) v.getProperty ("codeScrollY", 0.0);
+        const int caret = (int) v.getProperty ("codeCaret", 0);
+        juce::Component::SafePointer<CsoundAudioProcessorEditor> safeThis (this);
+        juce::MessageManager::callAsync ([safeThis, sx, sy, caret]
+        {
+            if (safeThis == nullptr)
+                return;
+            auto& ed = safeThis->editor;
+            const juce::CodeDocument::Position pos (ed.getDocument(), juce::jlimit (0, ed.getDocument().getNumCharacters(), caret));
+            ed.moveCaretTo (pos, false);
+            ed.setScrollPosition (sx, sy);
+        });
+    }
+
+   #if ! JUCE_IOS
+    // Dimensione: dentro i limiti e dentro lo schermo attuale (un monitor
+    // piu' piccolo di quello su cui era stata salvata).
+    if (v.hasProperty ("width") && v.hasProperty ("height"))
+    {
+        int w = (int) v.getProperty ("width"), h = (int) v.getProperty ("height");
+        if (auto* display = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay())
+        {
+            w = juce::jmin (w, display->userArea.getWidth());
+            h = juce::jmin (h, display->userArea.getHeight());
+        }
+        setSize (juce::jlimit (minWindowWidth, 8192, w), juce::jlimit (minWindowHeight, 8192, h));
+    }
+   #endif
+    resized();
+}
+
+void CsoundAudioProcessorEditor::scheduleViewStateSave()
+{
+    if (viewStateReady)
+        viewSaveTimer.startTimer (500);
+}
+
+void CsoundAudioProcessorEditor::saveViewState()
+{
+    const auto view = captureViewState();
+    audioProcessor.setEditorViewState (view);
+    // Default per le istanze nuove: senza la posizione nel codice (un altro
+    // file, un'altra posizione).
+    auto global = view.createCopy();
+    global.removeProperty ("codeScrollY", nullptr);
+    global.removeProperty ("codeScrollX", nullptr);
+    global.removeProperty ("codeCaret", nullptr);
+    if (auto xml = global.createXml())
+    {
+        getUserSettings().setValue (kLastEditorViewKey, xml->toString (juce::XmlElement::TextFormat().singleLine()));
+        getUserSettings().saveIfNeeded();
+    }
+}
+
+void CsoundAudioProcessorEditor::resetLayout()
+{
+    juce::ValueTree v ("EDITOR_VIEW");
+    v.setProperty ("width", kDefaultWidth, nullptr);
+    v.setProperty ("height", kDefaultHeight, nullptr);
+    v.setProperty ("parameters", true, nullptr);
+    v.setProperty ("console", true, nullptr);
+    v.setProperty ("graphs", false, nullptr);
+    v.setProperty ("sidebarWidth", 360, nullptr);
+    v.setProperty ("consoleHeight", 180, nullptr);
+    v.setProperty ("graphsWidth", 460, nullptr);
+    juce::ValueTree panel ("PANEL");
+    panel.setProperty ("collapsed", juce::String(), nullptr);
+    panel.setProperty ("groups", juce::String(), nullptr);   // i default dei gruppi ripartono
+    v.appendChild (panel, nullptr);
+    applyViewState (v);
+    saveViewState();
+    appendToLog ("--- Layout reset to the defaults ---");
 }
 
 void CsoundAudioProcessorEditor::toggleParameterPanel()
@@ -3991,11 +4131,19 @@ On iOS the apeCsound folder is not visible in the Files app. **Load**, **Open Ex
 
 # Code editor
 - **Auto-indent** for `instr`/`endin`, `opcode`/`endop`, `if`/`then`, loops. Tab = 4 spaces.
-- **Right-click** (long press on touch) - Cut, Copy, Paste, Delete, Select All, Undo, Redo, **Indent**, **Comment / Uncomment**.
+- **Right-click** (long press on touch) - **Jump to Definition** / **Go Back**, Cut, Copy, Paste, Delete, Select All, Undo, Redo, **Indent**, **Comment / Uncomment**.
 - **Help bar** - syntax and description of the opcode under the caret, also for the UDOs of the file.
 - **Autocompletion** - type two letters: Up/Down to choose, Tab or Enter to accept, Esc to close.
 - **Config > Modern Syntax in Help** - shows the Csound 7 functional form, e.g. `ares:a = oscil(xamp, xcps)`.
 - **Undo / Redo** - one history shared by the editor and the Parameters panel; it survives closing the plug-in window.
+## Jump to Definition
+**Cmd+click** a name (Ctrl+click on Windows and Linux) to jump to where it is defined, like Xcode. Hold Cmd and move the mouse: a name with a definition is underlined. To go back, click the **Back to line N** button that appears at the top right of the editor after a jump (it goes away by itself after a few seconds, with a normal click, an edit or Esc - the way back stays available from the keyboard and the menu), or press **Cmd+Option+Left** (also Ctrl+Cmd+Left or Ctrl+-; Alt+Left on Windows/Linux) - it goes back one jump at a time; **Ctrl+Cmd+J** (Alt+J) jumps from the caret. Both are also in the right-click menu (on touch: select the name, then **Definition** / **Back**).
+- **Local variable** (`kenv`, `aout`, `Sname`) - the first line that writes it in the same `instr` / `opcode`: `kenv madsr ...`, `kenv = ...`, `kenv init ...`, `kenv:k = ...`, `ain, kcf xin`.
+- **Global variable** (`gkVol`, `gaRev`, `giTab`) - the first line that writes it in the file.
+- **UDO** - its `opcode Name, ...` line. **Macro** `$DUR` - its `#define`. **Label** of a `goto` / `kgoto` / `reinit` - the `label:` line.
+- **Instrument** - from `event "i", 10, ...`, `schedule "Bell", ...`, `scoreline`, or a score line `i 10 ...` to its `instr 10` / `instr Bell`.
+- **Channel** `"Cutoff"` - its `chn_k` declaration, otherwise the first `chnget` / `chnset`.
+- Names built while running (`sprintfk "Light%d"`), files from `#include` and what Csound runs first at run time are not followed: the first line in the text is the definition.
 ## Evaluate (live coding)
 **Shift+Return**, or **Evaluate** in the right-click menu, sends code to the engine *while it keeps running*, without the full recompile of Apply: the selection, or - with no selection - the `instr` / `opcode` block around the caret, or the current line. The lines flash when sent.
 - Orchestra code is compiled and merged: an `instr` that already exists is **redefined** (notes already playing finish with the old version, new notes use the new one); global code (`gkfb = 0.9`, `gitab = ftgen(...)`, `schedule(3, 0, 1)`) runs at once.
@@ -4013,9 +4161,9 @@ When Apply fails, the line reported by Csound gets a red dot, a red background a
 
 
 # Parameters
-Every instance offers the DAW **176 fixed parameters**: 64 Float, 32 Int, 64 Bool and 16 Choice. The DAW always sees "Float 1 ... Float 64" and so on; in the Parameters panel you give each one a Csound channel name and its range. The code reads them with `chnget`; `chnset` on the same channel moves the parameter (slider and DAW automation).
-- **Float** (min, max, default, skew, step), **Int** (min, max, default), **Bool** (default), **Choice** (up to 16 options; the channel gets 1..N, as in Cabbage).
-- **+** on the panel title adds one; its menu also has **Reset to INIT Values**, **Randomize All**, Expand / Collapse All Groups.
+Every instance offers the DAW **176 fixed parameters**: 64 Float, 32 Int, 64 Button (Bool) and 16 Menu (Choice). The DAW always sees "Float 1 ... Float 64" and so on; in the Parameters panel you give each one a Csound channel name and its range. The code reads them with `chnget`; `chnset` on the same channel moves the parameter (slider and DAW automation).
+- **Slider Float** (min, max, default, skew, step), **Slider Int** (min, max, default), **Button** (Toggle or Momentary, INIT, optional EVENT ON / OFF score lines - see Buttons below), **Menu** (up to 16 options; the channel gets 1..N, as in Cabbage).
+- The **+** button at the right of the Parameters title, next to the Snapshots button, opens the Parameters menu: **Add Slider Float / Int, Add Button, Add Menu**, Expand / Collapse All Groups, **Remove Parameters**, **Reset to INIT Values**, **Randomize All**, **Compact Monitor** and **Channels...**.
 - **Drag a card into the code** - drag the handle on its left and drop it on a line of the editor to insert `kCutoff chnget "Cutoff"` with a comment describing the parameter.
 - A parameter channel is a control channel: do not use the same name with audio variables (`a...`) - the console warns about it.
 ## Cards
@@ -4169,6 +4317,13 @@ apeCsound can be used with **VoiceOver** on macOS and iOS (and other screen read
 - The code editor is an accessible text area: reading by character, word and line, caret and selection announced; the help bar is read when it changes.
 - The XY pad announces both axes with their channel names and values; the arrow keys move X and Y (Shift for larger steps), Home/End and PageUp/PageDown jump to the ends.
 
+# Layout and settings
+apeCsound remembers how you left the window - there is nothing to save by hand:
+- **Each instance** keeps its own layout with the DAW project (and the standalone app when it quits): window size (not on iOS), which panels are open (Parameters, Console, Graphs), the width of the Parameters panel and of Graphs, the height of the Console, the closed groups, the Monitor closed or compact, and **where you were in the code** (scroll position and caret). It is not written in the `.csd`, and changing it never marks the session as modified.
+- **A new instance** (or one from an older version) starts from the **last layout you used**, not from the factory one.
+- **Text size, light or dark editor and Modern Syntax in Help** are personal preferences, the same for every instance and project.
+- **Config > Reset Layout** goes back to the factory layout (1024 x 768, Parameters and Console open, groups at their defaults) - handy after moving to a smaller screen. A saved window larger than the screen is reduced to fit.
+
 # Shortcuts
 Cmd on macOS, Ctrl on Windows and Linux.
 - **Cmd+Return** - Apply, **Shift+Return** - Evaluate selection / block / line, **Cmd+E** - Evaluate line in the help bar
@@ -4179,6 +4334,7 @@ Cmd on macOS, Ctrl on Windows and Linux.
 - **Cmd+= / Cmd+-** - larger / smaller text
 - **Cmd+Z / Cmd+Shift+Z** - Undo / Redo
 - **Cmd+/** - comment / uncomment, **Ctrl+I** - re-indent, **Cmd+[ / ]** - shift left / right
+- **Cmd+click** - Jump to Definition, **Ctrl+Cmd+J** - from the caret, **Cmd+Option+Left** (or Ctrl+-) - Go Back (Windows/Linux: Ctrl+click, Alt+J, Alt+Left)
 - **Esc** - close the autocompletion list, the Find bar or this guide
 - In a DAW the plug-in only gets the keys the host passes on (REAPER: "Send all keyboard input to plug-in" in the FX window menu).
 )GUIDE";

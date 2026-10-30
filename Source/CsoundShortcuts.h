@@ -40,6 +40,48 @@ namespace CsoundShortcuts
     // Re-indent (Xcode: Ctrl+I). Su Windows/Linux Ctrl e' anche il "command".
     inline juce::KeyPress reindent()       { return juce::KeyPress ('I', juce::ModifierKeys::ctrlModifier, 0); }
 
+    // Jump to Definition / Go Back, come Xcode (Ctrl+Cmd+J, Ctrl+Cmd+Left).
+    // Su Windows/Linux Ctrl e' gia' il "command": Alt+J / Alt+Left.
+   #if JUCE_MAC || JUCE_IOS
+    inline juce::KeyPress jumpToDefinition() { return juce::KeyPress ('J', juce::ModifierKeys::commandModifier | juce::ModifierKeys::ctrlModifier, 0); }
+    inline juce::KeyPress jumpBack()         { return juce::KeyPress (juce::KeyPress::leftKey, juce::ModifierKeys::commandModifier | juce::ModifierKeys::altModifier, 0); }
+   #else
+    inline juce::KeyPress jumpToDefinition() { return juce::KeyPress ('J', juce::ModifierKeys::altModifier, 0); }
+    inline juce::KeyPress jumpBack()         { return juce::KeyPress (juce::KeyPress::leftKey, juce::ModifierKeys::altModifier, 0); }
+   #endif
+
+    /** Go Back: il tasto principale (Cmd+Option+Left su macOS, Alt+Left
+        altrove) e le alternative note - Ctrl+Cmd+Left di Xcode (spesso preso
+        da macOS per Spaces / tiling delle finestre) e Ctrl+- di VS Code. */
+    inline bool isJumpBack (const juce::KeyPress& key)
+    {
+        const auto m = key.getModifiers();
+        if (m.isShiftDown())
+            return false;
+        if (key.getKeyCode() == juce::KeyPress::leftKey)
+        {
+           #if JUCE_MAC || JUCE_IOS
+            return m.isCommandDown() && (m.isAltDown() || m.isCtrlDown());
+           #else
+            return m.isAltDown() && ! m.isCtrlDown();
+           #endif
+        }
+       #if JUCE_MAC || JUCE_IOS
+        return key.getKeyCode() == '-' && m.isCtrlDown() && ! m.isCommandDown() && ! m.isAltDown();
+       #else
+        return false;
+       #endif
+    }
+
+    inline bool isJumpToDefinition (const juce::KeyPress& key)
+    {
+        const auto m = key.getModifiers();
+        const auto w = jumpToDefinition().getModifiers();
+        return (key.getKeyCode() == 'J' || key.getKeyCode() == 'j')
+            && m.isCommandDown() == w.isCommandDown() && m.isCtrlDown() == w.isCtrlDown()
+            && m.isAltDown() == w.isAltDown() && ! m.isShiftDown();
+    }
+
     /** Cmd+/ anche con tastiere dove "/" richiede Shift (es. italiana:
         Shift+7): si guarda anche il carattere prodotto, non solo il tasto. */
     inline bool isToggleComment (const juce::KeyPress& key)
