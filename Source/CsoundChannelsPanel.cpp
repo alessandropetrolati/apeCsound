@@ -234,7 +234,7 @@ void CsoundChannelsPanel::refreshValues()
 void CsoundChannelsPanel::showMapMenu (const juce::StringArray& channels, const juce::String& title)
 {
     std::vector<CsoundActionSheetItem> items;
-    const char* const names[] = { "Slider (Float)", "Slider (Int)", "Toggle", "Menu" };
+    const char* const names[] = { "Slider (Float)", "Slider (Int)", "Button", "Menu" };
     const CsoundActionSheetIcon icons[] = { CsoundActionSheetIcon::sliderFloat, CsoundActionSheetIcon::sliderInt,
                                             CsoundActionSheetIcon::toggleSwitch, CsoundActionSheetIcon::comboMenu };
     for (int k = 0; k < 4; ++k)

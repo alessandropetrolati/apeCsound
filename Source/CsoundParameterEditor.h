@@ -518,6 +518,8 @@ public:
     static constexpr int cardFieldStepWidth = cardFieldNarrowWidth; // stessa larghezza di Min/Max/ecc. (richiesta esplicita, prima era piu' largo)
     static constexpr int cardFieldGap = 14;
     static constexpr int cardBoolFieldWidth = 120;
+    static constexpr int cardBoolModeWidth = 150;   // "Momentary"
+    static constexpr int cardBoolEventWidth = 170;  // riga EVENT ("i 10 0 1")
     static constexpr int cardChoiceDefaultWidth = 160; // ComboBox: deve mostrare l'etichetta scelta, non solo un indice
 
     // Altezza di una card Edit con "numFieldRows" righe di campi (etichetta
@@ -927,6 +929,37 @@ private:
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (IntParamRow)
     };
 
+    // Controllo a segmenti ("Off | On", "Toggle | Momentary"): poche
+    // scelte sempre visibili, un tocco per cambiare - al posto di un
+    // ComboBox, che su iOS apre un menu per due sole voci. Stessa API del
+    // ComboBox per quello che serve qui (addItem/setSelectedId/
+    // getSelectedId/onChange). Ogni segmento e' un bottone (VoiceOver:
+    // "Momentary, selected").
+    struct SegmentedControl final : public juce::Component,
+                                    private juce::Button::Listener
+    {
+        SegmentedControl();
+        void addItem (const juce::String& text, int itemId);
+        void setSelectedId (int itemId, juce::NotificationType notification = juce::sendNotificationAsync);
+        int getSelectedId() const noexcept { return selectedId; }
+        void setAccent (juce::Colour c);
+        void setTooltip (const juce::String& tip);
+        void resized() override;
+        void enablementChanged() override;
+        void paint (juce::Graphics& g) override;   // binario, segmento scelto, testi
+        std::function<void()> onChange;
+
+    private:
+        void refreshColours();
+        void buttonClicked (juce::Button*) override {}
+        void buttonStateChanged (juce::Button*) override { repaint(); }   // hover / pressione
+        juce::OwnedArray<juce::TextButton> segments;
+        juce::Array<int> ids;
+        int selectedId = 0;
+        int radioGroup = 0;
+        juce::Colour accent { juce::Colours::teal };
+    };
+
     // Una riga EDIT per slot booleano ("TOGGLE" nel mockup) - barra
     // maniglia verde/teal, un solo campo (checkbox "On" con etichetta
     // "INIT" sopra).
@@ -964,6 +997,7 @@ private:
         // Rimozione dal menu "..." della card (stesso effetto del bottone
         // "x" della vista Edit, vedi removeButton.onClick).
         void requestRemove() { removeButton.triggerClick(); }
+        bool isMomentary() const { return processor.getBoolParamSlot (index).momentary; }
 
     private:
         void textEditorReturnKeyPressed (juce::TextEditor&) override;
@@ -999,7 +1033,13 @@ private:
         juce::TextEditor channelNameEditor;
 
         juce::Label initCaption;
-        juce::ToggleButton defaultToggle { "On" };
+        SegmentedControl defaultToggle;   // INIT: 1 = Off, 2 = On (solo Toggle)
+        juce::Label modeCaption;
+        SegmentedControl modeCombo;   // 1 = Toggle, 2 = Momentary
+        juce::Label eventCaption;
+        juce::TextEditor eventEditor;
+        juce::Label eventOffCaption;
+        juce::TextEditor eventOffEditor;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BoolParamRow)
     };
@@ -1117,6 +1157,22 @@ private:
         float externalFlash = 0.0f; // 1 = appena acceso, 0 = spento
         bool lastToggleState = false;        // vedi toggle.onStateChange
         bool toggleClickInProgress = false;  // mouse giu' sul toggle (listener), vedi mouseDown/mouseUp
+        // Bool Momentary: 1 finche' e' premuto, 0 al rilascio (gesto per
+        // l'host = pressione). Riletto a ogni pressione dallo slot.
+        //
+        // Il bottone NON riceve il mouse in modalita' Momentary (lo gestisce
+        // la riga): un clic del Button passerebbe dalla ButtonParameter-
+        // Attachment (un secondo gesto dentro il nostro) e setToggleState
+        // dell'attachment rimanda onClick - era una ricorsione che finiva in
+        // beginChangeGesture annidati (crash/assert).
+        void setMomentary (bool shouldBeMomentary);
+        bool momentary = false;
+        juce::RangedAudioParameter* boundParameter = nullptr;
+        bool momentaryHeld = false;          // gesto aperto (mouse giu' o impulso in corso)
+        bool settingMomentaryValue = false;  // stiamo scrivendo noi il parametro: ignora onClick
+        void pressMomentary();
+        void releaseMomentary();
+        void pulseMomentary();               // tastiera / VoiceOver: 1 e poi 0
         void mouseUp (const juce::MouseEvent& event) override;
 
         // accent/typeLabelText: stessi colori/testo della card Edit
@@ -1293,6 +1349,7 @@ private:
         // delle 4 implementazioni sotto), commutato dalla SUA editIconButton
         // invece che da un interruttore globale di pannello.
         virtual int getPreferredHeight (int availableWidth) const = 0;
+        virtual bool isInEditMode() const = 0;
     };
 
     // Costruisce editIconButton/copyButton, comuni a tutte e 4 le
@@ -1349,6 +1406,7 @@ private:
         juce::TextButton editIconButton;
         juce::TextButton menuButton;
         bool rowEditMode = false;
+        bool isInEditMode() const override { return rowEditMode; }
         std::function<void()> onEditModeChanged;
 
         // Avvisa il pannello (vedi rowsInEditMode) ad OGNI chiamata di
@@ -1431,6 +1489,7 @@ private:
         juce::TextButton editIconButton;
         juce::TextButton menuButton;
         bool rowEditMode = false, editY = false;
+        bool isInEditMode() const override { return rowEditMode; }
         std::function<void()> onEditModeChanged;
         std::function<void (bool)> onEditModeToggled;
         std::function<void()> onMenuRequested;
@@ -1467,6 +1526,7 @@ private:
         juce::TextButton editIconButton;
         juce::TextButton menuButton;
         bool rowEditMode = false;
+        bool isInEditMode() const override { return rowEditMode; }
         std::function<void()> onEditModeChanged;
         std::function<void (bool)> onEditModeToggled;
         std::function<void()> onMenuRequested; // menu "..." della card (impostata dal pannello)
@@ -1487,7 +1547,10 @@ private:
         CodeFlashOverlay codeFlash;
         int getPreferredHeight (int w) const override
         {
-            return rowEditMode ? cardHeightSingleRow : (compactCardFits (w, false) ? uiCompactCardHeight : uiCardHeight);
+            juce::ignoreUnused (w);
+            if (rowEditMode)
+                return cardHeightForFieldRows (3);   // MODE + INIT, EVENT ON, EVENT OFF
+            return compactCardFits (w, false) ? uiCompactCardHeight : uiCardHeight;
         }
 
         std::unique_ptr<BoolParamRow> editRow;
@@ -1495,6 +1558,7 @@ private:
         juce::TextButton editIconButton;
         juce::TextButton menuButton;
         bool rowEditMode = false;
+        bool isInEditMode() const override { return rowEditMode; }
         std::function<void()> onEditModeChanged;
         std::function<void (bool)> onEditModeToggled;
         std::function<void()> onMenuRequested; // menu "..." della card (impostata dal pannello)
@@ -1523,6 +1587,7 @@ private:
         juce::TextButton editIconButton;
         juce::TextButton menuButton;
         bool rowEditMode = false;
+        bool isInEditMode() const override { return rowEditMode; }
         std::function<void()> onEditModeChanged;
         std::function<void (bool)> onEditModeToggled;
         std::function<void()> onMenuRequested; // menu "..." della card (impostata dal pannello)
@@ -1677,6 +1742,11 @@ private:
     // completo (scarto se Invio con nome vuoto, promozione a riga vera
     // altrimenti).
     void createPendingRow (int kind, int slotIndex);
+    // Promuove la riga sospesa a parametro vero (dopo il primo nome). Se
+    // il mouse e' ancora giu' (il focus si e' perso cliccando proprio il
+    // bottone Done della riga) aspetta il rilascio, poi rispetta lo stato
+    // Edit scelto con quel clic invece di riaprire sempre la card in Edit.
+    void promotePendingRow (int kind, int slotIndex, const juce::String& addedLabel);
 
     // Ricostruisce DA ZERO la lista unificata leggendo lo stato ATTUALE di
     // tutti e 4 i pool di slot (solo quelli con channelName non vuoto -

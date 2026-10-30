@@ -25,6 +25,22 @@ struct ParameterGroupsTests final : public juce::UnitTest
     {
         using namespace CsoundParameterGroups;
 
+        beginTest ("@group names with spaces (ButtonTest: \"Event lines\")");
+        {
+            const auto p = parse ("instr 1\n"
+                                  "; @group Event lines\n"
+                                  "kb chnget \"Bell\"\n"
+                                  "kp chnget \"Pad\"\n"
+                                  "; @group Events from the code\n"
+                                  "kc chnget \"Chord\"\n"
+                                  "endin\n");
+            expectEquals (p.groupNames[0], juce::String ("Event lines"));
+            expectEquals (p.groupNames[1], juce::String ("Events from the code"));
+            expectEquals (p.channels.at ("Bell").group, 0);
+            expectEquals (p.channels.at ("Pad").group, 0);
+            expectEquals (p.channels.at ("Chord").group, 1);
+        }
+
         beginTest ("@group assigns the following chnget lines, in order");
         {
             const auto p = parse ("instr 1\n"
@@ -182,6 +198,64 @@ struct CabbageHelpersTests final : public juce::UnitTest
     void runTest() override
     {
         using namespace cabbageImport;
+
+        beginTest ("latched(): momentary buttons");
+        {
+            bool latched = true;
+            expect (cabbageMatchLatched ("button channel(\"Go\"), latched(0)", latched));
+            expect (! latched);
+            expect (cabbageMatchLatched ("button channel(\"Go\"), latched( 1 )", latched));
+            expect (latched);
+            expect (! cabbageMatchLatched ("button channel(\"Go\")", latched), "absent: Cabbage default (latched)");
+        }
+
+        beginTest ("trigger code and CsoundQt event buttons");
+        {
+            expectEquals (csoundVariableSuffix ("Play"), juce::String ("Play"));
+            expectEquals (csoundVariableSuffix ("my-btn 2"), juce::String ("my_btn_2"));
+            expectEquals (csoundVariableSuffix ("1shot"), juce::String ("_1shot"));
+
+            const auto code = csoundTriggerCode ("Play");
+            expect (code.contains ("kPlay chnget \"Play\""));
+            expect (code.contains ("trigger:k(kPlay, 0.5, 0) == 1"));
+            expect (code.contains ("event \"i\""));
+
+            expect (csoundEventButtonsInstrument ({}).isEmpty());
+            const auto instr = csoundEventButtonsInstrument ({ { "Event1", "i1 0 10" }, { "Go", "i \"Name\" 0 2" } });
+            expect (instr.contains ("instr apeEventButtons"));
+            expect (instr.contains ("alwayson \"apeEventButtons\""));
+            expect (instr.contains ("trigger:k(chnget:k(\"Event1\"), 0.5, 0) == 1"));
+            expect (instr.contains ("scoreline {{i1 0 10}}, 1"));
+            expect (instr.contains ("scoreline {{i \"Name\" 0 2}}, 1"), "quotes kept inside {{ }}");
+
+            const auto held = csoundSlotEventsOrc ({ { "Pad", "i 14.1 0 -1", "i -14.1 0 0" } }, 5);
+            expect (held.contains ("trigger:k(chnget:k(\"Pad\"), 0.5, 0) == 1"), "ON on the rising edge");
+            expect (held.contains ("scoreline {{i 14.1 0 -1}}, 1"));
+            expect (held.contains ("trigger:k(chnget:k(\"Pad\"), 0.5, 1) == 1"), "OFF on the falling edge");
+            expect (held.contains ("scoreline {{i -14.1 0 0}}, 1"));
+            const auto offOnly = csoundSlotEventsOrc ({ { "X", "", "i 2 0 1" } }, 6);
+            expect (! offOnly.contains ("0.5, 0) == 1"), "no ON line: no rising-edge block");
+            expect (offOnly.contains ("0.5, 1) == 1"));
+
+            const auto orc = csoundSlotEventsOrc ({ { "Play", "i 10 0 1", {} } }, 3);
+            expect (orc.startsWith ("gkApeSlotEvents init 3"));
+            expect (orc.contains ("if gkApeSlotEvents != 3 then"), "an older instance turns itself off");
+            expect (orc.contains ("trigger:k(chnget:k(\"Play\"), 0.5, 0) == 1"));
+            expect (orc.contains ("scoreline {{i 10 0 1}}, 1"));
+            expect (orc.contains ("schedule \"apeSlotEvents\", 0, -1"));
+            expectEquals (csoundSlotEventsOrc ({}, 4).trim(), juce::String ("gkApeSlotEvents init 4"), "no events: only stops the old one");
+            expectEquals (csoundScoreLiteral ("i 1 0 1}}"), juce::String ("\"i 1 0 1}}\""));
+
+            expectEquals (csoundQtTurnOffLine ("i1 0 -1"), juce::String ("i -1 0 -1"));
+            expectEquals (csoundQtTurnOffLine ("i 10.1 0 -1 440"), juce::String ("i -10.1 0 -1 440"));
+            expectEquals (csoundQtTurnOffLine ("i \"Pad\" 0 -1"), juce::String ("i \"-Pad\" 0 -1"));
+            expect (csoundQtTurnOffLine ("i1 0 3").isEmpty(), "positive duration: no OFF");
+            expect (csoundQtTurnOffLine ("").isEmpty());
+            expectEquals (channelNameFromLabel ("Play note"), juce::String ("Play_note"));
+            expectEquals (channelNameFromLabel ("  >> Go! "), juce::String ("Go"));
+            expectEquals (channelNameFromLabel ("1st"), juce::String ("_1st"));
+            expect (channelNameFromLabel ("!!!").isEmpty());
+        }
 
         beginTest ("leading identifier");
         {
@@ -803,6 +877,7 @@ struct CabbageImportTests final : public juce::UnitTest
             const int play = findBool ("Play");
             expect (play >= 0, "button imported as Bool (was skipped before)");
             if (play >= 0) expect (! proc.getBoolParamSlot (play).defaultValue);
+            if (play >= 0) expect (! proc.getBoolParamSlot (play).momentary, "latched(1): a toggle");
 
             const int wave = findChoice ("Wave");
             expect (wave >= 0, "combobox imported");
@@ -853,6 +928,102 @@ struct CabbageImportTests final : public juce::UnitTest
             for (int i = 0; i < CsoundAudioProcessor::numChannelParams; ++i)
                 if (proc.getChannelParamSlot (i).channelName == "Freq") ++count;
             expectEquals (count, 1);
+        }
+
+        beginTest ("Button: MODE, INIT, EVENT ON/OFF survive save and reload");
+        {
+            const juce::String csd =
+                "<CsoundSynthesizer><CsInstruments>\ninstr 1\nkp chnget \"Pad\"\nendin\n</CsInstruments></CsoundSynthesizer>\n"
+                "<apeCsoundParams>\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<APE_CSOUND_STATE>\n"
+                "<CHANNEL_PARAM_SLOTS/><INT_PARAM_SLOTS/>\n<BOOL_PARAM_SLOTS>\n"
+                "<SLOT index=\"0\" channel=\"Pad\" default=\"1\" momentary=\"1\" event=\"i 14.1 0 -1\" eventOff=\"i -14.1 0 0\"/>\n"
+                "<SLOT index=\"1\" channel=\"Drone\" default=\"1\"/>\n"
+                "</BOOL_PARAM_SLOTS>\n<CHOICE_PARAM_SLOTS/>\n</APE_CSOUND_STATE>\n</apeCsoundParams>\n";
+
+            auto check = [this, &proc] (const char* when)
+            {
+                const auto pad = proc.getBoolParamSlot (0);
+                expectEquals (pad.channelName, juce::String ("Pad"), when);
+                expect (pad.momentary, when);
+                expect (pad.defaultValue, juce::String (when) + ": INIT kept while Momentary");
+                expect (! pad.startsOn(), juce::String (when) + ": a Momentary starts off anyway");
+                expectEquals (pad.eventLine, juce::String ("i 14.1 0 -1"), when);
+                expectEquals (pad.eventOffLine, juce::String ("i -14.1 0 0"), when);
+                const auto drone = proc.getBoolParamSlot (1);
+                expect (! drone.momentary && drone.startsOn() && drone.eventLine.isEmpty() && drone.eventOffLine.isEmpty(), when);
+            };
+
+            expect (proc.loadSessionFromText (csd));
+            check ("loaded");
+            const auto saved = proc.buildSessionText();
+            expect (saved.contains ("eventOff=\"i -14.1 0 0\""));
+            expect (proc.loadSessionFromText (saved));
+            check ("saved and reloaded");
+        }
+
+        beginTest ("Cabbage: button latched(0) -> momentary");
+        {
+            const juce::String csd =
+                "<Cabbage>\nbutton bounds(0,0,50,50), channel(\"Hit\"), value(1), latched(0)\n</Cabbage>\n"
+                "<CsoundSynthesizer><CsInstruments>\nkh chnget \"Hit\"\n</CsInstruments></CsoundSynthesizer>\n";
+            expect (proc.loadSessionFromText (csd));
+            bool found = false;
+            for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
+                if (proc.getBoolParamSlot (i).channelName == "Hit")
+                {
+                    found = true;
+                    expect (proc.getBoolParamSlot (i).momentary);
+                    expect (! proc.getBoolParamSlot (i).startsOn(), "a momentary button starts off");
+                }
+            expect (found);
+        }
+
+        beginTest ("CsoundQt: value buttons (latch / momentary) and event buttons");
+        {
+            const juce::String csd =
+                "<CsoundSynthesizer><CsInstruments>\ninstr 1\nendin\n</CsInstruments></CsoundSynthesizer>\n"
+                "<bsbPanel>\n"
+                "<bsbObject type=\"BSBButton\"><objectName>hold</objectName><type>value</type><pressedValue>1</pressedValue><latch>false</latch><latched>false</latched></bsbObject>\n"
+                "<bsbObject type=\"BSBButton\"><objectName>sw</objectName><type>value</type><pressedValue>1</pressedValue><latch>true</latch><latched>false</latched></bsbObject>\n"
+                "<bsbObject type=\"BSBButton\"><objectName>on</objectName><type>value</type><pressedValue>1</pressedValue><latch>true</latch><latched>true</latched></bsbObject>\n"
+                "<bsbObject type=\"BSBButton\"><objectName></objectName><type>event</type><text></text><eventLine>i1 0 10</eventLine><latch>false</latch></bsbObject>\n"
+                "<bsbObject type=\"BSBButton\"><objectName>b3682</objectName><type>event</type><text>Held note</text><eventLine>i 2.1 0 -1</eventLine><latch>false</latch></bsbObject>\n"
+                "<bsbObject type=\"BSBButton\"><objectName>b3683</objectName><type>event</type><text>Drone</text><eventLine>i \"Drone\" 0 -1</eventLine><latch>true</latch></bsbObject>\n"
+                "</bsbPanel>\n";
+            expect (proc.loadSessionFromText (csd));
+            int hold = -1, sw = -1, on = -1, ev = -1, held = -1, drone = -1;
+            for (int i = 0; i < CsoundAudioProcessor::numBoolParams; ++i)
+            {
+                const auto n = proc.getBoolParamSlot (i).channelName;
+                if (n == "hold") hold = i;
+                if (n == "sw") sw = i;
+                if (n == "on") on = i;
+                if (n == "Event1") ev = i;
+                if (n == "Held_note") held = i;
+                if (n == "Drone") drone = i;
+            }
+            expect (on >= 0 && proc.getBoolParamSlot (on).startsOn(), "latch + latched -> Toggle starting on");
+            expect (held >= 0, "event button named after its text, not b3682");
+            if (held >= 0)
+            {
+                const auto s = proc.getBoolParamSlot (held);
+                expect (s.momentary);
+                expectEquals (s.eventLine, juce::String ("i 2.1 0 -1"));
+                expectEquals (s.eventOffLine, juce::String ("i -2.1 0 -1"), "held note: OFF on release, as CsoundQt");
+            }
+            expect (drone >= 0, "latched event button");
+            if (drone >= 0)
+            {
+                const auto s = proc.getBoolParamSlot (drone);
+                expect (! s.momentary, "latch -> Toggle");
+                expectEquals (s.eventOffLine, juce::String ("i \"-Drone\" 0 -1"), "named instrument turned off");
+            }
+            expect (hold >= 0 && proc.getBoolParamSlot (hold).momentary, "latch off -> momentary");
+            expect (sw >= 0 && ! proc.getBoolParamSlot (sw).momentary && ! proc.getBoolParamSlot (sw).defaultValue,
+                    "latch on -> toggle, starting off");
+            expect (ev >= 0 && proc.getBoolParamSlot (ev).momentary, "event button -> momentary Event1");
+            if (ev >= 0) expectEquals (proc.getBoolParamSlot (ev).eventLine, juce::String ("i1 0 10"), "its score line as EVENT");
+            expect (! proc.getCsdTextWithSurroundings().contains ("apeEventButtons"), "the code is not changed");
         }
 
         beginTest ("CsoundQt: knob, checkbox, dropdown, controller");

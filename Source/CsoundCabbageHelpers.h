@@ -113,6 +113,19 @@ namespace cabbageImport
         return false;
     }
 
+    /** latched(0|1) di un button Cabbage: 0 = momentaneo (1 premuto, 0 al
+        rilascio), 1 = interruttore (il default di Cabbage). */
+    inline bool cabbageMatchLatched (const juce::String& line, bool& latched)
+    {
+        static const std::regex re (R"re(\blatched\(\s*([0-9.]+)\s*\))re");
+        std::smatch m;
+        const auto s = line.toStdString();
+        if (! std::regex_search (s, m, re))
+            return false;
+        latched = juce::String (m[1].str()).getDoubleValue() != 0.0;
+        return true;
+    }
+
     inline bool cabbageMatchValueNumber (const juce::String& line, double& value)
     {
         static const std::regex re (R"re(value\(([^)]*)\))re");
@@ -282,5 +295,149 @@ namespace cabbageImport
             return juce::String (m[1].str());
 
         return {};
+    }
+    //==========================================================================
+    // Bottoni che lanciano eventi: il modo "Cabbage" - il bottone e' un
+    // parametro Bool (Momentary o Toggle) e l'evento lo genera il CODICE sul
+    // fronte di salita (trigger), cosi' resta visibile, modificabile e
+    // portabile. Vedi "Copy Trigger Code" nel menu della card e l'import dei
+    // bottoni "event" di CsoundQt.
+
+    /** Nome di variabile Csound dal nome del canale: solo lettere, cifre e
+        "_", mai una cifra in testa. */
+    inline juce::String csoundVariableSuffix (const juce::String& channel)
+    {
+        juce::String v;
+        for (auto c : channel)
+            v << (juce::CharacterFunctions::isLetterOrDigit (c) || c == '_' ? juce::String::charToString (c) : juce::String ("_"));
+        if (v.isEmpty() || juce::CharacterFunctions::isDigit (v[0]))
+            v = "_" + v;
+        return v;
+    }
+
+    /** Le righe da incollare in un instr per lanciare un evento quando il
+        bottone passa da 0 a 1 (una sola volta per pressione, anche con
+        l'automazione della DAW che ripete il valore a ogni blocco). */
+    inline juce::String csoundTriggerCode (const juce::String& channel)
+    {
+        const auto k = "k" + csoundVariableSuffix (channel);
+        juce::String code;
+        code << k << " chnget \"" << channel << "\"\n"
+             << "if trigger:k(" << k << ", 0.5, 0) == 1 then   ; 0 -> 1: once per press\n"
+             << "  event \"i\", 10, 0, 1                     ; your instrument, start, duration\n"
+             << "endif\n";
+        return code;
+    }
+
+    struct EventButton { juce::String channel, scoreLine, offLine; };
+
+    /** Bottone "event" di CsoundQt con durata negativa ("i 1 0 -1", nota
+        tenuta): CsoundQt al rilascio (o allo spegnimento, se latch) manda
+        la stessa riga con il numero di strumento negativo ("i -1 0 -1",
+        "i \"-name\" ..."). Stesso algoritmo di QuteButton::performAction.
+        Vuota se la durata non e' negativa (nessun OFF). */
+    inline juce::String csoundQtTurnOffLine (const juce::String& eventLine)
+    {
+        juce::StringArray e;
+        e.addTokens (eventLine.trim(), " \t", "");
+        e.removeEmptyStrings();
+        if (e.isEmpty())
+            return {};
+        if (e[0] == "i")
+            e.remove (0);
+        else if (e[0].startsWithChar ('i'))
+            e.set (0, e[0].substring (1));
+        if (e.size() < 3 || e[2].getDoubleValue() >= 0.0 || e[0].isEmpty())
+            return {};
+        if (e[0].startsWithChar ('"') || e[0].startsWithChar ('\''))
+            e.set (0, e[0].substring (0, 1) + "-" + e[0].substring (1));
+        else
+            e.set (0, "-" + e[0]);
+        e.insert (0, "i");
+        return e.joinIntoString (" ");
+    }
+
+    /** Nome di canale dal testo di un bottone ("Play note" -> "Play_note"),
+        vuoto se non resta niente di utile. */
+    inline juce::String channelNameFromLabel (const juce::String& label)
+    {
+        juce::String n;
+        for (auto c : label.trim())
+            if (juce::CharacterFunctions::isLetterOrDigit (c) || c == '_') n << juce::String::charToString (c);
+            else if (c == ' ' || c == '-') n << "_";
+        while (n.contains ("__")) n = n.replace ("__", "_");
+        n = n.trimCharactersAtStart ("_").trimCharactersAtEnd ("_");
+        if (n.isNotEmpty() && juce::CharacterFunctions::isDigit (n[0]))
+            n = "_" + n;
+        return n;
+    }
+
+    /** Una riga di score come stringa Csound: {{...}} se possibile. */
+    inline juce::String csoundScoreLiteral (const juce::String& scoreLine)
+    {
+        const auto line = scoreLine.trim().replace ("\n", " ").replace ("\r", " ");
+        return line.contains ("}}") ? "\"" + line.replace ("\"", "\\\"") + "\""
+                                    : "{{" + line + "}}";
+    }
+
+    /** Orchestra compilata da apeCsound mentre il motore suona, per i Toggle
+        con una riga EVENT (stile CsoundQt): uno strumento sempre attivo che
+        manda la riga quando il bottone passa da 0 a 1. Ricompilata quando
+        cambiano le righe: "generation" ferma l'istanza della versione
+        precedente (gkApeSlotEvents cambia, la vecchia istanza fa turnoff).
+        Vuota = solo il nuovo valore di generation (ferma tutto). */
+    inline juce::String csoundSlotEventsOrc (const std::vector<EventButton>& buttons, int generation)
+    {
+        juce::String code;
+        code << "gkApeSlotEvents init " << generation << "\n";
+        if (buttons.empty())
+            return code;
+        code << "instr apeSlotEvents\n"
+             << "  if gkApeSlotEvents != " << generation << " then\n"
+             << "    turnoff\n"
+             << "  endif\n";
+        for (const auto& b : buttons)
+        {
+            // ON: 0 -> 1 (pressione / accensione); OFF: 1 -> 0 (rilascio /
+            // spegnimento). Righe vuote: niente.
+            if (b.scoreLine.trim().isNotEmpty())
+                code << "  if trigger:k(chnget:k(\"" << b.channel << "\"), 0.5, 0) == 1 then\n"
+                     << "    scoreline " << csoundScoreLiteral (b.scoreLine) << ", 1\n"
+                     << "  endif\n";
+            if (b.offLine.trim().isNotEmpty())
+                code << "  if trigger:k(chnget:k(\"" << b.channel << "\"), 0.5, 1) == 1 then\n"
+                     << "    scoreline " << csoundScoreLiteral (b.offLine) << ", 1\n"
+                     << "  endif\n";
+        }
+        code << "endin\n"
+             << "schedule \"apeSlotEvents\", 0, -1\n";
+        return code;
+    }
+
+    /** Uno strumento sempre attivo che manda la riga di score di ciascun
+        bottone "event" importato (CsoundQt) quando il bottone viene premuto. */
+    inline juce::String csoundEventButtonsInstrument (const std::vector<EventButton>& buttons)
+    {
+        if (buttons.empty())
+            return {};
+        juce::String code;
+        code << "\n; ---------------------------------------------------------------------------\n"
+             << "; Event buttons imported from CsoundQt by apeCsound. Each button is a\n"
+             << "; momentary Button parameter; this instrument sends its score line once,\n"
+             << "; when the button goes from 0 to 1 (a press, or the DAW automation).\n"
+             << "; ---------------------------------------------------------------------------\n"
+             << "instr apeEventButtons\n";
+        for (const auto& b : buttons)
+        {
+            const auto line = b.scoreLine.trim().replace ("\n", " ").replace ("\r", " ");
+            const auto literal = line.contains ("}}") ? "\"" + line.replace ("\"", "\\\"") + "\""
+                                                      : "{{" + line + "}}";
+            code << "  if trigger:k(chnget:k(\"" << b.channel << "\"), 0.5, 0) == 1 then\n"
+                 << "    scoreline " << literal << ", 1\n"
+                 << "  endif\n";
+        }
+        code << "endin\n"
+             << "alwayson \"apeEventButtons\"\n";
+        return code;
     }
 } // namespace cabbageImport

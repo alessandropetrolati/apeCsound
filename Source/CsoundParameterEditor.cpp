@@ -1,5 +1,6 @@
 #include "CsoundParameterEditor.h"
 #include "CsoundLayoutHelpers.h"
+#include "CsoundCabbageHelpers.h"
 #include "CsoundShortcuts.h"
 #include "NativeAlertMac.h"
 #include "CsoundTextPrompt.h"
@@ -50,7 +51,7 @@ namespace
 
     // Colore della maniglia/etichetta tipo, uno per ciascuno dei 4 tipi di
     // card Edit (vedi mockup: barra verticale a sinistra colorata) - "Slider
-    // Float" per Float, "Slider Int" per Int, "Toggle" per Bool, "Menu" per Choice.
+    // Float" per Float, "Slider Int" per Int, "Button" per Bool, "Menu" per Choice.
     const juce::Colour kSliderAccent { 0xff4a90e2 }; // blu
     const juce::Colour kKnobAccent   { 0xff9370db }; // viola
     const juce::Colour kToggleAccent { 0xff2ecc9a }; // verde/teal
@@ -149,7 +150,13 @@ namespace
 
     juce::String makeBoolConfigComment (const CsoundAudioProcessor::BoolParamSlot& slot)
     {
-        return juce::String ("TOGGLE: Init=") + (slot.defaultValue ? "On" : "Off");
+        juce::String c = slot.momentary ? juce::String ("BUTTON: Momentary")
+                                        : juce::String ("BUTTON: Toggle; Init=") + (slot.defaultValue ? "On" : "Off");
+        if (slot.eventLine.isNotEmpty())
+            c << "; On=" << slot.eventLine;
+        if (slot.eventOffLine.isNotEmpty())
+            c << "; Off=" << slot.eventOffLine;
+        return c;
     }
 
     juce::String makeChoiceConfigComment (const CsoundAudioProcessor::ChoiceParamSlot& slot)
@@ -1612,6 +1619,151 @@ void CsoundParameterMappingPanel::IntParamRow::mouseDrag (const juce::MouseEvent
 }
 
 //==============================================================================
+// SegmentedControl: vedi il .h.
+CsoundParameterMappingPanel::SegmentedControl::SegmentedControl()
+{
+    static int nextGroup = 9100;   // un gruppo radio per istanza
+    radioGroup = ++nextGroup;
+    setWantsKeyboardFocus (false);
+}
+
+void CsoundParameterMappingPanel::SegmentedControl::addItem (const juce::String& text, int itemId)
+{
+    auto* b = segments.add (new juce::TextButton (text));
+    ids.add (itemId);
+    b->setClickingTogglesState (true);
+    b->setRadioGroupId (radioGroup, juce::dontSendNotification);
+    b->setTitle (text);
+    b->addListener (this);
+    b->setMouseCursor (juce::MouseCursor::PointingHandCursor);
+    const int n = segments.size();
+    b->onClick = [this, itemId, b]
+    {
+        if (b->getToggleState() && selectedId != itemId)
+        {
+            selectedId = itemId;
+            refreshColours();
+            if (onChange) onChange();
+        }
+    };
+    addAndMakeVisible (b);
+    // bordi uniti tra i segmenti
+    for (int i = 0; i < n; ++i)
+        segments[i]->setConnectedEdges ((i > 0 ? juce::Button::ConnectedOnLeft : 0)
+                                        | (i < n - 1 ? juce::Button::ConnectedOnRight : 0));
+    refreshColours();
+    resized();
+}
+
+void CsoundParameterMappingPanel::SegmentedControl::setSelectedId (int itemId, juce::NotificationType notification)
+{
+    const bool changed = itemId != selectedId;
+    selectedId = itemId;
+    for (int i = 0; i < segments.size(); ++i)
+        segments[i]->setToggleState (ids[i] == itemId, juce::dontSendNotification);
+    refreshColours();
+    if (changed && notification != juce::dontSendNotification && onChange)
+        onChange();
+}
+
+void CsoundParameterMappingPanel::SegmentedControl::setAccent (juce::Colour c)
+{
+    accent = c;
+    refreshColours();
+}
+
+void CsoundParameterMappingPanel::SegmentedControl::setTooltip (const juce::String& tip)
+{
+    for (auto* b : segments)
+        b->setTooltip (tip);
+}
+
+void CsoundParameterMappingPanel::SegmentedControl::refreshColours()
+{
+    // I segmenti sono bottoni trasparenti (tocco, tastiera, VoiceOver):
+    // l'aspetto lo disegna paint() qui sotto.
+    for (auto* b : segments)
+    {
+        b->setColour (juce::TextButton::buttonColourId,   juce::Colours::transparentBlack);
+        b->setColour (juce::TextButton::buttonOnColourId, juce::Colours::transparentBlack);
+        b->setColour (juce::TextButton::textColourOffId,  juce::Colours::transparentBlack);
+        b->setColour (juce::TextButton::textColourOnId,   juce::Colours::transparentBlack);
+    }
+    repaint();
+}
+
+void CsoundParameterMappingPanel::SegmentedControl::enablementChanged()
+{
+    refreshColours();
+}
+
+void CsoundParameterMappingPanel::SegmentedControl::paint (juce::Graphics& g)
+{
+    // Binario arrotondato incassato; il segmento scelto e' una "pastiglia"
+    // nel colore del tipo, leggermente rialzata; gli altri solo testo.
+    // Disabilitato: tutto attenuato, la pastiglia resta visibile (si legge
+    // il valore conservato).
+    const bool enabled = isEnabled();
+    auto track = getLocalBounds().toFloat().reduced (0.5f);
+    const float radius = juce::jmin (8.0f, track.getHeight() * 0.5f);
+
+    g.setColour (kFieldBg.darker (0.25f));
+    g.fillRoundedRectangle (track, radius);
+    g.setColour (kFieldOutline.withAlpha (enabled ? 1.0f : 0.5f));
+    g.drawRoundedRectangle (track, radius, 1.0f);
+
+    const float fontSize = juce::jlimit (11.0f, 14.0f, (float) getHeight() * 0.48f);
+    for (int i = 0; i < segments.size(); ++i)
+    {
+        const auto* b = segments[i];
+        const bool selected = ids[i] == selectedId;
+        auto r = b->getBounds().toFloat().reduced (3.0f);
+
+        if (selected)
+        {
+            const auto fill = enabled ? accent : accent.withSaturation (accent.getSaturation() * 0.3f).withAlpha (0.45f);
+            if (enabled)
+            {
+                g.setColour (juce::Colours::black.withAlpha (0.35f));   // ombra
+                g.fillRoundedRectangle (r.translated (0.0f, 1.0f), radius - 2.5f);
+            }
+            g.setGradientFill (juce::ColourGradient (fill.brighter (0.12f), 0.0f, r.getY(),
+                                                     fill.darker (0.12f), 0.0f, r.getBottom(), false));
+            g.fillRoundedRectangle (r, radius - 2.5f);
+        }
+        else if (enabled && (b->isOver() || b->isDown()))
+        {
+            g.setColour (kText.withAlpha (b->isDown() ? 0.12f : 0.06f));
+            g.fillRoundedRectangle (r, radius - 2.5f);
+        }
+
+        g.setColour (selected ? (enabled ? kOnAccent : kOnAccent.withAlpha (0.6f))
+                              : (enabled ? kText.withAlpha (0.85f) : kTextMuted.withAlpha (0.5f)));
+        g.setFont (juce::Font (juce::FontOptions (fontSize, selected ? juce::Font::bold : juce::Font::plain)));
+        g.drawFittedText (b->getButtonText(), r.toNearestInt().reduced (2, 0), juce::Justification::centred, 1, 0.8f);
+    }
+
+    // Focus da tastiera: un anello sul segmento attivo.
+    for (auto* b : segments)
+        if (b->hasKeyboardFocus (false))
+        {
+            g.setColour (accent.withAlpha (0.8f));
+            g.drawRoundedRectangle (b->getBounds().toFloat().reduced (1.5f), radius - 1.0f, 1.5f);
+        }
+}
+
+void CsoundParameterMappingPanel::SegmentedControl::resized()
+{
+    const int n = segments.size();
+    if (n == 0)
+        return;
+    auto r = getLocalBounds();
+    const int w = r.getWidth() / n;
+    for (int i = 0; i < n; ++i)
+        segments[i]->setBounds (i == n - 1 ? r : r.removeFromLeft (w));
+}
+
+//==============================================================================
 // BoolParamRow ("TOGGLE" nel mockup, slot Bool).
 CsoundParameterMappingPanel::BoolParamRow::BoolParamRow (CsoundAudioProcessor& processorToEdit, int slotIndex)
     : processor (processorToEdit),
@@ -1620,7 +1772,7 @@ CsoundParameterMappingPanel::BoolParamRow::BoolParamRow (CsoundAudioProcessor& p
     setMouseCursor (juce::MouseCursor::NormalCursor);
     setMouseClickGrabsKeyboardFocus (false);
 
-    setupTypeLabel (typeLabel, "TOGGLE " + juce::String (juce::CharPointer_UTF8 ("\xc2\xb7")) + " CHANNEL", kToggleAccent);
+    setupTypeLabel (typeLabel, "BUTTON " + juce::String (juce::CharPointer_UTF8 ("\xc2\xb7")) + " CHANNEL", kToggleAccent);
     addAndMakeVisible (typeLabel);
 
     channelNameEditor.setTextToShowWhenEmpty ("(no channel)", kPlaceholder);
@@ -1632,10 +1784,12 @@ CsoundParameterMappingPanel::BoolParamRow::BoolParamRow (CsoundAudioProcessor& p
 
     setupFieldCaption (initCaption, "INIT");
     addAndMakeVisible (initCaption);
-    defaultToggle.setColour (juce::ToggleButton::textColourId, kText);
-    defaultToggle.setColour (juce::ToggleButton::tickColourId, kToggleAccent);
-    defaultToggle.setColour (juce::ToggleButton::tickDisabledColourId, kFieldOutline);
-    defaultToggle.onClick = [this]
+    // INIT come menu Off/On (una casella "On" sola non si capiva).
+    defaultToggle.addItem ("Off", 1);
+    defaultToggle.addItem ("On", 2);
+    defaultToggle.setAccent (kToggleAccent);
+    defaultToggle.setTooltip ("State when the patch starts (Toggle only: a Momentary button is always Off until pressed)");
+    defaultToggle.onChange = [this]
     {
         const auto beforeSlot = processor.getBoolParamSlot (index);
         commitFromFields();
@@ -1651,6 +1805,57 @@ CsoundParameterMappingPanel::BoolParamRow::BoolParamRow (CsoundAudioProcessor& p
     };
     defaultToggle.setTitle ("Initial state");
     addAndMakeVisible (defaultToggle);
+
+    // Toggle (interruttore) o Momentary (1 finche' premuto, 0 al rilascio).
+    setupFieldCaption (modeCaption, "MODE");
+    addAndMakeVisible (modeCaption);
+    modeCombo.addItem ("Toggle", 1);
+    modeCombo.addItem ("Momentary", 2);
+    modeCombo.setAccent (kToggleAccent);
+    modeCombo.setTooltip ("Toggle: a switch that stays on. Momentary: on while pressed, off when released.");
+    modeCombo.setTitle ("Mode");
+    modeCombo.onChange = [this]
+    {
+        const auto beforeSlot = processor.getBoolParamSlot (index);
+        commitFromFields();
+        const auto afterSlot = processor.getBoolParamSlot (index);
+
+        if (pushUndo)
+        {
+            auto& proc = processor;
+            const int idx = index;
+            pushUndo ([&proc, idx, afterSlot]  { proc.setBoolParamSlot (idx, afterSlot); },
+                       [&proc, idx, beforeSlot] { proc.setBoolParamSlot (idx, beforeSlot); });
+        }
+    };
+    addAndMakeVisible (modeCombo);
+
+    // EVENT (facoltativa, stile CsoundQt): la riga di score mandata quando
+    // il bottone passa da 0 a 1. Vuota: l'evento lo gestisce il codice.
+    setupFieldCaption (eventCaption, "EVENT ON  (press / switch on)");
+    addAndMakeVisible (eventCaption);
+    eventEditor.setTextToShowWhenEmpty ("i 10 0 2   or a held note:  i 10.1 0 -1", kPlaceholder);
+    eventEditor.setTitle ("Event on press");
+    eventEditor.setTooltip ("Optional score line sent when the button is pressed (goes from 0 to 1), "
+                            "like a CsoundQt event button - e.g. i 10 0 1. Leave it empty to start "
+                            "instruments from your code (card menu > Copy Trigger Code).");
+    eventEditor.addListener (this);
+    applyDarkFieldColours (eventEditor);
+    addAndMakeVisible (eventEditor);
+
+    // EVENT OFF (facoltativa): mandata nel passaggio da 1 a 0 - rilascio
+    // del Momentary o spegnimento del Toggle. Per fermare la nota tenuta
+    // partita da EVENT ON.
+    setupFieldCaption (eventOffCaption, "EVENT OFF  (release / switch off)");
+    addAndMakeVisible (eventOffCaption);
+    eventOffEditor.setTextToShowWhenEmpty ("i -10.1 0 0   stops the held note", kPlaceholder);
+    eventOffEditor.setTitle ("Event on release");
+    eventOffEditor.setTooltip ("Optional score line sent when the button goes from 1 to 0: release (Momentary) "
+                               "or switch off (Toggle). To stop a held note started by EVENT ON "
+                               "(i 10.1 0 -1), write i -10.1 0 0.");
+    eventOffEditor.addListener (this);
+    applyDarkFieldColours (eventOffEditor);
+    addAndMakeVisible (eventOffEditor);
 
     // Cerchio rosso con un "-" disegnato a mano (vedi drawButtonText,
     // branch "removeParam") invece del vecchio quadrato con la "x" - stesso
@@ -1697,16 +1902,36 @@ void CsoundParameterMappingPanel::BoolParamRow::refreshFromProcessor()
 {
     const auto slot = processor.getBoolParamSlot (index);
     channelNameEditor.setText (slot.channelName, false);
-    defaultToggle.setToggleState (slot.defaultValue, juce::dontSendNotification);
+    defaultToggle.setSelectedId (slot.defaultValue ? 2 : 1, juce::dontSendNotification);
+    modeCombo.setSelectedId (slot.momentary ? 2 : 1, juce::dontSendNotification);
+    if (! eventEditor.hasKeyboardFocus (true))
+        eventEditor.setText (slot.eventLine, false);
+    if (! eventOffEditor.hasKeyboardFocus (true))
+        eventOffEditor.setText (slot.eventOffLine, false);
+    defaultToggle.setEnabled (! slot.momentary);   // un Momentary parte sempre spento
 }
 
 void CsoundParameterMappingPanel::BoolParamRow::commitFromFields()
 {
     CsoundAudioProcessor::BoolParamSlot slot;
     slot.channelName = channelNameEditor.getText().trim();
-    slot.defaultValue = defaultToggle.getToggleState();
+    slot.momentary = modeCombo.getSelectedId() == 2;
+    slot.eventLine = eventEditor.getText().trim();
+    slot.eventOffLine = eventOffEditor.getText().trim();
+    // INIT resta com'e' anche in Momentary (solo disabilitato: conta per
+    // Toggle, vedi BoolParamSlot::startsOn).
+    slot.defaultValue = defaultToggle.getSelectedId() == 2;
+    defaultToggle.setEnabled (! slot.momentary);
 
+    const bool becameMomentary = slot.momentary && ! processor.getBoolParamSlot (index).momentary;
     processor.setBoolParamSlot (index, slot);
+
+    // Passando a Momentary il bottone rilasciato vale 0: se il Toggle era
+    // acceso resterebbe "premuto".
+    if (becameMomentary)
+        if (auto* p = processor.apvts.getParameter (CsoundAudioProcessor::getBoolParamID (index)))
+            if (p->getValue() >= 0.5f)
+                p->setValueNotifyingHost (0.0f);
 
     const bool nameTaken = slot.channelName.isNotEmpty() && processor.isChannelNameUsedElsewhere (slot.channelName, 2, index);
     setFieldValidity (channelNameEditor, nullptr, {}, ! nameTaken);
@@ -1793,7 +2018,18 @@ void CsoundParameterMappingPanel::BoolParamRow::resized()
     removeButton.setBounds (removeArea);
     channelNameEditor.setBounds (nameArea);
 
-    CsoundParameterMappingPanel::layoutCaptionedField (fieldsArea.removeFromLeft (cardBoolFieldWidth), initCaption, defaultToggle);
+    // Prima riga: MODE e INIT affiancati (INIT conta solo per Toggle).
+    // Seconda riga: EVENT a tutta larghezza (la riga di score e' lunga).
+    const int rowHeightPx = cardFieldCaptionHeight + cardFieldCaptionGap + cardFieldBoxHeight;
+    auto firstRow = fieldsArea.removeFromTop (rowHeightPx);
+    const int half = (firstRow.getWidth() - cardFieldGap) * 3 / 5;   // "Momentary" e' la parola lunga
+    CsoundParameterMappingPanel::layoutCaptionedField (firstRow.removeFromLeft (half), modeCaption, modeCombo);
+    firstRow.removeFromLeft (cardFieldGap);
+    CsoundParameterMappingPanel::layoutCaptionedField (firstRow, initCaption, defaultToggle);
+    fieldsArea.removeFromTop (cardFieldRowGap);
+    CsoundParameterMappingPanel::layoutCaptionedField (fieldsArea.removeFromTop (rowHeightPx), eventCaption, eventEditor);
+    fieldsArea.removeFromTop (cardFieldRowGap);
+    CsoundParameterMappingPanel::layoutCaptionedField (fieldsArea.removeFromTop (rowHeightPx), eventOffCaption, eventOffEditor);
 }
 
 void CsoundParameterMappingPanel::BoolParamRow::mouseDown (const juce::MouseEvent& event)
@@ -2266,6 +2502,7 @@ CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
 
         case Kind::toggle:
             toggle.setName ("pillToggle");
+            boundParameter = &parameter;
             addAndMakeVisible (toggle);
             buttonAttachment = std::make_unique<juce::ButtonParameterAttachment> (parameter, toggle, nullptr);
             // onStateChange scatta anche per hover/pressione del mouse (BUG:
@@ -2285,8 +2522,17 @@ CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
                 if (now == lastToggleState)
                     return;
                 lastToggleState = now;
-                if (! toggleClickInProgress)
+                // Non e' "mosso da fuori" se lo stiamo premendo noi (Momentary).
+                if (! toggleClickInProgress && ! settingMomentaryValue && ! momentaryHeld)
                     flashExternalChange();
+            };
+            // Momentary azionato senza mouse (Spazio, VoiceOver): un impulso.
+            // Ignora i click "di ritorno" (setToggleState dell'attachment
+            // mentre scriviamo noi il parametro).
+            toggle.onClick = [this]
+            {
+                if (momentary && ! settingMomentaryValue && ! momentaryHeld)
+                    pulseMomentary();
             };
             break;
 
@@ -2453,6 +2699,12 @@ void CsoundParameterMappingPanel::GenericParamRow::mouseDown (const juce::MouseE
         toggleClickInProgress = true; // vedi toggle.onStateChange
         return;
     }
+    // Momentary: il bottone non riceve il mouse, la pressione arriva qui.
+    if (momentary && event.eventComponent == this && toggle.getBounds().contains (event.getPosition()))
+    {
+        pressMomentary();
+        return;
+    }
     // Vedi il commento identico su ParamRow::mouseDown piu' sopra.
     draggingFromHandle = event.eventComponent == this && handleBounds.contains (event.getPosition());
 }
@@ -2461,6 +2713,53 @@ void CsoundParameterMappingPanel::GenericParamRow::mouseUp (const juce::MouseEve
 {
     if (event.eventComponent == &toggle)
         toggleClickInProgress = false;
+    else if (momentaryHeld)
+        releaseMomentary();   // anche se il dito e' scivolato fuori dal bottone
+}
+
+void CsoundParameterMappingPanel::GenericParamRow::setMomentary (bool shouldBeMomentary)
+{
+    if (kind != Kind::toggle || shouldBeMomentary == momentary)
+        return;
+    if (momentaryHeld)
+        releaseMomentary();
+    momentary = shouldBeMomentary;
+    toggle.setClickingTogglesState (! momentary);
+    toggle.setInterceptsMouseClicks (! momentary, ! momentary);
+    toggle.setTooltip (momentary ? "Momentary: on while pressed" : juce::String());
+}
+
+void CsoundParameterMappingPanel::GenericParamRow::pressMomentary()
+{
+    if (boundParameter == nullptr || momentaryHeld)
+        return;
+    momentaryHeld = true;
+    const juce::ScopedValueSetter<bool> guard (settingMomentaryValue, true);
+    boundParameter->beginChangeGesture();
+    boundParameter->setValueNotifyingHost (1.0f);
+}
+
+void CsoundParameterMappingPanel::GenericParamRow::releaseMomentary()
+{
+    if (boundParameter == nullptr || ! momentaryHeld)
+        return;
+    momentaryHeld = false;
+    const juce::ScopedValueSetter<bool> guard (settingMomentaryValue, true);
+    boundParameter->setValueNotifyingHost (0.0f);
+    boundParameter->endChangeGesture();
+}
+
+void CsoundParameterMappingPanel::GenericParamRow::pulseMomentary()
+{
+    if (boundParameter == nullptr || momentaryHeld)
+        return;   // un impulso alla volta: mai due gesti annidati
+    pressMomentary();
+    juce::Component::SafePointer<GenericParamRow> safeThis (this);
+    juce::Timer::callAfterDelay (120, [safeThis]
+    {
+        if (safeThis != nullptr)
+            safeThis->releaseMomentary();
+    });
 }
 
 void CsoundParameterMappingPanel::GenericParamRow::mouseMove (const juce::MouseEvent& event)
@@ -3171,9 +3470,10 @@ CsoundParameterMappingPanel::BoolUnifiedRow::BoolUnifiedRow (
     if (auto* param = processorToEdit.apvts.getParameter (CsoundAudioProcessor::getBoolParamID (slotIndex)))
     {
         uiRow = std::make_unique<GenericParamRow> (slot.channelName, *param, GenericParamRow::Kind::toggle,
-                                                     juce::StringArray(), kToggleAccent, "TOGGLE",
+                                                     juce::StringArray(), kToggleAccent, "BUTTON",
                                                      [&processorToEdit, slotIndex] { return processorToEdit.getBoolParamSlot (slotIndex).channelName; },
                                                      [&processorToEdit, slotIndex] { return makeBoolConfigComment (processorToEdit.getBoolParamSlot (slotIndex)); });
+        uiRow->setMomentary (slot.momentary);
         uiRow->onCopiedToClipboard = onCopied;
         addChildComponent (*uiRow);
     }
@@ -3208,6 +3508,9 @@ void CsoundParameterMappingPanel::BoolUnifiedRow::setCodeHighlight (bool on)
 void CsoundParameterMappingPanel::BoolUnifiedRow::setEditMode (bool edit)
 {
     rowEditMode = edit;
+    // Toggle / Momentary puo' essere cambiato nella configurazione.
+    if (! edit && uiRow != nullptr && editRow != nullptr)
+        uiRow->setMomentary (editRow->isMomentary());
     editRow->setVisible (edit);
     if (uiRow != nullptr)
         uiRow->setVisible (! edit);
@@ -3967,7 +4270,7 @@ std::vector<CsoundActionSheetItem> CsoundParameterMappingPanel::buildAddParamete
     static const Entry entries[] = {
         { "Add Slider Float", CsoundActionSheetIcon::sliderFloat },
         { "Add Slider Int",   CsoundActionSheetIcon::sliderInt },
-        { "Add Toggle",       CsoundActionSheetIcon::toggleSwitch },
+        { "Add Button",       CsoundActionSheetIcon::toggleSwitch },
         { "Add Menu",         CsoundActionSheetIcon::comboMenu },
     };
 
@@ -4378,7 +4681,7 @@ void CsoundParameterMappingPanel::addNewParameter (int kind)
                     createPendingRow (2, i);
                     return;
                 }
-            notify ("--- No free Toggle slots (limit " + juce::String (CsoundAudioProcessor::numBoolParams) + ") ---");
+            notify ("--- No free Button slots (limit " + juce::String (CsoundAudioProcessor::numBoolParams) + ") ---");
             return;
 
         case 3:
@@ -4443,18 +4746,10 @@ void CsoundParameterMappingPanel::createPendingRow (int kind, int slotIndex)
             auto row = std::make_unique<FloatUnifiedRow> (processor, slotIndex, onCopied, onDiscard, onEditModeChanged);
             row->editRow->onCommittedNonEmpty = [this, slotIndex, onCopied]
             {
-                juce::MessageManager::callAsync ([this, slotIndex, onCopied]
+                juce::ignoreUnused (onCopied);
+                juce::MessageManager::callAsync ([this, slotIndex]
                 {
-                    const auto name = processor.getChannelParamSlot (slotIndex).channelName;
-                    pendingRow = nullptr;
-                    // Resta in modalita' Edit dopo la prima promozione da
-                    // "+" (richiesta esplicita: l'UNICO modo per passare
-                    // alla vista UI deve essere il bottone Edit) - segnato
-                    // PRIMA del rebuild cosi' wireEditModeTracking lo trova
-                    // gia' marcato e riapre la riga in Edit.
-                    rowsInEditMode.insert ({ 0, slotIndex });
-                    rebuildUnifiedRows();
-                    onCopied ("--- Added Slider Float parameter: " + name + " ---");
+                    promotePendingRow (0, slotIndex, "Slider Float");
                 });
             };
             iface = row.get();
@@ -4466,13 +4761,10 @@ void CsoundParameterMappingPanel::createPendingRow (int kind, int slotIndex)
             auto row = std::make_unique<IntUnifiedRow> (processor, slotIndex, onCopied, onDiscard, onEditModeChanged);
             row->editRow->onCommittedNonEmpty = [this, slotIndex, onCopied]
             {
-                juce::MessageManager::callAsync ([this, slotIndex, onCopied]
+                juce::ignoreUnused (onCopied);
+                juce::MessageManager::callAsync ([this, slotIndex]
                 {
-                    const auto name = processor.getIntParamSlot (slotIndex).channelName;
-                    pendingRow = nullptr;
-                    rowsInEditMode.insert ({ 1, slotIndex });
-                    rebuildUnifiedRows();
-                    onCopied ("--- Added Slider Int parameter: " + name + " ---");
+                    promotePendingRow (1, slotIndex, "Slider Int");
                 });
             };
             iface = row.get();
@@ -4484,13 +4776,10 @@ void CsoundParameterMappingPanel::createPendingRow (int kind, int slotIndex)
             auto row = std::make_unique<BoolUnifiedRow> (processor, slotIndex, onCopied, onDiscard, onEditModeChanged);
             row->editRow->onCommittedNonEmpty = [this, slotIndex, onCopied]
             {
-                juce::MessageManager::callAsync ([this, slotIndex, onCopied]
+                juce::ignoreUnused (onCopied);
+                juce::MessageManager::callAsync ([this, slotIndex]
                 {
-                    const auto name = processor.getBoolParamSlot (slotIndex).channelName;
-                    pendingRow = nullptr;
-                    rowsInEditMode.insert ({ 2, slotIndex });
-                    rebuildUnifiedRows();
-                    onCopied ("--- Added Toggle parameter: " + name + " ---");
+                    promotePendingRow (2, slotIndex, "Button");
                 });
             };
             iface = row.get();
@@ -4502,13 +4791,10 @@ void CsoundParameterMappingPanel::createPendingRow (int kind, int slotIndex)
             auto row = std::make_unique<ChoiceUnifiedRow> (processor, slotIndex, onCopied, onDiscard, onEditModeChanged);
             row->editRow->onCommittedNonEmpty = [this, slotIndex, onCopied]
             {
-                juce::MessageManager::callAsync ([this, slotIndex, onCopied]
+                juce::ignoreUnused (onCopied);
+                juce::MessageManager::callAsync ([this, slotIndex]
                 {
-                    const auto name = processor.getChoiceParamSlot (slotIndex).channelName;
-                    pendingRow = nullptr;
-                    rowsInEditMode.insert ({ 3, slotIndex });
-                    rebuildUnifiedRows();
-                    onCopied ("--- Added Menu parameter: " + name + " ---");
+                    promotePendingRow (3, slotIndex, "Menu");
                 });
             };
             iface = row.get();
@@ -4529,6 +4815,48 @@ void CsoundParameterMappingPanel::createPendingRow (int kind, int slotIndex)
 
     viewport.setViewPosition (viewport.getViewPositionX(), juce::jmax (0, rowsContainer.getHeight() - viewport.getHeight()));
     iface->focusNameField();
+}
+
+void CsoundParameterMappingPanel::promotePendingRow (int kind, int slotIndex, const juce::String& addedLabel)
+{
+    // Il nome e' stato confermato perdendo il focus con un clic: se il
+    // clic e' ancora in corso (es. sul bottone Done di questa riga),
+    // aspetta il rilascio - ricostruire adesso distruggerebbe il bottone
+    // sotto il dito e il clic andrebbe perso.
+    if (juce::ModifierKeys::currentModifiers.isAnyMouseButtonDown())
+    {
+        juce::Component::SafePointer<CsoundParameterMappingPanel> safeThis (this);
+        juce::Timer::callAfterDelay (30, [safeThis, kind, slotIndex, addedLabel]
+        {
+            if (safeThis != nullptr)
+                safeThis->promotePendingRow (kind, slotIndex, addedLabel);
+        });
+        return;
+    }
+
+    // Resta in Edit dopo la promozione, a meno che l'utente non abbia
+    // appena premuto Done (la riga sospesa e' gia' tornata ai controlli).
+    bool keepEditing = true;
+    if (pendingRow != nullptr)
+        if (auto* iface = dynamic_cast<UnifiedRowInterface*> (pendingRow.get()))
+            keepEditing = iface->isInEditMode();
+
+    juce::String name;
+    switch (kind)
+    {
+        case 0:  name = processor.getChannelParamSlot (slotIndex).channelName; break;
+        case 1:  name = processor.getIntParamSlot (slotIndex).channelName;     break;
+        case 2:  name = processor.getBoolParamSlot (slotIndex).channelName;    break;
+        default: name = processor.getChoiceParamSlot (slotIndex).channelName;  break;
+    }
+
+    pendingRow = nullptr;
+    if (keepEditing) rowsInEditMode.insert ({ kind, slotIndex });
+    else             rowsInEditMode.erase ({ kind, slotIndex });
+    rebuildUnifiedRows();
+
+    if (name.isNotEmpty() && onParameterCopiedToClipboard)
+        onParameterCopiedToClipboard ("--- Added " + addedLabel + " parameter: " + name + " ---");
 }
 
 void CsoundParameterMappingPanel::rebuildUnifiedRows()
@@ -6429,6 +6757,8 @@ void CsoundParameterMappingPanel::showRowMenu (int kind, int slotIndex, std::fun
     };
 
     add (2, "Copy chnget line", CsoundActionSheetIcon::copy);
+    if (kind == 2)
+        add (7, "Copy Trigger Code", CsoundActionSheetIcon::copy);
     add (3, "Reset to Init Value", CsoundActionSheetIcon::resetDefault);
     add (5, "Randomize", CsoundActionSheetIcon::sliderFloat);
     add (6, "Show in Code", CsoundActionSheetIcon::codeBraces);
@@ -6460,6 +6790,17 @@ void CsoundParameterMappingPanel::showRowMenu (int kind, int slotIndex, std::fun
                     default:{ const auto s = proc.getChoiceParamSlot (slotIndex);  copyChngetToClipboard (s.channelName, makeChoiceConfigComment (s), log); break; }
                 }
                 break;
+
+            case 7:
+            {
+                // Le righe per lanciare un evento alla pressione (trigger sul
+                // fronte di salita: una volta per pressione, anche con
+                // l'automazione della DAW).
+                const auto code = cabbageImport::csoundTriggerCode (proc.getBoolParamSlot (slotIndex).channelName);
+                juce::SystemClipboard::copyTextToClipboard (code);
+                log ("--- Copied to clipboard (paste it in an instr) ---\n" + code.trimEnd());
+                break;
+            }
 
             case 3: proc.resetParameterValueToDefault (kind, slotIndex); break;
             case 5: proc.randomizeParameterValue (kind, slotIndex); break;

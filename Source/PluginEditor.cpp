@@ -4022,14 +4022,39 @@ Every instance offers the DAW **176 fixed parameters**: 64 Float, 32 Int, 64 Boo
 - The **pencil** opens the configuration of a card (channel name, range, default, skew, step, options); it becomes a check mark while editing: press it to apply and go back to the control. One card is in edit mode at a time, outlined in the colour of its type.
 - While a slider is being edited, the slider itself stays visible under the name and follows Min/Max/Init/Skew/Step as you type.
 - **Validation**: a wrong value turns its field red and the caption says why (Min not below Max, Init outside the range, Skew not positive, Step larger than the range, no options, channel name already used).
-- The **...** menu: **Copy chnget line**, **Reset to Init Value**, **Randomize**, **Show in Code** (jumps to its `chnget`), **Remove** (asks for confirmation; can be undone).
+- The **...** menu: **Copy chnget line**, **Copy Trigger Code** (Buttons), **Reset to Init Value**, **Randomize**, **Show in Code** (jumps to its `chnget`), **Remove** (asks for confirmation; can be undone).
 - Code and panel are linked: put the caret on a `chnget "name"` line and the card of that channel flashes briefly.
 - **Moved from outside**: when a value changes without you touching the control - DAW automation, `chnset` from the code, a snapshot recall - a dot in the colour of the type flashes next to the name.
-- Toggles and menus are single-line cards, sliders take two lines.
+- Buttons and menus are single-line cards, sliders take two lines.
+## Buttons
+A **Button** is a parameter like a slider: the DAW sees it, records it, automates it and maps it to a MIDI controller. Its configuration (pencil) has three rows:
+- **MODE**: **Toggle**, a switch (press = on, press again = off), or **Momentary**, on only while you hold it (1 when pressed, 0 when released).
+- **INIT** (Off / On), next to MODE: how a Toggle starts when the patch starts. Disabled in Momentary, which is always Off until pressed (the setting is kept if you go back to Toggle).
+- **EVENT ON** and **EVENT OFF**: optional score lines, below.
+A Momentary button is never randomized and is not stored in snapshots (it would come back "pressed"). The DAW records the press and the release of a Momentary, and automation plays them back.
+## Starting instruments with a button
+Two ways - use one per button, not both, or the instrument starts twice. `Test/ButtonTest.csd` has every case, one group each.
+**1. EVENT lines - nothing to write in the code** (like a CsoundQt event button). apeCsound sends:
+- **EVENT ON** when the button goes from 0 to 1: a press (Momentary) or switching on (Toggle);
+- **EVENT OFF** when it goes from 1 to 0: the release (Momentary) or switching off (Toggle).
+- `i 10 0 2` in ON, OFF empty: a 2-second note at each press.
+- `i 10.1 0 -1` in ON and `i -10.1 0 0` in OFF: a **held note** that sounds as long as the button is held (Momentary) or on (Toggle) - the button plays like a key. A negative duration means "until stopped"; the fractional number (`10.1`) makes the OFF line stop exactly that note. Give the instrument an envelope with a release (`madsr`, `linsegr`), or the note stops with a click.
+- A held note without its OFF line keeps sounding until the next Apply.
+The EVENT lines are run by a small instrument (`apeSlotEvents`) that apeCsound adds to the running engine - not to your `.csd` - and updates about half a second after you stop typing. A Button with EVENT lines is never randomized. If a line is wrong, the console says so.
+**2. In the code** (like Cabbage): leave the EVENT lines empty and let the code react to the button - visible, editable, portable to other frontends. The card menu **...** > **Copy Trigger Code** copies the lines to paste in an always-on instrument:
+```
+kPlay chnget "Play"
+if trigger:k(kPlay, 0.5, 0) == 1 then   ; 0 -> 1: once per press
+  event "i", 10, 0, 1                     ; your instrument, start, duration
+endif
+```
+For an action on the release, add a second `trigger` with mode 1 (1 -> 0), as the Arp button of `ButtonTest.csd` does.
+Either way the event fires **once per press**, also with DAW automation, which sends the value at every audio block: events fire on the edges, not while the button stays on.
+**Groups for event buttons**: a button handled only by its EVENT lines is not read by the code, so it has no place in a `@group`. To put its card in a group, read it once under that `@group` - `kBell chnget "Bell"` - even if the code does nothing with it.
 ## Groups
-By default the panel lists the parameters by type: all the Float sliders, then Int, Bool and Choice. A comment in the code groups them the way you want, so that the controls of one instrument - its sliders, toggles and menus together - stay under one label:
+By default the panel lists the parameters by type: all the Float sliders, then Int, Buttons and Menus. A comment in the code groups them the way you want, so that the controls of one instrument - its sliders, buttons and menus together - stay under one label:
 - `; @group Synth` on its own line, before the `chnget` lines. Every parameter read below it belongs to "Synth", until the next `@group`, or `endin` / `endop`. Also `;@group` and `// @group`; names can contain spaces.
-- A Bool or Choice parameter goes where its `chnget` is: next to the sliders of its instrument, not at the end of the list.
+- A Button or Menu parameter goes where its `chnget` is: next to the sliders of its instrument, not at the end of the list.
 - The group of a parameter is decided by the **first** `chnget` of its channel in the code. A channel read in several instruments goes where it appears first - put that line under the `@group` you prefer.
 - The same name in several places joins the parameters in one group (e.g. a "Master" group spread over two instruments).
 - Groups appear in the order of the code, parameters in the order of their `chnget`. Parameters without a group, or whose channel is not read by any `chnget` (misspelt name, name built at run time), go to **Other**, at the end. Without any `@group` the list stays flat, as before.
@@ -4092,7 +4117,7 @@ chn_k "Pitch",  2,   2,    220, 110,880, 0,0,0,0, "spark"   ; sparkline
 
 # Channels, Graphs and Console
 - **Console** - Csound messages, compile errors and apeCsound notes. Repeated messages are summarised to keep the DAW responsive. Clear empties it; it is also cleared at every Apply.
-- **Channels** (Parameters menu **+** > Channels..., Cmd+4) - every channel the running engine knows, with type (k, S, a, f), direction (in = read by `chnget`, out = written by `chnset`), current value and *who writes it*: a parameter, the host (`HOST_BPM`...), the code, or **nobody** - channels that the code reads and nobody writes are listed first, in yellow: that is almost always why "it does not move" (a widget that was not imported, no free slots, a typo in the name). **Map** creates the parameter for such a channel in one tap (Float, Int, Toggle or Menu; range and default from `chn_k` hints when present); families like `Acc1..Acc16` are one row with **Map 16**. The opposite case is flagged too: a parameter the code only *writes* and never reads (a Cabbage LED or meter imported as a toggle) says "never read by code" and has **Unmap** to free its slot. Opens as a window over the editor: close it with the x, Esc or a click outside.
+- **Channels** (Parameters menu **+** > Channels..., Cmd+4) - every channel the running engine knows, with type (k, S, a, f), direction (in = read by `chnget`, out = written by `chnset`), current value and *who writes it*: a parameter, the host (`HOST_BPM`...), the code, or **nobody** - channels that the code reads and nobody writes are listed first, in yellow: that is almost always why "it does not move" (a widget that was not imported, no free slots, a typo in the name). **Map** creates the parameter for such a channel in one tap (Float, Int, Button or Menu; range and default from `chn_k` hints when present); families like `Acc1..Acc16` are one row with **Map 16**. The opposite case is flagged too: a parameter the code only *writes* and never reads (a Cabbage LED or meter imported as a button) says "never read by code" and has **Unmap** to free its slot. Opens as a window over the editor: close it with the x, Esc or a click outside.
 - **Graphs** (menu > Show Graphs) - function tables (f statements, `ftgen`) and `display` / `dispfft` signals, in a panel docked at the bottom. Cleared at every Apply. Tables are **live**: while the panel is open they are re-read about 4 times per second and redrawn when their content changes (`tablew`, `ftgen` regenerated, GEN routines in a loop) - a free oscilloscope or envelope viewer: write what you want to see into a table.
 
 
@@ -4118,7 +4143,9 @@ Read them with `chnget`, e.g. a tempo-synced delay: `kdel = 60 / chnget:k("HOST_
 # Cabbage and CsoundQt files
 Their widgets (sliders, knobs, checkboxes, buttons, menus, XY...) become parameters when the file is loaded (only when the file has no `<apeCsoundParams>` block yet: once saved by apeCsound, the saved mapping wins - delete the block and reload to import again). The rest of their GUI is ignored, and the code is not changed:
 - replace `invalue` / `cabbageGetValue` with `chnget`, `outvalue` / `cabbageSet...` with `chnset`;
-- Cabbage `button`s are toggles here; `combobox value(n)` counts from 1; a Cabbage menu with more than 16 entries is cut to 16 (use an Int slider instead);
+- a Cabbage `button` with `latched(0)`, and a CsoundQt value button without latch, become **Momentary** buttons; the others are **Toggle** buttons;
+- a CsoundQt **event button** becomes a Button named after its text, with its score line as **EVENT ON** - Momentary, or Toggle if it has latch. For a held note (negative duration, `i 11.1 0 -1`) **EVENT OFF** stops it on release / switch off, as in CsoundQt (`i -11.1 0 -1`). See `Test/CsoundQtButtons.csd`;
+- `combobox value(n)` counts from 1; a Cabbage menu with more than 16 entries is cut to 16 (use an Int slider instead);
 - when a widget type exceeds its slots (64 Float, 64 Bool, 16 Menu), the widgets whose channel the code never reads with `chnget` (LEDs, meters, step indicators) are dropped first, so the buttons that matter get a slot; the console says how many were skipped. The **Channels** panel shows what is left unmapped and can map it;
 - GUI messages sent with `chnset` to `identChannel`s (`"visible(1)"`, `"bounds(...)"`, `"colour(...)"`) are ignored and kept out of the Monitor;
 - FLTK, Python, Lua and opcodes not built into apeCsound do not work;

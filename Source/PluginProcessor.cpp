@@ -226,7 +226,7 @@ juce::String BoolHostParameter::getName (int maximumStringLength) const
 float BoolHostParameter::getDefaultValue() const
 {
     const auto slot = owner.getBoolParamSlot (index);
-    return slot.defaultValue ? 1.0f : 0.0f;
+    return slot.startsOn() ? 1.0f : 0.0f;
 }
 
 //==============================================================================
@@ -363,6 +363,26 @@ CsoundAudioProcessor::ChannelParamSlot CsoundAudioProcessor::getChannelParamSlot
     return channelParamSlots[(size_t) juce::jlimit (0, numChannelParams - 1, index)];
 }
 
+void CsoundAudioProcessor::noteHostChannelName (const juce::String& name)
+{
+    if (name.isEmpty())
+        return;
+    const juce::ScopedLock sl (hostTouchedChannelsLock);
+    hostTouchedChannels.addIfNotAlreadyThere (name);
+}
+
+bool CsoundAudioProcessor::isTypedChannelLeftover (const juce::String& name, const juce::String& codeText) const
+{
+    {
+        const juce::ScopedLock sl (hostTouchedChannelsLock);
+        if (! hostTouchedChannels.contains (name))
+            return false;   // creato dal codice (o da chn_k): mai un avanzo
+    }
+    if (isChannelNameUsedElsewhere (name, -1, -1))
+        return false;       // e' ancora un parametro
+    return ! codeText.contains ("\"" + name + "\"");   // il codice lo nomina: canale vero
+}
+
 void CsoundAudioProcessor::setChannelParamSlot (int index, const ChannelParamSlot& slot)
 {
     jassert (index >= 0 && index < numChannelParams);
@@ -374,6 +394,7 @@ void CsoundAudioProcessor::setChannelParamSlot (int index, const ChannelParamSlo
         const juce::ScopedLock sl (channelParamSlotsLock);
         channelParamSlots[(size_t) index] = slot;
     }
+    noteHostChannelName (slot.channelName);
 
     // ChannelHostParameter::getName/getText leggono lo slot al volo (niente
     // da aggiornare su di loro), ma l'host spesso mette in cache nome/testo
@@ -407,6 +428,7 @@ void CsoundAudioProcessor::setIntParamSlot (int index, const IntParamSlot& slot)
         const juce::ScopedLock sl (intParamSlotsLock);
         intParamSlots[(size_t) index] = slot;
     }
+    noteHostChannelName (slot.channelName);
 
     updateHostDisplay (juce::AudioProcessor::ChangeDetails().withParameterInfoChanged (true));
 }
@@ -448,10 +470,17 @@ void CsoundAudioProcessor::setBoolParamSlot (int index, const BoolParamSlot& slo
     if (index < 0 || index >= numBoolParams)
         return;
 
+    bool eventsChanged = false;
     {
         const juce::ScopedLock sl (boolParamSlotsLock);
+        const auto& old = boolParamSlots[(size_t) index];
+        eventsChanged = old.eventLine != slot.eventLine || old.eventOffLine != slot.eventOffLine
+                        || (slot.hasEvents() && old.channelName != slot.channelName);
         boolParamSlots[(size_t) index] = slot;
     }
+    noteHostChannelName (slot.channelName);
+    if (eventsChanged)
+        markSlotEventsDirty();
 
     updateHostDisplay (juce::AudioProcessor::ChangeDetails().withParameterInfoChanged (true));
 }
@@ -495,6 +524,7 @@ void CsoundAudioProcessor::setChoiceParamSlot (int index, const ChoiceParamSlot&
         const juce::ScopedLock sl (choiceParamSlotsLock);
         choiceParamSlots[(size_t) index] = slot;
     }
+    noteHostChannelName (slot.channelName);
 
     updateHostDisplay (juce::AudioProcessor::ChangeDetails().withParameterInfoChanged (true));
 }
@@ -1376,11 +1406,21 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     resolveHostTransportChannels (cs);
 
     engineGeneration.fetch_add (1);
-    engineFinishedPending.store (false);   // nessuno "stop" in ritardo del motore precedente
+    engineFinishedPending.store (false);
+    {
+        // Motore nuovo: nessun canale "avanzato" dalla battitura dei nomi.
+        const juce::ScopedLock sl (hostTouchedChannelsLock);
+        hostTouchedChannels.clear();
+    }   // nessuno "stop" in ritardo del motore precedente
     activeCsound.store (cs);
     ready = true;
 
     suspendProcessing (false);
+
+    // Motore nuovo: lo strumento delle righe EVENT va ricompilato.
+    slotEventsSignature.clear();
+    slotEventsDirty = true;
+    slotEventsChangedAt = 0;
 
     listeners.call ([] (Listener& l) { l.csoundEngineStarted(); });
 }
@@ -1726,6 +1766,12 @@ juce::ValueTree CsoundAudioProcessor::buildParamsStructureTree()
             slotTree.setProperty ("index", i, nullptr);
             slotTree.setProperty ("channel", slot.channelName, nullptr);
             slotTree.setProperty ("default", slot.defaultValue, nullptr);
+            if (slot.momentary)
+                slotTree.setProperty ("momentary", true, nullptr);
+            if (slot.eventLine.isNotEmpty())
+                slotTree.setProperty ("event", slot.eventLine, nullptr);
+            if (slot.eventOffLine.isNotEmpty())
+                slotTree.setProperty ("eventOff", slot.eventOffLine, nullptr);
             slotsTree.appendChild (slotTree, nullptr);
         }
 
@@ -1821,7 +1867,7 @@ namespace
     // Versione dello zip degli esempi (Resources/Examples.zip, vedi
     // scripts/make_examples_zip.sh): aumentarla quando lo zip cambia, cosi'
     // gli esempi nuovi vengono estratti anche a chi ha gia' la cartella.
-    constexpr int kExamplesVersion = 10;  // ... 8: 1.0.5 (MonitorStressTest, MidiOutTest, Csound 7 fixes...)  9: MonitorTest rewritten  10: Monitor tests without attributes (spark only)
+    constexpr int kExamplesVersion = 12;  // ... 8: 1.0.5 (MonitorStressTest, MidiOutTest, Csound 7 fixes...)  9: MonitorTest rewritten  10: Monitor tests without attributes (spark only)  11: ButtonTest  12: CsoundQtButtons
     const char* const kExamplesVersionKey = "examplesVersion";
 }
 
@@ -2455,7 +2501,7 @@ void CsoundAudioProcessor::resetParameterValuesToDefaults()
     {
         const auto slot = getBoolParamSlot (i);
         if (slot.channelName.isNotEmpty())
-            push (apvts.getParameter (getBoolParamID (i)), slot.defaultValue ? 1.0f : 0.0f);
+            push (apvts.getParameter (getBoolParamID (i)), slot.startsOn() ? 1.0f : 0.0f);
     }
 
     for (int i = 0; i < numChoiceParams; ++i)
@@ -2583,6 +2629,7 @@ std::vector<CsoundAudioProcessor::MonitorChannel> CsoundAudioProcessor::listMoni
     const int n = CsoundAPI::csoundListChannels (cs, &list);
     if (n <= 0 || list == nullptr)
         return out;
+    const auto codeText = getCsdTextWithSurroundings();   // vedi isTypedChannelLeftover
 
     // Elenco degli identChannel Cabbage, rifatto a ogni nuovo motore
     // (vedi CsoundMonitorLayout.h).
@@ -2605,6 +2652,8 @@ std::vector<CsoundAudioProcessor::MonitorChannel> CsoundAudioProcessor::listMoni
         const juce::String name (juce::CharPointer_UTF8 (info.name));
         if (name.isEmpty() || isReservedHostChannel (name))
             continue;
+        if (isTypedChannelLeftover (name, codeText))
+            continue;   // "a", "ap" mentre si scriveva il nome "ape"
         // identChannel di Cabbage (messaggi GUI come "colour(...)"): fuori -
         // sia quelli dichiarati nel <Cabbage>, sia quelli riconosciuti dal
         // contenuto ("visible(1), bounds(...)" scritti a nomi costruiti con
@@ -2676,6 +2725,7 @@ std::vector<csoundChannels::Info> CsoundAudioProcessor::listAllChannels()
     const int n = CsoundAPI::csoundListChannels (cs, &list);
     if (n <= 0 || list == nullptr)
         return out;
+    const auto codeText = getCsdTextWithSurroundings();   // vedi isTypedChannelLeftover
 
     for (int i = 0; i < n; ++i)
     {
@@ -2685,7 +2735,7 @@ std::vector<csoundChannels::Info> CsoundAudioProcessor::listAllChannels()
 
         Info d;
         d.name = juce::String (juce::CharPointer_UTF8 (info.name));
-        if (d.name.isEmpty())
+        if (d.name.isEmpty() || isTypedChannelLeftover (d.name, codeText))
             continue;
 
         switch (info.type & CSOUND_CHANNEL_TYPE_MASK)
@@ -3029,7 +3079,7 @@ void CsoundAudioProcessor::resetParameterValueToDefault (int kind, int index)
     {
         case 0: { const auto s = getChannelParamSlot (index); push (apvts.getParameter (getChannelParamID (index)), normalizeChannelParam (s, (double) s.defaultValue)); break; }
         case 1: { const auto s = getIntParamSlot (index);     push (apvts.getParameter (getIntParamID (index)),     normalizeIntParam (s, (double) s.defaultValue)); break; }
-        case 2: { const auto s = getBoolParamSlot (index);    push (apvts.getParameter (getBoolParamID (index)),    s.defaultValue ? 1.0f : 0.0f); break; }
+        case 2: { const auto s = getBoolParamSlot (index);    push (apvts.getParameter (getBoolParamID (index)),    s.startsOn() ? 1.0f : 0.0f); break; }
         case 3: { const auto s = getChoiceParamSlot (index);  push (apvts.getParameter (getChoiceParamID (index)),
                                                                      maxChoiceOptions > 1 ? (float) s.defaultIndex / (float) (maxChoiceOptions - 1) : 0.0f); break; }
         default: break;
@@ -3065,7 +3115,9 @@ void CsoundAudioProcessor::randomizeParameterValue (int kind, int index)
         }
 
         case 2:
-            if (getBoolParamSlot (index).channelName.isNotEmpty())
+            // Un Momentary non si randomizza (resterebbe "premuto"), un
+            // Toggle con EVENT neanche (lancerebbe eventi a caso).
+            if (const auto s = getBoolParamSlot (index); s.channelName.isNotEmpty() && ! s.momentary && ! s.hasEvents())
                 push (apvts.getParameter (getBoolParamID (index)), rng.nextBool() ? 1.0f : 0.0f);
             break;
 
@@ -3252,7 +3304,7 @@ void CsoundAudioProcessor::pushParameterValues (const std::map<juce::String, dou
         const auto slot = getBoolParamSlot (i);
         if (slot.channelName.isEmpty())
             continue;
-        double v = slot.defaultValue ? 1.0 : 0.0;
+        double v = slot.startsOn() ? 1.0 : 0.0;
         if (! find ("b", slot.channelName, v) && ! fallbackToDefault)
             continue;
         push (apvts.getParameter (getBoolParamID (i)), v >= 0.5 ? 1.0f : 0.0f);
@@ -3311,8 +3363,8 @@ juce::ValueTree CsoundAudioProcessor::captureParameterValuesTree() const
     for (int i = 0; i < numBoolParams; ++i)
     {
         const auto slot = getBoolParamSlot (i);
-        if (slot.channelName.isEmpty())
-            continue;
+        if (slot.channelName.isEmpty() || slot.momentary)
+            continue;   // un Momentary non fa parte di uno snapshot: tornerebbe "premuto"
         if (auto* raw = apvts.getRawParameterValue (getBoolParamID (i)))
             addParam (slot.channelName, "b", raw->load() >= 0.5f ? 1.0 : 0.0);
     }
@@ -3965,7 +4017,8 @@ bool CsoundAudioProcessor::importCsoundQtParameters (const juce::String& csdText
     // 1) quando attivi e 0 altrimenti. Con pressedValue 1 e' un Bool; con
     // un altro valore serve un Float a due posizioni {0, pressedValue}.
     auto addSwitch = [this, &boolIndex, &skippedBool, &addFloat] (const juce::String& channel,
-                                                                  bool on, double pressedValue)
+                                                                  bool on, double pressedValue,
+                                                                  bool momentary = false)
     {
         if (! juce::approximatelyEqual (pressedValue, 1.0) && ! juce::approximatelyEqual (pressedValue, 0.0))
         {
@@ -3983,8 +4036,13 @@ bool CsoundAudioProcessor::importCsoundQtParameters (const juce::String& csdText
         BoolParamSlot slot;
         slot.channelName  = channel;
         slot.defaultValue = on;
+        slot.momentary    = momentary;
         setBoolParamSlot (boolIndex++, slot);
     };
+
+    // Bottoni "event": lo strumento che manda le loro righe di score (vedi
+    // csoundEventButtonsInstrument), aggiunto al codice in fondo.
+    std::vector<cabbageImport::EventButton> eventButtons;
 
     // Ricorsivo: i bsbObject sono figli diretti di <bsbPanel>, ma cercarli a
     // qualunque profondita' non costa nulla e regge eventuali raggruppamenti.
@@ -4072,18 +4130,51 @@ bool CsoundAudioProcessor::importCsoundQtParameters (const juce::String& csdText
             }
             else if (type == "BSBButton")
             {
-                // Solo i bottoni di tipo "value"/"pictvalue" scrivono un
-                // valore sul canale (pressedValue premuto, 0 rilasciato;
-                // con latch e' un interruttore). Quelli "event"/"pictevent"
-                // lanciano eventi di score e "pict" e' solo un'immagine:
-                // nessun parametro. I canali riservati "_Browse*" aprono
-                // un file dialog: nessun parametro.
+                // Vedi QuteButton (CsoundQt): <latch> e' la MODALITA'
+                // (interruttore se true), <latched> lo stato attuale.
+                // "value"/"pictvalue" scrivono pressedValue sul canale,
+                // "event"/"pictevent" mandano <eventLine>, "pict" e' solo
+                // un'immagine. I canali riservati "_Browse*"/"_Play"...
+                // sono azioni di CsoundQt: nessun parametro.
                 const auto buttonType = text (*obj, "type");
+                const bool latch = text (*obj, "latch") == "true";
 
+                // "value": latch = Toggle (INIT dallo stato salvato),
+                // altrimenti Momentary.
                 if ((buttonType == "value" || buttonType == "pictvalue")
                      && ! channel.startsWith ("_") && claim (channel))
                 {
-                    addSwitch (channel, text (*obj, "latched") == "true", number (*obj, "pressedValue", 1.0));
+                    addSwitch (channel, latch && text (*obj, "latched") == "true",
+                               number (*obj, "pressedValue", 1.0), ! latch);
+                }
+                // "event": Button con la riga come EVENT ON. Durata negativa
+                // (nota tenuta): EVENT OFF = la stessa riga con lo strumento
+                // negativo, al rilascio (Momentary) o allo spegnimento
+                // (latch -> Toggle) - come fa CsoundQt.
+                else if ((buttonType == "event" || buttonType == "pictevent")
+                          && text (*obj, "eventLine").isNotEmpty() && boolIndex < numBoolParams)
+                {
+                    // Nome: il testo del bottone ("Note"), poi objectName
+                    // (spesso generato, "b3682"), poi Event1, Event2...
+                    auto name = cabbageImport::channelNameFromLabel (text (*obj, "text"));
+                    if (name.isEmpty() || usedChannels.count (name) > 0)
+                        name = channel.startsWith ("_") ? juce::String() : channel;
+                    if (name.isEmpty() || usedChannels.count (name) > 0)
+                    {
+                        int n = 1;
+                        do name = "Event" + juce::String (n++); while (usedChannels.count (name) > 0);
+                    }
+                    usedChannels.insert (name);
+                    const int slotIndex = boolIndex;
+                    addSwitch (name, false, 1.0, ! latch);
+                    if (slotIndex < boolIndex)   // creato davvero
+                    {
+                        auto s = getBoolParamSlot (slotIndex);
+                        s.eventLine = text (*obj, "eventLine");
+                        s.eventOffLine = cabbageImport::csoundQtTurnOffLine (s.eventLine);
+                        setBoolParamSlot (slotIndex, s);
+                        eventButtons.push_back ({ name, s.eventLine, s.eventOffLine });
+                    }
                 }
             }
             else if (type == "BSBDropdown")
@@ -4115,6 +4206,12 @@ bool CsoundAudioProcessor::importCsoundQtParameters (const juce::String& csdText
     };
 
     visit (*panel);
+
+    // Bottoni "event": Toggle Momentary con la loro riga EVENT (nessuna
+    // modifica al codice).
+    if (! eventButtons.empty() && ! quietImportMessages)
+        handleMessage ("--- CsoundQt import: " + juce::String ((int) eventButtons.size())
+                       + " event button(s) became Momentary buttons with their EVENT line ---");
 
     juce::String summary;
     summary << "--- CsoundQt import: " << floatIndex << " float, " << boolIndex << " bool, "
@@ -4489,8 +4586,13 @@ bool CsoundAudioProcessor::importCabbageParameters (const juce::String& csdText)
             double value = 0.0;
             cabbageMatchValueNumber (line, value);
 
+            // button latched(0): momentaneo (1 premuto, 0 al rilascio).
+            bool latched = true;
+            const bool momentary = identifier == "button" && cabbageMatchLatched (line, latched) && ! latched;
+
             BoolParamSlot slot;
             slot.channelName  = channelName;
+            slot.momentary    = momentary;
             slot.defaultValue = ! juce::approximatelyEqual (value, 0.0);
             setBoolParamSlot (boolIndex, slot);
             pushDefaultToHost (getBoolParamID (boolIndex));
@@ -4673,6 +4775,9 @@ void CsoundAudioProcessor::applyParamsStructureTree (const juce::ValueTree& stat
                         auto& slot = boolParamSlots[(size_t) index];
                         slot.channelName  = slotTree.getProperty ("channel", "").toString();
                         slot.defaultValue = (bool) slotTree.getProperty ("default", false);
+                        slot.momentary    = (bool) slotTree.getProperty ("momentary", false);
+                        slot.eventLine    = slotTree.getProperty ("event", "").toString();
+                        slot.eventOffLine = slotTree.getProperty ("eventOff", "").toString();
                     }
                 }
             }
@@ -4822,10 +4927,53 @@ void CsoundAudioProcessor::enqueueMessage (const char* text)
     }
 }
 
+void CsoundAudioProcessor::markSlotEventsDirty()
+{
+    slotEventsDirty = true;
+    slotEventsChangedAt = juce::Time::getMillisecondCounter();
+}
+
+void CsoundAudioProcessor::refreshSlotEventsInstrument()
+{
+    auto* cs = activeCsound.load();
+    if (cs == nullptr || ! ready.load() || CsoundAPI::csoundCompileOrc == nullptr)
+        return;
+
+    std::vector<cabbageImport::EventButton> buttons;
+    juce::String signature;
+    for (int i = 0; i < numBoolParams; ++i)
+    {
+        const auto s = getBoolParamSlot (i);
+        if (s.channelName.isNotEmpty() && (s.eventLine.trim().isNotEmpty() || s.eventOffLine.trim().isNotEmpty()))
+        {
+            buttons.push_back ({ s.channelName, s.eventLine.trim(), s.eventOffLine.trim() });
+            signature << s.channelName << "\x01" << s.eventLine.trim() << "\x01" << s.eventOffLine.trim() << "\n";
+        }
+    }
+
+    if (signature == slotEventsSignature)
+        return;   // niente di nuovo (es. Apply senza righe EVENT)
+    const bool hadEvents = slotEventsSignature.isNotEmpty();
+    slotEventsSignature = signature;
+    if (buttons.empty() && ! hadEvents)
+        return;
+
+    const auto orc = cabbageImport::csoundSlotEventsOrc (buttons, ++slotEventsGeneration);
+    if (CsoundAPI::csoundCompileOrc (cs, orc.toRawUTF8(), 1) != 0)
+        enqueueMessage ("--- Button EVENT lines: the code could not be compiled (see errors above) ---");
+}
+
 void CsoundAudioProcessor::timerCallback()
 {
     applyChannelValuesFromCsound();
     flushPendingMessages();
+
+    // Righe EVENT dei Toggle: ricompila poco dopo l'ultima modifica.
+    if (slotEventsDirty && juce::Time::getMillisecondCounter() - slotEventsChangedAt > 400)
+    {
+        slotEventsDirty = false;
+        refreshSlotEventsInstrument();
+    }
 
     if (engineFinishedPending.exchange (false))
         listeners.call ([] (Listener& l) { l.csoundEngineStopped(); });

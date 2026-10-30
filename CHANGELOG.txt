@@ -40,6 +40,45 @@ GUIDE
 
 PARAMETERS PANEL
 
+  * "Toggle" is now called Button (Add Button, BUTTON cards), with a MODE:
+    Toggle (a switch, as before) or Momentary - on while held, off when
+    released; the DAW records press and release and plays them back.
+    Momentary buttons are not randomized and not stored in snapshots.
+  * Button configuration redesigned: MODE (Toggle | Momentary) and INIT
+    (Off | On) side by side as segmented controls - one tap, no menus,
+    touch friendly; INIT is disabled in Momentary but keeps its value for
+    when you go back to Toggle. EVENT ON and EVENT OFF below, full width,
+    with examples as placeholder text.
+  * Button EVENT ON / EVENT OFF (optional, like a CsoundQt event button):
+    score lines sent when the button goes from 0 to 1 (press, switch on,
+    DAW automation) and from 1 to 0 (release, switch off), once per edge.
+    With a held note - ON "i 10.1 0 -1", OFF "i -10.1 0 0" - the button
+    plays like a key. Run by a small instrument apeCsound adds to the
+    running engine (not to the .csd), updated as you type; no code to
+    write. Buttons with EVENT lines are not randomized.
+  * Copy Trigger Code (card menu ... of a Button): the other way, as in
+    Cabbage - the lines that start an instrument once per press from your
+    code (trigger + event), visible and portable.
+  * Parameters title on the left (like the Guide and the other views);
+    the + menu button moved to the right, next to Snapshots, in line with
+    the Find button of the main toolbar.
+  * Done on a new parameter now leaves edit mode (the click was lost when
+    the name was confirmed by that same click).
+  * Typing the name of a new parameter no longer leaves "a", "ap"... as
+    stray channels in the Monitor and in Channels.
+  * Evaluate (>_) and Clear console sit side by side at the right end of
+    the help bar.
+  * Import: Cabbage buttons with latched(0) and CsoundQt value buttons
+    without latch become Momentary buttons (they were switches that
+    stayed on). CsoundQt latch is now read from <latch> (the mode), not
+    from <latched> (the saved state, now the INIT of a Toggle).
+    CsoundQt event buttons become Buttons with their score line as EVENT
+    ON - Momentary, or Toggle with latch - and, for a held note (negative
+    duration), EVENT OFF stops it as CsoundQt does ("i 11.1 0 -1" ->
+    "i -11.1 0 -1", "i \"Drone\" ..." -> "i \"-Drone\" ..."). They are
+    named after their text ("Bell") instead of the generated objectName
+    ("b3682"). The code is not changed.
+
   * Monitor, simpler: no attributes to learn. The look of a card comes
     from the channel itself - its type, its chn_k range, the values it
     takes, its name - and each kind now has its own look and icon:
@@ -101,6 +140,14 @@ EXAMPLES
     of lamps, text, sparkline, multi-bar, cards in a group, created at run
     time), with comments, plus what is deliberately not shown.
   * Test/MonitorStressTest.csd: no attributes but spark.
+  * Test/CsoundQtButtons.csd (new): a CsoundQt file with every kind of
+    CsoundQt button (event, held-note event, latched event, value with and
+    without latch) to test the import.
+  * Test/ButtonTest.csd (new): every way to use a Button - Toggle with
+    INIT Off/On, Momentary, Momentary + EVENT ON, a held note with EVENT
+    ON/OFF (Pad), each kind in its own group (Toggle, Momentary, Event
+    lines, Events from the code), a press handled by
+    the code (trigger), a Toggle that starts and stops a held note.
   * Test/MonitorTest.csd: one card per kind, no duplicates (Step = the
     position, Light = which steps play in a 4-pattern rhythm with rests;
     one text card for note, tempo and pattern; Drift stays positive so

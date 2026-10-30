@@ -339,6 +339,21 @@ public:
     {
         juce::String channelName; // vuoto = non assegnato
         bool defaultValue = false;
+        // Momentary: 1 finche' e' premuto, 0 al rilascio (Cabbage
+        // latched(0), CsoundQt latch off). Altrimenti Toggle (interruttore).
+        bool momentary = false;
+        // Facoltativa, stile CsoundQt: riga di score mandata quando il
+        // bottone passa da 0 a 1 ("i 10 0 1"). Vuota = l'evento lo gestisce
+        // il codice (stile Cabbage, vedi Copy Trigger Code).
+        juce::String eventLine;
+        // Facoltativa: riga mandata quando il bottone passa da 1 a 0
+        // (rilascio / spegnimento), es. "i -10.1 0 0" per fermare la nota
+        // tenuta "i 10.1 0 -1" partita con eventLine.
+        juce::String eventOffLine;
+        bool hasEvents() const noexcept { return eventLine.isNotEmpty() || eventOffLine.isNotEmpty(); }
+        // Valore di partenza effettivo: INIT conta solo per Toggle (resta
+        // memorizzato anche in Momentary, cosi' tornando a Toggle ritorna).
+        bool startsOn() const noexcept { return defaultValue && ! momentary; }
     };
 
     static juce::String getBoolParamID (int index);
@@ -1336,6 +1351,28 @@ private:
     juce::MidiBuffer outgoingMidi;
     juce::MidiBuffer* outgoingMidiBuffer = nullptr;
     std::atomic<bool> engineFinishedPending { false };
+
+    // Nomi che apeCsound ha mandato a Csound come canali dei parametri da
+    // quando il motore e' partito. Mentre si scrive il nome di un parametro
+    // nuovo ("ape") ogni lettera e' un nome provvisorio ("a", "ap") e il
+    // thread audio crea quel canale in Csound: resterebbe nel motore fino
+    // al prossimo Apply e comparirebbe nel Monitor e in Channels. Questi
+    // "avanzi di battitura" vanno ignorati: canale toccato da apeCsound,
+    // non piu' un parametro, mai nominato nel codice.
+    // Righe EVENT dei Toggle: lo strumento apeSlotEvents compilato nel
+    // motore in corsa (vedi csoundSlotEventsOrc), ricostruito dal timer
+    // poco dopo l'ultima modifica (non a ogni lettera).
+    bool slotEventsDirty = false;
+    juce::uint32 slotEventsChangedAt = 0;
+    int slotEventsGeneration = 0;
+    juce::String slotEventsSignature;
+    void markSlotEventsDirty();
+    void refreshSlotEventsInstrument();
+
+    juce::StringArray hostTouchedChannels;
+    juce::CriticalSection hostTouchedChannelsLock;
+    void noteHostChannelName (const juce::String& name);
+    bool isTypedChannelLeftover (const juce::String& name, const juce::String& codeText) const;
 
     // Vedi setAudioPeakWatches: slot contigui (il primo nullptr chiude
     // l'elenco), azzerati quando il motore viene distrutto.
