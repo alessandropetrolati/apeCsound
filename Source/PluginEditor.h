@@ -338,6 +338,7 @@ private:
             std::function<void()> onClose;
 
             juce::Image icon;
+            juce::Image apesoftLogo;   // Resources/apesoft-logo.png
             LinkRow githubRow, websiteRow;
 
             // Due righe sul motore Csound (versione/precisione/opcode e

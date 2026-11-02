@@ -1489,8 +1489,8 @@ void CsoundAudioProcessorEditor::applyViewState (const juce::ValueTree& v)
         int w = (int) v.getProperty ("width"), h = (int) v.getProperty ("height");
         if (auto* display = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay())
         {
-            w = juce::jmin (w, display->userArea.getWidth());
-            h = juce::jmin (h, display->userArea.getHeight());
+            w = juce::jmin (w, (int) display->userBounds.getWidth());
+            h = juce::jmin (h, (int) display->userBounds.getHeight());
         }
         setSize (juce::jlimit (minWindowWidth, 8192, w), juce::jlimit (minWindowHeight, 8192, h));
     }
@@ -3332,6 +3332,8 @@ CsoundAudioProcessorEditor::AboutView::Card::Card()
                   juce::URL ("https://www.apesoft.it"))
 {
     icon = juce::ImageCache::getFromMemory (BinaryData::csicon_png, BinaryData::csicon_pngSize);
+    // Logo apeSoft "Listening Ape" (novembre 2026), versione per fondo scuro.
+    apesoftLogo = juce::ImageCache::getFromMemory (BinaryData::apesoftlogo_png, BinaryData::apesoftlogo_pngSize);
     addAndMakeVisible (githubRow);
     addAndMakeVisible (websiteRow);
 }
@@ -3423,9 +3425,21 @@ void CsoundAudioProcessorEditor::AboutView::Card::paint (juce::Graphics& g)
     g.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
     g.drawFittedText ("Alessandro Petrolati", 0, 211, w, 22, juce::Justification::centred, 1);
 
-    g.setColour (kAboutAccent);
-    g.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
-    g.drawFittedText ("apeSoft", 0, 234, w, 20, juce::Justification::centred, 1);
+    // Logo apeSoft (simbolo + scritta) al posto del nome in testo; se
+    // l'immagine mancasse, il nome come prima.
+    if (apesoftLogo.isValid())
+    {
+        const float logoH = 30.0f;
+        const float logoW = logoH * (float) apesoftLogo.getWidth() / (float) apesoftLogo.getHeight();
+        g.drawImage (apesoftLogo, juce::Rectangle<float> ((float) w * 0.5f - logoW * 0.5f, 236.0f, logoW, logoH),
+                     juce::RectanglePlacement::centred);
+    }
+    else
+    {
+        g.setColour (kAboutAccent);
+        g.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
+        g.drawFittedText ("apeSoft", 0, 234, w, 20, juce::Justification::centred, 1);
+    }
 
     // Credits degli esempi di fabbrica (sintesi di CSD/Examples/README_Examples.md).
     g.setColour (kAboutBorder);

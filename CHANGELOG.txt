@@ -4,7 +4,7 @@ APECSOUND - RELEASE NOTES
 1.0.8 (November 2026)
 ---------------------
 
-Bug-fix release.
+Bug-fix release, and the new apeSoft logo in About.
 
 FIXES
 
