@@ -293,26 +293,50 @@ namespace CsoundParameterGroups
         // Pad dai widget Cabbage / CsoundQt (vedi sopra) - letti dal testo
         // INTERO, perche' <Cabbage>/<bsbPanel> stanno fuori dall'orchestra.
         {
-            const std::string full = csdText.toStdString();
-
-            const std::regex cabbageXy (R"rx(\bxypad\b[^\n]*?\bchannel\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\))rx");
-            for (auto it = std::sregex_iterator (full.begin(), full.end(), cabbageXy); it != std::sregex_iterator(); ++it)
-                out.xyPads.push_back ({ juce::String ((*it)[1].str()), juce::String ((*it)[2].str()) });
-
-            // Solo DENTRO l'elemento del controller (non oltre </bsbObject>).
-            const std::regex qtController (R"rx(<bsbObject[^>]*type="BSBController"[^>]*>((?:(?!</bsbObject>)[\s\S])*)</bsbObject>)rx");
-            const std::regex qtNameX (R"rx(<objectName>([^<]*)</objectName>)rx");
-            const std::regex qtNameY (R"rx(<objectName2>([^<]*)</objectName2>)rx");
-            for (auto it = std::sregex_iterator (full.begin(), full.end(), qtController); it != std::sregex_iterator(); ++it)
+            // std::regex di libc++ (macOS/iOS) puo' lanciare regex_error
+            // (complessita'/stack) su testi lunghi: qui niente deve mai
+            // uscire con un'eccezione (in un plugin farebbe crollare l'host).
+            try
             {
-                const std::string body = (*it)[1].str();
-                std::smatch mx, my;
-                if (! std::regex_search (body, mx, qtNameX) || ! std::regex_search (body, my, qtNameY))
-                    continue;
-                const juce::String x (mx[1].str()), y (my[1].str());
-                if (x.isNotEmpty() && y.isNotEmpty() && x != y)
-                    out.xyPads.push_back ({ x, y });
+                const std::string full = csdText.toStdString();
+
+                // riga per riga: niente pattern che attraversano tutto il file
+                const std::regex cabbageXy (R"rx(\bxypad\b[^\n]*?\bchannel\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\))rx");
+                juce::StringArray fullLines;
+                fullLines.addLines (csdText);
+                for (const auto& l : fullLines)
+                {
+                    if (! l.contains ("xypad"))
+                        continue;
+                    const auto ls = l.toStdString();
+                    std::smatch m;
+                    if (std::regex_search (ls, m, cabbageXy))
+                        out.xyPads.push_back ({ juce::String (m[1].str()), juce::String (m[2].str()) });
+                }
+
+                // Controller CsoundQt: ricerca semplice dell'elemento (prima
+                // era una regex con lookahead su tutto il pannello, pesante
+                // per libc++), poi i due nomi DENTRO l'elemento.
+                const std::regex qtNameX (R"rx(<objectName>([^<]*)</objectName>)rx");
+                const std::regex qtNameY (R"rx(<objectName2>([^<]*)</objectName2>)rx");
+                for (size_t at = full.find ("<bsbObject"); at != std::string::npos; at = full.find ("<bsbObject", at + 1))
+                {
+                    const size_t tagEnd = full.find ('>', at);
+                    const size_t close  = full.find ("</bsbObject>", at);
+                    if (tagEnd == std::string::npos || close == std::string::npos || tagEnd > close)
+                        break;
+                    if (full.substr (at, tagEnd - at).find ("type=\"BSBController\"") == std::string::npos)
+                        continue;
+                    const std::string body = full.substr (tagEnd + 1, close - tagEnd - 1);
+                    std::smatch mx, my;
+                    if (! std::regex_search (body, mx, qtNameX) || ! std::regex_search (body, my, qtNameY))
+                        continue;
+                    const juce::String x (mx[1].str()), y (my[1].str());
+                    if (x.isNotEmpty() && y.isNotEmpty() && x != y)
+                        out.xyPads.push_back ({ x, y });
+                }
             }
+            catch (const std::exception&) {}
         }
 
         juce::StringArray lines;

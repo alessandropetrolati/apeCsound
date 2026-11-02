@@ -13,6 +13,7 @@ extern "C" int32_t apecsound_register_osc_opcodes (CSOUND* csound);
 #include <algorithm>
 #include <limits>
 #include <regex>
+#include "CsoundNavigation.h" // stripComments (scansione lineare, niente regex)
 #include <map>
 #include <set>
 #include <functional>
@@ -31,7 +32,25 @@ namespace
     {
         auto dir = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("apeCsound-no-plugins");
         dir.createDirectory();
-        return dir.getFullPathName();
+        const auto path = dir.getFullPathName();
+
+        // BUG (crash in AU/VST3 su Mac con un Csound installato a parte):
+        // oltre all'opcodedir, csoundLoadModules() aggiunge SEMPRE la
+        // cartella dei plugin dell'utente - ~/Library/csound/7.0/plugins64 su
+        // macOS, %LOCALAPPDATA%\csound\7.0\plugins64 su Windows,
+        // ~/.local/lib/csound/7.0/plugins64 su Linux - o CS_USER_PLUGINDIR se
+        // impostata. I plugin che trova li' sono compilati per un ALTRO
+        // Csound: caricati nel nostro (statico) registrano opcode con una
+        // struttura diversa e il motore crolla gia' alla prima compilazione
+        // (segfault in get_opcode_short_name, visto con auval). Se
+        // CS_USER_PLUGINDIR e' impostata, Csound usa quella AL POSTO della
+        // cartella di default: la puntiamo alla stessa cartella vuota.
+       #if JUCE_WINDOWS
+        _putenv_s ("CS_USER_PLUGINDIR", path.toRawUTF8());
+       #else
+        setenv ("CS_USER_PLUGINDIR", path.toRawUTF8(), 1);
+       #endif
+        return path;
     }
 
     // Callback grafici di Csound -> pannello "Graphs" (CsoundGraphStore).
@@ -677,9 +696,13 @@ void CsoundAudioProcessor::warnAudioChannelConflicts (const juce::String& csdTex
     if (code.isEmpty())
         code = csdText;
 
-    std::string src = code.toStdString();
-    src = std::regex_replace (src, std::regex (R"(/\*[\s\S]*?\*/)"), " ");
-    src = std::regex_replace (src, std::regex (R"((;|//)[^\n]*)"), "");
+    // Commenti tolti con una scansione lineare (csoundNav::stripComments):
+    // una regex "/\*[\s\S]*?\*/" su tutto il file, con std::regex di libc++
+    // (macOS/iOS), puo' esaurire lo stack o lanciare regex_error su file
+    // lunghi - e un'eccezione che esce da un plugin fa crollare l'host.
+    juce::StringArray codeLines;
+    codeLines.addLines (code);
+    std::string src = csoundNav::stripComments (codeLines, true).joinIntoString ("\n").toStdString();
 
     auto escape = [] (const juce::String& n)
     {
@@ -693,6 +716,8 @@ void CsoundAudioProcessor::warnAudioChannelConflicts (const juce::String& csdTex
         return out;
     };
 
+    try
+    {
     for (const auto& name : names)
     {
         const auto q = "\"" + escape (name) + "\"";
@@ -719,6 +744,8 @@ void CsoundAudioProcessor::warnAudioChannelConflicts (const juce::String& csdTex
             }
         }
     }
+    }
+    catch (const std::exception&) {}   // solo un avviso: mai un'eccezione verso l'host
 }
 
 void CsoundAudioProcessor::warnFixedChannelOpcodes (const juce::String& csdText, int numOutputs, int numInputs)
@@ -728,10 +755,11 @@ void CsoundAudioProcessor::warnFixedChannelOpcodes (const juce::String& csdText,
     if (code.isEmpty())
         code = csdText;
 
-    std::string src = code.toStdString();
-    src = std::regex_replace (src, std::regex (R"(/\*[\s\S]*?\*/)"), " ");
-    src = std::regex_replace (src, std::regex (R"((;|//)[^\n]*)"), "");
-    src = std::regex_replace (src, std::regex (R"("[^"\n]*")"), "\"\"");
+    // Commenti e stringhe tolti con una scansione lineare (vedi sopra,
+    // warnAudioChannelConflicts): niente regex su tutto il file.
+    juce::StringArray codeLines;
+    codeLines.addLines (code);
+    std::string src = csoundNav::stripComments (codeLines, false).joinIntoString ("\n").toStdString();
 
     struct Fixed { const char* name; int channels; bool isInput; };
     static const Fixed fixedOpcodes[] = {
@@ -740,6 +768,8 @@ void CsoundAudioProcessor::warnFixedChannelOpcodes (const juce::String& csdText,
     };
 
     juce::StringArray found;
+    try
+    {
     for (const auto& op : fixedOpcodes)
     {
         const int hostChannels = op.isInput ? numInputs : numOutputs;
@@ -752,6 +782,8 @@ void CsoundAudioProcessor::warnFixedChannelOpcodes (const juce::String& csdText,
         if (std::regex_search (src, re))
             found.add (juce::String (op.name) + " (" + juce::String (op.channels) + (op.channels == 1 ? " channel" : " channels") + ")");
     }
+    }
+    catch (const std::exception&) {}   // solo un avviso: mai un'eccezione verso l'host
 
     if (found.isEmpty())
         return;
@@ -5157,7 +5189,7 @@ juce::Array<CsoundAudioProcessor::CodeDiagnostic> CsoundAudioProcessor::parseCom
         const auto str = t.toStdString();
 
         for (std::sregex_iterator it (str.begin(), str.end(), levelRe), stop; it != stop; ++it)
-            if (std::stoi ((*it)[1].str()) > 1)
+            if (juce::String ((*it)[1].str()).getIntValue() > 1)
                 return true;
 
         return false;
@@ -5177,7 +5209,7 @@ juce::Array<CsoundAudioProcessor::CodeDiagnostic> CsoundAudioProcessor::parseCom
         if (! std::regex_search (str, lineMatch, lineRe))
             continue;
 
-        const int line = std::stoi (lineMatch[1].str());
+        const int line = juce::String (lineMatch[1].str()).getIntValue();
 
         if (line <= 0)
             continue;
@@ -5304,7 +5336,7 @@ void CsoundAudioProcessor::scanRuntimeErrors (const juce::StringArray& messages)
         if (! std::regex_search (str, match, runtimeRe))
             continue;
 
-        const int line = std::stoi (match[2].str());
+        const int line = juce::String (match[2].str()).getIntValue();
 
         bool known = false;
 

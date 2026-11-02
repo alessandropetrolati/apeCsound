@@ -1,6 +1,23 @@
 APECSOUND - RELEASE NOTES
 =========================
 
+1.0.8 (November 2026)
+---------------------
+
+Bug-fix release.
+
+FIXES
+
+  * AU / VST3 crash on load (host quits as soon as apeCsound is inserted)
+    on computers where another Csound has plugins in the user folder
+    (~/Library/csound/7.0/plugins64 on macOS, %LOCALAPPDATA%\csound on
+    Windows, ~/.local/lib/csound on Linux): apeCsound's built-in Csound
+    loaded those plugins, built for a different Csound, and crashed while
+    compiling. It now ignores every external plugin folder.
+  * Startup checks of the code (audio channels used as parameters,
+    fixed-width I/O opcodes) no longer use regular expressions on the whole
+    file, and can never throw an exception into the host.
+
 1.0.7 (October 2026)
 --------------------
 
