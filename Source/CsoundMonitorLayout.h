@@ -376,7 +376,7 @@ namespace csoundMonitor
         {
             case Kind::text:     return "Text: a string channel (S), shown as it is - format it with sprintfk";
             case Kind::lamp:     return "Lamp: only 0 and 1 seen";
-            case Kind::audio:    return "Audio meter: an audio channel (chnset asig), RMS in dB with peak hold";
+            case Kind::audio:    return "Audio meter: an audio channel (chnset asig), sample peak in dB (0 dB = 0dbfs) with peak hold";
             case Kind::spark:    return "Sparkline: chn_k attribute \"spark\", the last 5 seconds";
             case Kind::steps:    return "Steps: whole-number range " + range + " from chn_k, only whole numbers seen";
             case Kind::bipolar:  return "Dial: range " + range + " goes through zero";
@@ -391,6 +391,19 @@ namespace csoundMonitor
         mostrato in dB con un decimale. */
     inline juce::String formatMonitorValue (double raw, bool audioDb = false);
 
+    /** Picco di campione |x| di un blocco (fallback del meter audio quando
+        il canale non e' sorvegliato dal thread audio). */
+    template <typename Sample>
+    inline double blockPeak (const Sample* data, int n)
+    {
+        if (data == nullptr || n <= 0)
+            return 0.0;
+        double m = 0.0;
+        for (int i = 0; i < n; ++i)
+            m = juce::jmax (m, std::abs ((double) data[i]));
+        return m;
+    }
+
     /** RMS di un blocco di campioni (canale audio: l'ultimo ksmps). */
     template <typename Sample>
     inline double blockRms (const Sample* data, int n)
@@ -404,8 +417,8 @@ namespace csoundMonitor
     }
 
     /** Balistica da meter: sale subito, scende di 'decay' per lettura (a
-        20 Hz, 0.82 = circa -30 dB/s). Un blocco di ksmps campioni letto ogni
-        50 ms e' rumoroso: cosi' il meter resta leggibile. */
+        20 Hz, 0.82 = circa -34 dB/s). Il valore in ingresso e' il picco di
+        campione dell'intervallo fra due letture (tenuto dal thread audio). */
     inline double meterBallistics (double newValue, double previous, double decay = 0.82)
     {
         return newValue >= previous ? newValue : juce::jmax (newValue, previous * decay);

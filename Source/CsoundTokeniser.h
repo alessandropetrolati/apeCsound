@@ -37,8 +37,14 @@ public:
         tokenType_number,
         tokenType_string,
         tokenType_preprocessor,
-        tokenType_punctuation
+        tokenType_punctuation,
+        tokenType_userOpcode     // UDO dichiarate nel file (opcode Nome, ...)
     };
+
+    /** Nomi delle UDO del documento (CsoundCodeEditor li rilegge quando il
+        testo cambia): colorati come tokenType_userOpcode. Restituisce true
+        se l'elenco e' cambiato (bisogna ricolorare). */
+    bool setUserOpcodes (const juce::StringArray& names);
 
 private:
     static bool isIdentifierStart (juce::juce_wchar c) noexcept;
@@ -48,4 +54,5 @@ private:
 
     juce::StringArray keywords;
     juce::StringArray opcodes;
+    juce::StringArray userOpcodes;
 };

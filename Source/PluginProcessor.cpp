@@ -1496,13 +1496,13 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         return;
     }
 
-    // Pausa (bypass): Csound non viene eseguito, l'ingresso passa
-    // all'uscita invariato (canali oltre gli ingressi: silenzio), il MIDI in
-    // ingresso prosegue. Il motore riprende esattamente da dove era.
+    // Pausa: la performance e' sospesa, non bypassata - Csound non viene
+    // eseguito e l'uscita e' silenzio (niente ingresso che passa, niente
+    // MIDI verso l'host). Il motore riprende esattamente da dove era.
     if (csoundPaused.load())
     {
-        for (int ch = numIn; ch < numOut; ++ch)
-            buffer.clear (ch, 0, numSamples);
+        buffer.clear();
+        midiMessages.clear();
         return;
     }
 
@@ -1512,6 +1512,14 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     // cui sono assegnati.
     pushChannelParametersToCsound (cs);
     pushHostTransportToCsound (cs);
+
+    // Tastiera virtuale (menu > Show Keyboard): le sue note entrano qui, nel
+    // MIDI del blocco, come se arrivassero dall'host; le note dell'host
+    // aggiornano a loro volta i tasti illuminati. Solo mentre Csound suona
+    // (in pausa o a motore fermo si esce prima). Non tocca i device MIDI e
+    // non esce verso l'host: midiMessages viene sostituito piu' sotto con
+    // il MIDI generato da Csound.
+    virtualKeyboardState.processNextMidiBuffer (midiMessages, 0, numSamples, true);
 
     // Messaggi MIDI in ingresso di questo blocco: midiInReadCallback li
     // consuma durante CsoundAPI::csoundPerformKsmps() qui sotto (stesso thread audio).
@@ -2960,7 +2968,7 @@ double CsoundAudioProcessor::readMonitorValue (const MonitorChannel& ch) const
     if (ch.valuePtr == nullptr || activeCsound.load() == nullptr || ! ready.load())
         return 0.0;
     if (ch.isAudio)
-        return csoundMonitor::blockRms (ch.valuePtr, csKsmps) * (double) csOutScale;   // RMS dell'ultimo blocco, 1 = 0 dBFS
+        return csoundMonitor::blockPeak (ch.valuePtr, csKsmps) * (double) csOutScale;   // picco dell'ultimo blocco, 1 = 0 dBFS
     return (double) *ch.valuePtr;
 }
 
@@ -2986,7 +2994,7 @@ void CsoundAudioProcessor::setAudioPeakWatches (const std::vector<cs_float*>& ch
 float CsoundAudioProcessor::takeAudioPeak (const cs_float* channelPtr)
 {
     if (channelPtr == nullptr)
-        return 0.0f;
+        return -1.0f;
     for (auto& w : audioPeakWatches)
     {
         const cs_float* p = w.ptr.load();
@@ -2995,7 +3003,7 @@ float CsoundAudioProcessor::takeAudioPeak (const cs_float* channelPtr)
         if (p == channelPtr)
             return w.peak.exchange (0.0f);
     }
-    return 0.0f;
+    return -1.0f;
 }
 
 juce::String CsoundAudioProcessor::readMonitorString (const MonitorChannel& ch) const

@@ -3,6 +3,7 @@
 #include "CsoundNavigation.h"
 #include "CsoundActionSheet.h"
 #include "CsoundShortcuts.h"
+#include "CsoundTokeniser.h"
 #include "IOSKeyboard.h"
 #include "CsoundEditCallout.h" // [EDIT-CALLOUT]
 #include <cmath>
@@ -12,6 +13,8 @@ CsoundCodeEditor::CsoundCodeEditor (juce::CodeDocument& doc, juce::CodeTokeniser
     : CodeView (doc, tok),
       codeDocument (doc)
 {
+    csoundTokeniser = dynamic_cast<CsoundTokeniser*> (tok);
+    udoHighlightTimer.startTimer (50);   // documento gia' pieno (editor riaperto)
     setTabSize (indentSpaces, true); // Tab = 4 spazi, mai caratteri tab reali.
     codeDocument.addListener (this);
 
@@ -360,10 +363,17 @@ void CsoundCodeEditor::showContextMenu (juce::Point<int> localPos)
         items.push_back (item);
     };
 
+    contextMenuOpcode = manualOpcodeAt (contextMenuPos);
+
     if (hasDefinition || canJumpBack())
     {
         add (ctxJumpToDefinition, "Jump to Definition", CsoundActionSheetIcon::codeBraces, hasDefinition);
         add (ctxJumpBack,         "Go Back",            CsoundActionSheetIcon::undo,       canJumpBack());
+        items.push_back (CsoundActionSheetItem::separator());
+    }
+    if (contextMenuOpcode.isNotEmpty() && onOpenOpcodeManualRequested != nullptr)
+    {
+        add (ctxOpcodeManual, "Open \"" + contextMenuOpcode + "\" in Csound Manual", CsoundActionSheetIcon::book);
         items.push_back (CsoundActionSheetItem::separator());
     }
     add (ctxCut,       "Cut",        CsoundActionSheetIcon::cut,       hasSelection);
@@ -390,6 +400,36 @@ void CsoundCodeEditor::showContextMenu (juce::Point<int> localPos)
     });
 }
 
+juce::String CsoundCodeEditor::manualOpcodeAt (const juce::CodeDocument::Position& pos)
+{
+    const auto line = codeDocument.getLine (pos.getLineNumber());
+    const int col = juce::jlimit (0, line.length(), pos.getIndexInLine());
+    auto isWordChar = [] (juce::juce_wchar c) { return juce::CharacterFunctions::isLetterOrDigit (c) || c == '_'; };
+
+    int s = col, e = col;
+    while (s > 0 && isWordChar (line[s - 1])) --s;
+    while (e < line.length() && isWordChar (line[e])) ++e;
+    if (e <= s)
+        return {};
+
+    // Dentro un commento ";" o "//" non e' un opcode.
+    {
+        const auto before = line.substring (0, s);
+        if (before.containsChar (';') || before.contains ("//"))
+            return {};
+    }
+
+    const auto word = line.substring (s, e);
+    if (juce::CharacterFunctions::isDigit (word[0]))
+        return {};
+
+    rescanUserOpcodesIfNeeded();
+    if (findUserOpcode (word) != nullptr)
+        return {};   // UDO del file: niente pagina nel manuale
+
+    return allOpcodeNames.contains (word) ? word : juce::String();
+}
+
 void CsoundCodeEditor::performContextMenuItem (int result)
 {
     switch (result)
@@ -406,6 +446,7 @@ void CsoundCodeEditor::performContextMenuItem (int result)
         case ctxEvaluate:  evaluateSelectionOrBlock(); break;
         case ctxJumpToDefinition: jumpToDefinitionAt (juce::CodeDocument::Position (codeDocument, contextMenuIndex)); break;
         case ctxJumpBack:  jumpBack(); break;
+        case ctxOpcodeManual: if (onOpenOpcodeManualRequested && contextMenuOpcode.isNotEmpty()) onOpenOpcodeManualRequested (contextMenuOpcode); break;
         default: break;
     }
 
@@ -434,6 +475,9 @@ void CsoundCodeEditor::showTouchEditMenu (juce::Rectangle<int> selectionArea)
             add (ctxJumpToDefinition, "Definition", CsoundActionSheetIcon::codeBraces);
         if (canJumpBack())
             add (ctxJumpBack, "Back", CsoundActionSheetIcon::undo);
+        contextMenuOpcode = manualOpcodeAt (getSelectionStart());
+        if (contextMenuOpcode.isNotEmpty() && onOpenOpcodeManualRequested != nullptr)
+            add (ctxOpcodeManual, "Manual", CsoundActionSheetIcon::book);
     }
 
     add (ctxCut,       "Cut",        CsoundActionSheetIcon::cut,       hasSelection);
@@ -755,6 +799,7 @@ void CsoundCodeEditor::resized()
 void CsoundCodeEditor::codeDocumentTextInserted (const juce::String& newText, int insertIndex)
 {
     userOpcodesDirty = true;
+    udoHighlightTimer.startTimer (300);
     dismissJumpBackButton();
 
     // Ricerca attiva: le occorrenze seguono il testo (anche durante un
@@ -789,6 +834,7 @@ void CsoundCodeEditor::codeDocumentTextInserted (const juce::String& newText, in
 void CsoundCodeEditor::codeDocumentTextDeleted (int /*startIndex*/, int /*endIndex*/)
 {
     userOpcodesDirty = true;
+    udoHighlightTimer.startTimer (300);
     dismissJumpBackButton();
 
     if (searchQuery.isNotEmpty() && ! suspendSearchRefresh)
@@ -1449,7 +1495,7 @@ void CsoundCodeEditor::rescanUserOpcodesIfNeeded()
     {
         const auto trimmed = stripCommentAndTrim (doc.getLine (i));
 
-        if (! trimmed.startsWith ("opcode"))
+        if (! trimmed.startsWith ("opcode") || trimmed.length() <= 6 || ! juce::CharacterFunctions::isWhitespace (trimmed[6]))
             continue;
 
         // "opcode Nome, outtypes, intypes" - outtypes/intypes possono
@@ -1460,19 +1506,45 @@ void CsoundCodeEditor::rescanUserOpcodesIfNeeded()
         if (rest.isEmpty() || ! (juce::CharacterFunctions::isLetterOrDigit (rest[0]) || rest[0] == '_'))
             continue;
 
-        juce::StringArray parts;
-        parts.addTokens (rest, ",", "");
-        parts.trim();
+        // Il nome: i caratteri d'identificatore iniziali (sintassi classica
+        // "Nome, outtypes, intypes" e Csound 7 "Nome(argomenti):uscite").
+        int nameEnd = 0;
+        while (nameEnd < rest.length() && (juce::CharacterFunctions::isLetterOrDigit (rest[nameEnd]) || rest[nameEnd] == '_'))
+            ++nameEnd;
 
         UserOpcode udo;
-        udo.name = parts[0];
-        udo.outTypes = parts.size() > 1 && parts[1] != "0" ? parts[1] : juce::String();
-        udo.inTypes  = parts.size() > 2 && parts[2] != "0" ? parts[2] : juce::String();
+        udo.name = rest.substring (0, nameEnd);
         udo.line = i;
+
+        if (! rest.substring (nameEnd).trimStart().startsWithChar ('('))
+        {
+            juce::StringArray parts;
+            parts.addTokens (rest, ",", "");
+            parts.trim();
+            udo.outTypes = parts.size() > 1 && parts[1] != "0" ? parts[1] : juce::String();
+            udo.inTypes  = parts.size() > 2 && parts[2] != "0" ? parts[2] : juce::String();
+        }
 
         if (udo.name.isNotEmpty() && findUserOpcode (udo.name) == nullptr)
             userOpcodes.add (udo);
     }
+}
+
+void CsoundCodeEditor::refreshUserOpcodeHighlight()
+{
+    auto* csTok = csoundTokeniser;
+    if (csTok == nullptr)
+        return;
+
+    rescanUserOpcodesIfNeeded();
+
+    juce::StringArray names;
+    for (const auto& udo : userOpcodes)
+        names.add (udo.name);
+    names.sort (false);
+
+    if (csTok->setUserOpcodes (names))
+        retokeniseAll();
 }
 
 const CsoundCodeEditor::UserOpcode* CsoundCodeEditor::findUserOpcode (const juce::String& word) const

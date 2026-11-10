@@ -10,6 +10,7 @@
 #include "IOSKeyboard.h"
 #include "CsoundAudioSettings.h"
 #include "CsoundGraphs.h"
+#include "CsoundVirtualKeyboard.h"
 #include "CsoundChannelsPanel.h"
 #include "CsdBrowserView.h"
 
@@ -1027,6 +1028,12 @@ private:
     CsoundGraphsPanel graphsPanel { audioProcessor.getGraphStore() };
     bool showingGraphs = false;
     void toggleGraphs();
+
+    // Tastiera MIDI virtuale (menu > Show Keyboard, Cmd+5): striscia a tutta
+    // larghezza sotto editor e consolle (vedi CsoundVirtualKeyboard.h).
+    CsoundVirtualKeyboardPanel virtualKeyboard { audioProcessor.getVirtualKeyboardState() };
+    bool showingKeyboard = false;
+    void toggleVirtualKeyboard();
 
     // Scheda "Channels" (diagnostica dei canali, vedi CsoundChannelsPanel.h):
     // finestra modale come la Guida (ChannelsView), non piu' un pannello in

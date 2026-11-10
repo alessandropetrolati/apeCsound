@@ -331,6 +331,25 @@ namespace
         return strokeOpenPath (bars, 1.6f);
     }
 
+    // Tastiera virtuale: contorno con tre divisori dei tasti bianchi e
+    // due tasti neri pieni.
+    juce::Path makePianoKeysPath()
+    {
+        juce::Path outline;
+        outline.addRoundedRectangle (3.0f, 5.0f, 18.0f, 14.0f, 1.5f);
+        for (float x : { 7.5f, 12.0f })          // sotto i tasti neri
+        {
+            outline.startNewSubPath (x, 12.5f);
+            outline.lineTo (x, 19.0f);
+        }
+        outline.startNewSubPath (16.5f, 5.0f);  // Mi-Fa: nessun tasto nero
+        outline.lineTo (16.5f, 19.0f);
+        auto keys = strokeOpenPath (outline, 1.5f);
+        for (float x : { 7.5f, 12.0f })          // Do#, Re#
+            keys.addRoundedRectangle (x - 1.6f, 5.0f, 3.2f, 7.8f, 0.6f);
+        return keys;
+    }
+
     // Reveal in Finder: cartella con linguetta (contorno) - il glifo
     // universale di "mostra nella cartella".
     juce::Path makeFolderPath()
@@ -643,6 +662,7 @@ namespace
             case CsoundActionSheetIcon::folder:        return makeFolderPath();
             case CsoundActionSheetIcon::waveform:      return makeWaveformPath();
             case CsoundActionSheetIcon::pencil:        return makePencilPath();
+            case CsoundActionSheetIcon::pianoKeys:     return makePianoKeysPath();
             case CsoundActionSheetIcon::none:
             default:                                   return {};
         }

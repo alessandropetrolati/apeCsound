@@ -2537,8 +2537,24 @@ CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
             break;
 
         case Kind::choice:
+        {
+            // Le opzioni senza etichetta (<unassigned>) non compaiono nel
+            // menu del pannello: e' solo grafica, l'host continua a vedere
+            // le 16 opzioni fisse. L'ID di ogni voce resta indice + 1, per
+            // questo l'attachment qui sotto lavora per ID e non per
+            // posizione (ComboBoxParameterAttachment usa la posizione).
+            // Etichetta vuota = non assegnata; se non ce n'e' nessuna (menu
+            // appena creato) restano tutte visibili, come <unassigned>.
+            bool anyAssigned = false;
+            for (const auto& l : choiceLabels)
+                anyAssigned = anyAssigned || l.isNotEmpty();
             for (int i = 0; i < choiceLabels.size(); ++i)
-                comboBox.addItem (choiceLabels[i], i + 1);
+            {
+                if (choiceLabels[i].isNotEmpty())
+                    comboBox.addItem (choiceLabels[i], i + 1);
+                else if (! anyAssigned)
+                    comboBox.addItem (CsoundAudioProcessor::getChoiceOptionLabel ({}, i), i + 1);
+            }
             comboBox.setColour (juce::ComboBox::backgroundColourId, kFieldBg);
             comboBox.setColour (juce::ComboBox::textColourId,       kText);
             comboBox.setColour (juce::ComboBox::outlineColourId,    kFieldOutline);
@@ -2548,9 +2564,36 @@ CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
             comboBox.setColour (juce::PopupMenu::highlightedTextColourId,       kOnAccent);
             comboBox.setPopupTitle (parameter.getName (64));
             addAndMakeVisible (comboBox);
-            comboAttachment = std::make_unique<juce::ComboBoxParameterAttachment> (parameter, comboBox, nullptr);
-            comboBox.onChange = [this] { if (! comboBox.wasLastChangeFromUser()) flashExternalChange(); };
+            comboAttachment = std::make_unique<juce::ParameterAttachment> (parameter, [this] (float value)
+            {
+                const int id = juce::roundToInt (value) + 1;
+                if (comboBox.indexOfItemId (id) >= 0)
+                {
+                    if (comboBox.getSelectedId() != id)
+                        comboBox.setSelectedId (id, juce::sendNotificationSync);
+                }
+                else
+                {
+                    // Opzione nascosta scelta da fuori (automazione, chnset):
+                    // nessuna voce selezionata, si legge <unassigned>.
+                    comboBox.setSelectedId (0, juce::dontSendNotification);
+                    comboBox.setText (CsoundAudioProcessor::getChoiceOptionLabel ({}, id - 1), juce::dontSendNotification);
+                    flashExternalChange();
+                }
+            }, nullptr);
+            comboBox.onChange = [this]
+            {
+                if (! comboBox.wasLastChangeFromUser())
+                {
+                    flashExternalChange();
+                    return;
+                }
+                if (const int id = comboBox.getSelectedId(); id > 0 && comboAttachment != nullptr)
+                    comboAttachment->setValueAsCompleteGesture ((float) (id - 1));
+            };
+            comboAttachment->sendInitialUpdate();
             break;
+        }
     }
 }
 
@@ -3545,7 +3588,7 @@ CsoundParameterMappingPanel::ChoiceUnifiedRow::ChoiceUnifiedRow (
     {
         juce::StringArray labels;
         for (int opt = 0; opt < CsoundAudioProcessor::maxChoiceOptions; ++opt)
-            labels.add (CsoundAudioProcessor::getChoiceOptionLabel (slot, opt));
+            labels.add (slot.optionLabels[opt]);   // vuota = <unassigned>: nascosta nel menu (vedi GenericParamRow)
 
         uiRow = std::make_unique<GenericParamRow> (slot.channelName, *param, GenericParamRow::Kind::choice,
                                                      labels, kMenuAccent, "MENU",
@@ -3797,6 +3840,15 @@ void CsoundParameterMappingPanel::showPanelMenu()
         item.tickedFn = [this] { return isGraphsVisible && isGraphsVisible(); };
         item.keepOpen = true;
         item.icon = CsoundActionSheetIcon::waveform;
+        items.push_back (item);
+    }
+    {
+        CsoundActionSheetItem item;
+        item.id = 171; item.text = "Show Keyboard"; item.shortcut = CsoundShortcuts::label (CsoundShortcuts::showKeyboard());
+        item.enabled = onToggleKeyboardRequested != nullptr;
+        item.tickedFn = [this] { return isKeyboardVisible && isKeyboardVisible(); };
+        item.keepOpen = true;
+        item.icon = CsoundActionSheetIcon::pianoKeys;
         items.push_back (item);
     }
 
@@ -4054,6 +4106,13 @@ void CsoundParameterMappingPanel::showPanelMenu()
     }
     {
         CsoundActionSheetItem item;
+        item.id = 170; item.text = "Csound FLOSS Manual";
+        item.enabled = onOpenFlossManualRequested != nullptr;
+        item.icon = CsoundActionSheetIcon::book;
+        items.push_back (item);
+    }
+    {
+        CsoundActionSheetItem item;
         item.id = 117; item.text = "apeCsound Guide";
         item.enabled = onGuideRequested != nullptr;
         item.icon = CsoundActionSheetIcon::help;
@@ -4098,6 +4157,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 113: if (safeThis->onAboutRequested) safeThis->onAboutRequested(); break;
             case 114: if (safeThis->onToggleModernSyntaxRequested) safeThis->onToggleModernSyntaxRequested(); break;
             case 115: if (safeThis->onOpenManualRequested) safeThis->onOpenManualRequested(); break;
+            case 170: if (safeThis->onOpenFlossManualRequested) safeThis->onOpenFlossManualRequested(); break;
             case 116: if (safeThis->onToggleFollowCsdChannelsRequested) safeThis->onToggleFollowCsdChannelsRequested(); break;
             case 118: if (safeThis->onFontSizeChangeRequested) safeThis->onFontSizeChangeRequested (+1); break;
             case 119: if (safeThis->onFontSizeChangeRequested) safeThis->onFontSizeChangeRequested (-1); break;
@@ -4106,6 +4166,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 120: if (safeThis->onToggleDarkEditorRequested) safeThis->onToggleDarkEditorRequested(); break;
             case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
             case 150: if (safeThis->onToggleGraphsRequested) safeThis->onToggleGraphsRequested(); break;
+            case 171: if (safeThis->onToggleKeyboardRequested) safeThis->onToggleKeyboardRequested(); break;
             case 121: if (safeThis->onAudioSettingsRequested) safeThis->onAudioSettingsRequested(); break;
             case 123: case 124: case 125: case 126:
                 if (safeThis->onChooseCsoundFolder) safeThis->onChooseCsoundFolder (result - 123);
@@ -6629,9 +6690,13 @@ void CsoundParameterMappingPanel::updateMonitorValues()
             double v = processor.readMonitorValue (ch);
             if (e.isAudio)
             {
-                const double raw = v;
-                v = csoundMonitor::meterBallistics (v, e.value);   // un blocco di ksmps letto ogni 50 ms: balistica
-                if (processor.takeAudioPeak (ch.valuePtr) >= 1.0f && ! e.clipped)
+                // Picco di campione di TUTTO l'intervallo dall'ultima lettura
+                // (tenuto dal thread audio): il solo ultimo blocco di ksmps
+                // seguirebbe la forma d'onda (a 10 Hz il meter oscillava).
+                const float intervalPeak = processor.takeAudioPeak (ch.valuePtr);
+                const double raw = intervalPeak >= 0.0f ? (double) intervalPeak : v;
+                v = csoundMonitor::meterBallistics (raw, e.value);
+                if (raw >= 1.0 && ! e.clipped)
                 {
                     e.clipped = true;
                     changed = true;

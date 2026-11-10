@@ -4,7 +4,24 @@ APECSOUND - RELEASE NOTES
 1.0.8 (November 2026)
 ---------------------
 
-Bug-fix release, and the new apeSoft logo in About.
+Bug fixes, small editor improvements, and the new apeSoft logo in About.
+
+NEW
+
+  * Virtual MIDI keyboard (menu > Show Keyboard, Cmd+5): play the
+    instruments from the screen. The notes enter Csound with the MIDI of
+    the block, like the host's; MIDI devices are untouched and nothing goes
+    out to the host. MIDI channel, octave, velocity (fixed or by touch
+    position), last note sent, All Notes Off; host
+    notes light up on the keys. Shown/hidden and its settings are part of
+    the saved layout.
+  * Code editor: the UDOs declared in the file (classic "opcode Name, a, k"
+    and Csound 7 "opcode Name(...)") have their own colour.
+  * Right-click on an opcode (long press on iOS > Manual): "Open ... in
+    Csound Manual" opens its page of the online reference manual.
+  * Menu > Csound FLOSS Manual: the online tutorial book.
+  * Menu parameters: options without a label (<unassigned>) are hidden in
+    the panel menu. Only the look changes: the DAW still sees 16 options.
 
 FIXES
 
@@ -14,9 +31,17 @@ FIXES
     Windows, ~/.local/lib/csound on Linux): apeCsound's built-in Csound
     loaded those plugins, built for a different Csound, and crashed while
     compiling. It now ignores every external plugin folder.
+  * Pause no longer works as a bypass: while Csound is paused the output
+    is silent (before, the audio input passed through unchanged).
   * Startup checks of the code (audio channels used as parameters,
     fixed-width I/O opcodes) no longer use regular expressions on the whole
     file, and can never throw an exception into the host.
+
+  * Monitor audio meter: it now shows the sample peak of everything played
+    since the last redraw, not only the last ksmps block. A slow sine
+    (10 Hz) holds steady instead of following the waveform, and the scale
+    is peak dBFS: amplitude 0dbfs reads 0 dB, amplitude 0.5 reads -6 dB
+    (before it was an RMS reading, -3 dB lower for a sine).
 
 1.0.7 (October 2026)
 --------------------

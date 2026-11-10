@@ -791,8 +791,15 @@ struct MonitorLayoutTests final : public juce::UnitTest
             expect (! young.looksInteger(), "not enough readings yet");
         }
 
-        beginTest ("audio channels: block RMS and meter ballistics");
+        beginTest ("audio channels: block peak, block RMS and meter ballistics");
         {
+            const float half[4] = { 0.0f, 0.5f, 0.0f, -0.5f };
+            expectWithinAbsoluteError (blockPeak (half, 4), 0.5, 1e-9);                   // -6 dB, not -9
+            expectWithinAbsoluteError (linearToDb (blockPeak (half, 4)), -6.0206, 1e-3);
+            const double neg[3] = { -0.1, -0.9, 0.3 };
+            expectWithinAbsoluteError (blockPeak (neg, 3), 0.9, 1e-12);
+            expectWithinAbsoluteError (blockPeak<float> (nullptr, 4), 0.0, 1e-12);
+
             const float sine[4] = { 0.0f, 1.0f, 0.0f, -1.0f };
             expectWithinAbsoluteError (blockRms (sine, 4), std::sqrt (0.5), 1e-9);
             const double dc[3] = { 0.5, 0.5, 0.5 };

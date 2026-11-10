@@ -26,6 +26,7 @@ namespace CsoundShortcuts
     inline juce::KeyPress showConsole()    { return cmd ('2'); }
     inline juce::KeyPress showGraphs()     { return cmd ('3'); }
     inline juce::KeyPress showChannels()   { return cmd ('4'); }
+    inline juce::KeyPress showKeyboard()   { return cmd ('5'); }
     inline juce::KeyPress largerText()     { return cmd ('='); }
     inline juce::KeyPress smallerText()    { return cmd ('-'); }
     inline juce::KeyPress undo()           { return cmd ('Z'); }

@@ -164,6 +164,8 @@ namespace
     // Manuale di riferimento Csound 7 (csound.com/manual e' la versione 7.x;
     // csound.com/docs/manual e' ancora la 6.x).
     const char* const kCsoundManualUrl = "https://csound.com/manual/";
+    // FLOSS Manual: il libro di tutorial della comunita' Csound.
+    const char* const kCsoundFlossManualUrl = "https://flossmanual.csound.com/";
 }
 
 //==============================================================================
@@ -501,6 +503,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // Pannello Graphs (nascosto di default) e divisore verticale tra
     // consolle e grafici - vedi showingGraphs in PluginEditor.h.
     addChildComponent (graphsPanel);
+    addChildComponent (virtualKeyboard);
     addChildComponent (channelsView);
     channelsView.card.panel.onLog = [this] (const juce::String& line) { appendToLog (line); };
     addChildComponent (graphsDivider);
@@ -674,6 +677,12 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
         getUserSettings().saveIfNeeded();
     };
     parameterPanel.onOpenManualRequested = [] { juce::URL (kCsoundManualUrl).launchInDefaultBrowser(); };
+    parameterPanel.onOpenFlossManualRequested = [] { juce::URL (kCsoundFlossManualUrl).launchInDefaultBrowser(); };
+    // Tasto destro su un opcode > "Open in Csound Manual": la sua pagina.
+    editor.onOpenOpcodeManualRequested = [] (const juce::String& opcode)
+    {
+        juce::URL (juce::String (kCsoundManualUrl) + "opcodes/" + juce::URL::addEscapeChars (opcode, true) + "/").launchInDefaultBrowser();
+    };
     parameterPanel.onRunSelfTestsRequested = [this] { runSelfTests(); };
 
     // Standalone: "apeCsound --run-tests" esegue i test all'avvio (esito in
@@ -833,6 +842,8 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.onToggleGraphsRequested     = [this] { toggleGraphs(); };
     parameterPanel.isGraphsVisible             = [this] { return showingGraphs; };
     parameterPanel.onToggleChannelsRequested   = [this] { toggleChannels(); };
+    parameterPanel.onToggleKeyboardRequested   = [this] { toggleVirtualKeyboard(); };
+    parameterPanel.isKeyboardVisible           = [this] { return showingKeyboard; };
     parameterPanel.isChannelsVisible           = [this] { return channelsView.isVisible(); };
 
     // Apre la sidebar Parametri se e' chiusa quando si aggiunge un nuovo
@@ -1005,6 +1016,7 @@ bool CsoundAudioProcessorEditor::keyPressed (const juce::KeyPress& key)
     if (SC::isJumpBack (key) && editor.canJumpBack()) { editor.jumpBack(); editor.grabKeyboardFocus(); return true; }
     if (key == SC::showGraphs())     { toggleGraphs(); return true; }
     if (key == SC::showChannels())   { toggleChannels(); return true; }
+    if (key == SC::showKeyboard())   { toggleVirtualKeyboard(); return true; }
 
     if (key == SC::largerText() || key == SC::cmd ('+') || key == SC::cmd ('=', true))
     {
@@ -1250,7 +1262,7 @@ void CsoundAudioProcessorEditor::resized()
     applyButton.setBounds (toolbar.removeFromLeft (applyWidth)
                                    .withSizeKeepingCentre (applyWidth, panelToolbarButtonDiameter));
 
-    // Pausa (bypass) subito a destra di Apply, stesso diametro dei bottoni rotondi.
+    // Pausa subito a destra di Apply, stesso diametro dei bottoni rotondi.
     toolbar.removeFromLeft (8);
     pauseButton.setBounds (toolbar.removeFromLeft (panelToolbarButtonDiameter)
                                   .withSizeKeepingCentre (panelToolbarButtonDiameter, panelToolbarButtonDiameter));
@@ -1308,6 +1320,12 @@ void CsoundAudioProcessorEditor::resized()
         sidebarDivider.setBounds (dividerArea.expanded (dividerGrabMargin, 0)); // presa larga, striscia stretta
         sidebarDivider.toFront (false);
     }
+
+    // Tastiera virtuale: in fondo, sotto la consolle, larga quanto editor e
+    // consolle (la sidebar resta a tutta altezza).
+    if (showingKeyboard)
+        virtualKeyboard.setBounds (area.removeFromBottom (juce::jmin (CsoundVirtualKeyboardPanel::preferredHeight,
+                                                                       juce::jmax (0, area.getHeight() / 3))));
 
     // Fascia in basso: consolle e/o pannello Graphs (a destra della
     // consolle). Nascosti entrambi: editor/opcodeHelpBar recuperano TUTTO lo
@@ -1434,6 +1452,11 @@ juce::ValueTree CsoundAudioProcessorEditor::captureViewState() const
     v.setProperty ("parameters", showingParameterPanel, nullptr);
     v.setProperty ("console",    showingConsole,        nullptr);
     v.setProperty ("graphs",     showingGraphs,         nullptr);
+    v.setProperty ("keyboard",   showingKeyboard,       nullptr);
+    v.setProperty ("kbChannel",  virtualKeyboard.getMidiChannel(), nullptr);
+    v.setProperty ("kbVelocity", virtualKeyboard.getVelocity(),    nullptr);
+    v.setProperty ("kbLowest",   virtualKeyboard.getLowestKey(),   nullptr);
+    v.setProperty ("kbTouch",    virtualKeyboard.getTouchVelocity(), nullptr);
     v.setProperty ("sidebarWidth",  sidebarWidth,  nullptr);
     v.setProperty ("consoleHeight", consoleHeight, nullptr);
     v.setProperty ("graphsWidth",   graphsWidth,   nullptr);
@@ -1459,6 +1482,11 @@ void CsoundAudioProcessorEditor::applyViewState (const juce::ValueTree& v)
     if ((bool) v.getProperty ("parameters", showingParameterPanel) != showingParameterPanel) toggleParameterPanel();
     if ((bool) v.getProperty ("console",    showingConsole)        != showingConsole)        toggleConsole();
     if ((bool) v.getProperty ("graphs",     showingGraphs)         != showingGraphs)         toggleGraphs();
+    if ((bool) v.getProperty ("keyboard",   showingKeyboard)       != showingKeyboard)       toggleVirtualKeyboard();
+    virtualKeyboard.setMidiChannel ((int) v.getProperty ("kbChannel",  virtualKeyboard.getMidiChannel()));
+    virtualKeyboard.setVelocity    ((int) v.getProperty ("kbVelocity", virtualKeyboard.getVelocity()));
+    virtualKeyboard.setLowestKey   ((int) v.getProperty ("kbLowest",   virtualKeyboard.getLowestKey()));
+    virtualKeyboard.setTouchVelocity ((bool) v.getProperty ("kbTouch", virtualKeyboard.getTouchVelocity()));
 
     parameterPanel.applyViewState (v.getChildWithName ("PANEL"));
 
@@ -1529,6 +1557,7 @@ void CsoundAudioProcessorEditor::resetLayout()
     v.setProperty ("parameters", true, nullptr);
     v.setProperty ("console", true, nullptr);
     v.setProperty ("graphs", false, nullptr);
+    v.setProperty ("keyboard", false, nullptr);
     v.setProperty ("sidebarWidth", 360, nullptr);
     v.setProperty ("consoleHeight", 180, nullptr);
     v.setProperty ("graphsWidth", 460, nullptr);
@@ -1614,6 +1643,14 @@ void CsoundAudioProcessorEditor::toggleGraphs()
     graphsPanel.setVisible (showingGraphs);
     consoleDivider.setVisible (showingConsole || bottomRightPanel() != nullptr);
 
+    resized();
+    repaint();
+}
+
+void CsoundAudioProcessorEditor::toggleVirtualKeyboard()
+{
+    showingKeyboard = ! showingKeyboard;
+    virtualKeyboard.setVisible (showingKeyboard);   // nascosta: rilascia i tasti premuti
     resized();
     repaint();
 }
@@ -3188,8 +3225,8 @@ void CsoundAudioProcessorEditor::updatePauseButton()
     pauseButton.setName ("pause");
     pauseButton.setToggleState (paused, juce::dontSendNotification);
     pauseButton.setTitle (paused ? "Resume Csound" : "Pause Csound");
-    pauseButton.setTooltip (paused ? "Csound is paused (bypass): click to resume. Apply also resumes."
-                                   : "Pause Csound (bypass: the input passes through unchanged).");
+    pauseButton.setTooltip (paused ? "Csound is paused (silent): click to resume. Apply also resumes."
+                                   : "Pause Csound: the performance stops where it is and the output is silent.");
 
     // In pausa: fondo ambra, ben visibile.
     // (Il bottone "acceso" usa buttonOnColourId.)
@@ -4088,10 +4125,10 @@ apeCsound is a **MIDI effect**: an audio effect that also receives MIDI (Audio U
 
 # Toolbar and File menu
 - **Apply** - recompiles and restarts Csound with the editor text. A red ring means the editor differs from the running code.
-- **Pause** - pauses Csound (the audio passes through); Apply restarts it.
+- **Pause** - pauses the Csound performance: the output is silent until you resume (or Apply, which restarts it).
 - **File capsule** (centre) - name, folder and state of the linked `.csd` (coloured dot: saved, unsaved changes, file not found). Tap it for the File menu.
 - **Magnifier** - Find / Replace: match case `Aa`, whole word `W`, Replace, Replace All. Enter = next match, Esc closes.
-- **Menu** - Parameters, Console, Graphs, Undo / Redo, Audio/MIDI Settings (standalone), Config, this guide, Csound Manual, About.
+- **Menu** - Parameters, Console, Graphs, Keyboard, Undo / Redo, Audio/MIDI Settings (standalone), Config, this guide, Csound Manual, Csound FLOSS Manual (tutorials), About.
 
 ## File menu (file capsule)
 - **Init Session Clear** - empty `.csd`, no parameters, no linked file.
@@ -4145,7 +4182,8 @@ On iOS the apeCsound folder is not visible in the Files app. **Load**, **Open Ex
 
 # Code editor
 - **Auto-indent** for `instr`/`endin`, `opcode`/`endop`, `if`/`then`, loops. Tab = 4 spaces.
-- **Right-click** (long press on touch) - **Jump to Definition** / **Go Back**, Cut, Copy, Paste, Delete, Select All, Undo, Redo, **Indent**, **Comment / Uncomment**.
+- **Colours** - the UDOs declared in the file (`opcode Name, ...` or `opcode Name(...)`) get their own colour, so you can tell them from the built-in opcodes.
+- **Right-click** (long press on touch) - **Open "opcode" in Csound Manual** (the online page of the opcode under the mouse), **Jump to Definition** / **Go Back**, Cut, Copy, Paste, Delete, Select All, Undo, Redo, **Indent**, **Comment / Uncomment**.
 - **Help bar** - syntax and description of the opcode under the caret, also for the UDOs of the file.
 - **Autocompletion** - type two letters: Up/Down to choose, Tab or Enter to accept, Esc to close.
 - **Config > Modern Syntax in Help** - shows the Csound 7 functional form, e.g. `ares:a = oscil(xamp, xcps)`.
@@ -4176,7 +4214,7 @@ When Apply fails, the line reported by Csound gets a red dot, a red background a
 
 # Parameters
 Every instance offers the DAW **176 fixed parameters**: 64 Float, 32 Int, 64 Button (Bool) and 16 Menu (Choice). The DAW always sees "Float 1 ... Float 64" and so on; in the Parameters panel you give each one a Csound channel name and its range. The code reads them with `chnget`; `chnset` on the same channel moves the parameter (slider and DAW automation).
-- **Slider Float** (min, max, default, skew, step), **Slider Int** (min, max, default), **Button** (Toggle or Momentary, INIT, optional EVENT ON / OFF score lines - see Buttons below), **Menu** (up to 16 options; the channel gets 1..N, as in Cabbage).
+- **Slider Float** (min, max, default, skew, step), **Slider Int** (min, max, default), **Button** (Toggle or Momentary, INIT, optional EVENT ON / OFF score lines - see Buttons below), **Menu** (up to 16 options; the channel gets 1..N, as in Cabbage; options without a label are not shown in the panel menu, the DAW still lists all 16).
 - The **+** button at the right of the Parameters title, next to the Snapshots button, opens the Parameters menu: **Add Slider Float / Int, Add Button, Add Menu**, Expand / Collapse All Groups, **Remove Parameters**, **Reset to INIT Values**, **Randomize All**, **Compact Monitor** and **Channels...**.
 - **Drag a card into the code** - drag the handle on its left and drop it on a line of the editor to insert `kCutoff chnget "Cutoff"` with a comment describing the parameter.
 - A parameter channel is a control channel: do not use the same name with audio variables (`a...`) - the console warns about it.
@@ -4280,6 +4318,7 @@ chn_k "Pitch",  2,   2,    220, 110,880, 0,0,0,0, "spark"   ; sparkline
 # Channels, Graphs and Console
 - **Console** - Csound messages, compile errors and apeCsound notes. Repeated messages are summarised to keep the DAW responsive. Clear empties it; it is also cleared at every Apply.
 - **Channels** (Parameters menu **+** > Channels..., Cmd+4) - every channel the running engine knows, with type (k, S, a, f), direction (in = read by `chnget`, out = written by `chnset`), current value and *who writes it*: a parameter, the host (`HOST_BPM`...), the code, or **nobody** - channels that the code reads and nobody writes are listed first, in yellow: that is almost always why "it does not move" (a widget that was not imported, no free slots, a typo in the name). **Map** creates the parameter for such a channel in one tap (Float, Int, Button or Menu; range and default from `chn_k` hints when present); families like `Acc1..Acc16` are one row with **Map 16**. The opposite case is flagged too: a parameter the code only *writes* and never reads (a Cabbage LED or meter imported as a button) says "never read by code" and has **Unmap** to free its slot. Opens as a window over the editor: close it with the x, Esc or a click outside.
+- **Keyboard** (menu > Show Keyboard, Cmd+5) - a virtual MIDI keyboard at the bottom of the window: play an instrument straight from the screen, without a controller. The notes enter Csound like the MIDI of the host (MIDI devices are not touched, nothing is sent out to the host). **Ch** chooses the MIDI channel - by default Csound plays channel N with `instr N` (or use `massign`); **Oct - / +** move the keys, **Vel** sets the velocity: with **Fixed Vel** on every note has exactly that velocity; with Fixed Vel off (default) it depends on where you press the key (top = soft, bottom = loud), up to Vel. Next to the octave you read the last note sent (note, velocity, channel). **All Notes Off** releases everything. Notes coming from the host or a controller light up on the keys. Nothing plays while Csound is paused.
 - **Graphs** (menu > Show Graphs) - function tables (f statements, `ftgen`) and `display` / `dispfft` signals, in a panel docked at the bottom. Cleared at every Apply. Tables are **live**: while the panel is open they are re-read about 4 times per second and redrawn when their content changes (`tablew`, `ftgen` regenerated, GEN routines in a loop) - a free oscilloscope or envelope viewer: write what you want to see into a table.
 
 
@@ -4343,7 +4382,7 @@ Cmd on macOS, Ctrl on Windows and Linux.
 - **Cmd+Return** - Apply, **Shift+Return** - Evaluate selection / block / line, **Cmd+E** - Evaluate line in the help bar
 - **Cmd+S** Save, **Cmd+Shift+S** Save as, **Cmd+O** Load, **Cmd+N** Init Session Clear
 - **Cmd+F** - Find / Replace
-- **Cmd+1 / 2 / 3 / 4** - Parameters, Console, Graphs, Channels
+- **Cmd+1 / 2 / 3 / 4 / 5** - Parameters, Console, Graphs, Channels, Keyboard
 - **Option/Alt + click** on a group header - open / close all groups
 - **Cmd+= / Cmd+-** - larger / smaller text
 - **Cmd+Z / Cmd+Shift+Z** - Undo / Redo

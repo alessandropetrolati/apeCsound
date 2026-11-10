@@ -33,7 +33,8 @@ enum class CsoundActionSheetIcon
     folder,      // "Reveal in Finder": cartella
     waveform,    // "Import Samples...": forma d'onda
     pencil,      // modifica (bottone "edit" a destra di una riga, Rename)
-    help         // guida: punto interrogativo in un cerchio ("apeCsound Guide")
+    help,        // guida: punto interrogativo in un cerchio ("apeCsound Guide")
+    pianoKeys    // tastiera MIDI virtuale ("Show Keyboard")
 };
 
 /**

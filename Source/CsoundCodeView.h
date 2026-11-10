@@ -56,6 +56,9 @@ public:
     const juce::Font& getFont() const noexcept              { return font; }
 
     void setColourScheme (const ColourScheme& scheme);
+    /** Ricolora tutto il documento (il tokeniser ha cambiato regole, es.
+        nuove UDO). */
+    void retokeniseAll()                                     { documentChanged (0); }
     const ColourScheme& getColourScheme() const noexcept    { return colourScheme; }
 
     /** Tab = spazi (sempre insertSpaces nel nostro caso). */

@@ -460,6 +460,10 @@ public:
         all'uscita invariato. Ogni compileAndStart (Apply, Load...) la toglie:
         di default Csound suona sempre. */
     void setCsoundPaused (bool shouldBePaused) noexcept { csoundPaused.store (shouldBePaused); }
+
+    /** Tastiera MIDI virtuale (CsoundVirtualKeyboard.h): le note suonate
+        dalla UI entrano nel MIDI di processBlock, come quelle dell'host. */
+    juce::MidiKeyboardState& getVirtualKeyboardState() noexcept { return virtualKeyboardState; }
     bool isCsoundPaused() const noexcept               { return csoundPaused.load(); }
 
     /** Ferma la performance in corso (se presente).
@@ -498,14 +502,14 @@ public:
         double hintMin = 0.0, hintMax = 1.0;
         juce::String attributes;      // 11o argomento di chn_k ("db spark group:Name"...), vedi CsoundMonitorLayout.h
         cs_float* valuePtr = nullptr; // numerico: letto direttamente; audio: inizio del buffer di ksmps campioni
-        bool isAudio = false;         // chnset asig: mostrato come meter RMS in dB
+        bool isAudio = false;         // chnset asig: mostrato come meter di picco in dB
     };
     std::vector<MonitorChannel> listMonitorChannels();
 
     // Scheda "Channels" (CsoundChannelsPanel): TUTTI i canali del motore,
     // classificati - vedi CsoundChannelDiagnostics.h.
     std::vector<csoundChannels::Info> listAllChannels();
-    /** Valore corrente come testo: numero (k), testo (S), RMS dell'ultimo
+    /** Valore corrente come testo: numero (k), testo (S), picco dell'ultimo
         ksmps (a), "-" per il resto. Message thread. */
     juce::String readChannelValueText (const csoundChannels::Info& info);
     /** "Map": crea un parametro per il canale nel primo slot libero del tipo
@@ -532,8 +536,10 @@ public:
         dei puntatori (ignorati se il motore e' cambiato nel frattempo). */
     static constexpr int kMaxAudioPeakWatches = 16;
     void setAudioPeakWatches (const std::vector<cs_float*>& channelPtrs, std::uint64_t engine);
-    /** Picco di campione dall'ultima chiamata (e lo azzera); 0 se il canale
-        non e' sorvegliato. 1.0 = 0 dBFS. */
+    /** Picco di campione dall'ultima chiamata (e lo azzera); -1 se il canale
+        non e' sorvegliato. 1.0 = 0 dBFS. E' il valore del meter audio:
+        un sinusoide di ampiezza 0dbfs legge 0 dB, ampiezza 0.5 legge -6 dB,
+        a qualunque frequenza (anche 10 Hz). */
     float takeAudioPeak (const cs_float* channelPtr);
     juce::String readMonitorString (const MonitorChannel& ch) const;
     bool isReservedHostChannel (const juce::String& name) const;
@@ -1402,6 +1408,7 @@ private:
     std::atomic<CSOUND*> activeCsound { nullptr };
     std::atomic<bool> ready { false };
     std::atomic<bool> csoundPaused { false }; // vedi setCsoundPaused
+    juce::MidiKeyboardState virtualKeyboardState;   // vedi getVirtualKeyboardState
 
     // true tra il momento in cui setStateInformation ripristina il testo del
     // .csd e il momento in cui quel testo viene effettivamente compilato -

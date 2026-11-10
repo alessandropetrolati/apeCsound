@@ -8,6 +8,8 @@
 #include "CsoundCodeView.h"
 #include "CsoundEditCallout.h" // [EDIT-CALLOUT]
 
+class CsoundTokeniser;
+
 /**
     CodeView (editor di codice nostro, vedi CsoundCodeView.h) specializzato
     per Csound: aggiunge auto-indent
@@ -72,6 +74,8 @@ public:
     void editorViewportPositionChanged() override { if (onViewMoved) onViewMoved(); }
     /** Scroll o caret spostati: l'editor della finestra salva il layout. */
     std::function<void()> onViewMoved;
+    /** Menu contestuale > "Open in Csound Manual" su un opcode. */
+    std::function<void (const juce::String& opcodeName)> onOpenOpcodeManualRequested;
     void errorMarkersChanged() override; // aggiorna la barra di help se il caret e' su una riga con errore
 
     // juce::DragAndDropTarget - vedi il commento in testa alla classe.
@@ -245,7 +249,12 @@ private:
     bool areSelectedLinesCommented() const;
 
     enum ContextMenuItem { ctxCut = 1, ctxCopy, ctxPaste, ctxDelete, ctxSelectAll, ctxUndo, ctxRedo, ctxIndent, ctxComment, ctxEvaluate,
-                           ctxJumpToDefinition, ctxJumpBack };
+                           ctxJumpToDefinition, ctxJumpBack, ctxOpcodeManual };
+
+    // "Open <opcode> in Csound Manual": opcode (non UDO) sotto il punto
+    // del menu, vuoto se non c'e'. Memorizzato all'apertura del menu.
+    juce::String manualOpcodeAt (const juce::CodeDocument::Position& pos);
+    juce::String contextMenuOpcode;
 
     //--------------------------------------------------------------------------
     // Jump to Definition (Cmd+clic, come Xcode): vedi CsoundNavigation.h.
@@ -359,6 +368,20 @@ private:
 
     juce::Array<UserOpcode> userOpcodes;
     bool userOpcodesDirty = true;
+
+    // Colorazione delle UDO: dopo una modifica (300 ms di calma) rilegge
+    // le UDO e, se i nomi sono cambiati, li passa al CsoundTokeniser e
+    // ricolora. Nome di una dichiarazione: sintassi classica
+    // "opcode Nome, a, k" e Csound 7 "opcode Nome(...):...".
+    void refreshUserOpcodeHighlight();
+    CsoundTokeniser* csoundTokeniser = nullptr;   // il tokeniser passato al costruttore, se e' quello di Csound
+    struct UdoHighlightTimer final : juce::Timer
+    {
+        explicit UdoHighlightTimer (CsoundCodeEditor& e) : owner (e) {}
+        void timerCallback() override { stopTimer(); owner.refreshUserOpcodeHighlight(); }
+        CsoundCodeEditor& owner;
+    };
+    UdoHighlightTimer udoHighlightTimer { *this };
 
     bool modernSyntaxHelp = false;
 

@@ -366,6 +366,9 @@ public:
     // Console". Impostate da PluginEditor.
     std::function<void()> onToggleGraphsRequested;
     std::function<bool()> isGraphsVisible;
+    // "Show Keyboard": tastiera MIDI virtuale (vedi CsoundVirtualKeyboard.h).
+    std::function<void()> onToggleKeyboardRequested;
+    std::function<bool()> isKeyboardVisible;
     std::function<void()> onToggleChannelsRequested;   // "Show Channels" (scheda diagnostica dei canali)
     std::function<bool()> isChannelsVisible;
 
@@ -375,6 +378,7 @@ public:
     std::function<void()> onToggleModernSyntaxRequested;
     std::function<bool()> isModernSyntaxEnabled;
     std::function<void()> onOpenManualRequested;
+    std::function<void()> onOpenFlossManualRequested;   // "Csound FLOSS Manual" (tutorial online)
 
     // "apeCsound Guide": guida rapida interna (vedi GuideView in PluginEditor).
     std::function<void()> onGuideRequested;
@@ -1289,7 +1293,7 @@ private:
         // Dichiarati DOPO i widget che referenziano: distrutti PRIMA di essi.
         std::unique_ptr<juce::SliderParameterAttachment> sliderAttachment;
         std::unique_ptr<juce::ButtonParameterAttachment> buttonAttachment;
-        std::unique_ptr<juce::ComboBoxParameterAttachment> comboAttachment;
+        std::unique_ptr<juce::ParameterAttachment> comboAttachment;   // per ID: le voci <unassigned> sono nascoste
 
         // Striscia della maniglia (barra colorata a tutta altezza, lato
         // sinistro) - stesso identico meccanismo di ParamRow: mouseDown/
@@ -1845,7 +1849,7 @@ private:
             juce::String name, label, text;   // label: indice del membro nelle card multiple
             int channelIndex = -1;            // in monitorChannels
             bool isString = false, hasHints = false;
-            bool isAudio = false;             // canale audio: RMS in dB con balistica da meter
+            bool isAudio = false;             // canale audio: picco in dB con balistica da meter
             double value = 0.0, hintMin = 0.0, hintMax = 1.0, seenMin = 0.0, seenMax = 0.0;
             double peakHold = 0.0;            // audio: picco tenuto (scende lentamente)
             int peakHoldAge = 0;

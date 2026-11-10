@@ -17,6 +17,14 @@ CsoundTokeniser::CsoundTokeniser()
     });
 }
 
+bool CsoundTokeniser::setUserOpcodes (const juce::StringArray& names)
+{
+    if (names == userOpcodes)
+        return false;
+    userOpcodes = names;
+    return true;
+}
+
 bool CsoundTokeniser::isIdentifierStart (juce::juce_wchar c) noexcept
 {
     return juce::CharacterFunctions::isLetter (c) || c == '_';
@@ -157,6 +165,10 @@ int CsoundTokeniser::readNextToken (juce::CodeDocument::Iterator& source)
         if (keywords.contains (identifier))
             return tokenType_keyword;
 
+        // Prima degli opcode di sistema: una UDO puo' ridefinirne uno.
+        if (userOpcodes.contains (identifier))
+            return tokenType_userOpcode;
+
         if (opcodes.contains (identifier))
             return tokenType_opcode;
 
@@ -186,7 +198,8 @@ juce::CodeEditorComponent::ColourScheme CsoundTokeniser::getDefaultColourScheme(
         { "Number",       0xff1c00cf }, // blu
         { "String",       0xffc41a16 }, // rosso
         { "Preprocessor", 0xff643820 }, // marrone
-        { "Punctuation",  0xff4d4d4d }  // grigio medio
+        { "Punctuation",  0xff4d4d4d }, // grigio medio
+        { "User Opcode",  0xff2c7a6e }  // verde acqua scuro (UDO del file)
     };
 
     juce::CodeEditorComponent::ColourScheme scheme;
@@ -213,7 +226,8 @@ juce::CodeEditorComponent::ColourScheme CsoundTokeniser::getDarkColourScheme()
         { "Number",       0xffb8c4ff }, // lavanda
         { "String",       0xffff9e8a }, // salmone
         { "Preprocessor", 0xffe0b07a }, // ocra
-        { "Punctuation",  0xffa3aeb9 }  // grigio chiaro
+        { "Punctuation",  0xffa3aeb9 }, // grigio chiaro
+        { "User Opcode",  0xff67d4be }  // verde acqua (UDO del file)
     };
 
     juce::CodeEditorComponent::ColourScheme scheme;
