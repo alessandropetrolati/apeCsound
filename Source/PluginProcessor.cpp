@@ -1235,6 +1235,13 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     // (solo desktop) vanno in coda con "+=". Un "--env:..." in <CsOptions>
     // viene letto DOPO e quindi prevale. Valori tra virgolette:
     // csoundSetOption separa le opzioni sugli spazi.
+    // Cartella del .csd per il codice (canali stringa CSD_DIR e CSD_PATH,
+    // quest'ultimo come in Cabbage), impostati dopo la compilazione e prima
+    // di csoundStart: il codice globale e l'instr 0 (eseguiti in
+    // csoundStart) li leggono gia'.
+    // Senza file collegato: la cartella dei file scritti (SFDIR), mai vuota,
+    // cosi' un percorso costruito con sprintf non finisce nella radice.
+    juce::String csdDirForCode;
     {
         const auto linked = getLinkedCsdFile();
         const auto csdFolder = linked.existsAsFile() ? linked.getParentDirectory() : juce::File{};
@@ -1270,7 +1277,16 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
 
         if (writeFolder.isDirectory())
             CsoundAPI::csoundSetOption (cs, ("--env:SFDIR=\"" + writeFolder.getFullPathName() + "\"").toRawUTF8());
+
+        csdDirForCode = csdFolder != juce::File{} ? csdFolder.getFullPathName() : writeFolder.getFullPathName();
     }
+    auto setCsdDirChannels = [cs, &csdDirForCode]
+    {
+        if (CsoundAPI::csoundSetStringChannel == nullptr)
+            return;
+        for (const char* name : { "CSD_DIR", "CSD_PATH" })
+            CsoundAPI::csoundSetStringChannel (cs, name, csdDirForCode.toRawUTF8());
+    };
 
     // Forziamo sr e ksmps a coincidere con host sample rate e block size:
     // cosi' non serve resampling e il ciclo in processBlock() e' quasi
@@ -1365,6 +1381,8 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     // nelle opzioni del motore (csoundGetParams restituisce quelle vive).
     if (auto* params = const_cast<OPARMS*> (::csoundGetParams (cs)))
         params->displays = 1;
+
+    setCsdDirChannels();
 
     if (CsoundAPI::csoundStart (cs) != CSOUND_SUCCESS)
     {
@@ -2651,7 +2669,8 @@ void CsoundAudioProcessor::refreshFtableGraphs()
 bool CsoundAudioProcessor::isReservedHostChannel (const juce::String& name) const
 {
     static const char* const reserved[] = { "HOST_BPM", "IS_PLAYING", "IS_RECORDING", "TIME_IN_SECONDS", "TIME_IN_SAMPLES",
-                                            "HOST_PPQ_POS", "HOST_PPQ_BAR_START", "TIME_SIG_NUM", "TIME_SIG_DENOM" };
+                                            "HOST_PPQ_POS", "HOST_PPQ_BAR_START", "TIME_SIG_NUM", "TIME_SIG_DENOM",
+                                            "CSD_DIR", "CSD_PATH" };
     for (auto* r : reserved)
         if (name == r)
             return true;

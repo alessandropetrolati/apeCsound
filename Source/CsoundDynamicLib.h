@@ -88,6 +88,8 @@ namespace CsoundAPI
     extern CsoundListChannelsFn csoundListChannels;         // pannello Monitor
     extern CsoundDeleteChannelListFn csoundDeleteChannelList;
     extern CsoundGetStringChannelFn csoundGetStringChannel;
+    using CsoundSetStringChannelFn = void (*) (CSOUND*, const char*, const char*);
+    extern CsoundSetStringChannelFn csoundSetStringChannel;   // CSD_DIR / CSD_PATH
     using CsoundGetChannelPtrFn = int32_t (*) (CSOUND*, void**, const char*, int32_t);
     extern CsoundGetChannelPtrFn csoundGetChannelPtr; // puntatore diretto a un canale (host transport)
     using CsoundGetTableFn = int32_t (*) (CSOUND*, cs_float**, int32_t);

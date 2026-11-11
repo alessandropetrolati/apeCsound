@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include <array>
+#include <map>
 #include <set>
 #include <utility>
 #include <vector>
@@ -263,7 +264,8 @@ public:
     CsoundCodeEditor.h per il formato esatto.
 */
 class CsoundParameterMappingPanel final : public juce::Component,
-                                          private CsoundAudioProcessor::Listener
+                                          private CsoundAudioProcessor::Listener,
+                                          private juce::AudioProcessorParameter::Listener
 {
 public:
     explicit CsoundParameterMappingPanel (CsoundAudioProcessor& processorToEdit,
@@ -1721,6 +1723,25 @@ private:
     // reali (GenericParamRow) NON lo ricevono piu' (vedi il commento sul
     // costruttore di GenericParamRow - i valori sono gestiti dalla DAW).
     juce::UndoManager& undoManager;
+
+    // Undo dei VALORI dei parametri (Config > Undo Parameter Changes; di
+    // default acceso in standalone, spento nel plug-in dove la DAW ha gia'
+    // la sua cronologia). Un gesto (trascinamento di uno slider, click su
+    // un bottone, scelta in un menu, XY pad) diventa un passo di Undo: si
+    // ascoltano i gesti di tutti i parametri dell'host, si annota il valore
+    // all'inizio e si registra la coppia prima/dopo alla fine. Gesti
+    // sovrapposti (le due assi dell'XY pad) = un solo passo. Le modifiche
+    // senza gesto (automazione della DAW, snapshot, Randomize, Reset) non
+    // entrano nella cronologia.
+public:
+    std::function<bool()> isParameterUndoEnabled;
+    std::function<void()> onToggleParameterUndoRequested;
+private:
+    void parameterValueChanged (int, float) override {}
+    void parameterGestureChanged (int parameterIndex, bool gestureIsStarting) override;
+    std::map<int, float> gestureStartValues;
+    int openGestures = 0;
+    bool parameterTransactionPending = false;
 
     // Slot (kind, slotIndex) attualmente apert* in modalita' Edit - kind:
     // 0=Float, 1=Int, 2=Bool, 3=Choice. rebuildUnifiedRows() distrugge e

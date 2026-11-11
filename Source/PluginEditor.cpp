@@ -142,6 +142,9 @@ namespace
     }
 
     const char* const kModernSyntaxHelpKey = "modernSyntaxHelp";
+    // Undo dei valori dei parametri: chiavi separate per standalone e
+    // plug-in (default diversi: nel plug-in la DAW ha gia' il suo Undo).
+    juce::String parameterUndoKey (bool standalone) { return standalone ? "undoParameterChangesStandalone" : "undoParameterChangesPlugin"; }
     const char* const kEditorFontSizeKey   = "editorFontSize"; // punti; consolle = -2
     const char* const kEditorDarkThemeKey  = "editorDarkTheme"; // palette scura dell'editor (default true)
     constexpr int kDefaultEditorFontSize = 15, kMinEditorFontSize = 9, kMaxEditorFontSize = 32;
@@ -676,6 +679,19 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
         getUserSettings().setValue (kModernSyntaxHelpKey, enable);
         getUserSettings().saveIfNeeded();
     };
+    {
+        const bool standalone = audioProcessor.wrapperType == juce::AudioProcessor::wrapperType_Standalone;
+        parameterPanel.isParameterUndoEnabled = [standalone]
+        {
+            return getUserSettings().getBoolValue (parameterUndoKey (standalone), standalone);
+        };
+        parameterPanel.onToggleParameterUndoRequested = [standalone]
+        {
+            const bool enable = ! getUserSettings().getBoolValue (parameterUndoKey (standalone), standalone);
+            getUserSettings().setValue (parameterUndoKey (standalone), enable);
+            getUserSettings().saveIfNeeded();
+        };
+    }
     parameterPanel.onOpenManualRequested = [] { juce::URL (kCsoundManualUrl).launchInDefaultBrowser(); };
     parameterPanel.onOpenFlossManualRequested = [] { juce::URL (kCsoundFlossManualUrl).launchInDefaultBrowser(); };
     // Tasto destro su un opcode > "Open in Csound Manual": la sua pagina.
@@ -1324,7 +1340,7 @@ void CsoundAudioProcessorEditor::resized()
     // Tastiera virtuale: in fondo, sotto la consolle, larga quanto editor e
     // consolle (la sidebar resta a tutta altezza).
     if (showingKeyboard)
-        virtualKeyboard.setBounds (area.removeFromBottom (juce::jmin (CsoundVirtualKeyboardPanel::preferredHeight,
+        virtualKeyboard.setBounds (area.removeFromBottom (juce::jmin (virtualKeyboard.getPreferredHeight (area.getWidth()),
                                                                        juce::jmax (0, area.getHeight() / 3))));
 
     // Fascia in basso: consolle e/o pannello Graphs (a destra della
@@ -4160,6 +4176,7 @@ The `.csd` file on disk is the reference. A DAW project stores the path of the l
 - `SSDIR` - audio files to read: `diskin2 "loop.wav"`, GEN01. Use just the file name.
 - `SFDIR` - files written by Csound (`fout`, `-o`) without a path.
 - `SADIR` - analysis files (pvoc, ATS, lpc). `INCDIR` - `#include` files, e.g. shared UDOs.
+- **Folder of the .csd in the code**: the string channels `CSD_DIR` (and `CSD_PATH`, the Cabbage name) hold the folder of the linked `.csd`, without the final slash; with no linked file, the output files folder. Use it to write next to the file: `Sdir chnget "CSD_DIR"` then `Sfile sprintf "%s/partiture/take.sco", Sdir`. The subfolder must already exist. A plain relative path such as `"partiture/take.sco"` in `fout` is resolved against SFDIR (the output files folder), not the `.csd` folder.
 - Csound first looks in the folder of the linked `.csd`, then in these folders.
 - `--env:SSDIR=...` (or SFDIR, SADIR, INCDIR) in `<CsOptions>` overrides them for that `.csd`.
 ## Config > Extra Folders
@@ -4187,7 +4204,7 @@ On iOS the apeCsound folder is not visible in the Files app. **Load**, **Open Ex
 - **Help bar** - syntax and description of the opcode under the caret, also for the UDOs of the file.
 - **Autocompletion** - type two letters: Up/Down to choose, Tab or Enter to accept, Esc to close.
 - **Config > Modern Syntax in Help** - shows the Csound 7 functional form, e.g. `ares:a = oscil(xamp, xcps)`.
-- **Undo / Redo** - one history shared by the editor and the Parameters panel; it survives closing the plug-in window.
+- **Undo / Redo** - one history shared by the editor and the Parameters panel; it survives closing the plug-in window. With **Config > Undo Parameter Changes** (on by default in the standalone app, off in the plug-in, where the DAW has its own undo) every move of a parameter - a slider drag, a button click, a menu choice, an XY pad drag - is a step too. Changes from DAW automation, snapshots, Randomize and Reset are not.
 ## Jump to Definition
 **Cmd+click** a name (Ctrl+click on Windows and Linux) to jump to where it is defined, like Xcode. Hold Cmd and move the mouse: a name with a definition is underlined. To go back, click the **Back to line N** button that appears at the top right of the editor after a jump (it goes away by itself after a few seconds, with a normal click, an edit or Esc - the way back stays available from the keyboard and the menu), or press **Cmd+Option+Left** (also Ctrl+Cmd+Left or Ctrl+-; Alt+Left on Windows/Linux) - it goes back one jump at a time; **Ctrl+Cmd+J** (Alt+J) jumps from the caret. Both are also in the right-click menu (on touch: select the name, then **Definition** / **Back**).
 - **Local variable** (`kenv`, `aout`, `Sname`) - the first line that writes it in the same `instr` / `opcode`: `kenv madsr ...`, `kenv = ...`, `kenv init ...`, `kenv:k = ...`, `ain, kcf xin`.
@@ -4318,7 +4335,7 @@ chn_k "Pitch",  2,   2,    220, 110,880, 0,0,0,0, "spark"   ; sparkline
 # Channels, Graphs and Console
 - **Console** - Csound messages, compile errors and apeCsound notes. Repeated messages are summarised to keep the DAW responsive. Clear empties it; it is also cleared at every Apply.
 - **Channels** (Parameters menu **+** > Channels..., Cmd+4) - every channel the running engine knows, with type (k, S, a, f), direction (in = read by `chnget`, out = written by `chnset`), current value and *who writes it*: a parameter, the host (`HOST_BPM`...), the code, or **nobody** - channels that the code reads and nobody writes are listed first, in yellow: that is almost always why "it does not move" (a widget that was not imported, no free slots, a typo in the name). **Map** creates the parameter for such a channel in one tap (Float, Int, Button or Menu; range and default from `chn_k` hints when present); families like `Acc1..Acc16` are one row with **Map 16**. The opposite case is flagged too: a parameter the code only *writes* and never reads (a Cabbage LED or meter imported as a button) says "never read by code" and has **Unmap** to free its slot. Opens as a window over the editor: close it with the x, Esc or a click outside.
-- **Keyboard** (menu > Show Keyboard, Cmd+5) - a virtual MIDI keyboard at the bottom of the window: play an instrument straight from the screen, without a controller. The notes enter Csound like the MIDI of the host (MIDI devices are not touched, nothing is sent out to the host). **Ch** chooses the MIDI channel - by default Csound plays channel N with `instr N` (or use `massign`); **Oct - / +** move the keys, **Vel** sets the velocity: with **Fixed Vel** on every note has exactly that velocity; with Fixed Vel off (default) it depends on where you press the key (top = soft, bottom = loud), up to Vel. Next to the octave you read the last note sent (note, velocity, channel). **All Notes Off** releases everything. Notes coming from the host or a controller light up on the keys. Nothing plays while Csound is paused.
+- **Keyboard** (menu > Show Keyboard, Cmd+5) - a virtual MIDI keyboard at the bottom of the window: play an instrument straight from the screen, without a controller. The notes enter Csound like the MIDI of the host (MIDI devices are not touched, nothing is sent out to the host). **Ch** chooses the MIDI channel - by default Csound plays channel N with `instr N` (or use `massign`); **- / +** (next to the octave) move the keys by one octave, **Vel** sets the velocity: with **Fixed Vel** on every note has exactly that velocity; with Fixed Vel off (default) it depends on where you press the key (top = soft, bottom = loud), up to Vel. Next to the octave you read the last note sent (note, velocity, channel). **All Notes Off** releases everything. Notes coming from the host or a controller light up on the keys. Nothing plays while Csound is paused.
 - **Graphs** (menu > Show Graphs) - function tables (f statements, `ftgen`) and `display` / `dispfft` signals, in a panel docked at the bottom. Cleared at every Apply. Tables are **live**: while the panel is open they are re-read about 4 times per second and redrawn when their content changes (`tablew`, `ftgen` regenerated, GEN routines in a loop) - a free oscilloscope or envelope viewer: write what you want to see into a table.
 
 

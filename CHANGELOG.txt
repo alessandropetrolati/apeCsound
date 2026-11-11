@@ -20,6 +20,16 @@ NEW
   * Right-click on an opcode (long press on iOS > Manual): "Open ... in
     Csound Manual" opens its page of the online reference manual.
   * Menu > Csound FLOSS Manual: the online tutorial book.
+  * String channels CSD_DIR and CSD_PATH (the Cabbage name): the folder of
+    the linked .csd (with no linked file, the output files folder), set
+    before the code starts, so a .csd can write next to itself:
+    Sdir chnget "CSD_DIR". The two names are now reserved (not usable as
+    parameter channels).
+  * Undo / Redo of parameter moves (Config > Undo Parameter Changes): a
+    slider drag, a button click, a menu choice or an XY pad drag is one
+    undo step. On by default in the standalone app, off in the plug-in
+    (the DAW already records parameter changes in its own undo); the two
+    settings are separate.
   * Menu parameters: options without a label (<unassigned>) are hidden in
     the panel menu. Only the look changes: the DAW still sees 16 options.
 

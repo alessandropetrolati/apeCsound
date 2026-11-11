@@ -53,8 +53,8 @@ public:
         channelButton.onClick = [this] { showChannelMenu(); };
         setMidiChannel (1);
 
-        setupButton (octDown, "Oct -", "One octave down");
-        setupButton (octUp,   "Oct +", "One octave up");
+        setupButton (octDown, "-", "One octave down");
+        setupButton (octUp,   "+", "One octave up");
         setupButton (panic,   "All Notes Off", "Release every note played from this keyboard");
         octDown.onClick = [this] { shiftOctave (-1); };
         octUp.onClick   = [this] { shiftOctave (+1); };
@@ -130,39 +130,74 @@ public:
         g.drawHorizontalLine (0, 0.0f, (float) getWidth());
     }
 
+    // Barra dei comandi in due gruppi:
+    //   note    [Ch 1 v] [- C3 +]  ultima nota inviata
+    //   suono   [Fixed Vel] Vel [----slider----] [All Notes Off]
+    // Una riga sola se c'e' posto, altrimenti (portrait, finestra stretta)
+    // due righe, un gruppo per riga: nessun comando sparisce.
+    static bool usesTwoRows (int width) noexcept    { return width < singleRowMinWidth; }
+    int getPreferredHeight (int width) const noexcept
+    {
+        return keysHeight + 1 + barHeight * (usesTwoRows (width) ? 2 : 1);
+    }
+
     void resized() override
     {
         auto r = getLocalBounds();
         r.removeFromTop (1);
 
-        auto bar = r.removeFromTop (barHeight).reduced (8, 3);
-        channelButton.setBounds (bar.removeFromLeft (72));
-        bar.removeFromLeft (8);
-        octDown.setBounds (bar.removeFromLeft (52));
-        rangeLabel.setBounds (bar.removeFromLeft (70));
-        octUp.setBounds (bar.removeFromLeft (52));
+        const bool twoRows = usesTwoRows (getWidth());
+        auto notesRow = r.removeFromTop (barHeight).reduced (8, 3);
+        auto soundRow = twoRows ? r.removeFromTop (barHeight).reduced (8, 3) : juce::Rectangle<int>();
 
-        bar.removeFromLeft (8);
+        // gruppo note, a sinistra
+        channelButton.setBounds (notesRow.removeFromLeft (72));
+        notesRow.removeFromLeft (8);
+        octDown.setBounds (notesRow.removeFromLeft (30));
+        rangeLabel.setBounds (notesRow.removeFromLeft (42));
+        octUp.setBounds (notesRow.removeFromLeft (30));
+        notesRow.removeFromLeft (10);
+        if (! twoRows)
+            soundRow = notesRow;   // una riga: il gruppo suono nello spazio che resta
 
-        panic.setBounds (bar.removeFromRight (juce::jmin (110, juce::jmax (0, bar.getWidth() / 4))));
-        bar.removeFromRight (8);
-        auto vel = bar.removeFromRight (juce::jmin (190, juce::jmax (0, bar.getWidth() - 8)));
-        velocityLabel.setBounds (vel.removeFromLeft (30));
-        velocity.setBounds (vel);
-        bar.removeFromRight (6);
-        touchButton.setBounds (bar.removeFromRight (juce::jmin (78, juce::jmax (0, bar.getWidth()))));
-        bar.removeFromRight (6);
-        lastNoteLabel.setBounds (bar);
+        // gruppo suono, a destra (riga sotto in due righe)
+        panic.setButtonText (twoRows ? "All Off" : "All Notes Off");
+        panic.setBounds (soundRow.removeFromRight (twoRows ? 70 : 104));
+        soundRow.removeFromRight (8);
+
+        if (twoRows)
+        {
+            // Riga intera: [Fixed Vel] Vel [slider che prende il resto] [All Off]
+            auto row = soundRow;
+            touchButton.setBounds (row.removeFromLeft (78));
+            row.removeFromLeft (8);
+            velocityLabel.setBounds (row.removeFromLeft (28));
+            velocity.setBounds (row);
+            lastNoteLabel.setBounds (notesRow);
+        }
+        else
+        {
+            const int velWidth = juce::jlimit (110, 220, soundRow.getWidth() - 78 - 8 - 28 - 140);
+            velocity.setBounds (soundRow.removeFromRight (velWidth));
+            velocityLabel.setBounds (soundRow.removeFromRight (28));
+            soundRow.removeFromRight (8);
+            touchButton.setBounds (soundRow.removeFromRight (78));
+            soundRow.removeFromRight (8);
+            lastNoteLabel.setBounds (soundRow);
+        }
 
         keys.setBounds (r.reduced (4, 0).withTrimmedBottom (4));
         layoutKeys();
     }
 
-    static constexpr int barHeight = 28;
+    static constexpr int barHeight = 30;
+    // sotto questa larghezza i comandi vanno su due righe:
+    // note 192 + ultima nota 140 + Fixed Vel/Vel/slider/All Notes Off ~350
+    static constexpr int singleRowMinWidth = 700;
    #if JUCE_IOS || JUCE_ANDROID
-    static constexpr int preferredHeight = 150;
+    static constexpr int keysHeight = 120;
    #else
-    static constexpr int preferredHeight = 118;
+    static constexpr int keysHeight = 88;
    #endif
 
     // --- stato salvato nel layout della finestra (EDITOR_VIEW) ---

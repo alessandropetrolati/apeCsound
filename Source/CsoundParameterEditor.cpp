@@ -3653,6 +3653,8 @@ CsoundParameterMappingPanel::CsoundParameterMappingPanel (CsoundAudioProcessor& 
 {
     setLookAndFeel (&lookAndFeel);
     processor.addListener (this);
+    for (auto* p : processor.getParameters())
+        p->addListener (this);
 
     // Bottone multifunzione: circolare e accentato (proprieta' dinamica
     // "circular", vedi CsoundParameterPanelLookAndFeel per lo sfondo),
@@ -3736,8 +3738,56 @@ CsoundParameterMappingPanel::~CsoundParameterMappingPanel()
     monitorListTimer.stopTimer();
     monitorValueTimer.stopTimer();
     processor.setAudioPeakWatches ({}, 0);   // nessun pannello: niente da sorvegliare
+    for (auto* p : processor.getParameters())
+        p->removeListener (this);
     processor.removeListener (this);
     setLookAndFeel (nullptr);
+}
+
+// Undo dei valori dei parametri: vedi il commento su parameterGestureChanged
+// in CsoundParameterEditor.h.
+void CsoundParameterMappingPanel::parameterGestureChanged (int parameterIndex, bool gestureIsStarting)
+{
+    // Solo i gesti della nostra UI (message thread); mai durante un undo/redo.
+    if (! juce::MessageManager::existsAndIsCurrentThread() || undoManager.isPerformingUndoRedo())
+        return;
+
+    auto* param = processor.getParameters()[parameterIndex];
+    if (param == nullptr)
+        return;
+
+    if (gestureIsStarting)
+    {
+        if (openGestures++ == 0)
+            parameterTransactionPending = true;   // primo gesto di un gruppo: nuovo passo
+        gestureStartValues[parameterIndex] = param->getValue();
+        return;
+    }
+
+    openGestures = juce::jmax (0, openGestures - 1);
+    const auto it = gestureStartValues.find (parameterIndex);
+    if (it == gestureStartValues.end())
+        return;
+    const float before = it->second;
+    gestureStartValues.erase (it);
+    const float after = param->getValue();
+
+    if (isParameterUndoEnabled == nullptr || ! isParameterUndoEnabled()
+        || std::abs (after - before) < 1.0e-6f)   // es. Momentary: torna a 0
+        return;
+
+    if (parameterTransactionPending)
+    {
+        undoManager.beginNewTransaction ("Change " + param->getName (64));
+        parameterTransactionPending = false;
+    }
+
+    // Niente this: la cronologia sopravvive alla chiusura dell'editor. Il
+    // parametro vive quanto il processor (che possiede la cronologia).
+    // Senza gesto: non deve essere registrato di nuovo.
+    undoManager.perform (new LambdaUndoableAction (
+        [param, after]  { param->setValueNotifyingHost (after); },
+        [param, before] { param->setValueNotifyingHost (before); }));
 }
 
 void CsoundParameterMappingPanel::sessionEditedByUndoRedo (bool structureReplaced)
@@ -3966,6 +4016,15 @@ void CsoundParameterMappingPanel::showPanelMenu()
 
         {
             CsoundActionSheetItem item;
+            item.id = 172; item.text = "Undo Parameter Changes";
+            item.enabled = onToggleParameterUndoRequested != nullptr;
+            item.tickedFn = [this] { return isParameterUndoEnabled != nullptr && isParameterUndoEnabled(); };
+            item.keepOpen = true;
+            item.icon = CsoundActionSheetIcon::undo;
+            config.subItems.push_back (item);
+        }
+        {
+            CsoundActionSheetItem item;
             item.id = 120; item.text = "Light Editor";
             item.enabled = onToggleDarkEditorRequested != nullptr;
             item.tickedFn = [this] { return isDarkEditorEnabled != nullptr && ! isDarkEditorEnabled(); };
@@ -4156,6 +4215,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 112: if (safeThis->onSaveLinkedRequested) safeThis->onSaveLinkedRequested(); break;
             case 113: if (safeThis->onAboutRequested) safeThis->onAboutRequested(); break;
             case 114: if (safeThis->onToggleModernSyntaxRequested) safeThis->onToggleModernSyntaxRequested(); break;
+            case 172: if (safeThis->onToggleParameterUndoRequested) safeThis->onToggleParameterUndoRequested(); break;
             case 115: if (safeThis->onOpenManualRequested) safeThis->onOpenManualRequested(); break;
             case 170: if (safeThis->onOpenFlossManualRequested) safeThis->onOpenFlossManualRequested(); break;
             case 116: if (safeThis->onToggleFollowCsdChannelsRequested) safeThis->onToggleFollowCsdChannelsRequested(); break;
