@@ -1446,6 +1446,8 @@ private:
     static void buildPhysicalOrderMap (const juce::AudioChannelSet& set, std::array<int, kMaxBusChannels>& map);
     int compiledHostOutputs = -1; // canali host al momento della compilazione:
     int compiledHostInputs  = -1; // se cambiano, prepareToPlay ricompila
+    double compiledSampleRate = 0.0;   // idem per la sample rate (vedi prepareToPlay)
+    bool standaloneLaunchHandled = false;   // standalone: la prima partenza resta in pausa
 
     // Sopra questo ksmps, a ogni Apply la console avvisa della latenza sul
     // monitoraggio live (128 campioni = 2.7 ms @ 48 kHz).

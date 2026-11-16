@@ -41,6 +41,15 @@ FIXES
     Windows, ~/.local/lib/csound on Linux): apeCsound's built-in Csound
     loaded those plugins, built for a different Csound, and crashed while
     compiling. It now ignores every external plugin folder.
+  * Standalone: at launch Csound started, stopped and started again from
+    the beginning. The audio device is stopped and restarted by the app
+    itself during start-up (and when you change device or buffer), and
+    every restart destroyed and recompiled the engine. Now the engine
+    survives a device restart and is recompiled only if the sample rate or
+    the channels change. The plug-ins are unchanged (a DAW bounce still
+    restarts Csound from the beginning).
+  * Standalone: the app starts paused - the code is compiled and ready
+    (errors and Monitor already visible), press Play or Apply to start.
   * Pause no longer works as a bypass: while Csound is paused the output
     is silent (before, the audio input passed through unchanged).
   * Startup checks of the code (audio channels used as parameters,

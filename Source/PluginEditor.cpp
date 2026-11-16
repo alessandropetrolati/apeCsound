@@ -4141,7 +4141,7 @@ apeCsound is a **MIDI effect**: an audio effect that also receives MIDI (Audio U
 
 # Toolbar and File menu
 - **Apply** - recompiles and restarts Csound with the editor text. A red ring means the editor differs from the running code.
-- **Pause** - pauses the Csound performance: the output is silent until you resume (or Apply, which restarts it).
+- **Pause** - pauses the Csound performance: the output is silent until you resume (or Apply, which restarts it). The standalone app starts paused: the code is compiled and ready, press Play (or Apply) to hear it.
 - **File capsule** (centre) - name, folder and state of the linked `.csd` (coloured dot: saved, unsaved changes, file not found). Tap it for the File menu.
 - **Magnifier** - Find / Replace: match case `Aa`, whole word `W`, Replace, Replace All. Enter = next match, Esc closes.
 - **Menu** - Parameters, Console, Graphs, Keyboard, Undo / Redo, Audio/MIDI Settings (standalone), Config, this guide, Csound Manual, Csound FLOSS Manual (tutorials), About.

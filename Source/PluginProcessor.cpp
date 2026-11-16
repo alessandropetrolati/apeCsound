@@ -964,13 +964,40 @@ void CsoundAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock
                               && (compiledHostOutputs != juce::jmax (1, getMainBusNumOutputChannels())
                                   || compiledHostInputs != getMainBusNumInputChannels());
 
-    if (pendingStateRestore.exchange (false) || ! isEngineRunning() || channelsChanged)
+    // Csound gira alla sample rate dell'host (--sample-rate in
+    // compileAndStart): se cambia va ricompilato. La dimensione del blocco
+    // invece non conta (processBlock spezza il buffer in cicli di ksmps).
+    const bool sampleRateChanged = isEngineRunning() && compiledSampleRate != sampleRate;
+
+    if (pendingStateRestore.exchange (false) || ! isEngineRunning() || channelsChanged || sampleRateChanged)
+    {
         compileAndStart (getCsdText());
+
+        // Standalone: al lancio dell'app il motore e' compilato e pronto ma
+        // in pausa (Play o Apply per partire). Solo la prima volta: Apply,
+        // Load e i riavvii successivi suonano subito come sempre.
+        if (wrapperType == wrapperType_Standalone && ! standaloneLaunchHandled && isEngineRunning())
+        {
+            csoundPaused.store (true);
+            handleMessage ("--- Csound is paused: press Play (or Apply) to start ---");
+        }
+        standaloneLaunchHandled = true;
+    }
 }
 
 void CsoundAudioProcessor::releaseResources()
 {
-    stopEngine();
+    // Standalone: il motore NON si distrugge qui. Lo standalone ferma e
+    // riavvia il dispositivo audio da solo (all'avvio, quando macOS
+    // riconfigura il dispositivo, cambiando dispositivo o buffer nelle
+    // impostazioni): prima ogni volta Csound ripartiva da zero ("suona, si
+    // interrompe e ricomincia"). Ora la performance riprende da dove era;
+    // prepareToPlay ricompila solo se cambiano sample rate o canali. Il
+    // motore si distrugge con il processor (vedi il distruttore).
+    // Plug-in: come prima. Le DAW chiamano releaseResources/prepareToPlay
+    // anche per un bounce offline, che deve ripartire da capo.
+    if (wrapperType != wrapperType_Standalone)
+        stopEngine();
 }
 
 bool CsoundAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -1301,6 +1328,7 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     const int csdIn   = parseDeclaredHeaderValue (newCsdText, "nchnls_i");
     compiledHostOutputs = hostOut;
     compiledHostInputs  = hostIn;
+    compiledSampleRate  = hostSampleRate;
     rebuildHostChannelMaps();
 
     // Valori dalla traccia (usati quando non si segue il .csd o quando il
