@@ -1928,6 +1928,15 @@ void CodeView::paintGutter (juce::Graphics& g)
     juce::Graphics::ScopedSaveState ss (g);
     g.reduceClipRegion (gutter);
 
+    // Blocchi della vista Algorithm: una striscia sottile al bordo destro del margine.
+    for (int line = firstLine; line <= lastLine && ! lineMarkers.empty(); ++line)
+        if (auto it = lineMarkers.find (line); it != lineMarkers.end())
+        {
+            const float y = (float) ((double) line * lineHeight - scrollY + textInsetTop);
+            g.setColour (it->second);
+            g.fillRect ((float) gutterWidth - 4.0f, y, 3.0f, (float) lineHeight);
+        }
+
     // Punto rosso a sinistra del numero sulle righe con errore Csound.
     for (const auto& m : errorMarkers)
     {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <map>
 #include <vector>
 #include <functional>
 #include <memory>
@@ -144,6 +145,15 @@ public:
     int getLineHeight() const noexcept                      { return lineHeight; }
     float getCharWidth() const noexcept                     { return charWidth; }
     int getGutterWidth() const noexcept                     { return gutterWidth; }
+
+    /** Striscia colorata nel margine (riga da 0 -> colore): i blocchi della
+        vista Algorithm. Vuoto = nessuna striscia. */
+    void setLineMarkers (std::map<int, juce::Colour> markers)
+    {
+        if (markers == lineMarkers) return;
+        lineMarkers = std::move (markers);
+        repaint();
+    }
 
     /** Prima riga (anche parzialmente) visibile. */
     int getFirstLineOnScreen() const;
@@ -339,6 +349,7 @@ private:
     bool showLineNumbers = true;
     bool readOnly = false;
     int gutterWidth = 0;
+    std::map<int, juce::Colour> lineMarkers;     // vedi setLineMarkers
 
     juce::CodeDocument::Position caretPos, selectionAnchor;
     int columnToMaintain = -1; // per le freccie su/giu

@@ -7,6 +7,7 @@
 #include "../CsoundNavigation.h"
 #include "../CsoundMonitorLayout.h"
 #include "../CsoundChannelDiagnostics.h"
+#include "../CsoundGraphModel.h"
 
 #ifndef CSOUND_TESTS_CORE_ONLY
  #include "../PluginProcessor.h"
@@ -1283,6 +1284,218 @@ struct SnapshotTreeTests final : public juce::UnitTest
 };
 #endif
 
+
+//==============================================================================
+// Vista Algorithm: il modello del grafo (CsoundGraphModel.h, solo libreria
+// standard). Le viste che lo disegnano (Flow, Detail, Explain) usano
+// juce_graphics e si provano dentro l'app.
+struct GraphModelTests final : public juce::UnitTest
+{
+    GraphModelTests() : juce::UnitTest ("Graph model", "apeCsound") {}
+
+    static csoundGraph::OpcodeTable table()
+    {
+        csoundGraph::OpcodeTable t;
+        t.add ("oscili", "ares oscili xamp, xcps[, ifn, iphs]");
+        t.add ("expseg", "ares expseg ia, idur1, ib[, idur2] [, ic] [...]");
+        t.add ("chnget", "kval chnget Sname");
+        t.add ("outs", "outs asig1, asig2");
+        t.add ("schedule", "schedule insnum, iwhen, idur [, ip4] [, ip5] [...]");
+        t.add ("ampdb", "ampdb(x)");
+        t.add ("cpsmidinn", "cpsmidinn(MidiNoteNumber)");
+        return t;
+    }
+
+    static const char* code()
+    {
+        return "<CsoundSynthesizer><CsInstruments>\n"
+               "sr = 48000\nksmps = 32\nnchnls = 2\n0dbfs = 1\n"
+               "gkVol init 1\n"
+               "instr 1\n"
+               "  kVol chnget \"VOLUME\"\n"
+               "  gkVol = ampdb(kVol)\n"
+               "  schedule \"Nota\", 0, 1, 60\n"
+               "endin\n"
+               "instr Nota\n"
+               "  iAmp = p5 / 127\n"
+               "  aEnv expseg 0.001, 0.005, 1, p3 - 0.005, 0.001\n"
+               "  aS oscili iAmp * gkVol, cpsmidinn(p4)\n"
+               "  if p6 > 0 then\n"
+               "    aS = aS * aEnv\n"
+               "  else\n"
+               "    aS = aS * 0.5\n"
+               "  endif\n"
+               "  outs aS, aS\n"
+               "endin\n"
+               "instr 3\n"
+               "  kOut = kPrev + 1\n"
+               "  kPrev = kOut\n"
+               "endin\n"
+               "</CsInstruments><CsScore>i 1 0 10\n</CsScore></CsoundSynthesizer>\n";
+    }
+
+    void runTest() override
+    {
+        const auto orc = csoundGraph::parse (code(), table());
+
+        auto block = [&orc] (const std::string& title) -> const csoundGraph::Graph*
+        {
+            for (const auto& g : orc.blocks) if (g.title() == title) return &g;
+            return nullptr;
+        };
+        auto node = [] (const csoundGraph::Graph& g, const std::string& name) -> int
+        {
+            for (int i = 0; i < (int) g.nodes.size(); ++i) if (g.nodes[(size_t) i].name == name) return i;
+            return -1;
+        };
+
+        beginTest ("blocks, settings, nothing left unparsed");
+        {
+            expect (block ("instr 1") != nullptr && block ("instr Nota") != nullptr && block ("instr 3") != nullptr);
+            expectEquals (juce::String (orc.settings.count ("sr") ? orc.settings.at ("sr") : std::string()), juce::String ("48000"));
+            expectEquals (orc.unparsed, 0);
+        }
+
+        beginTest ("channels read and never written are host parameters");
+        {
+            bool volume = false;
+            for (const auto& c : orc.hostChannels) volume = volume || c == "VOLUME";
+            expect (volume);
+        }
+
+        beginTest ("links between blocks: global bus and event");
+        {
+            int from = -1, to = -1;
+            for (int b = 0; b < (int) orc.blocks.size(); ++b)
+            {
+                if (orc.blocks[(size_t) b].title() == "instr 1") from = b;
+                if (orc.blocks[(size_t) b].title() == "instr Nota") to = b;
+            }
+            bool bus = false, event = false;
+            for (const auto& l : orc.links)
+            {
+                bus   = bus   || (l.from == from && l.to == to && l.name == "gkVol");
+                event = event || (l.from == from && l.to == to && l.kind == "evento");
+            }
+            expect (bus, "gkVol: instr 1 -> instr Nota");
+            expect (event, "schedule: instr 1 -> instr Nota");
+        }
+
+        beginTest ("instr Nota: p-fields, rates, cables, output");
+        {
+            const auto* g = block ("instr Nota");
+            expect (g != nullptr);
+            if (g == nullptr) return;
+            for (int p : { 3, 4, 5, 6 }) expect (g->pfields.count (p) > 0, "p" + juce::String (p));
+
+            const int osc = node (*g, "oscili"), env = node (*g, "expseg"), outs = node (*g, "outs");
+            expect (osc >= 0 && env >= 0 && outs >= 0);
+            if (osc < 0 || env < 0 || outs < 0) return;
+            expectEquals (juce::String::charToString (g->nodes[(size_t) osc].rate), juce::String ("a"));
+            expect (g->nodes[(size_t) outs].audioOut);
+
+            bool envCable = false;
+            int outsFromBranches = 0;
+            for (const auto& c : g->cables)
+            {
+                envCable = envCable || (c.from == env && c.var == "aEnv");
+                if (c.to == outs && c.toIn == 0 && c.var == "aS") ++outsFromBranches;
+            }
+            expect (envCable, "aEnv leaves expseg");
+            expect (outsFromBranches >= 2, "after if / else, outs reads aS from both branches");
+            expectEquals ((int) g->frames.size(), 2);     // if, else
+        }
+
+        beginTest ("a variable read before it is written is a feedback cable");
+        {
+            const auto* g = block ("instr 3");
+            expect (g != nullptr);
+            if (g == nullptr) return;
+            bool feedback = false;
+            for (const auto& c : g->cables) feedback = feedback || (c.var == "kPrev" && c.feedback);
+            expect (feedback);
+        }
+
+        beginTest ("Csound 7 syntax: for, switch, multi-line expressions, typed and struct variables, new UDOs");
+        {
+            const std::string csd =
+                "<CsoundSynthesizer>\n<CsInstruments>\n"
+                "struct Point x:i, y:i\n"
+                "opcode Twice(value:k):k\n xout value * 2\nendop\n"
+                "#define BODY(N)\n#\n chnset $N, \"m\"\n#\n"
+                "instr 1\n"
+                " arr:i[] = fillarray(1, 2, 3)\n"
+                " for v, i in arr do\n  print v\n od\n"
+                " kx = (\n  1 +\n  2\n )\n"
+                " if kx > 0 ||\n    kx < -1 then\n  kx = 0\n endif\n"
+                " switch kx\n  case 1\n   ky = 1\n  case 2, 3\n   ky = 2\n  default\n   ky = 0\n endsw\n"
+                " pt:Point = init()\n pt.x = 3\n iv = pt.x + pt.y\n"
+                " total@global:i init 1\n"
+                " chnset limit(kx, 0, 1), \"Lim\"\n"
+                " a1 oscili Twice(ky), 440\n outs a1, a1\n"
+                "endin\n</CsInstruments>\n<CsScore>\ni 1 0 1\n</CsScore>\n</CsoundSynthesizer>\n";
+            auto t = table();
+            t.add ("chnset", "chnset kval, Sname");
+            t.add ("limit", "kres limit ksig, klow, khigh");
+            t.add ("fillarray", "karray[] fillarray ival1, ival2[, ival3]");
+            t.add ("init", "ares init iarg");
+            t.add ("print", "print iarg");
+            t.add ("outs", "outs asig1, asig2");
+            const auto orc = csoundGraph::parse (csd, t);
+            expectEquals (orc.unparsed, 0, "every line understood");
+            const csoundGraph::Graph* ins = nullptr;
+            const csoundGraph::Graph* udo = nullptr;
+            for (const auto& b : orc.blocks)
+            {
+                if (b.kind == csoundGraph::Graph::Instr) ins = &b;
+                if (b.kind == csoundGraph::Graph::Udo) udo = &b;
+            }
+            expect (udo != nullptr && udo->names.size() == 1 && udo->names[0] == "Twice", "new-style UDO name");
+            if (udo != nullptr) expect (udo->undefinedVars.empty(), "UDO argument 'value' is defined");
+            expect (ins != nullptr);
+            if (ins != nullptr)
+            {
+                expect (ins->undefinedVars.empty(), "no undefined variables (struct fields, typed names, loop vars)");
+                bool forFrame = false, caseFrames = false, macroNode = false, chnsetOp = false;
+                int cases = 0;
+                for (const auto& f : ins->frames) { forFrame = forFrame || f.kind == "for"; cases += (f.kind == "if" || f.kind == "elseif" || f.kind == "else") ? 1 : 0; }
+                caseFrames = cases >= 4;      // if (kx > 0 ...) + case 1 + case 2,3 + default
+                for (const auto& n : ins->nodes)
+                {
+                    macroNode = macroNode || (n.name == "chnset" && n.channel == "m");
+                    if (n.name == "chnset" && n.channel == "Lim") chnsetOp = true;
+                }
+                expect (forFrame, "for loop is a frame");
+                expect (caseFrames, "switch cases are frames");
+                expect (! macroNode, "multi-line macro body is not code");
+                expect (chnsetOp, "chnset with a function call as first argument");
+                bool globalTotal = false;
+                for (const auto& n : ins->nodes) for (const auto& o : n.outs) if (o.var == "total") globalTotal = o.global;
+                expect (globalTotal, "name@global is global");
+            }
+        }
+
+        beginTest ("Score lines: p-fields with . and +, f statements, file line numbers");
+        {
+            const std::string csd = "<CsoundSynthesizer>\n<CsInstruments>\ninstr 1\n a1 oscili p4, p5\n outs a1, a1\nendin\n</CsInstruments>\n"
+                                    "<CsScore>\nf 1 0 4096 10 1 0.5\ni 1 0 2 0.5 440\ni 1.1 + . 0.3\ni \"Pad\" 1 3\n</CsScore>\n</CsoundSynthesizer>\n";
+            const auto orc = csoundGraph::parse (csd, table());
+            expectEquals ((int) orc.scoreLines.size(), 4);
+            if (orc.scoreLines.size() == 4)
+            {
+                expect (orc.scoreLines[0].kind == 'f');
+                expect (orc.scoreLines[0].line == 9);
+                expect (orc.scoreLines[1].instr == "1");
+                expect (orc.scoreLines[2].instr == "1");               // 1.1: istanza dello strumento 1
+                expect (orc.scoreLines[2].p[1] == "2");                // + = 0 + 2
+                expect (orc.scoreLines[2].p[2] == "2");                // . = come la riga prima
+                expect (orc.scoreLines[2].p.size() == 5 && orc.scoreLines[2].p[4] == "440");   // p5 mancante: come prima
+                expect (orc.scoreLines[3].instr == "Pad");
+            }
+        }
+    }
+};
+
 //==============================================================================
 Summary runAll (CsoundAudioProcessor* processor, const std::function<void (const juce::String&)>& log)
 {
@@ -1293,6 +1506,7 @@ Summary runAll (CsoundAudioProcessor* processor, const std::function<void (const
     static MonitorLayoutTests   monitorTests;
     static NavigationTests      navigationTests;
     static ChannelDiagnosticsTests channelTests;
+    static GraphModelTests      graphTests;
    #ifndef CSOUND_TESTS_CORE_ONLY
     static CabbageImportTests   importTests;
     static SnapshotTreeTests    snapshotTests;

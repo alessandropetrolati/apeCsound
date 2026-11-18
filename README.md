@@ -30,7 +30,7 @@ Developed by **Alessandro Petrolati** — [apeSoft](https://www.apesoft.it).
 ### Code editor
 - Csound syntax highlighting and structure-aware auto-indent (`instr/endin`, `opcode/endop`, `if/endif`, loops).
 - Autocompletion and an inline **help bar**: syntax, description and category of every opcode of the Csound Reference Manual (from CsoundQt's `opcodes.xml`, GNU FDL — see `scripts/generate_opcode_help.py`), plus the UDOs of the current file. **Config > Modern Syntax in Help** shows the Csound 7 functional form (`ares:a = oscil(xamp, xcps)`).
-- **Apply** recompiles without restarting the host; the button is outlined in red while the editor differs from the running code. **Pause** stops Csound and lets the audio pass through.
+- **Apply** recompiles without restarting the host; the button is outlined in red while the editor differs from the running code. **Pause** stops Csound (the output is silent).
 - **Inline errors**: the line of a compile error (and of INIT/PERF errors at run time) is marked with a red dot, red background and wavy underline; the help bar shows the message.
 - Find / Replace, Comment / Uncomment, re-indent, keyboard shortcuts, undo / redo shared with the Parameters panel.
 - **Jump to Definition** (Cmd+click, like Xcode): variables, globals, UDOs, instruments, macros, channels and labels; a "Back to line N" button and Cmd+Option+Left to go back.
@@ -72,6 +72,17 @@ A fixed pool of **176 host-automatable parameters** can be mapped to Csound chan
   - **Config > Extra Folders** adds folders of your choice to SSDIR/SADIR/INCDIR and chooses where Csound writes (SFDIR).
 - **File menu** (the file name in the centre of the toolbar): Init Session Clear / Template, Load, Open Example, Save, Save as, Reveal in Finder, **Import Files...** (copies files into the right folder by type), **Manage Files...** (desktop: opens the apeCsound folder; iPadOS: a file manager to import, export and delete files), Restore Examples.
 - On iPadOS, Load / Save use apeCsound's own file browser, because the shared folder is not visible in the Files app.
+
+### Algorithm: read and follow the code
+**Show Algorithm** (Cmd+6) opens a guide to the `.csd` beside the editor (or on the whole window). It follows the code while you write and never changes it.
+- **Map** of the orchestra: who starts what (score, MIDI, controls, other instruments), the data between instruments (globals, channels, tables) and, while Csound plays, how many notes each instrument is playing.
+- **Flow**: an instrument as a block diagram, from the sources to the outputs; values computed once per note inside the boxes; signals that reach no output shown apart. Zoom with pinch or Cmd+wheel.
+- **Blocks**: the instrument as a few functional blocks (controls, sources, shaping in time, spectral processing, transformation, space and effects, output); tap a block to open its boxes.
+- **Explain**: a sentence beside each line saying what it does, values resolved (p-fields from the score, tables described and drawn), a badge for when each line runs (i / k / a) and a step-through in the order Csound runs the code. Csound 7 syntax is understood (`for`, `switch`, typed variables, structs).
+- **Live values** on the cables while Csound plays, an oscilloscope and **Listen** to hear one signal alone; **Trace** shows where a signal comes from and where it ends.
+
+### Virtual keyboard
+- **Show Keyboard** (Cmd+5): play the instruments from the screen, with MIDI channel, octave and velocity; notes from the host light up on the keys.
 
 ### Live coding
 - **Evaluate** (Shift+Return): sends the selection, the `instr`/`opcode` block around the caret or the current line to the running engine without a full recompile; score lines become real-time events. **Evaluate line** (Cmd+E) in the help bar for one-liners.

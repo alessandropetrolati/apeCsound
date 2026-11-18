@@ -371,6 +371,8 @@ public:
     // "Show Keyboard": tastiera MIDI virtuale (vedi CsoundVirtualKeyboard.h).
     std::function<void()> onToggleKeyboardRequested;
     std::function<bool()> isKeyboardVisible;
+    // "Show Algorithm": vista Grafo del codice (CsoundGraphView.h).
+    std::function<void()> onShowAlgorithmRequested;
     std::function<void()> onToggleChannelsRequested;   // "Show Channels" (scheda diagnostica dei canali)
     std::function<bool()> isChannelsVisible;
 

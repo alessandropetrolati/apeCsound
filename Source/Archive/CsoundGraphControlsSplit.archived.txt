@@ -1,0 +1,36 @@
+ARCHIVIO - divisione dei Controls in sotto-blocchi (pannello, altri strumenti,
+nota, tabelle, calcoli per sezione di commento). Tolta il 18.11.2026 su
+richiesta: allontanava dal flusso del programma. Stava in csoundFlow::computeStages
+(CsoundGraphFlow.h), subito dopo "flow.stageOfBox.assign ((size_t) nb, -1);".
+Per ripristinarla: rimettere questo blocco al posto della riga
+"std::vector<juce::String> sub ((size_t) nb); int nControls = 0;".
+
+        // Controlli numerosi: si dividono per provenienza (pannello, altri
+        // strumenti, la nota, tabelle) e i calcoli per sezione del codice.
+        std::vector<juce::String> sub ((size_t) nb);
+        int nControls = 0;
+        for (int i = 0; i < nb; ++i) nControls += kind[(size_t) i] == Controls ? 1 : 0;
+        if (nControls > 12)
+        {
+            static const std::set<std::string> midi { "cpsmidi", "cpsmidib", "notnum", "veloc", "ampmidi", "ampmidid", "pchmidi", "octmidi", "midictrl", "ctrl7",
+                                                      "ctrl14", "pchbend", "aftouch", "midinoteoncps", "midinoteonkey", "midinoteonoct", "midinoteonpch", "release" };
+            std::map<juce::String, int> perSection;
+            for (int i = 0; i < nb; ++i)
+            {
+                if (kind[(size_t) i] != Controls) continue;
+                const auto& b = flow.boxes[(size_t) i];
+                const auto& nd = g.nodes[(size_t) b.node];
+                bool fromNote = midi.count (nd.name) > 0;
+                for (const auto& in : nd.ins) for (const auto& v : in.vars) fromNote = fromNote || csoundGraph::classify (v).pfield;
+                if (b.source && b.channel.isNotEmpty())                        sub[(size_t) i] = "panel";
+                else if (b.source)                                              sub[(size_t) i] = "instruments";
+                else if (fromNote)                                              sub[(size_t) i] = "note";
+                else if (b.group == "Table Control")                            sub[(size_t) i] = "tables";
+                else { sub[(size_t) i] = "calc:" + sectionOf (nd.line); ++perSection[sub[(size_t) i]]; }
+            }
+            // sezioni: solo quelle con almeno 3 scatole, e solo se sono almeno due
+            int real = 0;
+            for (auto& [k2, n2] : perSection) real += (n2 >= 3 && k2 != "calc:") ? 1 : 0;
+            for (int i = 0; i < nb; ++i)
+                if (sub[(size_t) i].startsWith ("calc:") && (real < 2 || perSection[sub[(size_t) i]] < 3)) sub[(size_t) i] = "calc:";
+        }

@@ -3901,6 +3901,14 @@ void CsoundParameterMappingPanel::showPanelMenu()
         item.icon = CsoundActionSheetIcon::pianoKeys;
         items.push_back (item);
     }
+    {
+        CsoundActionSheetItem item;
+        item.id = 173; item.text = "Show Algorithm";
+        item.shortcut = CsoundShortcuts::label (CsoundShortcuts::showAlgorithm());
+        item.enabled = onShowAlgorithmRequested != nullptr;
+        item.icon = CsoundActionSheetIcon::algorithm;
+        items.push_back (item);
+    }
 
     // Load/Save CSD: richiamano le stesse funzioni dei vecchi bottoni
     // "Load..."/"Save as..." nella toolbar PRINCIPALE di PluginEditor, ora
@@ -4227,6 +4235,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
             case 117: if (safeThis->onGuideRequested) safeThis->onGuideRequested(); break;
             case 150: if (safeThis->onToggleGraphsRequested) safeThis->onToggleGraphsRequested(); break;
             case 171: if (safeThis->onToggleKeyboardRequested) safeThis->onToggleKeyboardRequested(); break;
+            case 173: if (safeThis->onShowAlgorithmRequested) safeThis->onShowAlgorithmRequested(); break;
             case 121: if (safeThis->onAudioSettingsRequested) safeThis->onAudioSettingsRequested(); break;
             case 123: case 124: case 125: case 126:
                 if (safeThis->onChooseCsoundFolder) safeThis->onChooseCsoundFolder (result - 123);

@@ -331,6 +331,24 @@ namespace
         return strokeOpenPath (bars, 1.6f);
     }
 
+    // Vista Algorithm: una scatola in alto che alimenta due scatole in basso
+    // (due cavi curvi) - il disegno a scatole e cavi della vista.
+    juce::Path makeAlgorithmPath()
+    {
+        juce::Path outline;
+        outline.addRoundedRectangle (8.0f, 3.0f, 8.0f, 5.5f, 1.5f);
+        outline.addRoundedRectangle (2.5f, 15.5f, 8.0f, 5.5f, 1.5f);
+        outline.addRoundedRectangle (13.5f, 15.5f, 8.0f, 5.5f, 1.5f);
+        juce::Path cables;
+        cables.startNewSubPath (11.0f, 8.5f);
+        cables.cubicTo (11.0f, 12.0f, 6.5f, 11.5f, 6.5f, 15.5f);
+        cables.startNewSubPath (13.0f, 8.5f);
+        cables.cubicTo (13.0f, 12.0f, 17.5f, 11.5f, 17.5f, 15.5f);
+        auto icon = strokeOpenPath (outline, 1.5f);
+        icon.addPath (strokeOpenPath (cables, 1.5f));
+        return icon;
+    }
+
     // Tastiera virtuale: contorno con tre divisori dei tasti bianchi e
     // due tasti neri pieni.
     juce::Path makePianoKeysPath()
@@ -663,6 +681,7 @@ namespace
             case CsoundActionSheetIcon::waveform:      return makeWaveformPath();
             case CsoundActionSheetIcon::pencil:        return makePencilPath();
             case CsoundActionSheetIcon::pianoKeys:     return makePianoKeysPath();
+            case CsoundActionSheetIcon::algorithm:     return makeAlgorithmPath();
             case CsoundActionSheetIcon::none:
             default:                                   return {};
         }

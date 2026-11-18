@@ -1,6 +1,74 @@
 APECSOUND - RELEASE NOTES
 =========================
 
+1.1.0 (November 2026)
+---------------------
+
+Algorithm: a new view that helps to read a .csd and follow its flow - a
+map of the orchestra, each instrument as a diagram, a sentence for every
+line of code, and the live values of the signals while Csound plays.
+
+NEW - ALGORITHM (menu > Show Algorithm, Cmd+6 to open and close)
+
+  * Opens docked beside the editor, which stays usable: keep writing and
+    the view follows the code, with the box of the line you are on lit up.
+    An icon switches between docked and whole window; the docked view is
+    resizable. Read-only: it never changes the code.
+  * Navigation like the Settings of an iPhone: it starts from the
+    Orchestra map, you tap to go in (an instrument, then a block), the
+    button at the top left goes back one level and says where; the title
+    in the middle says where you are. Esc goes back too.
+  * Map (the whole orchestra): who starts what - Score, MIDI, controls and
+    global code on the left, instruments in columns by who starts them,
+    audio output on the right; data arrows for globals, channels and
+    tables; while Csound plays, how many notes each instrument is playing.
+    Tap an instrument to open it.
+  * Flow: an instrument as a block diagram - only what reaches the output,
+    the main audio chain in a row, control signals from above, a sentence
+    that sums it up. Signals computed but never used are shown apart
+    ("Not connected"). The notes an instrument starts are cards with their
+    p-fields and where the receiving instrument uses them. Tap a box to
+    select it and light up its chain (and its line in the code beside the
+    diagram), double-tap for its help. Zoom with pinch or Cmd + mouse
+    wheel; double-tap the background to fit the whole diagram.
+  * Blocks, how an instrument opens: the instrument as a few functional blocks (Controls, Sound
+    sources, Shaping in time, Spectral processing, Transformation, Space
+    and effects, Output) with the opcodes they contain and the comments of
+    their section of the code; tap a block to open only its boxes, with
+    ports to the other blocks. While Blocks is used, the margin of the code
+    editor shows the colour of the block of each line.
+  * Explain: the code with a sentence beside each line saying what it does
+    and a summary above each instrument. Values are resolved: p-fields
+    from the score lines and from the schedule / event that start the
+    instrument; tables described (GEN10, 07, 05, 02, 20...) with their
+    shape drawn beside the line; score lines are explained too. A badge
+    for when each line runs (i once at note start, k at every control
+    period, a on every sample) with the real sr and ksmps; "Group lines by
+    time". Step through the code in the order Csound runs it, with the
+    live value of each line's output.
+  * Live values on the cables, like hovering a cable in Max: the value of
+    each variable of the playing instrument, read live from the engine (no
+    recompilation, the performance goes on). Tap a cable for an
+    oscilloscope and Listen (hear that signal alone on every output).
+    Large instruments: up to 256 variables per instrument.
+  * Trace: the help of a box says where its signal comes from all the way
+    back (p-fields, controls, MIDI, globals) and where it ends.
+  * Csound 7 syntax understood by the view: for ... in ... do, switch /
+    case / default / endsw, typed variables (x:i, arr:S[], name@global),
+    structs, new-style opcodes (opcode Name(a:k):k), expressions on
+    several lines.
+
+NEW - EDITOR
+
+  * Show in Code (from the Algorithm view) selects the line in the editor.
+
+FIXES
+
+  * Mouse wheel and trackpad scroll the Algorithm view like the code
+    editor (vertical, horizontal, Shift for horizontal).
+  * A function call as the first argument of an opcode
+    (chnset limit(k, 0, 1), "X") is read correctly by the view.
+
 1.0.8 (November 2026)
 ---------------------
 
@@ -52,6 +120,10 @@ FIXES
     (errors and Monitor already visible), press Play or Apply to start.
   * Pause no longer works as a bypass: while Csound is paused the output
     is silent (before, the audio input passed through unchanged).
+  * When an error left Csound looping over empty score sections
+    ("SECTION n: / end of section n" thousands of times per second) the
+    console was flooded until the app gave up. apeCsound now recognises
+    the loop and stops the engine with a message.
   * Startup checks of the code (audio channels used as parameters,
     fixed-width I/O opcodes) no longer use regular expressions on the whole
     file, and can never throw an exception into the host.

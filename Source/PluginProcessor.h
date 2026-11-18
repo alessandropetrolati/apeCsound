@@ -554,6 +554,34 @@ public:
     // riconosce, quindi compilare il solo blocco e' equivalente.
     juce::String getCsdText() const;
 
+    /** Valori dal vivo della vista Algorithm (come il mouse sopra un cavo in
+        Max): le variabili locali di uno strumento IN ESECUZIONE, lette dal
+        thread audio dopo ogni ksmps, senza ricompilare e senza fermare la
+        performance; si legge l'istanza attiva piu' recente. Message thread;
+        una nuova compilazione le toglie. */
+    static constexpr int kMaxLiveVars = 256;   // strumenti grandi: tutte le variabili dei cavi
+    static constexpr int kLiveScopeSize = 512;
+    void setLiveVariables (const juce::String& instrName, const juce::StringArray& variables);
+    void clearLiveVariables();
+    /** k / i: il valore; a: il livello (rms del ksmps, 1 = 0dbfs). */
+    float getLiveValue (int index) const noexcept;
+    /** 'a', 'k', 'i' (0 = variabile non trovata o di altro tipo). */
+    char getLiveRate (int index) const noexcept;
+    /** false se in questo momento non suona nessuna nota dello strumento. */
+    bool isLiveFound() const noexcept          { return liveFound.load(); }
+    /** Listen: la variabile audio index al posto dell'uscita (-1 = nessuna). */
+    void setLiveListen (int index) noexcept     { liveListenIndex.store (index); }
+    int  getLiveListen() const noexcept        { return liveListenIndex.load(); }
+    /** Oscilloscopio: ultimi campioni della variabile audio index (-1 = nessuna). */
+    void setLiveScope (int index) noexcept      { liveScopeIndex.store (index); }
+    void copyLiveScope (float* dest, int numSamples) const noexcept;
+
+    /** Mappa dell'orchestra: quante note suona ogni strumento. Si contano
+        (thread audio, ogni 8 ksmps) solo mentre la mappa e' aperta. */
+    void setActiveNotesWanted (bool shouldCount) noexcept   { activeNotesWanted.store (shouldCount); }
+    /** Message thread: note attive dello strumento (numero o nome). */
+    int getActiveNotes (const juce::String& instrName) const;
+
     /** Codice + le parti del file fuori dal blocco <CsoundSynthesizer>
         (es. la sezione <Cabbage>, che in Cabbage sta PRIMA del blocco):
         per chi deve leggere anche i widget (vedi CsoundParameterGroups). */
@@ -1447,6 +1475,34 @@ private:
     int compiledHostOutputs = -1; // canali host al momento della compilazione:
     int compiledHostInputs  = -1; // se cambiano, prepareToPlay ricompila
     double compiledSampleRate = 0.0;   // idem per la sample rate (vedi prepareToPlay)
+    // --- valori dal vivo (vedi setLiveVariables) ---
+    struct LiveRequest { int insno = -1; int count = 0; char vars[kMaxLiveVars][48] {}; };
+    juce::SpinLock liveLock;                    // protegge livePending
+    LiveRequest livePending, liveCurrent;       // pending: message thread; current: thread audio
+    std::atomic<int> liveGeneration { 0 };
+    int liveSeenGeneration = -1;                // thread audio
+    std::atomic<bool> liveActive { false }, liveFound { false };
+    std::array<std::atomic<float>, kMaxLiveVars> liveValues {};
+    std::array<std::atomic<char>, kMaxLiveVars> liveRates {};
+    std::atomic<int> liveListenIndex { -1 }, liveScopeIndex { -1 };
+    std::atomic<int> scoreSectionCount { 0 };   // messaggi "SECTION n:" (vedi processBlock)
+    int runawaySectionStrikes = 0;              // thread audio
+    void* liveAnchor = nullptr;                 // INSDS* (catena delle istanze attive), thread audio
+    const void* liveInstr = nullptr;            // INSTRTXT* dell'ultima ricerca
+    std::array<const void*, kMaxLiveVars> liveVarPtrs {};   // CS_VARIABLE* in quell'INSTRTXT
+    int liveRetry = 0;
+    std::vector<cs_float> liveListenBuffer;     // ksmps campioni della variabile ascoltata
+    bool liveListenValid = false;               // thread audio
+    std::array<float, kLiveScopeSize> liveScope {};
+    std::atomic<int> liveScopeWrite { 0 };
+    void liveAfterKsmps (CSOUND* cs) noexcept;  // thread audio, definita in fondo a PluginProcessor.cpp
+    bool findLiveAnchor (CSOUND* cs) noexcept;  // thread audio: liveAnchor dalla prima istanza attiva
+    static constexpr int kMaxCountedInstr = 512;
+    std::atomic<bool> activeNotesWanted { false };
+    std::array<std::atomic<int>, kMaxCountedInstr> activeNotes {};
+    int activeNotesTick = 0;                    // thread audio
+    void countActiveNotes (CSOUND* cs) noexcept;
+    void resetLiveCache() noexcept;
     bool standaloneLaunchHandled = false;   // standalone: la prima partenza resta in pausa
 
     // Sopra questo ksmps, a ogni Apply la console avvisa della latenza sul

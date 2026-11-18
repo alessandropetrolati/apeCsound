@@ -62,32 +62,18 @@ Whether you are a sound designer, a composer, a teacher or a student, apeCsound 
 
 Csound is free software distributed under the GNU LGPL. apeCsound is developed by apeSoft and is not affiliated with the Csound developers.
 
-**What's New in This Version (1.0.7)**
-apeCsound 1.0.7 makes your patches easier to play, to watch and to read.
+**What's New in This Version (1.1.0)**
+apeCsound 1.1.0 helps you read and understand any Csound patch.
 
-BUTTONS THAT PLAY YOUR INSTRUMENTS
-• Every switch parameter is now a Button with two modes. Toggle works like a switch: tap it on, tap it off. Momentary is on only while you hold it, like a key or a sustain pedal - and your host records the press and the release, so automation plays them back exactly.
-• EVENT ON and EVENT OFF: give a Button a score line and apeCsound sends it for you when the button is pressed and when it is released. "i 10 0 2" plays a two-second note at each tap. With a held note ("i 10.1 0 -1" on press, "i -10.1 0 0" on release) the button sounds as long as you hold it. No code to write, and it works with host automation and MIDI learn.
-• Prefer to do it in Csound? Copy Trigger Code, in the menu of any Button, gives you the few lines that start an instrument once per press, ready to paste.
-• A cleaner configuration with one-tap selectors for Toggle / Momentary and the initial state.
-
-A NEW MONITOR FOR WHAT YOUR CODE WRITES
-• Every channel your patch writes with chnset now gets the right display by itself - nothing to declare: a level bar for a declared range, a sliding marker when there is no range, a dial with a needle for values around zero (LFOs, pan), a row of step lights for a sequencer position, a glowing lamp for on/off values, a display for text, a sparkline of the last seconds.
-• Audio channels become real level meters in dB, with peak hold and a CLIP light that stays on until you tap it, so you never miss an overload.
-• Numbered channels (Band1, Band2...) and stereo pairs (Out_L / Out_R) are joined in one card; compact mode fits dozens of channels on the screen.
-• Touch and hold a card to see what it is, reset what it has measured, or copy a ready-made chn_k line with the range it has seen.
-• A card that never changes is dimmed and tells you why: usually a channel your code creates but never writes.
-• Note for existing patches: the Monitor attributes of version 1.0.5 (db, int, hidden, group:) are no longer needed or read. Your patches still run unchanged; only the look of those cards changes. The Guide explains the new way.
-
-FIND YOUR WAY IN THE CODE
-• Jump to Definition: select a variable, an instrument number, a user-defined opcode, a macro or a channel name and choose Definition to go where it is defined - or Cmd+click with a keyboard and trackpad. A Back button takes you right back to where you were.
-
-APECSOUND REMEMBERS
-• Your layout is saved with your project: which panels are open, the collapsed groups, the Monitor mode and where you were in the code. New sessions start from the layout you used last, and Config > Reset Layout brings back the default one.
-
-BETTER IMPORT, NEW EXAMPLES
-• Cabbage and CsoundQt files: momentary buttons are now recognised, CsoundQt event buttons become Buttons with their score line - including held notes that stop when you release them - and are named after their label.
-• New ButtonTest example with every way to use a Button, a rewritten MonitorTest that explains each kind of display, and a CsoundQt test file. The built-in Guide has new chapters on Buttons, the Monitor and code navigation.
+ALGORITHM: SEE HOW A PATCH WORKS
+• Show Algorithm opens a guide to your patch beside the code. It follows what you write and never changes it.
+• Map: the whole orchestra at a glance - which instrument starts which, what comes from the score, MIDI and your sliders, what goes to the speakers, and how many notes each instrument is playing right now.
+• Flow: each instrument drawn as the block diagram of a synth, from the sound sources to the outputs. Pinch to zoom, double-tap to see it all.
+• Blocks: a large instrument summed up in a few musical blocks - controls, sound sources, envelopes, spectral processing, effects, output. Tap a block to open it.
+• Explain: a plain-English sentence beside every line of code, the values resolved (which note, which table, drawn), when each line runs, and a step-by-step walk through the code in the order Csound runs it.
+• Live values: while your patch plays, touch any cable to see its value and an oscilloscope, or Listen to hear that signal alone - the oscillator before the filter, then after it.
+• Trace: where a signal comes from and where it ends, in one tap.
+• Understands the new Csound 7 syntax: for loops, switch, typed variables and structs.
 
 Plus many smaller fixes and refinements throughout the app.
 
@@ -150,26 +136,20 @@ Che tu sia sound designer, compositore, docente o studente, apeCsound trasforma 
 
 Csound è software libero distribuito con licenza GNU LGPL. apeCsound è sviluppato da apeSoft e non è affiliato agli sviluppatori di Csound.
 
-**Novità di questa versione (1.0.7)**
-PULSANTI CHE SUONANO
-• Toggle o Momentary: un pulsante Momentary è acceso solo finché lo tieni premuto, e l'host registra pressione e rilascio
-• EVENT ON / EVENT OFF: una riga di score inviata alla pressione e al rilascio - con una nota tenuta il pulsante suona come un tasto, senza scrivere codice
-• Oppure lascia che sia il codice a reagire: Copy Trigger Code ti dà le righe da incollare
+**Novità di questa versione (1.1.0)**
+apeCsound 1.1.0 ti aiuta a leggere e capire qualsiasi patch Csound.
 
-UN NUOVO MONITOR
-• Ogni canale scritto dal codice ha da solo la visualizzazione giusta: barra di livello, quadrante, luci a passi, spia, testo, sparkline e meter audio in dB con spia di clip
-• Coppie stereo e canali numerati diventano una sola card; la modalità compatta ne mostra decine
-• Tieni premuta una card per copiare una riga chn_k pronta con il suo range
-• Nota: gli attributi del Monitor della 1.0.5 (db, int, hidden, group:) non sono più usati - vedi la Guida
+ALGORITHM: COME FUNZIONA UNA PATCH
+• Show Algorithm apre una guida alla patch accanto al codice. Segue quello che scrivi e non lo modifica mai.
+• Map: tutta l'orchestra in un colpo d'occhio - quale strumento avvia quale, cosa arriva da score, MIDI e slider, cosa va alle uscite e quante note suona ogni strumento in quel momento.
+• Flow: ogni strumento disegnato come lo schema a blocchi di un synth, dalle sorgenti alle uscite. Pinch per lo zoom, doppio tocco per vederlo tutto.
+• Blocks: uno strumento grande riassunto in pochi blocchi musicali - controlli, sorgenti, inviluppi, elaborazione spettrale, effetti, uscita. Tocca un blocco per aprirlo.
+• Explain: una frase accanto a ogni riga di codice, i valori risolti (quale nota, quale tabella, disegnata), quando gira ogni riga e un percorso passo passo nell'ordine in cui Csound esegue il codice.
+• Valori dal vivo: mentre la patch suona, tocca un cavo per vederne il valore e un oscilloscopio, oppure Listen per ascoltare solo quel segnale.
+• Trace: da dove viene un segnale e dove finisce, con un tocco.
+• Comprende la nuova sintassi di Csound 7: cicli for, switch, variabili con tipo e struct.
 
-EDITOR DI CODICE
-• Vai alla definizione: seleziona un nome e scegli Definition (o Cmd+clic con il trackpad) per raggiungere dove è definita una variabile, uno strumento, un opcode, una macro o un canale, e Back per tornare
-
-E ANCORA
-• apeCsound ricorda il layout con il progetto: pannelli aperti, gruppi e la posizione nel codice
-• Import migliore dei pulsanti di Cabbage e CsoundQt, compresi i pulsanti event di CsoundQt
-• Nuovi esempi: ButtonTest e un MonitorTest aggiornato, con spiegazioni
-• Molte correzioni
+E molte altre piccole correzioni e migliorie in tutta l'app.
 
 ---
 

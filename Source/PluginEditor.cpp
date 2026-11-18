@@ -365,6 +365,51 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // menu hamburger tramite parameterPanel.onAboutRequested.
     addChildComponent (aboutView);
     addChildComponent (guideView);
+
+    // Vista "Algorithm" (vedi showAlgorithmGraph).
+    addChildComponent (algorithmView);
+    algorithmView.getText    = [this] { return document.getAllContent(); };
+    algorithmView.getOpcodes = [this] { return audioProcessor.getOpcodeSignatures(); };
+    // Valori dal vivo sui cavi (come il mouse sopra un cavo in Max): le
+    // variabili dello strumento in esecuzione, lette dal motore senza
+    // ricompilare (vedi CsoundAudioProcessor::setLiveVariables).
+    algorithmView.setLiveVariables = [this] (const juce::String& instr, const juce::StringArray& vars)
+    {
+        if (vars.isEmpty() || ! audioProcessor.isEngineRunning()) audioProcessor.clearLiveVariables();
+        else                                                        audioProcessor.setLiveVariables (instr, vars);
+    };
+    algorithmView.getLiveValue  = [this] (int i) { return audioProcessor.getLiveValue (i); };
+    algorithmView.getLiveRate   = [this] (int i) { return audioProcessor.getLiveRate (i); };
+    algorithmView.isLiveFound   = [this] { return audioProcessor.isLiveFound(); };
+    algorithmView.setLiveListen = [this] (int i) { audioProcessor.setLiveListen (i); };
+    algorithmView.setLiveScope  = [this] (int i) { audioProcessor.setLiveScope (i); };
+    algorithmView.copyLiveScope = [this] (float* d, int n) { audioProcessor.copyLiveScope (d, n); };
+    algorithmView.setActiveNotesWanted = [this] (bool on) { audioProcessor.setActiveNotesWanted (on); };
+    algorithmView.onLineColours = [this] (const std::map<int, juce::Colour>& m) { editor.setLineMarkers (m); };
+    algorithmView.getActiveNotes       = [this] (const juce::String& instr) { return audioProcessor.getActiveNotes (instr); };
+    algorithmView.getChannelValues = [this]
+    {
+        // valori vivi dei canali (badge sulle scatole chnget / chnset)
+        std::map<juce::String, juce::String> values;
+        if (audioProcessor.getEngineIdentity() != 0)
+            for (const auto& info : audioProcessor.listAllChannels())
+                values[info.name] = audioProcessor.readChannelValueText (info);
+        return values;
+    };
+    algorithmView.onDockChanged       = [this] (bool) { resized(); };
+    algorithmView.getCaretLine        = [this] { return editor.getCaretPos().getLineNumber() + 1; };
+    algorithmView.onVisibilityChanged = [this] { if (algorithmView.isDocked()) resized(); };
+    algorithmView.onShowInCode = [this] (int line)
+    {
+        // la riga selezionata (evidenziata), dal primo carattere non vuoto alla fine
+        const int l = juce::jlimit (0, juce::jmax (0, document.getNumLines() - 1), line - 1);
+        const auto text = document.getLine (l).trimEnd();
+        const int indent = text.length() - text.trimStart().length();
+        editor.moveCaretTo (juce::CodeDocument::Position (document, l, indent), false);
+        editor.moveCaretTo (juce::CodeDocument::Position (document, l, text.length()), true);
+        editor.scrollToLine (juce::jmax (0, l - 5));
+        editor.grabKeyboardFocus();
+    };
     addChildComponent (audioSettingsView);
 
     // Browser interno dei .csd (solo iOS, vedi CsdBrowserView.h).
@@ -509,6 +554,13 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     addChildComponent (virtualKeyboard);
     addChildComponent (channelsView);
     channelsView.card.panel.onLog = [this] (const juce::String& line) { appendToLog (line); };
+    addChildComponent (algorithmDivider);
+    algorithmDivider.getCurrentWidth = [this] { return algorithmView.getWidth(); };
+    algorithmDivider.onDrag = [this] (int newWidth)
+    {
+        algorithmWidth = newWidth;
+        resized();
+    };
     addChildComponent (graphsDivider);
     graphsDivider.getCurrentWidth = [this] { return graphsWidth; };
     graphsDivider.onDrag = [this] (int newWidth)
@@ -860,6 +912,7 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.onToggleChannelsRequested   = [this] { toggleChannels(); };
     parameterPanel.onToggleKeyboardRequested   = [this] { toggleVirtualKeyboard(); };
     parameterPanel.isKeyboardVisible           = [this] { return showingKeyboard; };
+    parameterPanel.onShowAlgorithmRequested    = [this] { showAlgorithmGraph(); };
     parameterPanel.isChannelsVisible           = [this] { return channelsView.isVisible(); };
 
     // Apre la sidebar Parametri se e' chiusa quando si aggiunge un nuovo
@@ -937,7 +990,13 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     }
     viewSaveTimer.onTick = [this] { saveViewState(); };
     parameterPanel.onViewStateChanged = [this] { scheduleViewStateSave(); };
-    editor.onViewMoved = [this] { scheduleViewStateSave(); };
+    editor.onViewMoved = [this]
+    {
+        scheduleViewStateSave();
+        // Algorithm agganciata: la scatola della riga dove si sta scrivendo
+        if (algorithmView.isDocked() && algorithmView.isVisible())
+            algorithmView.revealLine (editor.getCaretPos().getLineNumber() + 1);
+    };
     parameterPanel.onResetLayoutRequested = [this] { resetLayout(); };
     viewStateReady = true;
 
@@ -1033,6 +1092,11 @@ bool CsoundAudioProcessorEditor::keyPressed (const juce::KeyPress& key)
     if (key == SC::showGraphs())     { toggleGraphs(); return true; }
     if (key == SC::showChannels())   { toggleChannels(); return true; }
     if (key == SC::showKeyboard())   { toggleVirtualKeyboard(); return true; }
+    if (key == SC::showAlgorithm())  // apre; se e' gia' aperta (Full o Dock) la chiude
+    {
+        if (algorithmView.isVisible()) algorithmView.hide(); else showAlgorithmGraph();
+        return true;
+    }
 
     if (key == SC::largerText() || key == SC::cmd ('+') || key == SC::cmd ('=', true))
     {
@@ -1236,6 +1300,8 @@ void CsoundAudioProcessorEditor::resized()
     // gia' dimensionato quando lo si apre).
     aboutView.setBounds (area);
     guideView.setBounds (area);
+    if (! algorithmView.isDocked())
+        algorithmView.setBounds (area);          // a tutta finestra; agganciata: piu' sotto, accanto all'editor
     audioSettingsView.setBounds (area);
     channelsView.setBounds (area);
     csdBrowser.setBounds (area);
@@ -1403,6 +1469,23 @@ void CsoundAudioProcessorEditor::resized()
             area.setBottom (juce::jmax (area.getY() + minEditorHeight, visibleBottom));
     }
 
+    // Vista Algorithm agganciata (non modale): a destra dell'editor e della
+    // barra di help, che restano usabili - il grafo segue il codice mentre
+    // si scrive.
+    const bool algorithmDocked = algorithmView.isDocked() && algorithmView.isVisible();
+    algorithmDivider.setVisible (algorithmDocked);
+    if (algorithmDocked)
+    {
+        // larghezza scelta trascinando il divisore (al primo uso il 45%),
+        // mai sotto algorithmMinWidth, all'editor almeno 320 px
+        const int wanted = algorithmWidth > 0 ? algorithmWidth : area.getWidth() * 45 / 100;
+        const int maxW = juce::jmax (algorithmMinWidth, area.getWidth() - 320 - sidebarDividerWidth);
+        algorithmWidth = juce::jlimit (juce::jmin (algorithmMinWidth, maxW), maxW, wanted);
+        algorithmView.setBounds (area.removeFromRight (algorithmWidth));
+        algorithmDivider.setBounds (area.removeFromRight (sidebarDividerWidth).expanded (dividerGrabMargin, 0));
+        algorithmDivider.toFront (false);
+    }
+
     auto helpBarArea = area.removeFromBottom (opcodeHelpBarHeight);
 
     editor.setBounds (area);
@@ -1444,6 +1527,7 @@ void CsoundAudioProcessorEditor::keepOverlaysOnTop()
 {
     for (juce::Component* overlay : { static_cast<juce::Component*> (&aboutView),
                                       static_cast<juce::Component*> (&guideView),
+                                      static_cast<juce::Component*> (&algorithmView),
                                       static_cast<juce::Component*> (&audioSettingsView),
                                       static_cast<juce::Component*> (&channelsView),
                                       static_cast<juce::Component*> (&csdBrowser) })
@@ -1476,6 +1560,7 @@ juce::ValueTree CsoundAudioProcessorEditor::captureViewState() const
     v.setProperty ("sidebarWidth",  sidebarWidth,  nullptr);
     v.setProperty ("consoleHeight", consoleHeight, nullptr);
     v.setProperty ("graphsWidth",   graphsWidth,   nullptr);
+    v.setProperty ("algorithmWidth", algorithmWidth, nullptr);
     v.appendChild (parameterPanel.getViewState(), nullptr);
 
     // Dove si era nel codice: scroll e caret (solo per QUESTA istanza, non
@@ -1494,6 +1579,7 @@ void CsoundAudioProcessorEditor::applyViewState (const juce::ValueTree& v)
     sidebarWidth  = (int) v.getProperty ("sidebarWidth",  sidebarWidth);
     consoleHeight = (int) v.getProperty ("consoleHeight", consoleHeight);
     graphsWidth   = (int) v.getProperty ("graphsWidth",   graphsWidth);
+    algorithmWidth = (int) v.getProperty ("algorithmWidth", algorithmWidth);
 
     if ((bool) v.getProperty ("parameters", showingParameterPanel) != showingParameterPanel) toggleParameterPanel();
     if ((bool) v.getProperty ("console",    showingConsole)        != showingConsole)        toggleConsole();
@@ -1577,6 +1663,7 @@ void CsoundAudioProcessorEditor::resetLayout()
     v.setProperty ("sidebarWidth", 360, nullptr);
     v.setProperty ("consoleHeight", 180, nullptr);
     v.setProperty ("graphsWidth", 460, nullptr);
+    v.setProperty ("algorithmWidth", 0, nullptr);
     juce::ValueTree panel ("PANEL");
     panel.setProperty ("collapsed", juce::String(), nullptr);
     panel.setProperty ("groups", juce::String(), nullptr);   // i default dei gruppi ripartono
@@ -1661,6 +1748,15 @@ void CsoundAudioProcessorEditor::toggleGraphs()
 
     resized();
     repaint();
+}
+
+// Vista "Algorithm" (menu > Show Algorithm, Cmd+6): l'algoritmo del csd
+// come scatole e cavi, overlay a tutta finestra come apeCsound Guide. Sola
+// lettura; si aggiorna da sola mentre e' aperta; un tocco su una scatola
+// apre help e contesto, "Show in Code" chiude e porta il cursore alla riga.
+void CsoundAudioProcessorEditor::showAlgorithmGraph()
+{
+    algorithmView.show();
 }
 
 void CsoundAudioProcessorEditor::toggleVirtualKeyboard()
@@ -4144,7 +4240,7 @@ apeCsound is a **MIDI effect**: an audio effect that also receives MIDI (Audio U
 - **Pause** - pauses the Csound performance: the output is silent until you resume (or Apply, which restarts it). The standalone app starts paused: the code is compiled and ready, press Play (or Apply) to hear it.
 - **File capsule** (centre) - name, folder and state of the linked `.csd` (coloured dot: saved, unsaved changes, file not found). Tap it for the File menu.
 - **Magnifier** - Find / Replace: match case `Aa`, whole word `W`, Replace, Replace All. Enter = next match, Esc closes.
-- **Menu** - Parameters, Console, Graphs, Keyboard, Undo / Redo, Audio/MIDI Settings (standalone), Config, this guide, Csound Manual, Csound FLOSS Manual (tutorials), About.
+- **Menu** - Parameters, Console, Graphs, Keyboard, Algorithm, Undo / Redo, Audio/MIDI Settings (standalone), Config, this guide, Csound Manual, Csound FLOSS Manual (tutorials), About.
 
 ## File menu (file capsule)
 - **Init Session Clear** - empty `.csd`, no parameters, no linked file.
@@ -4336,6 +4432,18 @@ chn_k "Pitch",  2,   2,    220, 110,880, 0,0,0,0, "spark"   ; sparkline
 - **Console** - Csound messages, compile errors and apeCsound notes. Repeated messages are summarised to keep the DAW responsive. Clear empties it; it is also cleared at every Apply.
 - **Channels** (Parameters menu **+** > Channels..., Cmd+4) - every channel the running engine knows, with type (k, S, a, f), direction (in = read by `chnget`, out = written by `chnset`), current value and *who writes it*: a parameter, the host (`HOST_BPM`...), the code, or **nobody** - channels that the code reads and nobody writes are listed first, in yellow: that is almost always why "it does not move" (a widget that was not imported, no free slots, a typo in the name). **Map** creates the parameter for such a channel in one tap (Float, Int, Button or Menu; range and default from `chn_k` hints when present); families like `Acc1..Acc16` are one row with **Map 16**. The opposite case is flagged too: a parameter the code only *writes* and never reads (a Cabbage LED or meter imported as a button) says "never read by code" and has **Unmap** to free its slot. Opens as a window over the editor: close it with the x, Esc or a click outside.
 - **Keyboard** (menu > Show Keyboard, Cmd+5) - a virtual MIDI keyboard at the bottom of the window: play an instrument straight from the screen, without a controller. The notes enter Csound like the MIDI of the host (MIDI devices are not touched, nothing is sent out to the host). **Ch** chooses the MIDI channel - by default Csound plays channel N with `instr N` (or use `massign`); **- / +** (next to the octave) move the keys by one octave, **Vel** sets the velocity: with **Fixed Vel** on every note has exactly that velocity; with Fixed Vel off (default) it depends on where you press the key (top = soft, bottom = loud), up to Vel. Next to the octave you read the last note sent (note, velocity, channel). **All Notes Off** releases everything. Notes coming from the host or a controller light up on the keys. Nothing plays while Csound is paused.
+- **Algorithm** (menu > Show Algorithm, Cmd+6 to open and close) - a guide to read a csd and follow its flow. It opens docked beside the editor, which stays usable: keep writing and the view follows the code, with the box of the line you are on lit up. The icon at the top right shows it on the whole window, or docks it back; drag the divider to make it wider. Navigation works like the Settings of an iPhone: it starts from the **Orchestra** (the Map), you tap to go in - an instrument, then one of its blocks - and the button at the top left goes back one level and says where (**< Orchestra**, **< instr 10**). The title in the middle says where you are. Esc on the whole window also goes back. While docked, the view follows the caret: writing in an instrument opens it. The button at the top right switches between the diagram and **Explain**, and has their options.
+  - **Map** (the whole orchestra) - who starts what: on the left where notes and data come from (Score, MIDI, the controls of the Parameters panel or the DAW, the global code), then the instruments in columns - first the ones started from outside, then the ones they start with `schedule` / `event` - and the audio output on the right. White arrows start notes (with how many score notes), coloured arrows carry data (globals, channels, tables; blue audio, coral control). Each instrument says in one sentence what it does; while Csound plays it shows how many notes it is playing. Tap an instrument to open it.
+  - **Blocks** (how an instrument opens) - the instrument as a few functional blocks with musical names: Controls, Sound sources, Shaping in time, Spectral processing, Transformation, Space and effects, Output. Each block says which opcodes it contains (and the comment of its section of the code, when there is one); arrows between blocks carry the names of the signals. Tap a block to open it: only its boxes, drawn as in Flow below, with "from ..." and "to ..." ports towards the other blocks (tap a port to move to the next block). While you use Blocks, the margin of the code editor shows the colour of the block each line belongs to. (An instrument too small for blocks opens directly on its boxes.)
+  - **Flow** (the boxes of an open block; a small instrument opens directly here) - the algorithm, like the block diagram of a synth: starting from the outputs (`outs`, `ga` buses, audio `chnset`, `xout`) only what reaches them is drawn. The main audio chain is a straight row from left to right, control signals (envelopes, LFOs, channels, globals) come in from above, the outputs are on the right and say where the signal goes. Constants and values computed once per note are lines inside the box that uses them (`xcps  cpsmidinn(p4)`). A coloured strip gives the role of each opcode (generator, modifier, spectral, I/O...). A sentence at the top sums it up: *Audio path: oscili -> aS * aEnv -> outs*. Signals that are computed but reach no output (`aph phasor 50` never read) are drawn apart, dashed, under **Not connected**. The notes an instrument starts (`schedule`, `event`, `schedkwhen`, `scoreline`) are cards under the diagram, with each p-field and where the receiving instrument uses it (`p4 -> oscili xcps`).
+    Tap a box to select it: the chain its signal comes from and goes to stays lit, and its line lights up in the code beside the diagram. Double-tap it for its help (see below). **Zoom**: pinch (trackpad, iPad) or Cmd + mouse wheel; double-tap an empty spot to fit the whole diagram in the view, again to go back to 100%. Large instruments open on the start of the audio chain.
+  - **Explain** - the code itself, with a sentence beside each line saying what it does in musical terms (*envelope: rises to 1 in 5 ms, then falls to 0.001 over the rest of the note*) and a short summary above each instrument. The values are resolved: a p-field says where it comes from (*p4 (60, 62, 67 in the score)*, *iNota from instr Serie*), a table says what it contains (*a waveform of 8 harmonics*) and its shape is drawn at the end of the line. On the whole orchestra it explains the whole file, score lines included. Csound 7 syntax is understood too (`for ... in ... do`, `switch / case`, typed variables, structs, new-style opcodes, expressions on several lines).
+    **Time**: the badge beside each line says when it runs - **i** once, when the note starts; **k** at every control period (sr / ksmps times a second); **a** on every sample, computed ksmps at a time. The summary counts them with the real numbers of the file, and **Group lines by time (i, k, a)** in the view menu puts the lines under those three headings.
+    **Step through**: the bar at the bottom follows the code in the order Csound runs it - first the init pass (the i lines), then the lines that repeat while the note plays - lighting each line, saying what it does and, while Csound plays, the current value of its output (the buttons or the Left / Right arrows). Tap a line to go to it in the editor.
+  - **Code beside the diagram** (view menu) - the code next to Flow: tap a line and its box lights up, tap a box and its line lights up.
+  - **Live values on the cables** (like hovering a cable in Max) - while Csound plays, move the mouse over a cable (or tap it) to see the current value of that variable in the latest note of the instrument: the number for control signals, the level in dB for audio. Tapping a cable opens a small window with the value, an oscilloscope for audio signals and **Listen**: while it is on you hear only that signal on every output, instead of the normal sound (Stop, closing the window or the view goes back to the normal sound) - listen to the oscillator before the filter, then after it, and you hear what the filter does. **Live values on all cables** (view menu) shows the values on every cable at once, and audio cables get thicker with their level. Nothing is recompiled: the music keeps playing. A variable written on several lines (`aph -= 0.5`, `aph *= 0`) has one memory: you see and hear its value after the last of those lines - give each step its own name to follow it. Globals are not read.
+  While Csound runs, channel boxes (`chnget`, `chnset`) show the current value of the channel.
+  **Help of a box** (double-tap in Flow): the help of its opcode and its context (where its inputs come from, who reads its outputs, channels, events) and its **Trace** - where its signal comes from all the way back (p-fields, controls, MIDI, globals) and where it ends (audio output, channels, other instruments). **Show in Code** selects the line in the editor. Read-only: the view never changes your code.
 - **Graphs** (menu > Show Graphs) - function tables (f statements, `ftgen`) and `display` / `dispfft` signals, in a panel docked at the bottom. Cleared at every Apply. Tables are **live**: while the panel is open they are re-read about 4 times per second and redrawn when their content changes (`tablew`, `ftgen` regenerated, GEN routines in a loop) - a free oscilloscope or envelope viewer: write what you want to see into a table.
 
 
@@ -4399,7 +4507,7 @@ Cmd on macOS, Ctrl on Windows and Linux.
 - **Cmd+Return** - Apply, **Shift+Return** - Evaluate selection / block / line, **Cmd+E** - Evaluate line in the help bar
 - **Cmd+S** Save, **Cmd+Shift+S** Save as, **Cmd+O** Load, **Cmd+N** Init Session Clear
 - **Cmd+F** - Find / Replace
-- **Cmd+1 / 2 / 3 / 4 / 5** - Parameters, Console, Graphs, Channels, Keyboard
+- **Cmd+1 / 2 / 3 / 4 / 5 / 6** - Parameters, Console, Graphs, Channels, Keyboard, Algorithm
 - **Option/Alt + click** on a group header - open / close all groups
 - **Cmd+= / Cmd+-** - larger / smaller text
 - **Cmd+Z / Cmd+Shift+Z** - Undo / Redo

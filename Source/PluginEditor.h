@@ -13,6 +13,7 @@
 #include "CsoundVirtualKeyboard.h"
 #include "CsoundChannelsPanel.h"
 #include "CsdBrowserView.h"
+#include "CsoundGraphView.h"
 
 /**
     Console (log di Csound): TextEditor in sola lettura che con il DITO
@@ -1309,6 +1310,16 @@ private:
     // toolbar+consolle+editor (364), per un margine di sicurezza.
     static constexpr int minWindowWidth  = 640;
     static constexpr int minWindowHeight = 420;
+
+    // Vista "Algorithm" (menu > Show Algorithm, Cmd+6): l'algoritmo del csd
+    // come scatole e cavi (CsoundGraphView.h), overlay a tutta finestra con
+    // la grafica di apeCsound Guide.
+    CsoundGraphView algorithmView;
+    // Agganciata: larghezza trascinabile come Parametri e Graphs (0 = 45%)
+    int algorithmWidth = 0;
+    static constexpr int algorithmMinWidth = 300;
+    SidebarDivider algorithmDivider;
+    void showAlgorithmGraph();
 
     CsoundLookAndFeel lookAndFeel;
 

@@ -1138,6 +1138,7 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
 
     // Apply (o qualunque ricompilazione) toglie la pausa: si riparte suonando.
     csoundPaused.store (false);
+    clearLiveVariables();   // valori dal vivo: legati al motore che sta per sparire
 
     // CsoundAPI::load() aggancia i puntatori CsoundAPI::csoundXxx ai simboli
     // di Csound linkati STATICAMENTE (vedi CsoundDynamicLib.h): idempotente,
@@ -1166,6 +1167,7 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     {
         ready = false;
         clearAudioPeakWatches();   // puntatori ai canali del motore che sta per sparire
+        resetLiveCache();
         CsoundAPI::csoundReset (old);
         CsoundAPI::csoundDestroy (old);
     }
@@ -1425,6 +1427,7 @@ void CsoundAudioProcessor::compileAndStart (const juce::String& newCsdText)
     // csoundGetNchnls/csoundGetNchnlsInput non esistono piu': un'unica
     // CsoundAPI::csoundGetChannels(cs, isInput) le sostituisce entrambe.
     csKsmps            = CsoundAPI::csoundGetKsmps (cs);
+    liveListenBuffer.assign ((size_t) juce::jmax (1, csKsmps), (cs_float) 0);   // Listen (processing sospeso qui)
     csNumChannels      = (int) CsoundAPI::csoundGetChannels (cs, 0);
     csInputChannels    = (int) CsoundAPI::csoundGetChannels (cs, 1);
     warnFixedChannelOpcodes (newCsdText, csNumChannels, csInputChannels);
@@ -1511,6 +1514,7 @@ void CsoundAudioProcessor::stopEngine()
     {
         ready = false;
         clearAudioPeakWatches();
+        resetLiveCache();
         CsoundAPI::csoundReset (old);
         CsoundAPI::csoundDestroy (old);
 
@@ -1630,8 +1634,12 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
                 continue;
             }
 
-            for (int i = 0; i < frames; ++i)
-                dest[i] = (float) spout[(size_t) (ksmpsPos + i) * (size_t) csNumChannels + (size_t) ch] * csOutScale;
+            if (liveListenValid)   // Listen: la variabile ascoltata, su tutte le uscite
+                for (int i = 0; i < frames; ++i)
+                    dest[i] = (float) liveListenBuffer[(size_t) (ksmpsPos + i)] * csOutScale;
+            else
+                for (int i = 0; i < frames; ++i)
+                    dest[i] = (float) spout[(size_t) (ksmpsPos + i) * (size_t) csNumChannels + (size_t) ch] * csOutScale;
         }
 
         ksmpsPos += frames;
@@ -1646,7 +1654,35 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         {
             ksmpsPos = 0;
 
-            const int perfResult = CsoundAPI::csoundPerformKsmps (cs);
+            const int sectionsBefore = scoreSectionCount.load (std::memory_order_relaxed);
+            int perfResult = CsoundAPI::csoundPerformKsmps (cs);
+
+            // Score che gira a vuoto: dopo certi errori Csound passa da una
+            // sezione vuota alla successiva a ogni ksmps ("SECTION n: / end of
+            // section n"), centinaia di migliaia di messaggi al secondo, finche'
+            // l'app non cede. Una score vera cambia sezione al massimo ogni
+            // tanto: una nuova sezione in 32 ksmps di fila e' un giro a vuoto.
+            // Si ferma il motore con un messaggio chiaro.
+            if (scoreSectionCount.load (std::memory_order_relaxed) - sectionsBefore >= 1)
+            {
+                if (++runawaySectionStrikes > 32)
+                {
+                    enqueueMessage ("--- Csound is looping over empty score sections (thousands per second): "
+                                    "engine stopped. Check the <CsScore> (and the errors above), then press Apply ---");
+                    runawaySectionStrikes = 0;
+                    perfResult = 1;
+                }
+            }
+            else
+                runawaySectionStrikes = 0;
+
+            // valori dal vivo della vista Algorithm (variabili di uno strumento)
+            if (liveActive.load (std::memory_order_relaxed))
+                liveAfterKsmps (cs);
+            else
+                liveListenValid = false;
+            if (activeNotesWanted.load (std::memory_order_relaxed) && (++activeNotesTick & 7) == 0)
+                countActiveNotes (cs);
 
             // CLIP dei meter audio del Monitor: picco di campione dei canali
             // sorvegliati (al piu' 16 x ksmps confronti, niente lock).
@@ -2702,7 +2738,7 @@ bool CsoundAudioProcessor::isReservedHostChannel (const juce::String& name) cons
     for (auto* r : reserved)
         if (name == r)
             return true;
-    return false;
+    return name.startsWith ("__ape");   // canali interni di apeCsound
 }
 
 std::vector<CsoundAudioProcessor::MonitorChannel> CsoundAudioProcessor::listMonitorChannels()
@@ -4976,6 +5012,10 @@ void CsoundAudioProcessor::messageCallback (CSOUND* cs, int /*attr*/, const char
         char buffer[2048];
         vsnprintf (buffer, sizeof (buffer), fmt, args);
 
+        // Sezioni di score: contate per riconoscere il giro a vuoto (vedi processBlock)
+        if (std::strncmp (buffer, "SECTION ", 8) == 0)
+            self->scoreSectionCount.fetch_add (1, std::memory_order_relaxed);
+
         // Compilazione (message thread, dentro compileAndStart): testo grezzo
         // per l'analisi degli errori con riga - vedi parseCompileErrors.
         if (self->capturingCompileOutput && juce::MessageManager::existsAndIsCurrentThread()
@@ -5792,4 +5832,204 @@ e
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new CsoundAudioProcessor();
+}
+
+//==============================================================================
+// Watch / Listen (vista Algorithm). In fondo al file perche' servono le
+// strutture INSDS / INSTRTXT (csoundCore.h, attraverso csdl.h come per i
+// plugin di Csound) e csdebug.h, che definiscono macro che il resto del file
+// non deve vedere.
+#include "csdl.h"
+#include "csdebug.h"
+
+void CsoundAudioProcessor::setLiveVariables (const juce::String& instrName, const juce::StringArray& variables)
+{
+    jassert (juce::MessageManager::getInstance()->isThisTheMessageThread());
+    auto* cs = activeCsound.load();
+    if (cs == nullptr || variables.isEmpty())
+    {
+        clearLiveVariables();
+        return;
+    }
+
+    LiveRequest r;
+    const auto name = instrName.trim().unquoted();
+    r.insno = name.containsOnly ("0123456789") ? name.getIntValue() : (int) ::csoundGetInstrNumber (cs, name.toRawUTF8());
+    if (r.insno <= 0)
+    {
+        clearLiveVariables();
+        return;
+    }
+    r.count = juce::jmin (kMaxLiveVars, variables.size());
+    for (int i = 0; i < r.count; ++i)
+        variables[i].copyToUTF8 (r.vars[i], sizeof (r.vars[i]));
+    {
+        const juce::SpinLock::ScopedLockType sl (liveLock);
+        livePending = r;
+    }
+    for (auto& v : liveValues) v.store (0.0f);
+    for (auto& t : liveRates)  t.store (0);
+    liveListenIndex.store (-1);
+    liveScopeIndex.store (-1);
+    liveFound.store (false);
+    liveGeneration.fetch_add (1);
+    liveActive.store (true);
+}
+
+void CsoundAudioProcessor::clearLiveVariables()
+{
+    liveActive.store (false);
+    liveFound.store (false);
+    liveListenIndex.store (-1);
+    liveScopeIndex.store (-1);
+}
+
+float CsoundAudioProcessor::getLiveValue (int index) const noexcept
+{
+    return index >= 0 && index < kMaxLiveVars ? liveValues[(size_t) index].load (std::memory_order_relaxed) : 0.0f;
+}
+
+char CsoundAudioProcessor::getLiveRate (int index) const noexcept
+{
+    return index >= 0 && index < kMaxLiveVars ? liveRates[(size_t) index].load (std::memory_order_relaxed) : (char) 0;
+}
+
+void CsoundAudioProcessor::copyLiveScope (float* dest, int numSamples) const noexcept
+{
+    // gli ultimi numSamples campioni, dal piu' vecchio (lettura senza lock:
+    // al peggio un pezzo appena sovrascritto, per un disegno non conta)
+    const int w = liveScopeWrite.load (std::memory_order_relaxed);
+    numSamples = juce::jmin (numSamples, kLiveScopeSize);
+    for (int i = 0; i < numSamples; ++i)
+        dest[i] = liveScope[(size_t) ((w - numSamples + i + kLiveScopeSize * 2) % kLiveScopeSize)];
+}
+
+void CsoundAudioProcessor::resetLiveCache() noexcept
+{
+    // motore distrutto o sostituito (processing sospeso): niente puntatori vecchi
+    liveAnchor = nullptr;
+    liveInstr = nullptr;
+    liveVarPtrs.fill (nullptr);
+    liveListenValid = false;
+    liveSeenGeneration = -1;
+}
+
+void CsoundAudioProcessor::liveAfterKsmps (CSOUND* cs) noexcept
+{
+    liveListenValid = false;
+
+    // nuova richiesta dal message thread (se il lock e' occupato, al prossimo ksmps)
+    const int gen = liveGeneration.load();
+    if (gen != liveSeenGeneration)
+    {
+        const juce::SpinLock::ScopedTryLockType sl (liveLock);
+        if (! sl.isLocked())
+            return;
+        liveCurrent = livePending;
+        liveSeenGeneration = gen;
+        liveInstr = nullptr;
+    }
+
+    // la catena delle istanze attive: la sua "ancora" si ricava una volta per
+    // motore dalla prima istanza attiva (il suo prvact); l'API del debugger
+    // alloca, quindi solo finche' non la si e' trovata, ogni 16 ksmps.
+    if (! findLiveAnchor (cs))
+    {
+        liveFound.store (false, std::memory_order_relaxed);
+        return;
+    }
+
+    // l'istanza attiva piu' recente dello strumento
+    INSDS* found = nullptr;
+    for (auto* ip = static_cast<INSDS*> (liveAnchor)->nxtact; ip != nullptr; ip = ip->nxtact)
+        if (ip->insno == liveCurrent.insno && ip->actflg)
+            found = ip;
+    if (found == nullptr || found->lclbas == nullptr || found->instr == nullptr)
+    {
+        liveFound.store (false, std::memory_order_relaxed);
+        return;
+    }
+
+    if (found->instr != liveInstr)
+    {
+        liveInstr = found->instr;
+        for (int i = 0; i < liveCurrent.count; ++i)
+        {
+            const auto* v = found->instr->varPool != nullptr ? csoundFindVariableWithName (cs, found->instr->varPool, liveCurrent.vars[i]) : nullptr;
+            char rate = 0;
+            if (v != nullptr && v->varType != nullptr && v->varType->varTypeName != nullptr && v->dimensions == 0)
+            {
+                const char t = v->varType->varTypeName[0];
+                if (t == 'a' || t == 'k' || t == 'i') rate = t;
+            }
+            liveVarPtrs[(size_t) i] = rate != 0 ? v : nullptr;
+            liveRates[(size_t) i].store (rate, std::memory_order_relaxed);
+        }
+    }
+
+    const int n = juce::jmin (csKsmps, (int) found->ksmps, (int) liveListenBuffer.size());
+    const int listen = liveListenIndex.load (std::memory_order_relaxed);
+    const int scope  = liveScopeIndex.load (std::memory_order_relaxed);
+    for (int i = 0; i < liveCurrent.count; ++i)
+    {
+        const auto* var = static_cast<const CS_VARIABLE*> (liveVarPtrs[(size_t) i]);
+        if (var == nullptr) continue;
+        const cs_float* p = found->lclbas + var->memBlockIndex;
+        if (liveRates[(size_t) i].load (std::memory_order_relaxed) == 'a')
+        {
+            double sum = 0.0;
+            for (int s = 0; s < n; ++s) sum += (double) p[s] * (double) p[s];
+            liveValues[(size_t) i].store ((float) (n > 0 ? std::sqrt (sum / n) * (double) csOutScale : 0.0), std::memory_order_relaxed);
+            if (i == listen && n == csKsmps)
+            {
+                for (int s = 0; s < n; ++s) liveListenBuffer[(size_t) s] = p[s];
+                liveListenValid = true;
+            }
+            if (i == scope)
+            {
+                int w = liveScopeWrite.load (std::memory_order_relaxed);
+                for (int s = 0; s < n; ++s) { liveScope[(size_t) w] = (float) p[s] * csOutScale; w = (w + 1) % kLiveScopeSize; }
+                liveScopeWrite.store (w, std::memory_order_relaxed);
+            }
+        }
+        else
+            liveValues[(size_t) i].store ((float) p[0], std::memory_order_relaxed);
+    }
+    liveFound.store (true, std::memory_order_relaxed);
+}
+
+bool CsoundAudioProcessor::findLiveAnchor (CSOUND* cs) noexcept
+{
+    if (liveAnchor != nullptr)
+        return true;
+    if ((++liveRetry & 15) != 0)
+        return false;
+    if (auto* list = csoundDebugGetInstrInstances (cs))
+    {
+        if (auto* first = static_cast<INSDS*> (list->instrptr))
+            liveAnchor = first->prvact;
+        csoundDebugFreeInstrInstances (cs, list);
+    }
+    return liveAnchor != nullptr;
+}
+
+void CsoundAudioProcessor::countActiveNotes (CSOUND* cs) noexcept
+{
+    std::array<int, kMaxCountedInstr> counts {};
+    if (findLiveAnchor (cs))
+        for (auto* ip = static_cast<INSDS*> (liveAnchor)->nxtact; ip != nullptr; ip = ip->nxtact)
+            if (ip->actflg && ip->insno > 0 && ip->insno < kMaxCountedInstr)
+                ++counts[(size_t) ip->insno];
+    for (int i = 0; i < kMaxCountedInstr; ++i)
+        activeNotes[(size_t) i].store (counts[(size_t) i], std::memory_order_relaxed);
+}
+
+int CsoundAudioProcessor::getActiveNotes (const juce::String& instrName) const
+{
+    auto* cs = activeCsound.load();
+    const auto name = instrName.trim().unquoted();
+    if (cs == nullptr || name.isEmpty())
+        return 0;
+    const int insno = name.containsOnly ("0123456789") ? name.getIntValue() : (int) ::csoundGetInstrNumber (cs, name.toRawUTF8());
+    return insno > 0 && insno < kMaxCountedInstr ? activeNotes[(size_t) insno].load (std::memory_order_relaxed) : 0;
 }

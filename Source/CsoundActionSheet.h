@@ -34,7 +34,8 @@ enum class CsoundActionSheetIcon
     waveform,    // "Import Samples...": forma d'onda
     pencil,      // modifica (bottone "edit" a destra di una riga, Rename)
     help,        // guida: punto interrogativo in un cerchio ("apeCsound Guide")
-    pianoKeys    // tastiera MIDI virtuale ("Show Keyboard")
+    pianoKeys,   // tastiera MIDI virtuale ("Show Keyboard")
+    algorithm    // vista Algorithm: tre scatole collegate da cavi ("Show Algorithm")
 };
 
 /**
