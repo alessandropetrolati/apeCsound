@@ -27,20 +27,17 @@ extern "C" void showNativeAlertRaw (const char* title, const char* message,
                        .withIconType (juce::MessageBoxIconType::QuestionIcon)
                        .withTitle (juce::String::fromUTF8 (title))
                        .withMessage (juce::String::fromUTF8 (message))
-                       .withButton (juce::String::fromUTF8 (button1Text))
-                       .withButton (juce::String::fromUTF8 (button2Text));
+                       .withButton (juce::String::fromUTF8 (button1Text), 1)
+                       .withButton (juce::String::fromUTF8 (button2Text), 2);
 
     if (threeButtons)
-        options = options.withButton (juce::String::fromUTF8 (button3Text));
+        options = options.withButton (juce::String::fromUTF8 (button3Text), 3);
 
-    // AlertWindow: 1 = primo bottone, 2 = secondo (con tre), 0 = ULTIMO.
+    // JUCE 9: ogni bottone ha il suo codice esplicito (1, 2, 3), lo stesso
+    // risultato della versione Apple. 0 (dialogo chiuso senza bottone) = ultimo.
     juce::AlertWindow::showAsync (options, [callback, context, threeButtons] (int r)
     {
-        int result = 0;
-
-        if (r == 1)               result = 1;
-        else if (threeButtons)    result = (r == 2 ? 2 : 3);
-        else                      result = 2;
+        const int result = r >= 1 && r <= 3 ? r : (threeButtons ? 3 : 2);
 
         if (callback != nullptr)
             callback (result, context);
