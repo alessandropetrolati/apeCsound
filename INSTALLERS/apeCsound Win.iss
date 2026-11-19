@@ -1,3 +1,11 @@
+; apeCsound - installer Windows (Inno Setup).
+; NOTA: le release Windows si fanno con GitHub Actions (.github/workflows/
+; build-windows.yml, che produce uno zip). Questo script resta come
+; alternativa locale: compila l'installer dai file messi in WINBIN\.
+;
+;   WINBIN\apeCsound.vst3\   (cartella bundle VST3, come esce dal build)
+;   WINBIN\apeCsound.exe     (standalone)
+
 #define MyAppName "apeCsound"
 #define MyAppVersion "1.1.0"
 #define MyAppPublisher "apeSoft"
@@ -12,26 +20,21 @@ AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 
-; Se installi plugin in Program Files, è meglio che l'uninstaller stia vicino ad essi
-DefaultDirName={commonpf64}\Studiologic\Super Sledge
-DefaultGroupName=Studiologic\Super Sledge
+DefaultDirName={commonpf64}\{#MyAppPublisher}\{#MyAppName}
+DefaultGroupName={#MyAppPublisher}\{#MyAppName}
 
-; Forza l'installazione a 64-bit (necessario per {commoncf64} su sistemi 64-bit)
+; 64 bit (necessario per {commoncf64})
+ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
 
-UninstallDisplayIcon={app}\{#MyAppName}.ico
+UninstallDisplayIcon={app}\{#MyAppName}.exe
 LicenseFile=License.txt
-InfoBeforeFile=Introduction.txt
-InfoAfterFile=Readme.txt
-OutputDir="build"
-OutputBaseFilename=Syntex_Setup
+OutputDir=build
+OutputBaseFilename={#MyAppName}_{#MyAppVersion}_Setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
-
-; Suggerisco di lasciare la DirPage attiva se l'utente volesse cambiare il percorso dei presets
-DisableDirPage=no
 DisableProgramGroupPage=yes
 
 [Types]
@@ -39,22 +42,19 @@ Name: "full"; Description: "Full installation"
 Name: "custom"; Description: "Custom installation"; Flags: iscustom
 
 [Components]
-Name: "vst3"; Description: "VST3 Plugin"; Types: full custom; Flags: fixed
-Name: "aax"; Description: "AAX Plugin"; Types: full
-; Name: "presets"; Description: "Presets and documentation"; Types: full custom; Flags: fixed
+Name: "vst3"; Description: "VST3 plug-in"; Types: full custom
+Name: "standalone"; Description: "Standalone application"; Types: full custom
 
 [Files]
-; VST3 Plugin
-Source: "WINBIN\Super Sledge.vst3"; DestDir: "{commoncf64}\VST3"; Flags: ignoreversion; Components: vst3
-
-; AAX Plugin
-Source: "WINBIN\Super Sledge.aaxplugin\*"; DestDir: "{commoncf64}\Avid\Audio\Plug-Ins\Super Sledge.aaxplugin"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: aax
-
-; Presets - Adattato al nuovo percorso JUCE con la sottocartella "PRESET"
-;Source: "Studiologic\Super Sledge\*"; DestDir: "{userappdata}\{#MyAppPublisher}\PRESET\{#MyAppName}"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: presets
+; VST3: nella cartella comune dei plug-in VST3
+Source: "WINBIN\{#MyAppName}.vst3\*"; DestDir: "{commoncf64}\VST3\{#MyAppName}.vst3"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: vst3
+; Standalone
+Source: "WINBIN\{#MyAppName}.exe"; DestDir: "{app}"; Flags: ignoreversion; Components: standalone
 
 [Icons]
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppName}.exe"; Components: standalone
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
-; Shortcut cartella presets aggiornata
-; Name: "{group}\Super Sledge Presets Folder"; Filename: "{userappdata}\{#MyAppPublisher}\PRESET\{#MyAppName}"
 Name: "{group}\Website"; Filename: "{#MyAppURL}"
+
+[Run]
+Filename: "{app}\{#MyAppName}.exe"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent unchecked; Components: standalone

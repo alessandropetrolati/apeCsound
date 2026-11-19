@@ -1,4 +1,4 @@
-=== gio 19 nov 2026 14:58:37 CET  macOS 27.0.1 arm64
+=== gio 19 nov 2026 15:00:39 CET  macOS 27.0.1 arm64
 === Projucer: /Users/alessandropetrolati/Desktop/Advanced 2018/JUCE/Projucer.app
 Re-saving file: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/apeCsound.jucer
 Finished saving: Xcode (macOS)
@@ -6,3 +6,60 @@ Finished saving: Xcode (iOS)
 Finished saving: Linux Makefile
 Finished saving: Visual Studio 2022
 === xcodebuild apeCsound - Standalone Plugin (Release)
+warning: not stripping binary because it is signed: /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/Builds/MacOSX/build/Release/apeCsound.appex/Contents/MacOS/apeCsound (in target 'apeCsound - Standalone Plugin' from project 'apeCsound')
+xcodebuild apeCsound - Standalone Plugin exit: 0
+=== xcodebuild apeCsound - AU (Release)
+xcodebuild apeCsound - AU exit: 0
+=== xcodebuild apeCsound - VST3 (Release)
+xcodebuild apeCsound - VST3 exit: 0
+=== verifica moduleinfo.json
+Bundle       : /Users/alessandropetrolati/Desktop/Advanced 2018/apeCsound/Builds/MacOSX/build/Release/apeCsound.vst3
+Manifest     : Contents/Resources/moduleinfo.json
+Binary       : Contents/MacOS/apeCsound  (38,730,768 bytes)
+Plugin Name  : apeCsound
+Version      : 1.1.0
+SDK Version  : apeCsound
+
+#  Category                        CID (hex)                         ASCII             found-in-bin
+---------------------------------------------------------------------------------------------------------
+1  Audio Module Class              ABCDEF019182FAEB4170657343736E64  ........ApesCsnd  1x  OK
+2  Component Controller Class      ABCDEF011234ABCD4170657343736E64  .....4..ApesCsnd  1x  OK
+
+RESULT: OK — every manifest CID is registered by the binary.
+        Fast-scan hosts (Camelot, Cubase, etc.) will match the factory.
+copiato: Installers/NOTORIZED/apeCsound.app
+copiato: Installers/NOTORIZED/apeCsound.component
+copiato: Installers/NOTORIZED/apeCsound.vst3
+rimossa estensione AUv3 dall'app: Installers/NOTORIZED/apeCsound.app/Contents/PlugIns/apeCsound.appex
+=== firma: apeCsound.vst3
+=== firma: apeCsound.component
+=== firma: apeCsound.app
+=== verifica: apeCsound.app
+Installers/NOTORIZED/apeCsound.app: valid on disk
+Installers/NOTORIZED/apeCsound.app: satisfies its Designated Requirement
+CodeDirectory v=20500 size=36224 flags=0x10000(runtime) hashes=1121+7 location=embedded
+Timestamp=19 Nov 2026 at 15:04:32
+TeamIdentifier=4863C638XM
+=== verifica: apeCsound.component
+Installers/NOTORIZED/apeCsound.component: valid on disk
+Installers/NOTORIZED/apeCsound.component: satisfies its Designated Requirement
+CodeDirectory v=20500 size=36288 flags=0x10000(runtime) hashes=1127+3 location=embedded
+Timestamp=19 Nov 2026 at 15:04:31
+TeamIdentifier=4863C638XM
+=== verifica: apeCsound.vst3
+Installers/NOTORIZED/apeCsound.vst3: valid on disk
+Installers/NOTORIZED/apeCsound.vst3: satisfies its Designated Requirement
+CodeDirectory v=20500 size=36352 flags=0x10000(runtime) hashes=1129+3 location=embedded
+Timestamp=19 Nov 2026 at 15:04:30
+TeamIdentifier=4863C638XM
+
+total 24
+drwxr-xr-x   6 alessandropetrolati  staff   192 19 nov 15:04 .
+drwxr-xr-x  12 alessandropetrolati  staff   384 19 nov 15:02 ..
+-rw-r--r--@  1 alessandropetrolati  staff  8196 19 nov 14:58 .DS_Store
+drwxr-xr-x   3 alessandropetrolati  staff    96 19 nov 15:02 apeCsound.app
+drwxr-xr-x   3 alessandropetrolati  staff    96 19 nov 15:03 apeCsound.component
+drwxr-xr-x   3 alessandropetrolati  staff    96 19 nov 15:04 apeCsound.vst3
+
+=== RISULTATO: OK
+=== FINE

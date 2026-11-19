@@ -9,7 +9,7 @@
 #    apeCsound-linux-x64.zip, uploaded as an artifact (and attached to the
 #    GitHub Release when the run comes from a "v*" tag)
 #
-# Run it from the "Actions" tab (Run workflow), or push a tag: git tag v1.0.1 && git push --tags
+# Run it from the "Actions" tab (Run workflow), or push a tag: git tag v1.1.0 && git push --tags
 
 name: Build Linux
 
@@ -20,7 +20,7 @@ on:
 
 env:
   # JUCE version: keep it equal to the one used on the Mac and Windows builds.
-  JUCE_REF: "9.0.4"
+  JUCE_REF: "9.0.5"
 
 jobs:
   linux:
