@@ -3998,6 +3998,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
         CsoundActionSheetItem item;
         item.id = 121; item.text = "Audio/MIDI Settings...";
         item.icon = CsoundActionSheetIcon::sliderFloat;
+        item.shortcut = CsoundShortcuts::label (CsoundShortcuts::audioSettings());
         items.push_back (item);
     }
     // "Config": sottomenu (drill-down) con le opzioni con spunta.

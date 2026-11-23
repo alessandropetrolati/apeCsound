@@ -707,6 +707,12 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
             if (auto* bus = holder->processor->getBus (false, 0))
                 maxOuts = juce::jmax (0, bus->getDefaultLayout().size());
 
+            // Multicanale anche nello standalone (come Density 27): fino a 16
+            // uscite del dispositivo, a coppie. Il player di JUCE da' al
+            // processor tanti canali quanti ne sono aperti (il processor accetta
+            // 1-16 uscite) e nchnls segue, come in una traccia multicanale.
+            maxOuts = juce::jmax (maxOuts, 16);
+
             audioSettingsView.show (holder->deviceManager, maxIns, maxOuts,
                                     standaloneInputMayFeedback ? &holder->getMuteInputValue() : nullptr,
                                     []
@@ -1092,6 +1098,11 @@ bool CsoundAudioProcessorEditor::keyPressed (const juce::KeyPress& key)
     if (key == SC::showGraphs())     { toggleGraphs(); return true; }
     if (key == SC::showChannels())   { toggleChannels(); return true; }
     if (key == SC::showKeyboard())   { toggleVirtualKeyboard(); return true; }
+    if (key == SC::audioSettings() && parameterPanel.onAudioSettingsRequested)   // solo standalone
+    {
+        parameterPanel.onAudioSettingsRequested();
+        return true;
+    }
     if (key == SC::showAlgorithm())  // apre; se e' gia' aperta (Full o Dock) la chiude
     {
         if (algorithmView.isVisible()) algorithmView.hide(); else showAlgorithmGraph();
@@ -4233,6 +4244,7 @@ apeCsound is a **MIDI effect**: an audio effect that also receives MIDI (Audio U
 - **REAPER, Bitwig, Studio One** - the MIDI of the track it is on reaches it.
 - **iOS** (AUM, Loopy Pro, Drambo, Cubasis...) - load it in an effect slot and select it as a MIDI destination.
 - **Standalone** - choose the MIDI inputs (also Bluetooth MIDI) in Audio/MIDI Settings.
+- **Standalone, multichannel** - in Audio/MIDI Settings (Cmd+,) > Output Channels choose up to 16 outputs of the audio device, in pairs: `nchnls` follows the channels you open, as on a multichannel track (`outch 3, a3` goes to the third output).
 
 
 # Toolbar and File menu
@@ -4508,6 +4520,7 @@ Cmd on macOS, Ctrl on Windows and Linux.
 - **Cmd+S** Save, **Cmd+Shift+S** Save as, **Cmd+O** Load, **Cmd+N** Init Session Clear
 - **Cmd+F** - Find / Replace
 - **Cmd+1 / 2 / 3 / 4 / 5 / 6** - Parameters, Console, Graphs, Channels, Keyboard, Algorithm
+- **Cmd+,** - Audio/MIDI Settings (standalone)
 - **Option/Alt + click** on a group header - open / close all groups
 - **Cmd+= / Cmd+-** - larger / smaller text
 - **Cmd+Z / Cmd+Shift+Z** - Undo / Redo

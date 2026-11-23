@@ -70,6 +70,12 @@ NEW - ALGORITHM (menu > Show Algorithm, Cmd+6 to open and close)
     test suite) without a crash; large instruments (1,000+ boxes) stay
     responsive.
 
+NEW - STANDALONE
+
+  * Multichannel output: Audio/MIDI Settings > Output Channels opens up
+    to 16 outputs of the audio device (in pairs); nchnls follows them.
+  * Cmd+, opens Audio/MIDI Settings.
+
 1.0.8 (November 2026)
 ---------------------
 

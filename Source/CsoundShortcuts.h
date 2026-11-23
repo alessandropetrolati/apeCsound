@@ -28,6 +28,7 @@ namespace CsoundShortcuts
     inline juce::KeyPress showChannels()   { return cmd ('4'); }
     inline juce::KeyPress showKeyboard()   { return cmd ('5'); }
     inline juce::KeyPress showAlgorithm()  { return cmd ('6'); }
+    inline juce::KeyPress audioSettings()  { return cmd (','); }   // come "Impostazioni..." delle app macOS (solo standalone)
     inline juce::KeyPress largerText()     { return cmd ('='); }
     inline juce::KeyPress smallerText()    { return cmd ('-'); }
     inline juce::KeyPress undo()           { return cmd ('Z'); }

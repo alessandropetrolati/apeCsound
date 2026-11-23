@@ -666,7 +666,7 @@ void CsoundAudioSettings::openBluetoothPairing()
 
 void CsoundAudioSettings::resetAudioMidi()
 {
-    deviceManager.initialiseWithDefaultDevices (maxInputs, maxOutputs);
+    deviceManager.initialiseWithDefaultDevices (maxInputs, juce::jmin (2, maxOutputs));   // reset: stereo, anche se sono permesse piu' uscite
     page = Page::main;
     setupChanged();
 }
