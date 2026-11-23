@@ -146,6 +146,12 @@ int CsoundCodeEditor::indentDepthBeforeLine (int lineIndex) const
         if (trimmed.isEmpty())
             continue;
 
+        // instr / opcode / endin / endop stanno sempre a colonna 0: un
+        // if senza endif dentro uno strumento non sposta quelli dopo
+        const auto w = trimmed.upToFirstOccurrenceOf (" ", false, false).upToFirstOccurrenceOf ("\t", false, false).toLowerCase();
+        if (w == "endin" || w == "endop") { depth = 0; continue; }
+        if (w == "instr" || w == "opcode") { depth = 1; continue; }
+
         if (startsWithDedentKeyword (trimmed))
             depth = juce::jmax (0, depth - 1);
 
@@ -160,8 +166,16 @@ int CsoundCodeEditor::indentDepthBeforeLine (int lineIndex) const
 void CsoundCodeEditor::handleReturnKey()
 {
     auto& doc = getDocument();
+    int line = getCaretPos().getLineNumber();
+
+    // Return su una riga che chiude un blocco (endin, endop, endif, od,
+    // else...): prima la si riallinea al suo blocco (endin sotto instr),
+    // anche se la parola e' arrivata dall'autocompletamento o da un incolla.
+    if (! isReadOnly() && startsWithDedentKeyword (stripCommentAndTrim (doc.getLine (line))))
+        reindentLine (line);
+
     const auto caret = getCaretPos();
-    const int line = caret.getLineNumber();
+    line = caret.getLineNumber();
 
     const auto textUpToCaret   = doc.getLine (line).substring (0, caret.getIndexInLine());
     const auto trimmedCurrent  = stripCommentAndTrim (textUpToCaret);
@@ -173,6 +187,12 @@ void CsoundCodeEditor::handleReturnKey()
 
     if (opensBlock (trimmedCurrent))
         ++depth;
+
+    {
+        const auto w = trimmedCurrent.upToFirstOccurrenceOf (" ", false, false).upToFirstOccurrenceOf ("\t", false, false).toLowerCase();
+        if (w == "endin" || w == "endop") depth = 0;          // dopo un blocco chiuso: colonna 0
+        if (w == "instr" || w == "opcode") depth = 1;         // dentro uno strumento appena aperto
+    }
 
     const auto newIndent = juce::String::repeatedString (" ", indentSpaces * depth);
 
@@ -864,6 +884,11 @@ void CsoundCodeEditor::reindentLine (int lineIndex)
 
     if (startsWithDedentKeyword (trimmedContent))
         depth = juce::jmax (0, depth - 1);
+
+    {
+        const auto w = trimmedContent.upToFirstOccurrenceOf (" ", false, false).upToFirstOccurrenceOf ("\t", false, false).toLowerCase();
+        if (w == "endin" || w == "endop" || w == "instr" || w == "opcode") depth = 0;   // sempre allineati fra loro
+    }
 
     const auto newIndent     = juce::String::repeatedString (" ", indentSpaces * depth);
     const auto currentIndent = lineText.substring (0, firstNonWs);

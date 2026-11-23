@@ -5077,10 +5077,27 @@ void CsoundParameterMappingPanel::rebuildUnifiedRows()
             // pannello aperto (questo o uno nuovo) si ricostruisce in
             // sessionEditedByUndoRedo().
             auto& proc = processor;
+            // Commit di un campo (Channel, Min, Max...) mentre il focus e' su
+            // un campo di questo pannello (l'utente passa da un campo
+            // all'altro, o preme Return): il valore e' gia' applicato e la
+            // riga gia' aggiornata. Niente ricostruzione alla prima
+            // esecuzione: distruggerebbe il campo appena cliccato, che
+            // perderebbe il focus (BUG: "clicco Min, esce da Channel ma Min
+            // non prende il focus"). Undo / Redo ricostruiscono come sempre.
+            bool fieldFocused = false;
+            if (auto* f = juce::Component::getCurrentlyFocusedComponent())
+                fieldFocused = dynamic_cast<juce::TextEditor*> (f) != nullptr && isParentOf (f);
+            auto firstRun = std::make_shared<bool> (true);
             undoManager.beginNewTransaction();
             undoManager.perform (new LambdaUndoableAction
             {
-                [&proc, doIt]   { doIt();   proc.notifySessionEditedByUndoRedo (false); },
+                [&proc, doIt, firstRun, fieldFocused]
+                {
+                    doIt();
+                    const bool skip = *firstRun && fieldFocused;
+                    *firstRun = false;
+                    if (! skip) proc.notifySessionEditedByUndoRedo (false);
+                },
                 [&proc, undoIt] { undoIt(); proc.notifySessionEditedByUndoRedo (false); }
             });
         };
