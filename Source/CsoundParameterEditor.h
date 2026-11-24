@@ -372,7 +372,8 @@ public:
     std::function<void()> onToggleKeyboardRequested;
     std::function<bool()> isKeyboardVisible;
     // "Show Algorithm": vista Grafo del codice (CsoundGraphView.h).
-    std::function<void()> onShowAlgorithmRequested;
+    std::function<void()> onShowAlgorithmRequested;   // apre o chiude (toggle, come Graphs)
+    std::function<bool()> isAlgorithmVisible;
     std::function<void()> onToggleChannelsRequested;   // "Show Channels" (scheda diagnostica dei canali)
     std::function<bool()> isChannelsVisible;
 

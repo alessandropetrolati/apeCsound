@@ -918,7 +918,9 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     parameterPanel.onToggleChannelsRequested   = [this] { toggleChannels(); };
     parameterPanel.onToggleKeyboardRequested   = [this] { toggleVirtualKeyboard(); };
     parameterPanel.isKeyboardVisible           = [this] { return showingKeyboard; };
-    parameterPanel.onShowAlgorithmRequested    = [this] { showAlgorithmGraph(); };
+    // Toggle come Graphs: dal menu apre o chiude (anche Cmd+6)
+    parameterPanel.onShowAlgorithmRequested    = [this] { if (algorithmView.isVisible()) algorithmView.hide(); else showAlgorithmGraph(); };
+    parameterPanel.isAlgorithmVisible          = [this] { return algorithmView.isVisible(); };
     parameterPanel.isChannelsVisible           = [this] { return channelsView.isVisible(); };
 
     // Apre la sidebar Parametri se e' chiusa quando si aggiunge un nuovo

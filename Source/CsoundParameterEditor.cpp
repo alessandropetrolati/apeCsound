@@ -3906,6 +3906,7 @@ void CsoundParameterMappingPanel::showPanelMenu()
         item.id = 173; item.text = "Show Algorithm";
         item.shortcut = CsoundShortcuts::label (CsoundShortcuts::showAlgorithm());
         item.enabled = onShowAlgorithmRequested != nullptr;
+        item.tickedFn = [this] { return isAlgorithmVisible && isAlgorithmVisible(); };
         item.icon = CsoundActionSheetIcon::algorithm;
         items.push_back (item);
     }
