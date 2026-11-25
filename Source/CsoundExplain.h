@@ -81,6 +81,10 @@ namespace csoundExplain
                 }
                 if (n.name == "schedule" || n.name == "event_i" || n.name == "prints" || n.name == "print") return 'i';
             }
+            // sprintfk, strcpyk...: la k finale dice che gira a ogni ciclo di controllo
+            if (n.kind == K::Opcode && n.rate != 'a' && n.name.size() > 2 && n.name.back() == 'k'
+                && n.name.compare (0, 3, "ink") != 0 && n.name != "metrok")
+                return 'k';
             return n.rate == 'a' || n.rate == 'k' || n.rate == 'i' ? n.rate : 'k';
         }
         inline double setting (const csoundGraph::Orchestra& orc, const char* key, double fallback)
@@ -729,6 +733,7 @@ namespace csoundExplain
                 if (bx.group == "expression") continue;
                 if (bx.select)                  // if / else che sceglie il segnale
                 {
+                    if (bx.params.empty()) continue;      // solo una condizione, nessuna scelta
                     const auto step = "a choice (" + bx.title + ": " + bx.params.front().text + ", otherwise "
                                     + (bx.params.size() > 1 ? bx.params.back().text : juce::String ("unchanged")) + ")";
                     if (step.length() < 90 && ! bx.params.empty()) steps.addIfNotAlreadyThere (step);

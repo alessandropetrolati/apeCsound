@@ -54,7 +54,7 @@ namespace csoundPatch
     // wireless: senza filo, come [s] / [r] in Max - una variabile che va a
     // molti oggetti (o molto lontano) ha un'etichetta all'uscita e una a
     // ogni ingresso, invece di un fascio di cavi lunghi
-    struct Cord { int from = 0, fromOut = 0, to = 0, toIn = 0; char rate = 'a'; juce::String var; bool back = false; bool wireless = false; };
+    struct Cord { int from = 0, fromOut = 0, to = 0, toIn = 0; char rate = 'a'; juce::String var; bool back = false; bool wireless = false; bool control = false; };
 
     struct Patch
     {
@@ -617,7 +617,7 @@ namespace csoundPatch
                 o.ins = (int) nd.ins.size();
                 o.outs = (int) nd.outs.size();
             }
-            o.comment = b.select ? b.role : commentFor (src, nd.line, usedComments);
+            o.comment = b.select ? (b.role.startsWith ("chooses") ? b.role : juce::String()) : commentFor (src, nd.line, usedComments);
             bool writesGlobal = false;          // gia' detto dal suo [s nome]
             for (const auto& out : nd.outs) writesGlobal = writesGlobal || out.global;
             if (o.comment.isEmpty() && b.sink && b.outNote.isNotEmpty() && ! nd.audioOut && ! writesGlobal)
@@ -635,7 +635,7 @@ namespace csoundPatch
             const int a = objOf[(size_t) e.from], b = objOf[(size_t) e.to];
             if (a < 0 || b < 0) continue;
             Cord c;
-            c.from = a; c.to = b; c.toIn = e.toIn; c.rate = e.rate; c.var = e.var; c.back = e.feedback;
+            c.from = a; c.to = b; c.toIn = juce::jmax (0, e.toIn); c.rate = e.rate; c.var = e.var; c.back = e.feedback; c.control = e.control;
             const auto& src2 = g.nodes[(size_t) p.objs[(size_t) a].node];
             for (int k = 0; k < (int) src2.outs.size(); ++k)
                 if (js (src2.outs[(size_t) k].var) == e.var) { c.fromOut = k; break; }
@@ -681,6 +681,48 @@ namespace csoundPatch
             o.tail = true;
             o.comment = u8 ("\xe2\x86\x92 starts instr ") + ev.target;
             o.commentIsNote = true;
+            // dentro un if: il filo "solo se" dalla sua scatola
+            int fromObj = -1;
+            if (ev.node >= 0 && ev.node < nn)
+            {
+                const int fr = g.nodes[(size_t) ev.node].frame;
+                if (fr >= 0 && fr < (int) g.frames.size())
+                {
+                    const int r = g.frames[(size_t) fr].chain;
+                    const int head = r >= 0 && r < (int) g.frames.size() ? g.frames[(size_t) r].head : -1;
+                    for (int k = 0; k < (int) p.objs.size(); ++k)
+                        if (head >= 0 && p.objs[(size_t) k].node == head && p.objs[(size_t) k].kind == Kind::Object) fromObj = k;
+                }
+            }
+            // i valori che la nota porta (kNota): un filo da chi li calcola
+            if (ev.node >= 0 && ev.node < nn)
+            {
+                const auto& en = g.nodes[(size_t) ev.node];
+                for (int k = 0; k < (int) en.ins.size(); ++k)
+                    for (const auto& v : en.ins[(size_t) k].vars)
+                        for (int q = (int) p.objs.size(); --q >= 0;)
+                        {
+                            const auto& src2 = p.objs[(size_t) q];
+                            if (src2.send || src2.node < 0 || src2.node >= nn || src2.kind == Kind::Message) continue;
+                            bool writes = false;
+                            for (const auto& out : g.nodes[(size_t) src2.node].outs) writes = writes || out.var == v;
+                            if (! writes) continue;
+                            Cord c; c.from = q; c.to = (int) p.objs.size(); c.toIn = k; c.rate = 'k'; c.var = js (v);
+                            p.cords.push_back (c);
+                            p.objs[(size_t) q].outs = juce::jmax (p.objs[(size_t) q].outs, 1);
+                            o.ins = juce::jmax (o.ins, k + 1);
+                            o.tail = false;
+                            break;
+                        }
+            }
+            if (fromObj >= 0)
+            {
+                o.tail = false;
+                o.ins = juce::jmax (o.ins, 1);
+                p.objs[(size_t) fromObj].outs = juce::jmax (p.objs[(size_t) fromObj].outs, 1);
+                Cord c; c.from = fromObj; c.to = (int) p.objs.size(); c.rate = 'k'; c.control = true;
+                p.cords.push_back (c);
+            }
             p.objs.push_back (o);
         }
         // solo il percorso del suono quando lo strumento e' grande: uno
@@ -1018,8 +1060,8 @@ public:
             if (! path.getBounds().expanded (4.0f).intersects (clip)) continue;
             const bool lit = selected < 0 || c.from == selected || c.to == selected;
             const bool hot = c.var.isNotEmpty() && (c.var == liveCables.hover || c.var == liveCables.selected);
-            const auto col = cordColour (c.rate).withAlpha (lit ? (hot ? 1.0f : 0.9f) : 0.16f);
-            const float w = (c.rate == 'a' ? 2.6f : c.rate == 'f' ? 2.0f : 1.2f) + (hot ? 1.2f : 0.0f);
+            const auto col = (c.control ? csoundGraphUI::kTextMuted : cordColour (c.rate)).withAlpha (lit ? (hot ? 1.0f : 0.9f) : 0.16f);
+            const float w = (c.control ? 1.1f : c.rate == 'a' ? 2.6f : c.rate == 'f' ? 2.0f : 1.2f) + (hot ? 1.2f : 0.0f);
             g.setColour (col);
             if (c.wireless)
             {
@@ -1027,10 +1069,10 @@ public:
                 const auto top = path.getBounds();
                 drawTag (g, { top.getCentreX(), top.getY() }, true, c.var, col, hot);
             }
-            else if (c.rate == 'f' || c.back)
+            else if (c.rate == 'f' || c.back || c.control)
             {
                 juce::Path d;
-                const float dash[] = { 6.0f, 3.5f };
+                const float dash[] = { c.control ? 3.0f : 6.0f, c.control ? 4.0f : 3.5f };
                 juce::PathStrokeType (w).createDashedStroke (d, path, dash, 2);
                 g.fillPath (d);
             }

@@ -57,7 +57,7 @@ namespace csoundFlow
         juce::Rectangle<float> r;
     };
 
-    struct Edge { int from = -1, to = -1, toIn = 0; char rate = 'a'; juce::String label; bool feedback = false; juce::String var; };
+    struct Edge { int from = -1, to = -1, toIn = 0; char rate = 'a'; juce::String label; bool feedback = false; juce::String var; bool control = false; };   // control: "solo se" (da un if a cio' che racchiude)
 
     // Un evento (schedule, event, schedkwhen, scoreline): la nota che parte,
     // con i suoi p-field e dove li usa lo strumento che la riceve.
@@ -203,31 +203,74 @@ namespace csoundFlow
 
     }
 
-    // if / elseif / else che scrivono la stessa variabile ("if kamp > 0.5
-    // then asig = asig1 else asig = asig2 endif"): UNA scatola che sceglie
-    // (come [gate] / [selector~] in Max) - ingresso 0 la condizione, poi un
-    // ingresso per ramo; esce la variabile. Le copie semplici (asig = asig1)
-    // spariscono: il segnale del ramo entra direttamente.
+    // Le condizioni come scatole: ogni catena if / elseif / else che conta
+    // (racchiude qualcosa del flusso) e' UNA scatola "if cond":
+    //  - entra la condizione (kTic == 1: dal metro);
+    //  - una variabile scritta in due o piu' rami ("if kamp > 0.5 then asig =
+    //    asig1 else asig = asig2") esce da qui: la scatola sceglie (come
+    //    [gate] / [selector~] in Max); le copie semplici spariscono;
+    //  - da qui parte un filo "solo se" (tratteggiato) verso cio' che sta
+    //    dentro i rami (kNota = ..., kPasso += 1, un if annidato).
     inline void mergeBranches (Flow& flow, const csoundGraph::Graph& g)
     {
         using namespace csoundGraphUI;
         using K = csoundGraph::NodeKind;
-        const int nn = (int) g.nodes.size();
-        std::vector<int> boxOfNode ((size_t) nn, -1);
-        for (int i = 0; i < (int) flow.boxes.size(); ++i)
-            if (flow.boxes[(size_t) i].node >= 0 && flow.boxes[(size_t) i].node < nn) boxOfNode[(size_t) flow.boxes[(size_t) i].node] = i;
+        const int nn = (int) g.nodes.size(), nf = (int) g.frames.size();
+        auto boxOfNodeFn = [&flow, nn]
+        {
+            std::vector<int> m ((size_t) nn, -1);
+            for (int i = 0; i < (int) flow.boxes.size(); ++i)
+                if (flow.boxes[(size_t) i].node >= 0 && flow.boxes[(size_t) i].node < nn) m[(size_t) flow.boxes[(size_t) i].node] = i;
+            return m;
+        };
+        auto boxOfNode = boxOfNodeFn();
         std::vector<bool> removed (flow.boxes.size(), false);
+        // la catena (id dell'if) di ogni cornice, -1 per while / for
+        auto chainOf = [&g, nf] (int f) { return f >= 0 && f < nf && (g.frames[(size_t) f].kind == "if" || g.frames[(size_t) f].kind == "elseif" || g.frames[(size_t) f].kind == "else") ? g.frames[(size_t) f].chain : -1; };
+        // dentro la catena r, a qualunque profondita'?
+        auto inside = [&g, nf] (int frame, int r)
+        {
+            for (int f = frame; f >= 0 && f < nf; f = g.frames[(size_t) f].parent)
+                if (g.frames[(size_t) f].chain == r) return true;
+            return false;
+        };
+        std::map<int, int> boxOfChain;      // id dell'if -> scatola
         bool changed = false;
 
         for (const auto& root : g.frames)
         {
-            if (root.kind != "if") continue;
+            if (root.kind != "if" || root.chain != root.id) continue;
             std::vector<const csoundGraph::Frame*> branches { &root };
             for (const auto& f : g.frames)
                 if (f.chain == root.id && f.id != root.id && (f.kind == "elseif" || f.kind == "else")) branches.push_back (&f);
-            std::stable_sort (branches.begin(), branches.end(), [] (auto* a, auto* b) { return a->lineBegin < b->lineBegin; });
+            std::stable_sort (branches.begin(), branches.end(), [] (auto* x, auto* y) { return x->lineBegin < y->lineBegin; });
 
-            // variabile -> (ramo, scatola che la scrive per ultima nel ramo)
+            // conta? qualcosa del flusso (scatola o evento) sta dentro
+            bool relevant = false;
+            for (const auto& bx : flow.boxes)
+                if (bx.node >= 0 && bx.node < nn && inside (g.nodes[(size_t) bx.node].frame, root.id)) relevant = true;
+            for (const auto& ev : flow.events)
+                if (ev.node >= 0 && ev.node < nn && inside (g.nodes[(size_t) ev.node].frame, root.id)) relevant = true;
+            if (! relevant) continue;
+
+            Box s;
+            s.select = true;
+            s.node = root.head;
+            s.line = root.lineBegin;
+            s.lineEnd = branches.back()->lineEnd;
+            s.rate = 'k';
+            s.title = "if " + shorten (js (root.cond), 28);
+            s.role = "condition";
+            s.group = "Instrument Control";
+            const int si = (int) flow.boxes.size();
+            std::vector<Edge> add;
+            for (const auto* fr : branches)                      // la condizione (anche degli elseif)
+                if (fr->head >= 0)
+                    for (const auto& c : g.cables)
+                        if (c.to == fr->head && c.from >= 0 && c.from < nn && boxOfNode[(size_t) c.from] >= 0 && ! removed[(size_t) boxOfNode[(size_t) c.from]])
+                            add.push_back ({ boxOfNode[(size_t) c.from], si, 0, c.rate == 'a' ? 'a' : 'k', "condition", false, js (c.var), false });
+
+            // variabili scritte in due o piu' rami: la scelta esce da qui
             std::map<std::string, std::map<int, int>> writes;
             for (int bi = 0; bi < (int) branches.size(); ++bi)
                 for (int i = 0; i < (int) flow.boxes.size(); ++i)
@@ -238,26 +281,12 @@ namespace csoundFlow
                     if (nd.frame != branches[(size_t) bi]->id || nd.outs.size() != 1 || nd.outs[0].isArray || nd.outs[0].partial || nd.outs[0].global) continue;
                     writes[nd.outs[0].var][bi] = i;
                 }
-
+            juce::StringArray chosen;
             for (const auto& [var, perBranch] : writes)
             {
-                Box s;
-                s.select = true;
-                s.node = root.head;
-                s.line = root.lineBegin;
-                s.lineEnd = branches.back()->lineEnd;
-                s.rate = flow.boxes[(size_t) perBranch.begin()->second].rate;
-                s.title = "if " + shorten (js (root.cond), 28);
-                s.role = "chooses " + js (var);
-                s.group = "Instrument Control";
-                const int si = (int) flow.boxes.size();
-                std::vector<Edge> add;
-                // la condizione (anche quelle degli elseif)
-                for (const auto* fr : branches)
-                    if (fr->head >= 0)
-                        for (const auto& c : g.cables)
-                            if (c.to == fr->head && c.from >= 0 && c.from < nn && boxOfNode[(size_t) c.from] >= 0 && ! removed[(size_t) boxOfNode[(size_t) c.from]])
-                                add.push_back ({ boxOfNode[(size_t) c.from], si, 0, c.rate == 'a' ? 'a' : 'k', "condition", false, js (c.var) });
+                if (perBranch.size() < 2) continue;              // un ramo solo: e' "solo se", non una scelta
+                chosen.add (js (var));
+                if (s.rate != 'a') s.rate = flow.boxes[(size_t) perBranch.begin()->second].rate;
                 for (int bi = 0; bi < (int) branches.size(); ++bi)
                 {
                     const auto* fr = branches[(size_t) bi];
@@ -268,34 +297,55 @@ namespace csoundFlow
                     const auto& nd = g.nodes[(size_t) flow.boxes[(size_t) bx].node];
                     const bool copy = nd.kind == K::Expr && nd.ins.size() == 1 && nd.ins[0].vars.size() == 1
                                    && js (nd.ins[0].text).trim() == js (nd.ins[0].vars[0]);
-                    s.params.push_back ({ label, shorten (js (nd.text).trim(), 30) });
+                    s.params.push_back ({ label, shorten (js (nd.outs[0].var) + " = " + js (nd.text).trim(), 30) });
                     if (copy)
                     {
                         for (const auto& e : flow.edges)
-                            if (e.to == bx) add.push_back ({ e.from, si, bi + 1, e.rate, label, e.feedback, e.var });
+                            if (e.to == bx) add.push_back ({ e.from, si, bi + 1, e.rate, label, e.feedback, e.var, false });
                         removed[(size_t) bx] = true;
                     }
                     else
-                        add.push_back ({ bx, si, bi + 1, flow.boxes[(size_t) bx].rate, label, false, js (var) });
-                    // chi usava la variabile ora la riceve da qui
+                        add.push_back ({ bx, si, bi + 1, flow.boxes[(size_t) bx].rate, label, false, js (var), false });
                     for (auto& e : flow.edges)
                         if (e.from == bx) e.from = si;
                     s.sink = s.sink || flow.boxes[(size_t) bx].sink;
-                    s.outNote = s.outNote.isNotEmpty() ? s.outNote : flow.boxes[(size_t) bx].outNote;
+                    if (s.outNote.isEmpty()) s.outNote = flow.boxes[(size_t) bx].outNote;
                 }
-                flow.boxes.push_back (s);
-                removed.push_back (false);
-                for (auto& e : add) flow.edges.push_back (e);
-                changed = true;
             }
+            if (! chosen.isEmpty()) s.role = "chooses " + chosen.joinIntoString (", ");
+            flow.boxes.push_back (s);
+            removed.push_back (false);
+            for (auto& e : add) flow.edges.push_back (e);
+            boxOfChain[root.id] = si;
+            changed = true;
         }
         if (! changed) return;
 
-        // via le scatole tolte e i cavi doppi
-        // nell'ordine delle righe (arrange conta su cavi che vanno in avanti)
+        // "solo se": dalla scatola della condizione a cio' che sta subito dentro
+        // i suoi rami (un if annidato: dalla sua scatola)
+        for (int i = 0; i < (int) flow.boxes.size(); ++i)
+        {
+            if (removed[(size_t) i]) continue;
+            const auto& b = flow.boxes[(size_t) i];
+            if (b.node < 0 || b.node >= nn) continue;
+            int frame = g.nodes[(size_t) b.node].frame;
+            if (b.select && frame >= 0 && chainOf (frame) == g.frames[(size_t) frame].chain && g.nodes[(size_t) b.node].kind == K::FrameHead)
+                frame = g.frames[(size_t) frame].parent;            // la testa di un if: conta la cornice che lo racchiude
+            const int r = chainOf (frame);
+            if (r < 0 || boxOfChain.count (r) == 0 || boxOfChain[r] == i) continue;
+            bool already = false;
+            for (const auto& e : flow.edges) already = already || (e.from == boxOfChain[r] && e.to == i);
+            if (! already)
+            {
+                const auto& fr = g.frames[(size_t) frame];
+                flow.edges.push_back ({ boxOfChain[r], i, -1, 'k', fr.kind == "else" ? juce::String ("else") : juce::String ("then"), false, {}, true });
+            }
+        }
+
+        // via le scatole tolte e i cavi doppi, nell'ordine delle righe
         std::vector<int> order;
         for (size_t i = 0; i < flow.boxes.size(); ++i) if (! removed[i]) order.push_back ((int) i);
-        std::stable_sort (order.begin(), order.end(), [&flow] (int a, int b) { return flow.boxes[(size_t) a].line < flow.boxes[(size_t) b].line; });
+        std::stable_sort (order.begin(), order.end(), [&flow] (int x, int y) { return flow.boxes[(size_t) x].line < flow.boxes[(size_t) y].line; });
         std::vector<int> remap (flow.boxes.size(), -1);
         std::vector<Box> boxes;
         for (int i : order) { remap[(size_t) i] = (int) boxes.size(); boxes.push_back (flow.boxes[(size_t) i]); }
@@ -357,6 +407,15 @@ namespace csoundFlow
             if (inSlice[(size_t) i]) continue;
             inSlice[(size_t) i] = true;
             for (int p : preds[(size_t) i]) if (! inSlice[(size_t) p]) stack.push_back (p);
+            // dipende anche dalle condizioni che lo racchiudono ("if kTic == 1":
+            // l'evento dentro dipende da kTic, quindi dal metro)
+            for (int f = g.nodes[(size_t) i].frame; f >= 0 && f < (int) g.frames.size(); f = g.frames[(size_t) f].parent)
+            {
+                const auto& fr = g.frames[(size_t) f];
+                for (const auto& o : g.frames)       // la sua catena: if, elseif precedenti
+                    if (o.chain == fr.chain && o.lineBegin <= fr.lineBegin && o.head >= 0 && o.head < n && ! inSlice[(size_t) o.head])
+                        stack.push_back (o.head);
+            }
         }
 
         // --- scatole: segnali e sorgenti di controllo; il resto si piega ------
@@ -386,7 +445,8 @@ namespace csoundFlow
             if (! nd.eventTarget.empty()) continue;      // gli eventi sono schede a parte (sotto)
             bool keep = sink || dangling
                      || ((nd.kind == K::Opcode || nd.kind == K::Expr) && signalRate (nd.rate))
-                     || (nd.kind == K::GlobalIn && signalRate (nd.rate));
+                     || (nd.kind == K::GlobalIn && signalRate (nd.rate))
+                     || (nd.kind == K::Opcode && ! nd.outs.empty() && ! nd.outs[0].var.empty() && nd.outs[0].var[0] == 'S');   // un testo che arriva a un'uscita (sprintfk -> chnset)
             // bus che si accumula ("gaRev = gaRev + aSig"): il "receive" del
             // bus stesso e' solo il valore precedente, non una sorgente
             if (keep && nd.kind == K::GlobalIn)
@@ -578,7 +638,12 @@ namespace csoundFlow
             }
             const auto& last = flow.boxes[(size_t) spine.back()];
             if (last.outNote.isNotEmpty()) parts.add (last.outNote);
-            flow.summary.add ((flow.audio ? "Audio path: " : "Main path: ") + parts.joinIntoString (arrow));
+            // uno strumento che fa partire note: la cosa principale sono le note
+            if (! flow.audio)
+                for (const auto& ev : flow.events)
+                    flow.summary.add ("Starts notes of instr " + ev.target + " (" + ev.opcode + ")"
+                                      + (ev.frames.isEmpty() ? juce::String() : ", " + ev.frames[ev.frames.size() - 1]));
+            flow.summary.add ((flow.audio ? "Audio path: " : flow.events.empty() ? "Main path: " : "Also: ") + parts.joinIntoString (arrow));
         }
         else if (! flow.audio)
             flow.summary.add ("Control instrument: no audio output");
@@ -1110,8 +1175,8 @@ public:
             }
             const bool faded = dim (e.from) || dim (e.to);
             const bool hot = e.var == liveCables.hover || e.var == liveCables.selected;
-            const auto col = rateColour (e.rate).brighter (hot ? 0.35f : 0.0f).withAlpha (faded ? 0.12f : 0.9f);
-            float thick = e.rate == 'a' ? 3.0f : 1.6f;
+            const auto col = (e.control ? kTextMuted : rateColour (e.rate)).brighter (hot ? 0.35f : 0.0f).withAlpha (faded ? 0.12f : 0.9f);
+            float thick = e.control ? 1.2f : e.rate == 'a' ? 3.0f : 1.6f;
             if (liveCables.all && e.rate == 'a')            // Live: lo spessore segue il livello
                 if (auto it = liveCables.level.find (e.var); it != liveCables.level.end())
                     thick = 1.5f + 6.0f * std::sqrt (juce::jlimit (0.0f, 1.0f, it->second));
@@ -1120,10 +1185,10 @@ public:
             if (liveCables.shows (e.var) && liveCables.text.count (e.var) && labelledVars.insert (e.var).second)
                 liveLabels.push_back ({ p, e.var });
             g.setColour (col);
-            if (backwards)
+            if (backwards || e.control)           // "solo se": tratteggiato, come un'andata all'indietro
             {
                 juce::Path dashed;
-                const float dashes[] = { 6.0f, 4.0f };
+                const float dashes[] = { e.control ? 3.0f : 6.0f, 4.0f };
                 juce::PathStrokeType (thick).createDashedStroke (dashed, p, dashes, 2);
                 g.fillPath (dashed);
             }
