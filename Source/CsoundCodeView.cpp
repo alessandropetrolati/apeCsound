@@ -892,10 +892,14 @@ bool CodeView::pasteFromClipboard()
 {
     const auto text = juce::SystemClipboard::getTextFromClipboard();
 
-    if (text.isNotEmpty())
+    if (text.isNotEmpty() && ! readOnly)
     {
         document.newTransaction();
-        insertTextInternal (text.replace ("\r\n", "\n").replace ("\r", "\n"));
+        const auto clean = text.replace ("\r\n", "\n").replace ("\r", "\n");
+        const int firstLine = getSelectionStart().getLineNumber();
+        insertTextInternal (clean);
+        if (clean.containsChar ('\n'))
+            textPasted (firstLine, caretPos.getLineNumber());   // stesso passo di undo
     }
 
     return true;

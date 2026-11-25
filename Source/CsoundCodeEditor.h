@@ -223,6 +223,7 @@ private:
 
     int indentDepthBeforeLine (int lineIndex) const;
     void reindentLine (int lineIndex);
+    void textPasted (int firstLine, int lastLine) override;
 
     // Menu contestuale: NON il juce::PopupMenu di CodeEditorComponent ma lo
     // stesso CsoundActionSheet degli altri menu dell'app (richiesta

@@ -193,6 +193,9 @@ public:
     /** Chiamato quando l'insieme dei segni di errore cambia (impostati,
         cancellati, o rimossi da una modifica della riga). */
     virtual void errorMarkersChanged() {}
+    /** Dopo un incolla di piu' righe: righe [firstLine, lastLine] del testo
+        incollato (stessa transazione di undo). CsoundCodeEditor le re-indenta. */
+    virtual void textPasted (int firstLine, int lastLine) { juce::ignoreUnused (firstLine, lastLine); }
 
     // [EDIT-CALLOUT] Menu di editing per il TOUCH (rilascio dopo pressione
     // prolungata/maniglie, tap sulla selezione): default = lo stesso menu

@@ -911,6 +911,36 @@ void CsoundCodeEditor::reindentLine (int lineIndex)
     moveCaretTo (newCaretPos, false);
 }
 
+// Incolla di piu' righe: ogni riga incollata prende l'indentazione della
+// struttura in cui cade (come Indent sul blocco). Le righe vuote restano
+// vuote; il cursore resta dopo il testo incollato.
+void CsoundCodeEditor::textPasted (int firstLine, int lastLine)
+{
+    if (isReadOnly()) return;
+    auto& doc = getDocument();
+    const int tail = doc.getNumCharacters() - getCaretPos().getPosition();
+
+    for (int line = firstLine; line <= lastLine && line < doc.getNumLines(); ++line)
+        if (doc.getLine (line).trim().isNotEmpty())
+            reindentLine (line);
+
+    moveCaretTo (juce::CodeDocument::Position (doc, juce::jmax (0, doc.getNumCharacters() - tail)), false);
+
+    // incollato fino a fine riga: la riga vuota dove resta il cursore prende
+    // l'indentazione del blocco, come dopo un Return
+    const auto caret = getCaretPos();
+    const int line = caret.getLineNumber();
+    if (line == lastLine && doc.getLine (line).trim().isEmpty() && caret.getIndexInLine() == doc.getLine (line).trimCharactersAtEnd ("\r\n").length())
+    {
+        const auto indent = juce::String::repeatedString (" ", indentSpaces * indentDepthBeforeLine (line));
+        const int start = juce::CodeDocument::Position (doc, line, 0).getPosition();
+        isReindenting = true;
+        doc.replaceSection (start, caret.getPosition(), indent);
+        isReindenting = false;
+        moveCaretTo (juce::CodeDocument::Position (doc, start + indent.length()), false);
+    }
+}
+
 //==============================================================================
 // Menu contestuale: Indent / Comment ---------------------------------------
 juce::Range<int> CsoundCodeEditor::getSelectedLineRange() const
