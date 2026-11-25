@@ -1552,13 +1552,14 @@ private:
             if (safeThis == nullptr || r <= 0) return;
             if (r == 9) { safeThis->explainMode = false; safeThis->patchMode = true; safeThis->showBlock (safeThis->currentBlock); return; }
             if (r == 8) { safeThis->patchAll = ! safeThis->patchAll; safeThis->showBlock (safeThis->currentBlock); return; }
+            const bool leavingPatch = safeThis->patchMode && (r == 1 || r == 3 || r == 7);
             if (r == 1 || r == 3 || r == 7) safeThis->patchMode = false;
             if (r == 4) { safeThis->liveState.all = ! safeThis->liveState.all; safeThis->updatePills(); safeThis->pushLive(); safeThis->resized(); return; }
             if (r == 5) { safeThis->splitMode = ! safeThis->splitMode; safeThis->showBlock (safeThis->currentBlock); return; }
             if (r == 6) { safeThis->groupByTime = ! safeThis->groupByTime; safeThis->showBlock (safeThis->currentBlock); return; }
             if (r == 7 && safeThis->currentBlock >= 0)
             {
-                if (safeThis->explainMode) { safeThis->explainMode = false; safeThis->showBlock (safeThis->currentBlock); }
+                if (safeThis->explainMode || leavingPatch) { safeThis->explainMode = false; safeThis->showBlock (safeThis->currentBlock); }
                 safeThis->setOverview (true);
                 return;
             }
