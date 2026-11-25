@@ -1013,6 +1013,7 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     channelNameEditor.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
+    channelNameEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (channelNameEditor);
 
     setupFieldCaption (minCaption, "MIN");
@@ -1022,6 +1023,7 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     minEditor.setJustification (juce::Justification::centredLeft);
     minEditor.addListener (this);
     applyDarkFieldColours (minEditor);
+    minEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (minEditor);
 
     setupFieldCaption (maxCaption, "MAX");
@@ -1031,6 +1033,7 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     maxEditor.setJustification (juce::Justification::centredLeft);
     maxEditor.addListener (this);
     applyDarkFieldColours (maxEditor);
+    maxEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (maxEditor);
 
     setupFieldCaption (initCaption, "INIT");
@@ -1040,6 +1043,7 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     defaultEditor.setJustification (juce::Justification::centredLeft);
     defaultEditor.addListener (this);
     applyDarkFieldColours (defaultEditor);
+    defaultEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (defaultEditor);
 
     setupFieldCaption (expCaption, "SKEW");
@@ -1049,6 +1053,7 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     skewEditor.setJustification (juce::Justification::centredLeft);
     skewEditor.addListener (this);
     applyDarkFieldColours (skewEditor);
+    skewEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (skewEditor);
 
     setupFieldCaption (stepCaption, "STEP");
@@ -1058,6 +1063,7 @@ CsoundParameterMappingPanel::ParamRow::ParamRow (CsoundAudioProcessor& processor
     incrementEditor.setJustification (juce::Justification::centredLeft);
     incrementEditor.addListener (this);
     applyDarkFieldColours (incrementEditor);
+    incrementEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (incrementEditor);
 
     // Cerchio rosso con un "-" disegnato a mano (vedi drawButtonText,
@@ -1363,6 +1369,7 @@ CsoundParameterMappingPanel::IntParamRow::IntParamRow (CsoundAudioProcessor& pro
     channelNameEditor.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
+    channelNameEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (channelNameEditor);
 
     setupFieldCaption (minCaption, "MIN");
@@ -1372,6 +1379,7 @@ CsoundParameterMappingPanel::IntParamRow::IntParamRow (CsoundAudioProcessor& pro
     minEditor.setJustification (juce::Justification::centredLeft);
     minEditor.addListener (this);
     applyDarkFieldColours (minEditor);
+    minEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (minEditor);
 
     setupFieldCaption (maxCaption, "MAX");
@@ -1381,6 +1389,7 @@ CsoundParameterMappingPanel::IntParamRow::IntParamRow (CsoundAudioProcessor& pro
     maxEditor.setJustification (juce::Justification::centredLeft);
     maxEditor.addListener (this);
     applyDarkFieldColours (maxEditor);
+    maxEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (maxEditor);
 
     setupFieldCaption (initCaption, "INIT");
@@ -1390,6 +1399,7 @@ CsoundParameterMappingPanel::IntParamRow::IntParamRow (CsoundAudioProcessor& pro
     defaultEditor.setJustification (juce::Justification::centredLeft);
     defaultEditor.addListener (this);
     applyDarkFieldColours (defaultEditor);
+    defaultEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (defaultEditor);
 
     // Cerchio rosso con un "-" disegnato a mano (vedi drawButtonText,
@@ -1780,6 +1790,7 @@ CsoundParameterMappingPanel::BoolParamRow::BoolParamRow (CsoundAudioProcessor& p
     channelNameEditor.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
+    channelNameEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (channelNameEditor);
 
     setupFieldCaption (initCaption, "INIT");
@@ -1841,6 +1852,7 @@ CsoundParameterMappingPanel::BoolParamRow::BoolParamRow (CsoundAudioProcessor& p
                             "instruments from your code (card menu > Copy Trigger Code).");
     eventEditor.addListener (this);
     applyDarkFieldColours (eventEditor);
+    eventEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (eventEditor);
 
     // EVENT OFF (facoltativa): mandata nel passaggio da 1 a 0 - rilascio
@@ -1855,6 +1867,7 @@ CsoundParameterMappingPanel::BoolParamRow::BoolParamRow (CsoundAudioProcessor& p
                                "(i 10.1 0 -1), write i -10.1 0 0.");
     eventOffEditor.addListener (this);
     applyDarkFieldColours (eventOffEditor);
+    eventOffEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (eventOffEditor);
 
     // Cerchio rosso con un "-" disegnato a mano (vedi drawButtonText,
@@ -2100,6 +2113,7 @@ CsoundParameterMappingPanel::ChoiceParamRow::ChoiceParamRow (CsoundAudioProcesso
     channelNameEditor.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
     channelNameEditor.addListener (this);
     applyDarkFieldColours (channelNameEditor);
+    channelNameEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (channelNameEditor);
 
     setupFieldCaption (optionsCaption, "OPTIONS (COMMA SEPARATED)");
@@ -2108,6 +2122,7 @@ CsoundParameterMappingPanel::ChoiceParamRow::ChoiceParamRow (CsoundAudioProcesso
     optionsEditor.setTitle ("Options, comma separated");
     optionsEditor.addListener (this);
     applyDarkFieldColours (optionsEditor);
+    optionsEditor.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
     addAndMakeVisible (optionsEditor);
 
     setupFieldCaption (defaultCaption, "INIT");
@@ -2486,6 +2501,7 @@ CsoundParameterMappingPanel::GenericParamRow::GenericParamRow (
                 commitValueFromField();
                 valueReadout.giveAwayKeyboardFocus();
             };
+            valueReadout.setSelectAllWhenFocused (true);   // clic: tutto selezionato, si sovrascrive subito
             addAndMakeVisible (valueReadout);
 
             slider.onValueChange = [this]
