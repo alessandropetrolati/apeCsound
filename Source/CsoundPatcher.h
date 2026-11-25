@@ -581,7 +581,13 @@ namespace csoundPatch
             Obj o;
             o.node = b.node; o.line = b.line; o.rate = b.rate; o.unused = b.unused; o.outVar = b.outVar;
             o.order = (float) b.line + (float) bi * 1.0e-4f;
-            if (nd.kind == K::GlobalIn)
+            if (b.select)                 // if / else che sceglie: come [gate] / [selector~]
+            {
+                o.text = b.title;
+                o.ins = (int) b.params.size() + 1;
+                o.outs = 1;
+            }
+            else if (nd.kind == K::GlobalIn)
             {
                 o.text = "r " + js (nd.name);
                 o.outs = 1;
@@ -611,7 +617,7 @@ namespace csoundPatch
                 o.ins = (int) nd.ins.size();
                 o.outs = (int) nd.outs.size();
             }
-            o.comment = commentFor (src, nd.line, usedComments);
+            o.comment = b.select ? b.role : commentFor (src, nd.line, usedComments);
             bool writesGlobal = false;          // gia' detto dal suo [s nome]
             for (const auto& out : nd.outs) writesGlobal = writesGlobal || out.global;
             if (o.comment.isEmpty() && b.sink && b.outNote.isNotEmpty() && ! nd.audioOut && ! writesGlobal)

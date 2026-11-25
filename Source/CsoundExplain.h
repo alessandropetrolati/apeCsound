@@ -727,6 +727,13 @@ namespace csoundExplain
             {
                 const auto& bx = flow.boxes[(size_t) i];
                 if (bx.group == "expression") continue;
+                if (bx.select)                  // if / else che sceglie il segnale
+                {
+                    const auto step = "a choice (" + bx.title + ": " + bx.params.front().text + ", otherwise "
+                                    + (bx.params.size() > 1 ? bx.params.back().text : juce::String ("unchanged")) + ")";
+                    if (step.length() < 90 && ! bx.params.empty()) steps.addIfNotAlreadyThere (step);
+                    continue;
+                }
                 const auto p = phrase (i);
                 if (p.isEmpty() || p.length() > 48) continue;
                 if (p == "output")
@@ -950,8 +957,32 @@ namespace csoundExplain
             for (const auto& nd : g.nodes)
             {
                 if (nd.line <= 0 || ex.notes.count (nd.line)) continue;
-                const auto t = noteFor (g, nd, ctx);
+                auto t = noteFor (g, nd, ctx);
+                // un argomento vuoto: quasi sempre una virgola di troppo ("oscili, 0.2, 440")
+                if (nd.kind == csoundGraph::NodeKind::Opcode)
+                    for (const auto& in : nd.ins)
+                        if (js (in.text).trim().isEmpty())
+                        {
+                            t = "check: an empty argument - a comma right after " + js (nd.name) + "?" + (t.isNotEmpty() ? "  (" + t + ")" : juce::String());
+                            break;
+                        }
                 if (t.isNotEmpty()) ex.notes[nd.line] = t;
+            }
+            // else / elseif: quando valgono (la riga "else" non ha un nodo suo)
+            for (const auto& f : g.frames)
+            {
+                if (f.kind != "else" && f.kind != "elseif") continue;
+                if (f.chain < 0 || f.chain >= (int) g.frames.size()) continue;
+                const auto& root = g.frames[(size_t) f.chain];
+                int line = f.lineBegin;
+                if (f.kind == "else")
+                {
+                    // la riga dell'else: subito prima della prima riga del ramo
+                    if (line <= 0) continue;
+                    ex.notes[line] = "otherwise (when " + js (root.cond) + " is false) the lines below run";
+                }
+                else if (line > 0)
+                    ex.notes[line] = "otherwise, the lines below run if " + js (f.cond);
             }
             if (g.kind != csoundGraph::Graph::Header && g.lineBegin > 0)
             {

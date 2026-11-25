@@ -47,6 +47,7 @@ namespace csoundFlow
         char rate = 'a';
         bool source = false, sink = false, spine = false;
         bool unused = false;           // calcolato ma non arriva a nessuna uscita (es. "aph phasor 50" mai letto)
+        bool select = false;           // if / else che sceglie un valore: una scatola sola (vedi mergeBranches)
         juce::String outVar;           // non collegata: la variabile scritta (la sua freccia si tocca come un cavo)
         juce::String title, role, group;
         juce::String outNote;          // dove va l'uscita: "audio out", "gkVol -> instr Nota", "starts instr Nota"
@@ -200,6 +201,115 @@ namespace csoundFlow
                 used.insert ({ b.depth, row });
             }
 
+    }
+
+    // if / elseif / else che scrivono la stessa variabile ("if kamp > 0.5
+    // then asig = asig1 else asig = asig2 endif"): UNA scatola che sceglie
+    // (come [gate] / [selector~] in Max) - ingresso 0 la condizione, poi un
+    // ingresso per ramo; esce la variabile. Le copie semplici (asig = asig1)
+    // spariscono: il segnale del ramo entra direttamente.
+    inline void mergeBranches (Flow& flow, const csoundGraph::Graph& g)
+    {
+        using namespace csoundGraphUI;
+        using K = csoundGraph::NodeKind;
+        const int nn = (int) g.nodes.size();
+        std::vector<int> boxOfNode ((size_t) nn, -1);
+        for (int i = 0; i < (int) flow.boxes.size(); ++i)
+            if (flow.boxes[(size_t) i].node >= 0 && flow.boxes[(size_t) i].node < nn) boxOfNode[(size_t) flow.boxes[(size_t) i].node] = i;
+        std::vector<bool> removed (flow.boxes.size(), false);
+        bool changed = false;
+
+        for (const auto& root : g.frames)
+        {
+            if (root.kind != "if") continue;
+            std::vector<const csoundGraph::Frame*> branches { &root };
+            for (const auto& f : g.frames)
+                if (f.chain == root.id && f.id != root.id && (f.kind == "elseif" || f.kind == "else")) branches.push_back (&f);
+            std::stable_sort (branches.begin(), branches.end(), [] (auto* a, auto* b) { return a->lineBegin < b->lineBegin; });
+
+            // variabile -> (ramo, scatola che la scrive per ultima nel ramo)
+            std::map<std::string, std::map<int, int>> writes;
+            for (int bi = 0; bi < (int) branches.size(); ++bi)
+                for (int i = 0; i < (int) flow.boxes.size(); ++i)
+                {
+                    const auto& b = flow.boxes[(size_t) i];
+                    if (removed[(size_t) i] || b.node < 0 || b.node >= nn || b.select) continue;
+                    const auto& nd = g.nodes[(size_t) b.node];
+                    if (nd.frame != branches[(size_t) bi]->id || nd.outs.size() != 1 || nd.outs[0].isArray || nd.outs[0].partial || nd.outs[0].global) continue;
+                    writes[nd.outs[0].var][bi] = i;
+                }
+
+            for (const auto& [var, perBranch] : writes)
+            {
+                Box s;
+                s.select = true;
+                s.node = root.head;
+                s.line = root.lineBegin;
+                s.lineEnd = branches.back()->lineEnd;
+                s.rate = flow.boxes[(size_t) perBranch.begin()->second].rate;
+                s.title = "if " + shorten (js (root.cond), 28);
+                s.role = "chooses " + js (var);
+                s.group = "Instrument Control";
+                const int si = (int) flow.boxes.size();
+                std::vector<Edge> add;
+                // la condizione (anche quelle degli elseif)
+                for (const auto* fr : branches)
+                    if (fr->head >= 0)
+                        for (const auto& c : g.cables)
+                            if (c.to == fr->head && c.from >= 0 && c.from < nn && boxOfNode[(size_t) c.from] >= 0 && ! removed[(size_t) boxOfNode[(size_t) c.from]])
+                                add.push_back ({ boxOfNode[(size_t) c.from], si, 0, c.rate == 'a' ? 'a' : 'k', "condition", false, js (c.var) });
+                for (int bi = 0; bi < (int) branches.size(); ++bi)
+                {
+                    const auto* fr = branches[(size_t) bi];
+                    const juce::String label = bi == 0 ? juce::String ("then") : fr->kind == "else" ? juce::String ("else") : "elseif " + shorten (js (fr->cond), 20);
+                    const auto it = perBranch.find (bi);
+                    if (it == perBranch.end()) { s.params.push_back ({ label, js (var) + " unchanged" }); continue; }
+                    const int bx = it->second;
+                    const auto& nd = g.nodes[(size_t) flow.boxes[(size_t) bx].node];
+                    const bool copy = nd.kind == K::Expr && nd.ins.size() == 1 && nd.ins[0].vars.size() == 1
+                                   && js (nd.ins[0].text).trim() == js (nd.ins[0].vars[0]);
+                    s.params.push_back ({ label, shorten (js (nd.text).trim(), 30) });
+                    if (copy)
+                    {
+                        for (const auto& e : flow.edges)
+                            if (e.to == bx) add.push_back ({ e.from, si, bi + 1, e.rate, label, e.feedback, e.var });
+                        removed[(size_t) bx] = true;
+                    }
+                    else
+                        add.push_back ({ bx, si, bi + 1, flow.boxes[(size_t) bx].rate, label, false, js (var) });
+                    // chi usava la variabile ora la riceve da qui
+                    for (auto& e : flow.edges)
+                        if (e.from == bx) e.from = si;
+                    s.sink = s.sink || flow.boxes[(size_t) bx].sink;
+                    s.outNote = s.outNote.isNotEmpty() ? s.outNote : flow.boxes[(size_t) bx].outNote;
+                }
+                flow.boxes.push_back (s);
+                removed.push_back (false);
+                for (auto& e : add) flow.edges.push_back (e);
+                changed = true;
+            }
+        }
+        if (! changed) return;
+
+        // via le scatole tolte e i cavi doppi
+        // nell'ordine delle righe (arrange conta su cavi che vanno in avanti)
+        std::vector<int> order;
+        for (size_t i = 0; i < flow.boxes.size(); ++i) if (! removed[i]) order.push_back ((int) i);
+        std::stable_sort (order.begin(), order.end(), [&flow] (int a, int b) { return flow.boxes[(size_t) a].line < flow.boxes[(size_t) b].line; });
+        std::vector<int> remap (flow.boxes.size(), -1);
+        std::vector<Box> boxes;
+        for (int i : order) { remap[(size_t) i] = (int) boxes.size(); boxes.push_back (flow.boxes[(size_t) i]); }
+        std::vector<Edge> edges;
+        std::set<std::tuple<int, int, int>> seen;
+        for (auto e : flow.edges)
+        {
+            if (e.from < 0 || e.to < 0 || remap[(size_t) e.from] < 0 || remap[(size_t) e.to] < 0) continue;
+            e.from = remap[(size_t) e.from]; e.to = remap[(size_t) e.to];
+            if (e.from == e.to || ! seen.insert ({ e.from, e.to, e.toIn }).second) continue;
+            edges.push_back (e);
+        }
+        flow.boxes = std::move (boxes);
+        flow.edges = std::move (edges);
     }
 
     inline Flow build (const csoundGraph::Orchestra& orc, int blockIndex, const juce::StringArray* sourceLines = nullptr)
@@ -440,6 +550,7 @@ namespace csoundFlow
             }
         }
 
+        mergeBranches (flow, g);
         arrange (flow);
         const int nb = (int) flow.boxes.size();
         // --- riassunto in parole --------------------------------------------
