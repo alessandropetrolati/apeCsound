@@ -4994,10 +4994,58 @@ void CsoundParameterMappingPanel::promotePendingRow (int kind, int slotIndex, co
         default: name = processor.getChoiceParamSlot (slotIndex).channelName;  break;
     }
 
+    // Il campo dove l'utente ha appena cliccato (Min, Max...) sta nella riga
+    // sospesa, che la ricostruzione distrugge: si ricorda quale era (il suo
+    // posto fra i campi di testo della riga) e dopo si da' il focus allo
+    // stesso campo della riga nuova. Senza: serviva un secondo clic.
+    auto textFieldsOf = [] (juce::Component* root)
+    {
+        std::vector<juce::TextEditor*> list;
+        std::function<void (juce::Component*)> walk = [&] (juce::Component* c)
+        {
+            for (auto* child : c->getChildren())
+            {
+                if (auto* te = dynamic_cast<juce::TextEditor*> (child)) list.push_back (te);
+                walk (child);
+            }
+        };
+        if (root != nullptr) walk (root);
+        return list;
+    };
+    int focusedField = -1;
+    if (auto* f = juce::Component::getCurrentlyFocusedComponent())
+        if (pendingRow != nullptr && pendingRow->isParentOf (f))
+        {
+            const auto fields = textFieldsOf (pendingRow.get());
+            for (size_t i = 0; i < fields.size(); ++i)
+                if (fields[i] == f || fields[i]->isParentOf (f)) focusedField = (int) i;
+        }
+
     pendingRow = nullptr;
     if (keepEditing) rowsInEditMode.insert ({ kind, slotIndex });
     else             rowsInEditMode.erase ({ kind, slotIndex });
     rebuildUnifiedRows();
+
+    if (focusedField >= 0 && keepEditing)
+    {
+        juce::Component::SafePointer<CsoundParameterMappingPanel> safeThis (this);
+        juce::MessageManager::callAsync ([safeThis, kind, slotIndex, focusedField, textFieldsOf]
+        {
+            if (safeThis == nullptr) return;
+            for (size_t r = 0; r < safeThis->unifiedRows.size() && r < safeThis->unifiedRowKeys.size(); ++r)
+            {
+                if (safeThis->unifiedRowKeys[r] != std::make_pair (kind, slotIndex)) continue;
+                const auto fields = textFieldsOf (safeThis->unifiedRows[r].get());
+                if (focusedField < (int) fields.size() && fields[(size_t) focusedField]->isShowing())
+                {
+                    auto* te = fields[(size_t) focusedField];
+                    te->grabKeyboardFocus();
+                    te->selectAll();
+                }
+                break;
+            }
+        });
+    }
 
     if (name.isNotEmpty() && onParameterCopiedToClipboard)
         onParameterCopiedToClipboard ("--- Added " + addedLabel + " parameter: " + name + " ---");
