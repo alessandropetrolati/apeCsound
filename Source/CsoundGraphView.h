@@ -37,6 +37,7 @@
 #include "CsoundGraphFlow.h"
 #include "CsoundExplain.h"
 #include "CsoundOrchestraMap.h"
+#include "CsoundPatcher.h"     // vista Patch (prova, temporanea)
 
 
 //==============================================================================
@@ -673,6 +674,14 @@ public:
         flowCanvas.onEmptyTapped = [this] { popover.hide(); };
         flowCanvas.onStageTapped = [this] (int stage) { openStage (stage); };
 
+        // Patch (come Max / Pure Data), voce temporanea del menu della vista
+        patcher.onNodeTapped       = [this] (int node) { popover.hide(); syncCodeToNode (node); };
+        patcher.onNodeDoubleTapped = [this] (int node) { syncCodeToNode (node); showPopoverForNode (node, patcher.getNodeBounds (node), &patcher); };
+        patcher.onBlockOpen        = [this] (int b) { explainMode = false; showBlock (b); };
+        patcher.onEmptyTapped      = [this] { popover.hide(); };
+        patcher.onCableHovered     = [this] (const juce::String& v) { hoverVar = v; };
+        patcher.onCableTapped      = [this] (const juce::String& v, juce::Point<float> p) { openCableInfo (v, getLocalPoint (&patcher, p).toInt()); };
+
         // Passo passo (vista Detail): le righe del blocco una alla volta,
         // nell'ordine in cui Csound le esegue, con il testo della riga.
         for (auto* b : { &prevStep, &nextStep })
@@ -763,7 +772,7 @@ public:
         const auto fullHead = head;
         // vista (a destra, prima di Dock): Blocks / Explain e le opzioni
         modeButton.setVisible (true);
-        modeButton.setButtonText ((explainMode ? juce::String ("Explain") : currentBlock < 0 ? juce::String ("Map")
+        modeButton.setButtonText ((explainMode ? juce::String ("Explain") : patchMode ? juce::String ("Patch") : currentBlock < 0 ? juce::String ("Map")
                                    : flowCanvas.hasOverview() ? juce::String ("Blocks") : juce::String ("Flow"))
                                   + csoundGraphUI::u8 (" \xe2\x96\xbe"));
         modeButton.setTooltip ("Diagram or Explain, and their options (code beside the diagram, live values)");
@@ -801,6 +810,7 @@ public:
         }
 
         flowCanvas.viewportResized();
+        patcher.viewportResized();
         const bool stepBar = showsStepBar();
         prevStep.setVisible (stepBar);
         nextStep.setVisible (stepBar);
@@ -898,6 +908,18 @@ private:
         codePane.setHighlightedLine (line);
         const auto& g = orchestra.blocks[(size_t) currentBlock];
         popover.hide();
+        if (patchMode)
+        {
+            for (int i = 0; i < (int) g.nodes.size(); ++i)
+            {
+                if (g.nodes[(size_t) i].line != line || ! patcher.selectNode (i)) continue;
+                const auto r = patcher.getNodeBounds (i).toNearestInt();
+                viewport.setViewPosition (juce::jmax (0, r.getCentreX() - viewport.getWidth() / 2), juce::jmax (0, r.getCentreY() - viewport.getHeight() / 2));
+                return;
+            }
+            patcher.clearSelection();
+            return;
+        }
         for (int i = 0; i < (int) g.nodes.size(); ++i)
         {
             if (g.nodes[(size_t) i].line != line || ! flowCanvas.selectNode (i)) continue;
@@ -967,6 +989,7 @@ private:
     void pushLive()
     {
         flowCanvas.setLiveCables (liveState);
+        patcher.setLiveCables (liveState);
     }
 
     void readLive()
@@ -1147,7 +1170,7 @@ private:
     bool explainCacheValid = false;
 
     // Sotto i blocchi dello strumento: un blocco aperto o tutte le scatole (Flow)
-    bool belowBlocks() const { return ! explainMode && flowCanvas.getFocusStage() >= 0; }
+    bool belowBlocks() const { return ! explainMode && ! patchMode && flowCanvas.getFocusStage() >= 0; }
 
     // Un livello su, sempre lo stesso percorso:
     // scatole (un blocco o tutto il Flow) -> blocchi dello strumento -> orchestra
@@ -1218,6 +1241,9 @@ private:
     bool splitMode = false;
     bool explainMode = false;      // il codice con le note in parole (anche per l'orchestra intera)
     CsoundGraphFlowCanvas flowCanvas;
+    CsoundPatcherCanvas patcher;   // vista Patch (prova, temporanea): un patch come in Max / Pure Data
+    bool patchMode = false;        // la vista Patch al posto di Map / Blocks / Flow
+    bool patchAll = false;         // Patch: anche il calcolo di controllo (altrimenti solo il percorso del suono)
     bool flowMode = true;          // vista Flusso predefinita negli strumenti
     juce::TextButton prevStep, nextStep;
     juce::Label stepLabel;
@@ -1247,7 +1273,7 @@ private:
         }
         crumbs.setItems (std::move (items));
         updateNavText();
-        const bool blocks = flowCanvas.isOverview() || flowCanvas.getFocusStage() >= 0;      // colori solo se si usano i blocchi
+        const bool blocks = ! patchMode && (flowCanvas.isOverview() || flowCanvas.getFocusStage() >= 0);      // colori solo se si usano i blocchi
         if (onLineColours) onLineColours (isVisible() && currentBlock >= 0 && ! explainMode && blocks ? flowCanvas.getLineColours() : std::map<int, juce::Colour>());
     }
     csoundGraphUI::ScrollViewport viewport;
@@ -1276,7 +1302,18 @@ private:
         prevStep.setEnabled (false);
         nextStep.setEnabled (true);
 
-        const bool flow = b >= 0 && flowMode && ! explainMode;
+        const bool patchView = patchMode && ! explainMode;
+        if (patchView)
+        {
+            if (b >= 0)
+            {
+                auto pf = csoundFlow::build (orchestra, b, &sourceLines);
+                patcher.setPatch (csoundPatch::fromFlow (pf, orchestra.blocks[(size_t) b], &sourceLines, ! patchAll));
+            }
+            else
+                patcher.setPatch (csoundPatch::fromOrchestra (orchestra, &sourceLines));
+        }
+        const bool flow = b >= 0 && flowMode && ! explainMode && ! patchView;
         int shown = 0, hidden = 0;
         if (flow)
         {
@@ -1301,11 +1338,13 @@ private:
             explainCanvas.setContent (sourceLines, ex, first, last, juce::jmax (320, bodyArea().getWidth() - 12));
             shown = (int) ex.notes.size();
         }
-        const bool map = b < 0 && ! explainMode;
+        const bool map = b < 0 && ! explainMode && ! patchView;
         if (map) mapCanvas.setOrchestra (orchestra, explanation());
-        if (setActiveNotesWanted) setActiveNotesWanted (map && isVisible());
+        if (setActiveNotesWanted) setActiveNotesWanted ((map || (patchView && b < 0)) && isVisible());
         if (! map) mapCanvas.setActiveCounts ({});
+        if (! (patchView && b < 0)) patcher.setActiveCounts ({});
         viewport.setViewedComponent (explainMode ? static_cast<juce::Component*> (&explainCanvas)
+                                     : patchView ? static_cast<juce::Component*> (&patcher)
                                      : flow ? static_cast<juce::Component*> (&flowCanvas)
                                      : static_cast<juce::Component*> (&mapCanvas), false);
         auto pill = [] (juce::TextButton& bt, bool on)
@@ -1349,8 +1388,10 @@ private:
         updateCrumbs();
         resized();
         // solo quando si apre un altro blocco (non a ogni ricostruzione mentre si scrive)
-        const auto key = currentTitle + (flow ? "/flow" : "/other");
-        if (flow && key != lastPlacedView && flowCanvas.isOverview())
+        const auto key = currentTitle + (patchView ? "/patch" : flow ? "/flow" : "/other");
+        if (patchView && key != lastPlacedView)
+            viewport.setViewPosition (0, 0);          // un patch si legge dall'alto
+        else if (flow && key != lastPlacedView && flowCanvas.isOverview())
             viewport.setViewPosition (0, 0);
         else if (flow && key != lastPlacedView)
         {
@@ -1487,10 +1528,11 @@ private:
         std::vector<CsoundActionSheetItem> items;
         auto add = [&items] (int id, const juce::String& t, bool on) { CsoundActionSheetItem it; it.id = id; it.text = t; it.ticked = on; items.push_back (it); };
         if (currentBlock >= 0)
-            add (7, flowCanvas.hasOverview() ? "Blocks" : "Flow", ! explainMode);
+            add (7, flowCanvas.hasOverview() ? "Blocks" : "Flow", ! explainMode && ! patchMode);
         else
-            add (1, "Map", ! explainMode);
+            add (1, "Map", ! explainMode && ! patchMode);
         add (3, "Explain", explainMode);
+        add (9, "Patch", patchMode && ! explainMode);      // prova, temporanea
         if (currentBlock >= 0 && explainMode)
         {
             items.push_back (CsoundActionSheetItem::separator());
@@ -1499,6 +1541,7 @@ private:
         if (currentBlock >= 0 && ! explainMode)
         {
             items.push_back (CsoundActionSheetItem::separator());
+            if (patchMode) add (8, "Control objects too (not only the sound path)", patchAll);
             add (5, "Code beside the diagram", splitMode);
             if (orchestra.blocks[(size_t) currentBlock].kind == csoundGraph::Graph::Instr)
                 add (4, "Live values on all cables", liveState.all);
@@ -1507,6 +1550,9 @@ private:
         CsoundActionSheet::show (modeButton, "View", std::move (items), [safeThis] (int r)
         {
             if (safeThis == nullptr || r <= 0) return;
+            if (r == 9) { safeThis->explainMode = false; safeThis->patchMode = true; safeThis->showBlock (safeThis->currentBlock); return; }
+            if (r == 8) { safeThis->patchAll = ! safeThis->patchAll; safeThis->showBlock (safeThis->currentBlock); return; }
+            if (r == 1 || r == 3 || r == 7) safeThis->patchMode = false;
             if (r == 4) { safeThis->liveState.all = ! safeThis->liveState.all; safeThis->updatePills(); safeThis->pushLive(); safeThis->resized(); return; }
             if (r == 5) { safeThis->splitMode = ! safeThis->splitMode; safeThis->showBlock (safeThis->currentBlock); return; }
             if (r == 6) { safeThis->groupByTime = ! safeThis->groupByTime; safeThis->showBlock (safeThis->currentBlock); return; }
@@ -1830,11 +1876,19 @@ private:
             for (const auto& [block, name] : mapCanvas.instrumentNames())
                 if (const int n = getActiveNotes (name); n > 0) counts[block] = n;
             mapCanvas.setActiveCounts (counts);
+            if (patchMode)
+            {
+                std::map<int, int> pc;
+                for (const auto& [block, name] : patcher.instrumentNames())
+                    if (const int n = getActiveNotes (name); n > 0) pc[block] = n;
+                patcher.setActiveCounts (pc);
+            }
         }   // anche dopo una ricostruzione mentre si scrive
         if (getChannelValues)
         {
             const auto values = getChannelValues();
             flowCanvas.setLiveValues (values);
+            patcher.setLiveValues (values);
         }
     }
 
