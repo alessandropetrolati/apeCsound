@@ -812,12 +812,18 @@ void CodeView::insertTextInternal (const juce::String& text)
     if (isHighlightActive())
         document.deleteSection (getSelectionStart().getPosition(), getSelectionEnd().getPosition());
 
+    // Il cursore va dopo il testo inserito, contato dalla FINE del documento:
+    // l'inserimento puo' far re-indentare la riga (CsoundCodeEditor: "endin"
+    // completato torna a colonna 0), cambiando cio' che sta prima del
+    // cursore. Contato dall'inizio, il cursore finiva piu' avanti (riga dopo).
+    const int tailLength = document.getNumCharacters() - insertIndex;
+
     // Niente azioni "vuote" nella cronologia del documento: il ponte verso
     // lo sharedUndoManager (PluginEditor) conta le azioni per transazione.
     if (text.isNotEmpty())
         document.insertText (insertIndex, text);
 
-    const juce::CodeDocument::Position after (document, insertIndex + text.length());
+    const juce::CodeDocument::Position after (document, juce::jmax (0, document.getNumCharacters() - tailLength));
     setCaretAndAnchor (after, after);
     columnToMaintain = -1;
     showHandles = false;
