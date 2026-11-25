@@ -41,8 +41,7 @@ NEW - ALGORITHM (menu > Show Algorithm, Cmd+6 to open and close)
     lead to the neighbouring blocks. Signals computed but never used are
     shown apart ("Not connected"). The notes an instrument starts are
     cards with their p-fields and where the receiving instrument uses
-    them. Tap a box to light up its chain and its line in the code beside
-    the diagram; double-tap it for the help of its opcode, its context
+    them. Tap a box to light up its chain; double-tap it for the help of its opcode, its context
     and its Trace (where its signal comes from, all the way back, and
     where it ends). Show in Code selects the line in the editor.
     Zoom with pinch or Cmd + mouse wheel; double-tap the background to

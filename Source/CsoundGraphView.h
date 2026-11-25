@@ -775,7 +775,7 @@ public:
         modeButton.setButtonText ((explainMode ? juce::String ("Explain") : patchMode ? juce::String ("Patch") : currentBlock < 0 ? juce::String ("Map")
                                    : flowCanvas.hasOverview() ? juce::String ("Blocks") : juce::String ("Flow"))
                                   + csoundGraphUI::u8 (" \xe2\x96\xbe"));
-        modeButton.setTooltip ("Diagram or Explain, and their options (code beside the diagram, live values)");
+        modeButton.setTooltip ("Diagram or Explain, and their options (live values)");
         const int modeW = juce::jmin (120, juce::jmax (70, head.getWidth() / 4));
         modeButton.setBounds (head.removeFromRight (modeW));
 
@@ -1542,7 +1542,6 @@ private:
         {
             items.push_back (CsoundActionSheetItem::separator());
             if (patchMode) add (8, "Control objects too (not only the sound path)", patchAll);
-            add (5, "Code beside the diagram", splitMode);
             if (orchestra.blocks[(size_t) currentBlock].kind == csoundGraph::Graph::Instr)
                 add (4, "Live values on all cables", liveState.all);
         }
@@ -1555,7 +1554,6 @@ private:
             const bool leavingPatch = safeThis->patchMode && (r == 1 || r == 3 || r == 7);
             if (r == 1 || r == 3 || r == 7) safeThis->patchMode = false;
             if (r == 4) { safeThis->liveState.all = ! safeThis->liveState.all; safeThis->updatePills(); safeThis->pushLive(); safeThis->resized(); return; }
-            if (r == 5) { safeThis->splitMode = ! safeThis->splitMode; safeThis->showBlock (safeThis->currentBlock); return; }
             if (r == 6) { safeThis->groupByTime = ! safeThis->groupByTime; safeThis->showBlock (safeThis->currentBlock); return; }
             if (r == 7 && safeThis->currentBlock >= 0)
             {
