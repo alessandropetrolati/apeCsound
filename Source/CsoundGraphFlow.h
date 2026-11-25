@@ -944,6 +944,10 @@ public:
     void setFlow (csoundFlow::Flow f)
     {
         full = std::move (f);
+        stageOfNode.clear();
+        for (size_t i = 0; i < full.boxes.size() && i < full.stageOfBox.size(); ++i)
+            if (full.boxes[i].node >= 0 && full.stageOfBox[i] >= 0 && full.stageOfBox[i] < (int) full.stages.size())
+                stageOfNode[full.boxes[i].node] = full.stages[(size_t) full.stageOfBox[i]].kind;
         flow = full;
         selected = -1;
         // ricostruito mentre si scrive: il blocco aperto resta aperto
@@ -1176,7 +1180,11 @@ public:
             const auto& b = flow.boxes[(size_t) i];
             if (! b.r.expanded (20.0f).intersects (clip)) continue;
             const float alpha = (dim (i) ? 0.25f : 1.0f) * (b.unused && i != selected ? 0.6f : 1.0f);
-            const auto role = csoundFlow::groupColour (b.group);
+            // la striscia ha il colore del suo blocco, lo stesso del margine
+            // del codice (Controls arancio...), non quello della categoria
+            // dell'opcode (un phasor che fa da controllo non e' "verde")
+            const auto st = b.node >= 0 ? stageOfNode.find (b.node) : stageOfNode.end();
+            const auto role = st != stageOfNode.end() ? csoundFlow::stageColour (st->second) : csoundFlow::groupColour (b.group);
             g.setColour (kBoxFill.withMultipliedAlpha (alpha));
             g.fillRoundedRectangle (b.r, 8.0f);
             // striscia del ruolo
@@ -1408,6 +1416,7 @@ private:
     }
 
     csoundFlow::Flow full, flow;     // tutto lo strumento; quello disegnato (tutto, o un blocco aperto)
+    std::map<int, int> stageOfNode;  // nodo -> tipo del suo blocco (colore della striscia)
     int selected = -1, selectedEvent = -1;
     csoundGraphUI::LiveCables liveCables;
     std::vector<std::pair<juce::Path, juce::String>> cableHits;
