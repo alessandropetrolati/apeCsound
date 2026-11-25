@@ -683,7 +683,9 @@ namespace csoundPatch
             o.commentIsNote = true;
             p.objs.push_back (o);
         }
-        if (! (audioOnly && keepAudioOnly (p)))
+        // solo il percorso del suono quando lo strumento e' grande: uno
+        // piccolo si legge meglio intero (il phasor che muove la frequenza)
+        if (! (audioOnly && p.objs.size() > 40 && keepAudioOnly (p)))
             simplifyArraysAndIndexes (p, g);
 
         // una variabile che va a molti oggetti: senza filo

@@ -372,6 +372,16 @@ namespace csoundFlow
             const bool dangling = ! inSlice[(size_t) i] && nd.eventTarget.empty() && ! writesOut && ! nd.outs.empty()   // senza uscite (un UDO che scrive canali): non e' "scollegato"
                                && (nd.kind == K::Opcode || nd.kind == K::Expr) && signalRate (nd.rate);
             if (! inSlice[(size_t) i] && ! dangling) continue;
+            // "asig init 0" e poi asig riscritta altrove: solo il valore di
+            // partenza, non un segnale a se' (non e' "non collegato")
+            if (dangling && nd.name == "init" && nd.outs.size() == 1)
+            {
+                bool rewritten = false;
+                for (int j = 0; j < n && ! rewritten; ++j)
+                    if (j != i)
+                        for (const auto& o : g.nodes[(size_t) j].outs) rewritten = rewritten || o.var == nd.outs[0].var;
+                if (rewritten) continue;
+            }
             const bool sink = sinkSet.count (i) > 0;
             if (! nd.eventTarget.empty()) continue;      // gli eventi sono schede a parte (sotto)
             bool keep = sink || dangling
