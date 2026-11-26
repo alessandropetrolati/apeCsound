@@ -37,9 +37,15 @@ namespace
     // in bridgeCodeEditIntoSharedUndo().
     struct CodeEditTransactionProxy final : public juce::UndoableAction
     {
+        // onApplied: un riferimento alla funzione del PROCESSOR (getCodeUndoReveal),
+        // non una lambda sull'editor - l'azione resta nella cronologia del
+        // processor anche dopo che l'editor e' stato chiuso (in una DAW: la
+        // finestra del plug-in chiusa e riaperta). BUG corretto: la lambda
+        // catturava l'editor distrutto, e un Undo dopo la riapertura mandava
+        // in crash l'host (CodeView::selectRegion su memoria liberata).
         CodeEditTransactionProxy (juce::CodeDocument& documentIn, bool& guardFlagIn,
-                                  std::function<void()> onAppliedIn)
-            : document (documentIn), guardFlag (guardFlagIn), onApplied (std::move (onAppliedIn)) {}
+                                  std::function<void()>& onAppliedIn)
+            : document (documentIn), guardFlag (guardFlagIn), onApplied (onAppliedIn) {}
 
         // Se il document non ha (piu') nulla da annullare/rifare le due
         // cronologie si sono disallineate: meglio un passo a vuoto che
@@ -84,7 +90,7 @@ namespace
 
         juce::CodeDocument& document;
         bool& guardFlag;
-        std::function<void()> onApplied;
+        std::function<void()>& onApplied;
         bool firstPerform = true;
 
         JUCE_DECLARE_NON_COPYABLE (CodeEditTransactionProxy)
@@ -214,6 +220,9 @@ CsoundAudioProcessorEditor::CsoundAudioProcessorEditor (CsoundAudioProcessor& p)
     // comunque risulterebbe "non modificato", quindi non cambia nulla nella
     // pratica, ma e' piu' chiaro cosi'.
     document.addListener (this);
+    // undo / redo del codice (anche di azioni registrate da un editor
+    // precedente): il punto cambiato si mostra in QUESTO editor
+    audioProcessor.getCodeUndoReveal() = [this] { editor.revealLastEdit(); };
 
     addAndMakeVisible (editor);
 
@@ -1020,6 +1029,7 @@ CsoundAudioProcessorEditor::~CsoundAudioProcessorEditor()
         saveViewState();   // ultimo layout, anche se cambiato da meno di mezzo secondo
     IOSKeyboard::getBroadcaster().removeChangeListener (&keyboardWatcher);
     document.removeListener (this);
+    audioProcessor.getCodeUndoReveal() = nullptr;   // nessun editor da aggiornare dopo un undo
 
     // Scollega la LookAndFeel del pannello Parametri impostata nel
     // costruttore sul burger (vedi il commento li') PRIMA che
@@ -1235,7 +1245,7 @@ void CsoundAudioProcessorEditor::bridgeCodeEditIntoSharedUndo()
     {
         sharedUndoManager.beginNewTransaction();
         sharedUndoManager.perform (new CodeEditTransactionProxy (document, isApplyingCodeUndoRedo,
-                                                                 [this] { editor.revealLastEdit(); }));
+                                                                 audioProcessor.getCodeUndoReveal()));
     }
 }
 

@@ -1071,6 +1071,11 @@ public:
     // CsoundAudioProcessorEditor::bridgeCodeEditIntoSharedUndo): vive qui
     // perche' le azioni in cronologia la referenziano anche a editor chiuso.
     bool& getCodeUndoGuard() { return codeUndoGuard; }
+    // Dopo un undo / redo del codice: mostra il punto cambiato nell'editor
+    // APERTO (impostata dall'editor, vuota quando e' chiuso). Le azioni della
+    // cronologia vivono nel processor e possono sopravvivere all'editor che
+    // le ha create: chiamano questa, mai l'editor direttamente.
+    std::function<void()>& getCodeUndoReveal() { return codeUndoReveal; }
 
     // Vedi Listener::sessionEditedByUndoRedo. Solo message thread.
     void notifySessionEditedByUndoRedo (bool structureReplaced);
@@ -1525,6 +1530,7 @@ private:
     juce::CodeDocument codeDocument;
     juce::UndoManager sessionUndoManager;
     bool codeUndoGuard = false;
+    std::function<void()> codeUndoReveal;
     std::atomic<bool> documentResyncRequested { true }; // prima apertura: sincronizza
     juce::String restoredSessionHash;                    // vedi getRestoredSessionHash() - sotto sessionLock
 
