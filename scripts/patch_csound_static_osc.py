@@ -11,10 +11,25 @@ build_csound_static_{macos,ios,linux}.sh e build_csound_static_windows.ps1:
 - apecsound_register_osc_opcodes(CSOUND*) registra gli opcode OSC in
   un'istanza appena creata (chiamata da apeCsound, PluginProcessor.cpp).
 
+- midion (H/midiout.h, KOUT_ON): in Csound 7.0 il quarto argomento
+  ("port", opzionale) non ha il suo puntatore fra gli argomenti: "*port" e'
+  un int32_t* mai assegnato e kvar_out_on lo legge -> crash dell'host al
+  primo midion (bug di Csound, corretto qui finche' non lo e' a monte).
+
 Uso: python3 patch_csound_static_osc.py <cartella sorgenti Csound>
 """
 import sys, pathlib
 src = pathlib.Path(sys.argv[1])
+
+# midion: il puntatore "port" fra gli argomenti, dopo kvel (come gli altri opcode)
+mo = src / "H" / "midiout.h"
+t = mo.read_text()
+bad = "  cs_float  *kchn,*knum,*kvel;\n  int32_t    last_chn, last_num, last_vel, *port;\n"
+if bad in t:
+    t = t.replace(bad, "  cs_float  *kchn,*knum,*kvel, *port;\n  int32_t    last_chn, last_num, last_vel;\n", 1)
+    mo.write_text(t)
+elif "*kchn,*knum,*kvel, *port;\n  int32_t    last_chn, last_num, last_vel;" not in t:
+    print("patch: KOUT_ON in H/midiout.h not recognised (midion fix not applied)")
 
 util = src / "cmake" / "cmake-utilities.cmake"
 t = util.read_text()

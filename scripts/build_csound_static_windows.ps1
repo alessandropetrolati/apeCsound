@@ -190,6 +190,16 @@ CloneOnce $CsoundRepo $CsoundBranch $CsoundSrc
 # make_plugin() STATICO con APECSOUND_STATIC_PLUGINS=ON, plugin osc con la
 # funzione apecsound_register_osc_opcodes() e gli entry point rinominati.
 function Patch-CsoundStaticOsc($src) {
+    # midion (KOUT_ON): in Csound 7.0 "port" non e' fra gli argomenti, e'
+    # un int32_t* mai assegnato letto da kvar_out_on -> crash al primo midion.
+    $mo = Join-Path $src "H\midiout.h"
+    $t = [IO.File]::ReadAllText($mo).Replace("`r`n", "`n")
+    $bad = "  cs_float  *kchn,*knum,*kvel;`n  int32_t    last_chn, last_num, last_vel, *port;`n"
+    if ($t.Contains($bad)) {
+        $t = $t.Replace($bad, "  cs_float  *kchn,*knum,*kvel, *port;`n  int32_t    last_chn, last_num, last_vel;`n")
+        [IO.File]::WriteAllText($mo, $t)
+    }
+
     $util = Join-Path $src "cmake\cmake-utilities.cmake"
     $t = [IO.File]::ReadAllText($util)
     if (-not $t.Contains("APECSOUND_STATIC_PLUGINS")) {
