@@ -4474,7 +4474,7 @@ chn_k "Pitch",  2,   2,    220, 110,880, 0,0,0,0, "spark"   ; sparkline
 - `sr` always follows the DAW. `ksmps` is respected and equals the plug-in latency (compensated by the DAW): keep it small (16-64) for live input.
 - **Channels** - by default Csound follows the track: `nchnls` / `nchnls_i` are the track's outputs / inputs (at least 2 outputs). Tracks can have 1-16 outputs and 0-16 inputs.
 - **Config > Follow CSD nchnls** - uses the `nchnls` / `nchnls_i` of the `.csd` instead, so the code behaves the same on any track (missing channels are silent). Saved with the project.
-- **MIDI** - notes and controllers reach Csound; MIDI written by Csound (`midiout`) goes back to the DAW.
+- **MIDI** - notes and controllers from the DAW reach Csound (`massign`, `midiin`, `notnum`...). MIDI written by Csound (`midiout`, `noteon` / `noteoff`, `outkc`...) goes back to the DAW, on the track's MIDI output. No MIDI flags are needed in `<CsOptions>`: apeCsound sets them itself (`-M`, `-Q`, `-+rtmidi` written there can override this, so leave them out). MIDI out is placed at the start of each DAW block, not sample-accurate. To get it as a MIDI item in REAPER, record-arm the track and choose Record: output > Record: output (MIDI). Note: in Csound 7.0 `midion` crashes the plug-in - use `noteon` / `noteoff` or `midiout`.
 - **OSC** - the OSC opcodes (`oscinit`, `osclisten`, `oscsend`...) are built in.
 
 ## Host transport channels
