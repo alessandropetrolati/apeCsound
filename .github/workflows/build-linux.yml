@@ -18,6 +18,10 @@ on:
   push:
     tags: [ "v*" ]
 
+# the "Attach to GitHub Release" step creates / updates the release of the tag
+permissions:
+  contents: write
+
 env:
   # JUCE version: keep it equal to the one used on the Mac and Windows builds.
   JUCE_REF: "9.0.5"
