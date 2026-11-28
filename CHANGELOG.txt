@@ -1,6 +1,45 @@
 APECSOUND - RELEASE NOTES
 =========================
 
+1.1.1 (November 2026)
+---------------------
+
+FIXES
+  * Crash: Undo of a code edit after closing and reopening the plug-in
+    window (in a DAW) could crash the host. Fixed.
+  * Csound 7.0 bug: midion crashed the host on its first note (a field of
+    the opcode was never set). Patched in our Csound build.
+  * Editor: after typing endin (moved to column 0) the cursor jumped to the
+    wrong place; Return after endin now goes to the right line.
+  * Parameters: when adding a parameter, the field clicked after the channel
+    (Min, Max...) keeps the focus at the first click.
+
+MIDI OUT
+  * MIDI written by Csound (midiout, noteon / noteoff, outkc...) now goes
+    out at the start of the control cycle that wrote it, accurate to ksmps
+    samples, instead of at the start of each DAW block.
+  * Guide: how MIDI out works (no flags needed in <CsOptions>), how to
+    record it as a MIDI item in REAPER, which opcodes to use.
+
+EDITOR AND PARAMETERS
+  * Pasted lines are indented automatically (one Undo step with the paste).
+  * Clicking a field of the Parameters panel selects its whole text, to
+    overwrite it at once.
+
+ALGORITHM
+  * if / else that sets the same variable in its branches is one "choice"
+    box (if kamp > 0.5: asig1, otherwise asig2), also in the summary.
+  * Conditions are boxes: what is inside an if depends on its condition
+    (dashed "only if" links), so a metro that drives an if is no longer
+    "not connected". Text opcodes (sprintfk -> chnset) are drawn too.
+  * The strip of a box has the colour of its block, the same as the margin
+    of the code editor.
+  * Explain: notes on else / elseif lines; a warning on an empty argument
+    (a comma right after the opcode name); sprintfk runs at k-rate.
+  * Patch (view menu, experimental): the instrument drawn as a Max / Pure
+    Data patch, the orchestra as the main patch.
+  * Removed: "Code beside the diagram".
+
 1.1.0 (November 2026)
 ---------------------
 

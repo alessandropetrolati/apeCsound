@@ -7,7 +7,7 @@
 ;   WINBIN\apeCsound.exe     (standalone)
 
 #define MyAppName "apeCsound"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.1.1"
 #define MyAppPublisher "apeSoft"
 #define MyAppURL "https://www.apesoft.it/"
 
