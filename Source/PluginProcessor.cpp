@@ -1654,6 +1654,13 @@ void CsoundAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         {
             ksmpsPos = 0;
 
+            // MIDI scritto da Csound in questo ciclo k: si colloca dove
+            // comincia la sua uscita audio, cioe' qui (l'uscita e' in ritardo
+            // di un ksmps, la latenza del plug-in). Precisione: un ksmps, non
+            // il singolo campione - Csound scrive il MIDI a ogni ciclo k. Un
+            // ciclo che si chiude alla fine del blocco va all'ultimo campione.
+            midiOutSampleOffset = juce::jmin (written, juce::jmax (0, numSamples - 1));
+
             const int sectionsBefore = scoreSectionCount.load (std::memory_order_relaxed);
             int perfResult = CsoundAPI::csoundPerformKsmps (cs);
 
@@ -5554,13 +5561,12 @@ int CsoundAudioProcessor::midiOutWriteCallback (CSOUND* /*cs*/, void* userData, 
     if (self == nullptr || self->outgoingMidiBuffer == nullptr || nBytes <= 0)
         return 0;
 
-    // Non abbiamo un modo affidabile di sapere la posizione esatta nel
-    // blocco da qui: il messaggio viene accodato al campione 0 del blocco
-    // corrente (sufficiente per la maggior parte degli usi - note/CC generati
-    // dall'opcode midiout non hanno bisogno di un sample-accuracy particolare).
+    // Posizione nel blocco: dove comincia l'uscita del ciclo k in corso
+    // (midiOutSampleOffset, impostato in processBlock prima di
+    // csoundPerformKsmps) - precisione di un ksmps invece che di un blocco.
     // Overload con i byte grezzi: niente juce::MidiMessage temporaneo (per i
     // sysex allocherebbe) - il buffer e' preallocato (vedi outgoingMidi).
-    self->outgoingMidiBuffer->addEvent (buffer, nBytes, 0);
+    self->outgoingMidiBuffer->addEvent (buffer, nBytes, self->midiOutSampleOffset);
 
     return nBytes;
 }

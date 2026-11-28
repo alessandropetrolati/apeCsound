@@ -1389,6 +1389,9 @@ private:
     juce::Array<juce::MidiMessage> incomingMidiQueue;
     juce::MidiBuffer outgoingMidi;
     juce::MidiBuffer* outgoingMidiBuffer = nullptr;
+    // Posizione nel blocco dell'host dei messaggi MIDI scritti da Csound nel
+    // ciclo k in corso: dove comincia l'uscita di quel ciclo (vedi processBlock).
+    int midiOutSampleOffset = 0;
     std::atomic<bool> engineFinishedPending { false };
 
     // Nomi che apeCsound ha mandato a Csound come canali dei parametri da
