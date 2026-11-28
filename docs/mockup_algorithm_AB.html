@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>apeCsound - Algorithm, mockup A / B</title>
+<style>
+  :root { --bg:#0b1116; --card:#141d24; --bar:#1c2730; --border:#2a3a48; --text:#e8eef1; --muted:#8a9aa5;
+          --accent:#4aa3b8; --a:#3b82f6; --k:#e4572e; --f:#2a9d8f; --i:#8a8a8a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#06090c; color:var(--text); font:14px -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  header { display:flex; align-items:center; gap:14px; padding:14px 18px; background:var(--card); border-bottom:1px solid var(--border); }
+  header h1 { font-size:17px; margin:0; font-weight:700; }
+  .seg { display:flex; border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .seg button { background:transparent; color:var(--text); border:0; padding:7px 16px; font-size:13px; cursor:pointer; }
+  .seg button.on { background:var(--accent); color:#0b1116; font-weight:700; }
+  .hint { color:var(--muted); font-size:12.5px; margin-left:auto; }
+  .frame { margin:16px auto; max-width:1180px; background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .titlebar { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--border); }
+  .pill { border:1px solid var(--border); background:var(--bar); border-radius:14px; padding:5px 14px; font-size:13px; }
+  .title { flex:1; text-align:center; font-weight:700; font-size:15px; }
+  .starts { padding:9px 18px; color:var(--muted); font-size:12.5px; border-bottom:1px solid var(--border); background:#111920; }
+  .body { position:relative; background:var(--bg); padding:10px 0 18px; min-height:520px; }
+  .note { padding:6px 18px 10px; color:var(--muted); font-size:12px; }
+
+  /* A: codice con i fili */
+  .rowA { display:grid; grid-template-columns: 34px 150px max-content minmax(0,1fr) 120px; align-items:center; height:28px; cursor:pointer; }
+  .rowA:hover { background:#101a22; }
+  .rowA.sel { background:rgba(74,163,184,.16); }
+  .rowA.dim { opacity:.35; }
+  .ln { color:#556570; font:12px Menlo, monospace; text-align:right; padding-right:6px; }
+  .code { font:13px Menlo, monospace; white-space:pre; color:#d4d4d4; overflow:hidden; text-overflow:ellipsis; }
+  .code.comment { color:#6a9955; }
+  .var { border-radius:3px; padding:0 1px; }
+  .var:hover { outline:1px solid var(--accent); cursor:pointer; }
+  .say { color:var(--accent); font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-left:12px; }
+  .val { justify-self:end; margin-right:14px; font:12px Menlo, monospace; display:flex; align-items:center; gap:6px; white-space:nowrap; }
+  .frame { overflow-x:auto; }
+  .body { min-width:900px; }
+  .meter { width:34px; height:6px; background:#22303a; border-radius:3px; overflow:hidden; }
+  .meter > i { display:block; height:100%; background:var(--a); }
+  svg.wires { position:absolute; left:34px; top:10px; width:150px; pointer-events:none; }
+
+  /* B: catena verticale */
+  .chain { padding:6px 18px; }
+  .step { display:grid; grid-template-columns: 28px 1fr 130px; gap:12px; align-items:center; background:var(--card);
+          border:1px solid var(--border); border-left:4px solid var(--a); border-radius:9px; padding:9px 12px; margin:0 0 6px; cursor:pointer; }
+  .step.k { border-left-color:var(--k); } .step.f { border-left-color:var(--f); }
+  .step.sel { outline:2px solid var(--accent); }
+  .num { color:var(--muted); font:12px Menlo, monospace; }
+  .sline { font:13px Menlo, monospace; }
+  .ssay { color:var(--accent); font-size:12.5px; margin-top:3px; }
+  .tags { margin-top:5px; display:flex; gap:6px; flex-wrap:wrap; }
+  .tag { font-size:11.5px; border:1px solid var(--border); border-radius:10px; padding:1px 8px; color:var(--muted); }
+  .tag b { color:var(--text); font-weight:600; }
+  .arrow { color:var(--muted); text-align:center; font-size:12px; margin:-2px 0 4px; }
+
+  /* finestrella del cavo */
+  .pop { position:fixed; width:300px; background:#1c2730; border:1px solid var(--a); border-radius:10px; padding:10px 12px 12px;
+         box-shadow:0 8px 30px rgba(0,0,0,.5); display:none; z-index:10; }
+  .pop .h { display:flex; justify-content:space-between; font-weight:700; }
+  .pop .h span:last-child { color:var(--a); }
+  .pop .sub { color:var(--muted); font-size:11.5px; margin:2px 0 6px; }
+  .pop canvas { width:100%; height:64px; background:var(--bg); border-radius:6px; }
+  .pop .btns { display:flex; justify-content:space-between; margin-top:8px; }
+  .pop button { background:var(--border); color:var(--text); border:0; border-radius:14px; padding:6px 14px; cursor:pointer; }
+  .pop button.listen.on { background:#c0392b; }
+  .legend { display:flex; gap:14px; padding:6px 18px; color:var(--muted); font-size:12px; }
+  .legend i { display:inline-block; width:14px; height:3px; vertical-align:middle; margin-right:5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Algorithm - mockup</h1>
+  <div class="seg"><button id="tA" class="on">A - Codice con i fili</button><button id="tB">B - Catena verticale</button></div>
+  <div class="hint">Tocca una riga per accendere i suoi fili - tocca una variabile o un valore per oscilloscopio e Listen</div>
+</header>
+
+<div class="frame">
+  <div class="titlebar">
+    <span class="pill">instr 10 &#9662;</span>
+    <span class="title" id="viewTitle">instr 10 - codice con i fili</span>
+    <span class="pill">Live &#9662;</span>
+  </div>
+  <div class="starts">Avviato dallo score (1 nota). Riceve gaInL, gaInR da instr 1. Controllato da 5 slider (LEVEL, SPEED, FADE, MIX, IMPIANTO). Esce su 4 canali.</div>
+  <div class="legend"><span><i style="background:var(--a)"></i>audio</span><span><i style="background:var(--k)"></i>controllo</span><span><i style="background:var(--f)"></i>spettro</span><span><i style="background:var(--i)"></i>una volta per nota</span></div>
+  <div class="body" id="body"></div>
+  <div class="note">Estratto semplificato di instr 10 (canali 1 e 2) da es1_prisma_piano2.csd. Valori finti, animati per mostrare l'idea.</div>
+</div>
+
+<div class="pop" id="pop">
+  <div class="h"><span id="pv">a1</span><span id="pval">-18.2 dB</span></div>
+  <div class="sub" id="psub">audio - livello dell'ultimo ciclo - scritta alla riga 21</div>
+  <canvas id="scope" width="560" height="128"></canvas>
+  <div class="btns"><button class="listen" id="listen">&#9654;  Listen</button><button id="close">Chiudi</button></div>
+</div>
+
+<script>
+// riga, codice, uscite, ingressi, frase
+const L = [
+ { n:1,  c:"; -- live --", comment:true },
+ { n:2,  c:"f1 tab2pvs kM1, kInFREQ, iHopSize, iwinsize, iwinshape", out:["f1"], ins:["kM1","kInFREQ"], say:"risintetizza lo spettro della tabella kM1" },
+ { n:3,  c:"f2 tab2pvs kM2, kInFREQ, iHopSize, iwinsize, iwinshape", out:["f2"], ins:["kM2","kInFREQ"], say:"idem, canale 2" },
+ { n:4,  c:"a1 pvsynth f1", out:["a1"], ins:["f1"], say:"trasforma lo spettro f1 in audio" },
+ { n:5,  c:"a2 pvsynth f2", out:["a2"], ins:["f2"], say:"trasforma lo spettro f2 in audio" },
+ { n:6,  c:"; -- fantasmi, con le frequenze congelate --", comment:true },
+ { n:7,  c:"fG1 tab2pvs kG1, kGFreq, iHopSize, iwinsize, iwinshape", out:["fG1"], ins:["kG1","kGFreq"], say:"spettro 'fantasma' a frequenze ferme" },
+ { n:8,  c:"fG2 tab2pvs kG2, kGFreq, iHopSize, iwinsize, iwinshape", out:["fG2"], ins:["kG2","kGFreq"], say:"idem, canale 2" },
+ { n:9,  c:"ag1 pvsynth fG1", out:["ag1"], ins:["fG1"], say:"il fantasma 1 in audio" },
+ { n:10, c:"ag2 pvsynth fG2", out:["ag2"], ins:["fG2"], say:"il fantasma 2 in audio" },
+ { n:11, c:"a1 = gaInL*(1-kMixS) + (a1 + ag1)*kMixS", out:["a1"], ins:["gaInL","kMixS","a1","ag1"], say:"mescola il microfono con live + fantasma (kMixS)" },
+ { n:12, c:"a2 = gaInR*(1-kMixS) + (a2 + ag2)*kMixS", out:["a2"], ins:["gaInR","kMixS","a2","ag2"], say:"idem, canale 2" },
+ { n:13, c:"aFL, aFR reverbsc a1, a2, 0.8, 6000, sr, 0.5", out:["aFL","aFR"], ins:["a1","a2"], say:"riverbero stereo: stanza 0.8, chiarezza 6000" },
+ { n:14, c:"a1 = a1 + aFL*iRev", out:["a1"], ins:["a1","aFL"], say:"aggiunge un po' di riverbero (iRev = 0.12)" },
+ { n:15, c:"a2 = a2 + aFR*iRev", out:["a2"], ins:["a2","aFR"], say:"idem, canale 2" },
+ { n:16, c:"a1 clip a1, 2, 0.94", out:["a1"], ins:["a1"], say:"limita il livello a 0.94 (niente distorsione)" },
+ { n:17, c:"a2 clip a2, 2, 0.94", out:["a2"], ins:["a2"], say:"idem, canale 2" },
+ { n:18, c:"aO1 = a1 * kFAula", out:["aO1"], ins:["a1","kFAula"], say:"livello per l'impianto (Stereo / Quadrifonia)" },
+ { n:19, c:"aO2 = a2 * kFAula", out:["aO2"], ins:["a2","kFAula"], say:"idem, canale 2" },
+ { n:20, c:"outch 1, aO1, 2, aO2", out:[], ins:["aO1","aO2"], say:"uscita: canali 1 e 2", sink:true },
+];
+const rate = v => v.startsWith("ga")||v.startsWith("a") ? "a" : v.startsWith("f") ? "f" : v.startsWith("k") ? "k" : "i";
+const col = r => getComputedStyle(document.documentElement).getPropertyValue("--"+r).trim();
+
+// fili: dall'ultima riga che scrive la variabile a quella che la legge
+const wires = [];
+L.forEach((l, i) => (l.ins||[]).forEach(v => {
+  let from = -1;
+  for (let j = i - 1; j >= 0; --j) if ((L[j].out||[]).includes(v)) { from = j; break; }
+  if (from >= 0) wires.push({ from, to:i, v });
+}));
+// corsie: un filo non si sovrappone a un altro aperto nello stesso tratto
+const lanes = [];
+wires.sort((a,b) => (a.to-a.from) - (b.to-b.from)).forEach(w => {
+  let lane = 0;
+  while (lanes[lane] && lanes[lane].some(o => !(w.to < o.from || w.from > o.to))) lane++;
+  (lanes[lane] = lanes[lane] || []).push(w); w.lane = lane;
+});
+
+const live = {}; let selected = -1, mode = "A";
+function fakeLevel (v, t) { let h = 0; for (const c of v) h += c.charCodeAt(0); return 0.35 + 0.3*Math.sin(t*1.7 + h) + 0.1*Math.sin(t*5.3 + h*2); }
+function fmt (v, t) {
+  const r = rate (v), x = fakeLevel (v, t);
+  if (r === "a") return { text:(20*Math.log10(Math.max(1e-4,x*0.6))).toFixed(1)+" dB", lvl:x };
+  if (r === "f") return { text:"spettro", lvl:-1 };
+  return { text:(x*1.2).toFixed(3), lvl:-1 };
+}
+function varSpan (code, vars) {
+  let s = code.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  return s.replace(/\b([akfgi][A-Za-z0-9_]*)\b/g, m => vars.includes(m) ? `<span class="var" data-v="${m}" style="color:${col(rate(m))}">${m}</span>` : m);
+}
+
+function renderA () {
+  const body = document.getElementById("body");
+  body.innerHTML = "";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("class","wires"); svg.setAttribute("height", L.length*28);
+  body.appendChild(svg);
+  L.forEach((l, i) => {
+    const row = document.createElement("div");
+    row.className = "rowA";
+    const vars = [...(l.out||[]), ...(l.ins||[])];
+    row.innerHTML = `<div class="ln">${l.n}</div><div></div><div class="code ${l.comment?"comment":""}">${l.comment?l.c:varSpan(l.c, vars)}</div>
+      <div class="say">${l.say?("&larr; "+l.say):""}</div><div class="val" data-v="${(l.out||[])[0]||""}"></div>`;
+    row.onclick = e => { if (e.target.dataset.v) return; selected = selected === i ? -1 : i; draw(); };
+    body.appendChild(row);
+  });
+  body.querySelectorAll("[data-v]").forEach(el => el.addEventListener("click", e => { if (el.dataset.v) { e.stopPropagation(); openPop (el.dataset.v, e); } }));
+  draw();
+}
+function draw () {
+  if (mode !== "A") return;
+  const svg = document.querySelector("svg.wires"); svg.innerHTML = "";
+  const rows = [...document.querySelectorAll(".rowA")];
+  const lit = new Set(); if (selected >= 0) { lit.add(selected); wires.forEach(w => { if (w.to===selected) lit.add(w.from); if (w.from===selected) lit.add(w.to); }); }
+  rows.forEach((r,i) => { r.classList.toggle("sel", i===selected); r.classList.toggle("dim", selected>=0 && !lit.has(i)); });
+  wires.forEach(w => {
+    const on = selected < 0 || w.to === selected || w.from === selected;
+    const x = 140 - w.lane*9, y1 = w.from*28 + 14, y2 = w.to*28 + 14;
+    const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+    p.setAttribute("d", `M146 ${y1} H${x} V${y2} H146`);
+    p.setAttribute("fill","none"); p.setAttribute("stroke", col(rate(w.v)));
+    p.setAttribute("stroke-width", rate(w.v)==="a" ? 2 : 1.4); p.setAttribute("opacity", on ? 0.95 : 0.12);
+    svg.appendChild(p);
+    const dot = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    dot.setAttribute("cx",146); dot.setAttribute("cy",y2); dot.setAttribute("r",2.6); dot.setAttribute("fill", col(rate(w.v))); dot.setAttribute("opacity", on?1:.12);
+    svg.appendChild(dot);
+  });
+}
+
+function renderB () {
+  const body = document.getElementById("body");
+  const steps = L.filter(l => !l.comment);
+  body.innerHTML = `<div class="chain">` + steps.map((l, k) => {
+    const v = (l.out||[])[0] || "";
+    const from = (l.ins||[]).map(x => {
+      const i = L.indexOf(l); let at = -1;
+      for (let j = i-1; j >= 0; --j) if ((L[j].out||[]).includes(x)) { at = L[j].n; break; }
+      return `<span class="tag" style="border-color:${col(rate(x))}55"><b>${x}</b> ${at>0 ? "dalla "+at : (x.startsWith("ga") ? "da instr 1" : "dai controlli")}</span>`;
+    }).join("");
+    const cls = v ? rate(v) : "a";
+    return `<div class="step ${cls}" data-i="${k}"><div class="num">${l.n}</div>
+      <div><div class="sline">${l.c}</div><div class="ssay">${l.say}</div><div class="tags">${from}</div></div>
+      <div class="val" data-v="${v}"></div></div>` + (k < steps.length-1 ? `<div class="arrow">&darr;</div>` : "");
+  }).join("") + `</div>`;
+  body.querySelectorAll(".step").forEach(s => s.onclick = () => { body.querySelectorAll(".step").forEach(o=>o.classList.remove("sel")); s.classList.add("sel"); });
+  body.querySelectorAll(".val[data-v]").forEach(el => el.addEventListener("click", e => { if (el.dataset.v) { e.stopPropagation(); openPop (el.dataset.v, e); } }));
+}
+
+// valori che si muovono
+function tick () {
+  const t = performance.now()/1000;
+  document.querySelectorAll(".val[data-v]").forEach(el => {
+    const v = el.dataset.v; if (!v) { el.innerHTML = ""; return; }
+    const f = fmt (v, t);
+    el.innerHTML = (f.lvl >= 0 ? `<span class="meter"><i style="width:${Math.min(100,f.lvl*110)}%"></i></span>` : "")
+      + `<span style="color:${col(rate(v))}">${f.text}</span>`;
+  });
+  if (popVar) {
+    const f = fmt (popVar, t);
+    document.getElementById("pval").textContent = f.text;
+    const c = document.getElementById("scope"), g = c.getContext("2d");
+    g.clearRect(0,0,c.width,c.height); g.strokeStyle = col(rate(popVar)); g.lineWidth = 2; g.beginPath();
+    for (let x = 0; x < c.width; ++x) { const y = c.height/2 - Math.sin(x*0.08 + t*20)*Math.sin(x*0.011+t)*c.height*0.4*fakeLevel(popVar,t); x?g.lineTo(x,y):g.moveTo(x,y); }
+    g.stroke();
+  }
+  requestAnimationFrame(tick);
+}
+let popVar = null;
+function openPop (v, e) {
+  popVar = v;
+  const pop = document.getElementById("pop");
+  document.getElementById("pv").textContent = v;
+  const r = rate (v);
+  let at = "-"; for (let j = L.length-1; j >= 0; --j) if ((L[j].out||[]).includes(v)) { at = L[j].n; break; }
+  document.getElementById("psub").textContent = (r==="a" ? "audio - livello dell'ultimo ciclo" : r==="k" ? "controllo - valore ora" : r==="f" ? "spettro" : "una volta per nota")
+    + (at !== "-" ? " - scritta alla riga " + at : "");
+  document.getElementById("scope").style.display = r === "a" ? "block" : "none";
+  document.getElementById("listen").style.visibility = r === "a" ? "visible" : "hidden";
+  pop.style.borderColor = col(r);
+  pop.style.left = Math.min(window.innerWidth - 320, e.clientX + 12) + "px";
+  pop.style.top = Math.min(window.innerHeight - 200, e.clientY + 12) + "px";
+  pop.style.display = "block";
+}
+document.getElementById("close").onclick = () => { document.getElementById("pop").style.display = "none"; popVar = null; };
+document.getElementById("listen").onclick = e => { const b = e.target; b.classList.toggle("on"); b.innerHTML = b.classList.contains("on") ? "&#9632;  Stop (senti solo " + popVar + ")" : "&#9654;  Listen"; };
+
+document.getElementById("tA").onclick = () => { mode="A"; tA.classList.add("on"); tB.classList.remove("on"); viewTitle.textContent = "instr 10 - codice con i fili"; renderA(); };
+document.getElementById("tB").onclick = () => { mode="B"; tB.classList.add("on"); tA.classList.remove("on"); viewTitle.textContent = "instr 10 - catena"; renderB(); };
+renderA(); tick();
+</script>
+</body>
+</html>

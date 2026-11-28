@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>apeCsound - Patcher view (mockup)</title>
+<style>
+  :root { --bg:#0b1116; --card:#141d24; --bar:#1c2730; --border:#2a3a48; --text:#e8eef1; --muted:#8a9aa5;
+          --accent:#4aa3b8; --a:#3b82f6; --k:#9aa5b1; --f:#2a9d8f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#06090c; color:var(--text); font:14px -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  .win { margin:14px auto; max-width:1120px; background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .bar { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); }
+  .pill { border:1px solid var(--border); background:var(--bar); border-radius:14px; padding:5px 13px; font-size:13px; cursor:pointer; color:var(--text); }
+  .pill.on { background:var(--accent); color:#0b1116; font-weight:700; border-color:var(--accent); }
+  .title { flex:1; text-align:center; font-weight:700; }
+  .hint { padding:7px 14px; color:var(--muted); font-size:12.5px; border-bottom:1px solid var(--border); background:#111920; }
+  .canvas { position:relative; background:var(--bg); overflow:auto; height:690px; }
+  svg { display:block; }
+  .obj rect { fill:#16212a; stroke:#5d6b76; stroke-width:1; }
+  .obj.sel rect { stroke:var(--accent); stroke-width:2; }
+  .obj text { fill:var(--text); font:12.5px Menlo, monospace; }
+  .obj.sub rect { fill:#1a2733; stroke:#7f8f9b; stroke-dasharray:0; }
+  .obj.num rect { fill:#0f171d; stroke:var(--k); }
+  .obj.msg rect { fill:#22303a; stroke:#5d6b76; rx:8; }
+  .obj.sr rect { fill:#16212a; stroke:#6f7f8a; }
+  .comment { fill:#6a9955; font:12.5px -apple-system, Arial, sans-serif; }
+  .port { fill:#8a9aa5; }
+  .port.a { fill:var(--a); }
+  .cord { fill:none; cursor:pointer; }
+  .cord:hover { filter:brightness(1.5); }
+  .hit { fill:none; stroke:transparent; stroke-width:12; cursor:pointer; }
+  .tip { position:absolute; pointer-events:none; background:#0b1116ee; border:1px solid var(--a); border-radius:9px; padding:1px 8px;
+         font:bold 11px Menlo, monospace; display:none; }
+  .pop { position:absolute; width:290px; background:#1c2730; border:1px solid var(--a); border-radius:10px; padding:10px 12px 12px;
+         box-shadow:0 8px 30px rgba(0,0,0,.5); display:none; }
+  .pop .h { display:flex; justify-content:space-between; font-weight:700; }
+  .pop .sub { color:var(--muted); font-size:11.5px; margin:2px 0 6px; }
+  .pop canvas { width:100%; height:60px; background:var(--bg); border-radius:6px; }
+  .pop .btns { display:flex; justify-content:space-between; margin-top:8px; }
+  .pop button { background:var(--border); color:var(--text); border:0; border-radius:14px; padding:6px 14px; cursor:pointer; }
+  .pop button.on { background:#c0392b; }
+  .code { position:absolute; right:10px; bottom:10px; background:#0f171dee; border:1px solid var(--border); border-radius:8px;
+          padding:7px 10px; font:12px Menlo, monospace; color:#d4d4d4; display:none; max-width:520px; }
+  .code b { color:var(--muted); font-weight:normal; margin-right:8px; }
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="bar">
+    <span class="pill" id="pOrc">Orchestra</span>
+    <span class="pill on" id="pIns">instr 10</span>
+    <span class="title" id="title">instr 10</span>
+    <span class="pill">Live &#9662;</span>
+  </div>
+  <div class="hint" id="hint">Come un patch Max: oggetti su una riga, il segnale scende verso l'uscita. Mouse su un cavo = valore; clic = sonda (oscilloscopio + Listen). Clic su un oggetto = la sua riga di codice. Doppio clic su [p ...] = apre il subpatch.</div>
+  <div class="canvas" id="canvas">
+    <svg id="svg" width="1100" height="680"></svg>
+    <div class="tip" id="tip"></div>
+    <div class="pop" id="pop">
+      <div class="h"><span id="pv">a1</span><span id="pval" style="color:var(--a)">-12 dB</span></div>
+      <div class="sub" id="psub">audio</div>
+      <canvas id="scope" width="540" height="120"></canvas>
+      <div class="btns"><button id="listen">&#9654;  Listen</button><button id="pclose">Chiudi</button></div>
+    </div>
+    <div class="code" id="code"></div>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------- patch di instr 10 (canali 1 e 2, semplificato)
+const INSTR = {
+  objs: [
+    { id:"c1", t:"comment", x:30,  y:28,  text:"; -- live --" },
+    { id:"c2", t:"comment", x:520, y:28,  text:"; -- fantasmi, con le frequenze congelate --" },
+    { id:"ctl", t:"sub", x:30, y:44, text:"p controlli", ins:0, outs:6, outNames:["kM1","kM2","kInFREQ","kG1","kG2","kGFreq"], w:1040, line:"righe 150 - 296 (17 controlli, letture delle tabelle)" },
+    { id:"t1", x:30,  y:120, text:"tab2pvs 1024 2048 1", ins:2, outs:1, line:"f1 tab2pvs kM1, kInFREQ, iHopSize, iwinsize, iwinshape" },
+    { id:"t2", x:250, y:120, text:"tab2pvs 1024 2048 1", ins:2, outs:1, line:"f2 tab2pvs kM2, kInFREQ, iHopSize, iwinsize, iwinshape" },
+    { id:"g1", x:520, y:120, text:"tab2pvs 1024 2048 1", ins:2, outs:1, line:"fG1 tab2pvs kG1, kGFreq, iHopSize, iwinsize, iwinshape" },
+    { id:"g2", x:740, y:120, text:"tab2pvs 1024 2048 1", ins:2, outs:1, line:"fG2 tab2pvs kG2, kGFreq, iHopSize, iwinsize, iwinshape" },
+    { id:"s1", x:30,  y:180, text:"pvsynth", ins:1, outs:1, line:"a1 pvsynth f1" },
+    { id:"s2", x:250, y:180, text:"pvsynth", ins:1, outs:1, line:"a2 pvsynth f2" },
+    { id:"sg1", x:520, y:180, text:"pvsynth", ins:1, outs:1, line:"ag1 pvsynth fG1" },
+    { id:"sg2", x:740, y:180, text:"pvsynth", ins:1, outs:1, line:"ag2 pvsynth fG2" },
+    { id:"rL", t:"sr", x:30,  y:250, text:"r gaInL", ins:0, outs:1, line:"gaInL - scritto da instr 1" },
+    { id:"rR", t:"sr", x:250, y:250, text:"r gaInR", ins:0, outs:1, line:"gaInR - scritto da instr 1" },
+    { id:"mixN", t:"num", x:960, y:225, text:"0.62", label:"MIX", ins:0, outs:1, line:"kMixS port chnget(\"MIX\"), 0.05" },
+    { id:"m1", x:90,  y:315, text:"mix gaInL, a1+ag1, kMixS", ins:4, outs:1, line:"a1 = gaInL*(1-kMixS) + (a1 + ag1)*kMixS" },
+    { id:"m2", x:420, y:315, text:"mix gaInR, a2+ag2, kMixS", ins:4, outs:1, line:"a2 = gaInR*(1-kMixS) + (a2 + ag2)*kMixS" },
+    { id:"c3", t:"comment", x:520, y:368, text:"; riverbero, poco (iRev = 0.12)" },
+    { id:"rv", x:220, y:385, text:"reverbsc 0.8 6000", ins:2, outs:2, line:"aFL, aFR reverbsc a1 + a4*0.3, a2 + a3*0.3, 0.8, 6000, sr, 0.5" },
+    { id:"p1", x:90,  y:450, text:"+~ (x 0.12)", ins:2, outs:1, line:"a1 = a1 + aFL*iRev" },
+    { id:"p2", x:420, y:450, text:"+~ (x 0.12)", ins:2, outs:1, line:"a2 = a2 + aFR*iRev" },
+    { id:"k1", x:90,  y:510, text:"clip 2 0.94", ins:1, outs:1, line:"a1 clip a1, 2, 0.94" },
+    { id:"k2", x:420, y:510, text:"clip 2 0.94", ins:1, outs:1, line:"a2 clip a2, 2, 0.94" },
+    { id:"impN", t:"num", x:760, y:480, text:"1", label:"IMPIANTO", ins:0, outs:1, line:"kImpAula chnget \"IMPIANTO\"   (1 Stereo, 2 Quadrifonia)" },
+    { id:"fA", x:760, y:530, text:"port 0.05 -> kFAula", ins:1, outs:1, line:"kFAula = 0.8 + (1 - 0.8) * kQAula" },
+    { id:"o1", x:90,  y:575, text:"*~", ins:2, outs:1, line:"aO1 = a1 * kFAula + ..." },
+    { id:"o2", x:420, y:575, text:"*~", ins:2, outs:1, line:"aO2 = a2 * kFAula + ..." },
+    { id:"out", x:200, y:635, text:"outch 1 2   (dac~)", ins:2, outs:0, line:"outch 1, aO1, 2, aO2, 3, aO3, 4, aO4" },
+  ],
+  cords: [
+    ["ctl",0,"t1",0,"k","kM1"], ["ctl",2,"t1",1,"k","kInFREQ"], ["ctl",1,"t2",0,"k","kM2"], ["ctl",2,"t2",1,"k","kInFREQ"],
+    ["ctl",3,"g1",0,"k","kG1"], ["ctl",5,"g1",1,"k","kGFreq"], ["ctl",4,"g2",0,"k","kG2"], ["ctl",5,"g2",1,"k","kGFreq"],
+    ["t1",0,"s1",0,"f","f1"], ["t2",0,"s2",0,"f","f2"], ["g1",0,"sg1",0,"f","fG1"], ["g2",0,"sg2",0,"f","fG2"],
+    ["rL",0,"m1",0,"a","gaInL"], ["s1",0,"m1",1,"a","a1"], ["sg1",0,"m1",2,"a","ag1"], ["mixN",0,"m1",3,"k","kMixS"],
+    ["rR",0,"m2",0,"a","gaInR"], ["s2",0,"m2",1,"a","a2"], ["sg2",0,"m2",2,"a","ag2"], ["mixN",0,"m2",3,"k","kMixS"],
+    ["m1",0,"rv",0,"a","a1"], ["m2",0,"rv",1,"a","a2"],
+    ["m1",0,"p1",0,"a","a1"], ["rv",0,"p1",1,"a","aFL"], ["m2",0,"p2",0,"a","a2"], ["rv",1,"p2",1,"a","aFR"],
+    ["p1",0,"k1",0,"a","a1"], ["p2",0,"k2",0,"a","a2"],
+    ["impN",0,"fA",0,"k","kImpAula"],
+    ["k1",0,"o1",0,"a","a1"], ["fA",0,"o1",1,"k","kFAula"], ["k2",0,"o2",0,"a","a2"], ["fA",0,"o2",1,"k","kFAula"],
+    ["o1",0,"out",0,"a","aO1"], ["o2",0,"out",1,"a","aO2"],
+  ]
+};
+
+// ---------------------------------------------------------------- orchestra: il patch principale
+const ORC = {
+  objs: [
+    { id:"c1", t:"comment", x:40, y:40, text:"; score: le note partono da qui (message box = riga i dello score)" },
+    { id:"sc1", t:"msg", x:40, y:60, text:"i 1 0 604800", ins:1, outs:1, line:"i 1  0 [60*60*24*7]" },
+    { id:"sc2", t:"msg", x:420, y:60, text:"i 10 0 604800", ins:1, outs:1, line:"i 10 0 [60*60*24*7]" },
+    { id:"i1", t:"sub", x:40, y:150, text:"p instr 1   (ingresso, OSC)", ins:1, outs:0, w:260, line:"instr 1 - INPUT, OSC (righe 115 - 132)" },
+    { id:"sL", t:"sr", x:40, y:225, text:"s gaInL", ins:1, outs:0, line:"gaInL = inch 1 (scritto in instr 1)" },
+    { id:"sR", t:"sr", x:160, y:225, text:"s gaInR", ins:1, outs:0, line:"gaInR = inch 2" },
+    { id:"i10", t:"sub", x:420, y:150, text:"p instr 10   (PRISMA PIANO)", ins:1, outs:1, w:280, line:"instr 10 - PRISMA PIANO (righe 138 - 345): doppio clic per aprirlo" },
+    { id:"udo", t:"sub", x:760, y:150, text:"oscToChn   (opcode)", ins:2, outs:0, w:200, line:"opcode oscToChn (righe 84 - 109): un'astrazione" },
+    { id:"c2", t:"comment", x:420, y:250, text:"; gaInL / gaInR arrivano a instr 10 con [r gaInL] [r gaInR]" },
+    { id:"dac", x:420, y:300, text:"dac~  (4 canali)", ins:1, outs:0, line:"outch 1 ... 4" },
+  ],
+  cords: [
+    ["sc1",0,"i1",0,"k","nota"], ["sc2",0,"i10",0,"k","nota"],
+    ["i10",0,"dac",0,"a","aO1 ... aO4"],
+  ]
+};
+
+// ---------------------------------------------------------------- disegno
+const svg = document.getElementById("svg");
+const NS = "http://www.w3.org/2000/svg";
+let patch = INSTR, sel = null, popVar = null;
+const W = o => o.w || Math.max(48, o.text.length * 7.6 + 16);
+const H = 22;
+const portX = (o, i, n) => n <= 1 ? o.x + 6 : o.x + 6 + i * ((W(o) - 12) / (n - 1));
+const colour = r => getComputedStyle(document.documentElement).getPropertyValue("--" + (r === "a" ? "a" : r === "f" ? "f" : "k")).trim();
+
+function el (name, attrs, parent) { const e = document.createElementNS(NS, name); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; }
+
+function render () {
+  svg.innerHTML = "";
+  const byId = {}; patch.objs.forEach(o => byId[o.id] = o);
+  // cavi sotto
+  patch.cords.forEach(c => {
+    const a = byId[c[0]], b = byId[c[2]];
+    const x1 = portX (a, c[1], a.outs) + 3, y1 = a.y + H, x2 = portX (b, c[3], b.ins) + 3, y2 = b.y;
+    const dy = Math.max (20, (y2 - y1) * 0.5);
+    const d = `M${x1} ${y1} C${x1} ${y1 + dy} ${x2} ${y2 - dy} ${x2} ${y2}`;
+    const rate = c[4];
+    const lit = ! sel || c[0] === sel || c[2] === sel;
+    el ("path", { d, class:"cord", stroke:colour (rate), "stroke-width": rate === "a" ? 3 : rate === "f" ? 2 : 1.2,
+                  "stroke-dasharray": rate === "f" ? "6 3" : "0", opacity: lit ? 0.95 : 0.15 });
+    const hit = el ("path", { d, class:"hit" });
+    hit.addEventListener ("mousemove", e => showTip (c, e));
+    hit.addEventListener ("mouseleave", () => tip.style.display = "none");
+    hit.addEventListener ("click", e => openPop (c, e));
+  });
+  // oggetti
+  patch.objs.forEach (o => {
+    if (o.t === "comment") { el ("text", { x:o.x, y:o.y, class:"comment" }).textContent = o.text; return; }
+    const g = el ("g", { class:"obj " + (o.t || "") + (sel === o.id ? " sel" : ""), transform:`translate(${o.x},${o.y})` });
+    const w = o.t === "num" ? 64 : W(o);
+    if (o.t === "num") o.w = 64;
+    el ("rect", { x:0, y:0, width:w, height:H, rx: o.t === "msg" ? 8 : 3 }, g);
+    if (o.t === "num") {
+      el ("path", { d:"M4 4 L11 11 L4 18 Z", fill:"#9aa5b1" }, g);
+      const t = el ("text", { x:16, y:15, id:"num_" + o.id }, g); t.textContent = o.text;
+      el ("text", { x:0, y:-6, fill:"#8a9aa5", style:"font:11px -apple-system, Arial" }, g).textContent = o.label;
+    } else {
+      el ("text", { x:8, y:15 }, g).textContent = (o.t === "sub" ? "" : "") + o.text;
+    }
+    for (let i = 0; i < (o.ins || 0); ++i) el ("rect", { x: portX ({ x:0, w, text:o.text }, i, o.ins), y:0, width:7, height:3, class:"port" }, g);
+    for (let i = 0; i < (o.outs || 0); ++i) {
+      el ("rect", { x: portX ({ x:0, w, text:o.text }, i, o.outs), y:H - 3, width:7, height:3, class:"port" }, g);
+      if (o.outNames) el ("text", { x: portX ({ x:0, w, text:o.text }, i, o.outs), y:H + 12, fill:"#8a9aa5", style:"font:10.5px Menlo" }, g).textContent = o.outNames[i];
+    }
+    g.style.cursor = "pointer";
+    g.addEventListener ("click", e => { e.stopPropagation(); sel = sel === o.id ? null : o.id; showCode (o); render(); });
+    g.addEventListener ("dblclick", e => { e.stopPropagation(); if (o.id === "i10") setPatch ("i"); });
+  });
+}
+
+const tip = document.getElementById ("tip"), pop = document.getElementById ("pop"), code = document.getElementById ("code");
+function level (v, t) { let h = 0; for (const ch of v) h += ch.charCodeAt (0); return 0.35 + 0.3 * Math.sin (t * 1.7 + h) + 0.1 * Math.sin (t * 5.3 + h * 2); }
+function valueText (c, t) {
+  if (c[4] === "a") return (20 * Math.log10 (Math.max (1e-4, level (c[5], t) * 0.6))).toFixed (1) + " dB";
+  if (c[4] === "f") return "spettro";
+  return (level (c[5], t) * 1.2).toFixed (3);
+}
+function canvasPoint (e) { const r = document.getElementById ("canvas").getBoundingClientRect(); return { x: e.clientX - r.left + canvas.scrollLeft, y: e.clientY - r.top + canvas.scrollTop }; }
+function showTip (c, e) {
+  const p = canvasPoint (e);
+  tip.style.left = (p.x + 12) + "px"; tip.style.top = (p.y - 10) + "px"; tip.style.display = "block";
+  tip.style.borderColor = colour (c[4]);
+  tip.textContent = c[5] + "  " + valueText (c, performance.now() / 1000);
+}
+let popCord = null;
+function openPop (c, e) {
+  popCord = c;
+  const p = canvasPoint (e);
+  document.getElementById ("pv").textContent = c[5];
+  document.getElementById ("psub").textContent = c[4] === "a" ? "audio - livello dell'ultimo ciclo" : c[4] === "f" ? "spettro (pvs)" : "controllo - valore ora";
+  document.getElementById ("scope").style.display = c[4] === "a" ? "block" : "none";
+  document.getElementById ("listen").style.visibility = c[4] === "a" ? "visible" : "hidden";
+  pop.style.borderColor = colour (c[4]);
+  pop.style.left = Math.min (p.x + 14, 800) + "px"; pop.style.top = Math.min (p.y + 14, 520) + "px"; pop.style.display = "block";
+}
+document.getElementById ("pclose").onclick = () => { pop.style.display = "none"; popCord = null; };
+document.getElementById ("listen").onclick = e => { const b = e.target; b.classList.toggle ("on"); b.innerHTML = b.classList.contains ("on") ? "&#9632;  Stop" : "&#9654;  Listen"; };
+function showCode (o) { if (! o.line || sel !== o.id) { code.style.display = "none"; return; } code.innerHTML = "<b>codice</b>" + o.line.replace (/</g, "&lt;"); code.style.display = "block"; }
+document.getElementById ("canvas").addEventListener ("click", e => { if (e.target === svg) { sel = null; code.style.display = "none"; render(); } });
+
+function setPatch (which) {
+  patch = which === "o" ? ORC : INSTR; sel = null; code.style.display = "none"; pop.style.display = "none";
+  document.getElementById ("pOrc").classList.toggle ("on", which === "o");
+  document.getElementById ("pIns").classList.toggle ("on", which !== "o");
+  document.getElementById ("title").textContent = which === "o" ? "Orchestra" : "instr 10";
+  render();
+}
+document.getElementById ("pOrc").onclick = () => setPatch ("o");
+document.getElementById ("pIns").onclick = () => setPatch ("i");
+
+// valori vivi: number box e sonda
+function tick () {
+  const t = performance.now() / 1000;
+  const n = document.getElementById ("num_mixN"); if (n) n.textContent = (0.5 + 0.3 * Math.sin (t * 0.7)).toFixed (2);
+  if (popCord) {
+    document.getElementById ("pval").textContent = valueText (popCord, t);
+    const c = document.getElementById ("scope"), g = c.getContext ("2d");
+    g.clearRect (0, 0, c.width, c.height); g.strokeStyle = colour ("a"); g.lineWidth = 2; g.beginPath();
+    for (let x = 0; x < c.width; ++x) { const y = c.height / 2 - Math.sin (x * 0.09 + t * 20) * Math.sin (x * 0.012 + t) * c.height * 0.42 * level (popCord[5], t); x ? g.lineTo (x, y) : g.moveTo (x, y); }
+    g.stroke();
+  }
+  requestAnimationFrame (tick);
+}
+render(); tick();
+</script>
+</body>
+</html>
